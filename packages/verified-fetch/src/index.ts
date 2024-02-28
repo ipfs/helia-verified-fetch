@@ -56,7 +56,7 @@
  * import { verifiedFetch } from '@helia/verified-fetch'
  *
  * const response = await verifiedFetch('ipns://mydomain.com/path/to/very-long-file.log')
- * const bigFileStreamReader = await response.body.getReader()
+ * const bigFileStreamReader = await response.body?.getReader()
  * ```
  *
  * ## Configuration
@@ -73,8 +73,8 @@
  * import { createVerifiedFetch } from '@helia/verified-fetch'
  *
  * const fetch = await createVerifiedFetch({
- *  gateways: ['https://trustless-gateway.link'],
- *  routers: ['http://delegated-ipfs.dev']
+ *   gateways: ['https://trustless-gateway.link'],
+ *   routers: ['http://delegated-ipfs.dev']
  * })
  *
  * const resp = await fetch('ipfs://bafy...')
@@ -98,13 +98,13 @@
  *
  * const fetch = await createVerifiedFetch(
  *   await createHeliaHTTP({
- *       blockBrokers: [
- *         trustlessGateway({
- *           gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
- *         })
- *       ],
- *       routers: ['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl))
- *     })
+ *     blockBrokers: [
+ *       trustlessGateway({
+ *         gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
+ *       })
+ *     ],
+ *     routers: ['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl))
+ *   })
  * )
  *
  * const resp = await fetch('ipfs://bafy...')
@@ -127,14 +127,14 @@
  * import { fileTypeFromBuffer } from '@sgtpooki/file-type'
  *
  * const fetch = await createVerifiedFetch({
- *  gateways: ['https://trustless-gateway.link'],
- *  routers: ['http://delegated-ipfs.dev']
+ *   gateways: ['https://trustless-gateway.link'],
+ *   routers: ['http://delegated-ipfs.dev']
  * }, {
- *  contentTypeParser: async (bytes) => {
- *    // call to some magic-byte recognition library like magic-bytes, file-type, or your own custom byte recognition
- *    const result = await fileTypeFromBuffer(bytes)
- *    return result?.mime
- *  }
+ *   contentTypeParser: async (bytes) => {
+ *     // call to some magic-byte recognition library like magic-bytes, file-type, or your own custom byte recognition
+ *     const result = await fileTypeFromBuffer(bytes)
+ *     return result?.mime
+ *   }
  * })
  * ```
  *
@@ -197,6 +197,10 @@
  *
  * const res = await verifiedFetch('ipfs://Qmfoo')
  * const reader = res.body?.getReader()
+ *
+ * if (reader == null) {
+ *   throw new Error('Could not create reader from response body')
+ * }
  *
  * while (true) {
  *   const next = await reader.read()
@@ -301,7 +305,7 @@
  * const res = await verifiedFetch('ipfs://bafyDAGJSON')
  *
  * // or:
- * const obj = dagJson.decode(await res.arrayBuffer())
+ * const obj = dagJson.decode<any>(await res.arrayBuffer())
  * console.info(obj.cid) // CID(baeaaac3imvwgy3zao5xxe3de)
  * console.info(obj.buf) // Uint8Array(5) [ 0, 1, 2, 3, 4 ]
  * ```

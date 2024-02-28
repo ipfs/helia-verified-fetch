@@ -4,12 +4,14 @@
   </a>
 </p>
 
+# @helia/verified-fetch
+
 [![ipfs.tech](https://img.shields.io/badge/project-IPFS-blue.svg?style=flat-square)](https://ipfs.tech)
 [![Discuss](https://img.shields.io/discourse/https/discuss.ipfs.tech/posts.svg?style=flat-square)](https://discuss.ipfs.tech)
-[![codecov](https://img.shields.io/codecov/c/github/ipfs/helia.svg?style=flat-square)](https://codecov.io/gh/ipfs/helia)
-[![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia/main.yml?branch=main\&style=flat-square)](https://github.com/ipfs/helia/actions/workflows/main.yml?query=branch%3Amain)
+[![codecov](https://img.shields.io/codecov/c/github/ipfs/helia-verified-fetch.svg?style=flat-square)](https://codecov.io/gh/ipfs/helia-verified-fetch)
+[![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-verified-fetch/js-test-and-release.yml?branch=main\&style=flat-square)](https://github.com/ipfs/helia-verified-fetch/actions/workflows/js-test-and-release.yml?query=branch%3Amain)
 
-> A fetch-like API for obtaining verified & trustless IPFS content on the web.
+> A fetch-like API for obtaining verified & trustless IPFS content on the web
 
 # About
 
@@ -83,7 +85,7 @@ document.body.appendChild(image)
 import { verifiedFetch } from '@helia/verified-fetch'
 
 const response = await verifiedFetch('ipns://mydomain.com/path/to/very-long-file.log')
-const bigFileStreamReader = await response.body.getReader()
+const bigFileStreamReader = await response.body?.getReader()
 ```
 
 ## Configuration
@@ -100,8 +102,8 @@ It's possible to override these by passing `gateways` and `routers` keys to the 
 import { createVerifiedFetch } from '@helia/verified-fetch'
 
 const fetch = await createVerifiedFetch({
- gateways: ['https://trustless-gateway.link'],
- routers: ['http://delegated-ipfs.dev']
+  gateways: ['https://trustless-gateway.link'],
+  routers: ['http://delegated-ipfs.dev']
 })
 
 const resp = await fetch('ipfs://bafy...')
@@ -125,13 +127,13 @@ import { createVerifiedFetch } from '@helia/verified-fetch'
 
 const fetch = await createVerifiedFetch(
   await createHeliaHTTP({
-      blockBrokers: [
-        trustlessGateway({
-          gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
-        })
-      ],
-      routers: ['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl))
-    })
+    blockBrokers: [
+      trustlessGateway({
+        gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
+      })
+    ],
+    routers: ['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl))
+  })
 )
 
 const resp = await fetch('ipfs://bafy...')
@@ -154,14 +156,36 @@ import { createVerifiedFetch } from '@helia/verified-fetch'
 import { fileTypeFromBuffer } from '@sgtpooki/file-type'
 
 const fetch = await createVerifiedFetch({
- gateways: ['https://trustless-gateway.link'],
- routers: ['http://delegated-ipfs.dev']
+  gateways: ['https://trustless-gateway.link'],
+  routers: ['http://delegated-ipfs.dev']
 }, {
- contentTypeParser: async (bytes) => {
-   // call to some magic-byte recognition library like magic-bytes, file-type, or your own custom byte recognition
-   const result = await fileTypeFromBuffer(bytes)
-   return result?.mime
- }
+  contentTypeParser: async (bytes) => {
+    // call to some magic-byte recognition library like magic-bytes, file-type, or your own custom byte recognition
+    const result = await fileTypeFromBuffer(bytes)
+    return result?.mime
+  }
+})
+```
+
+### Custom DNS resolvers
+
+If you don't want to leak DNS queries to the default resolvers, you can provide your own list of DNS resolvers to `createVerifiedFetch`.
+
+Note that you do not need to provide both a DNS-over-HTTPS and a DNS-over-JSON resolver, and you should prefer `dnsJsonOverHttps` resolvers for usage in the browser for a smaller bundle size. See <https://github.com/ipfs/helia/tree/main/packages/ipns#example---using-dns-json-over-https> for more information.
+
+## Example - Customizing DNS resolvers
+
+```typescript
+import { createVerifiedFetch } from '@helia/verified-fetch'
+import { dnsJsonOverHttps, dnsOverHttps } from '@helia/ipns/dns-resolvers'
+
+const fetch = await createVerifiedFetch({
+  gateways: ['https://trustless-gateway.link'],
+  routers: ['http://delegated-ipfs.dev'],
+  dnsResolvers: [
+    dnsJsonOverHttps('https://my-dns-resolver.example.com/dns-json'),
+    dnsOverHttps('https://my-dns-resolver.example.com/dns-query')
+  ]
 })
 ```
 
@@ -202,6 +226,10 @@ import { verifiedFetch } from '@helia/verified-fetch'
 
 const res = await verifiedFetch('ipfs://Qmfoo')
 const reader = res.body?.getReader()
+
+if (reader == null) {
+  throw new Error('Could not create reader from response body')
+}
 
 while (true) {
   const next = await reader.read()
@@ -306,7 +334,7 @@ import * as dagJson from '@ipld/dag-json'
 const res = await verifiedFetch('ipfs://bafyDAGJSON')
 
 // or:
-const obj = dagJson.decode(await res.arrayBuffer())
+const obj = dagJson.decode<any>(await res.arrayBuffer())
 console.info(obj.cid) // CID(baeaaac3imvwgy3zao5xxe3de)
 console.info(obj.buf) // Uint8Array(5) [ 0, 1, 2, 3, 4 ]
 ```
@@ -509,7 +537,7 @@ Loading this module through a script tag will make it's exports available as `He
 
 # API Docs
 
-- <https://ipfs.github.io/helia/modules/_helia_verified_fetch.html>
+- <https://ipfs.github.io/helia-verified-fetch/modules/_helia_verified_fetch.html>
 
 # License
 
@@ -520,7 +548,7 @@ Licensed under either of
 
 # Contribute
 
-Contributions welcome! Please check out [the issues](https://github.com/ipfs/helia/issues).
+Contributions welcome! Please check out [the issues](https://github.com/ipfs/helia-verified-fetch/issues).
 
 Also see our [contributing document](https://github.com/ipfs/community/blob/master/CONTRIBUTING_JS.md) for more information on how we work, and about contributing in general.
 
