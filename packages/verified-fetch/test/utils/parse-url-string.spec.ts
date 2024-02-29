@@ -285,7 +285,7 @@ describe('parseUrlString', () => {
       expect(result.query).to.deep.equal({ fomat: 'dag-cbor' })
     })
 
-    it('should parse an ipns:// url with a path that resolves to a path', async () => {
+    it('should parse an ipns:// url with a path that resolves to a CID with a path', async () => {
       const cid = CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
       const peerId = await createEd25519PeerId()
       const recordPath = 'foo'
