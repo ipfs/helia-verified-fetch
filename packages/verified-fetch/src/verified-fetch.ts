@@ -22,7 +22,7 @@ import { getETag } from './utils/get-e-tag.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
-import { badRequestResponse, notAcceptableResponse, notSupportedResponse, okResponse } from './utils/responses.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse } from './utils/responses.js'
 import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
@@ -167,7 +167,7 @@ export class VerifiedFetch {
     const buf = await this.helia.datastore.get(datastoreKey, options)
     const record = DHTRecord.deserialize(buf)
 
-    const response = okResponse(record.value)
+    const response = okResponse(resource, record.value)
     response.headers.set('content-type', 'application/vnd.ipfs.ipns-record')
 
     return response
@@ -177,11 +177,11 @@ export class VerifiedFetch {
    * Accepts a `CID` and returns a `Response` with a body stream that is a CAR
    * of the `DAG` referenced by the `CID`.
    */
-  private async handleCar ({ cid, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleCar ({ resource, cid, options }: FetchHandlerFunctionArg): Promise<Response> {
     const c = car(this.helia)
     const stream = toBrowserReadableStream(c.stream(cid, options))
 
-    const response = okResponse(stream)
+    const response = okResponse(resource, stream)
     response.headers.set('content-type', 'application/vnd.ipld.car; version=1')
 
     return response
@@ -191,20 +191,20 @@ export class VerifiedFetch {
    * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
    * directory structure referenced by the `CID`.
    */
-  private async handleTar ({ cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleTar ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
     if (cid.code !== dagPbCode && cid.code !== rawCode) {
       return notAcceptableResponse('only UnixFS data can be returned in a TAR file')
     }
 
     const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${cid}/${path}`, this.helia.blockstore, options))
 
-    const response = okResponse(stream)
+    const response = okResponse(resource, stream)
     response.headers.set('content-type', 'application/x-tar')
 
     return response
   }
 
-  private async handleJson ({ cid, path, accept, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleJson ({ resource, cid, path, accept, options }: FetchHandlerFunctionArg): Promise<Response> {
     this.log.trace('fetching %c/%s', cid, path)
     const block = await this.helia.blockstore.get(cid, options)
     let body: string | Uint8Array
@@ -218,19 +218,19 @@ export class VerifiedFetch {
         body = ipldDagCbor.encode(obj)
       } catch (err) {
         this.log.error('could not transform %c to application/vnd.ipld.dag-cbor', err)
-        return notAcceptableResponse()
+        return notAcceptableResponse(resource)
       }
     } else {
       // skip decoding
       body = block
     }
 
-    const response = okResponse(body)
+    const response = okResponse(resource, body)
     response.headers.set('content-type', accept ?? 'application/json')
     return response
   }
 
-  private async handleDagCbor ({ cid, path, accept, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleDagCbor ({ resource, cid, path, accept, options }: FetchHandlerFunctionArg): Promise<Response> {
     this.log.trace('fetching %c/%s', cid, path)
 
     const block = await this.helia.blockstore.get(cid, options)
@@ -248,7 +248,7 @@ export class VerifiedFetch {
         body = ipldDagJson.encode(obj)
       } catch (err) {
         this.log.error('could not transform %c to application/vnd.ipld.dag-json', err)
-        return notAcceptableResponse()
+        return notAcceptableResponse(resource)
       }
     } else {
       try {
@@ -257,7 +257,7 @@ export class VerifiedFetch {
         if (accept === 'application/json') {
           this.log('could not decode DAG-CBOR as JSON-safe, but the client sent "Accept: application/json"', err)
 
-          return notAcceptableResponse()
+          return notAcceptableResponse(resource)
         }
 
         this.log('could not decode DAG-CBOR as JSON-safe, falling back to `application/octet-stream`', err)
@@ -265,7 +265,7 @@ export class VerifiedFetch {
       }
     }
 
-    const response = okResponse(body)
+    const response = okResponse(resource, body)
 
     if (accept == null) {
       accept = body instanceof Uint8Array ? 'application/octet-stream' : 'application/json'
@@ -276,9 +276,10 @@ export class VerifiedFetch {
     return response
   }
 
-  private async handleDagPb ({ cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleDagPb ({ cid, path, resource, options }: FetchHandlerFunctionArg): Promise<Response> {
     let terminalElement: UnixFSEntry | undefined
     let ipfsRoots: CID[] | undefined
+    let redirected = false
 
     try {
       const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
@@ -293,6 +294,21 @@ export class VerifiedFetch {
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
 
+      // https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
+      if (path !== '' && !path.endsWith('/')) {
+        if (options?.redirect === 'error') {
+          this.log('could not redirect to %s/ as redirect option was set to "error"', resource)
+          throw new TypeError('Failed to fetch')
+        } else if (options?.redirect === 'manual') {
+          this.log('returning 301 permanent redirect to %s/', resource)
+          return movedPermanentlyResponse(resource, `${resource}/`)
+        }
+
+        // fall-through simulates following the redirect?
+        resource = `${resource}/`
+        redirected = true
+      }
+
       const rootFilePath = 'index.html'
       try {
         this.log.trace('found directory at %c/%s, looking for index.html', cid, path)
@@ -304,7 +320,6 @@ export class VerifiedFetch {
         this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, stat.cid)
         path = rootFilePath
         resolvedCID = stat.cid
-        // terminalElement = stat
       } catch (err: any) {
         this.log('error loading path %c/%s', dirCid, rootFilePath, err)
         return notSupportedResponse('Unable to find index.html for directory at given path. Support for directories with implicit root is not implemented')
@@ -322,7 +337,9 @@ export class VerifiedFetch {
     const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
       onProgress: options?.onProgress
     })
-    const response = okResponse(stream)
+    const response = okResponse(resource, stream, {
+      redirected
+    })
     await this.setContentType(firstChunk, path, response)
 
     if (ipfsRoots != null) {
@@ -332,9 +349,9 @@ export class VerifiedFetch {
     return response
   }
 
-  private async handleRaw ({ cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleRaw ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
     const result = await this.helia.blockstore.get(cid, options)
-    const response = okResponse(result)
+    const response = okResponse(resource, result)
 
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
@@ -418,7 +435,7 @@ export class VerifiedFetch {
     this.log('output type %s', accept)
 
     if (acceptHeader != null && accept == null) {
-      return notAcceptableResponse()
+      return notAcceptableResponse(resource.toString())
     }
 
     let response: Response
