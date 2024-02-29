@@ -98,15 +98,19 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
           resolvedPath = resolveResult?.path
           log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
           ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
-        } catch (err) {
+        } catch (err: any) {
           log.error('Could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)
-          errors.push(err as Error)
+          errors.push(err)
         }
       }
     }
   }
 
   if (cid == null) {
+    if (errors.length === 1) {
+      throw errors[0]
+    }
+
     throw new AggregateError(errors, `Invalid resource. Cannot determine CID from URL "${urlString}"`)
   }
 
