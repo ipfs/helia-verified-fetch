@@ -253,6 +253,21 @@ describe('parseUrlString', () => {
       expect(result.path).to.equal('some/path/to/file.txt')
     })
 
+    it('can parse a URL with PeerId+path with a trailing slash', async () => {
+      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+        cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
+        path: ''
+      })
+      const result = await parseUrlString({
+        urlString: `ipns://${testPeerId}/some/path/to/dir/`,
+        ipns,
+        logger
+      })
+      expect(result.protocol).to.equal('ipns')
+      expect(result.cid.toString()).to.equal('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
+      expect(result.path).to.equal('some/path/to/dir/')
+    })
+
     it('can parse a URL with PeerId+queryString', async () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
@@ -303,6 +318,52 @@ describe('parseUrlString', () => {
       })).to.eventually.deep.equal({
         protocol: 'ipns',
         path: `${recordPath}/${requestPath}`,
+        cid,
+        query: {}
+      })
+    })
+
+    it('should parse an ipns:// url with a path that resolves to a CID with a path with a trailing slash', async () => {
+      const cid = CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
+      const peerId = await createEd25519PeerId()
+      const recordPath = 'foo/'
+      const requestPath = 'bar/baz.txt'
+
+      ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
+        cid,
+        path: recordPath
+      })
+
+      await expect(parseUrlString({
+        urlString: `ipns://${peerId}/${requestPath}`,
+        ipns,
+        logger
+      })).to.eventually.deep.equal({
+        protocol: 'ipns',
+        path: 'foo/bar/baz.txt',
+        cid,
+        query: {}
+      })
+    })
+
+    it('should parse an ipns:// url with a path that resolves to a CID with a path with a trailing slash', async () => {
+      const cid = CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
+      const peerId = await createEd25519PeerId()
+      const recordPath = '/foo/////bar//'
+      const requestPath = '///baz///qux.txt'
+
+      ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
+        cid,
+        path: recordPath
+      })
+
+      await expect(parseUrlString({
+        urlString: `ipns://${peerId}/${requestPath}`,
+        ipns,
+        logger
+      })).to.eventually.deep.equal({
+        protocol: 'ipns',
+        path: 'foo/bar/baz/qux.txt',
         cid,
         query: {}
       })
