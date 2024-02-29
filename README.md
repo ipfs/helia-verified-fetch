@@ -11,20 +11,23 @@
 [![codecov](https://img.shields.io/codecov/c/github/ipfs/helia-verified-fetch.svg?style=flat-square)](https://codecov.io/gh/ipfs/helia-verified-fetch)
 [![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-verified-fetch/js-test-and-release.yml?branch=main\&style=flat-square)](https://github.com/ipfs/helia-verified-fetch/actions/workflows/js-test-and-release.yml?query=branch%3Amain)
 
-> A fetch-like API for obtaining verified & trustless IPFS content on the web
 
 ## About
 
-This repo contains a server implementation of the IPFS [Delegated Routing V1 HTTP API](https://specs.ipfs.tech/routing/http-routing-v1/) along with a client that can be used to interact with any compliant server implementation.
+This monorepo contains the `@helia/verified-fetch` package and its corresponding interop tests.
+
+# Getting started
+
+See the [**`@helia/verified-fetch`**](./packages/verified-fetch#readme) package for how to get started with the package including usage examples.
 
 # Packages
 
-- [`/packages/interop`](./packages/interop) Interop tests for @helia/verified-fetch
-- [`/packages/verified-fetch`](./packages/verified-fetch) A fetch-like API for obtaining verified & trustless IPFS content on the web
+- [`@helia/verified-fetch`](./packages/verified-fetch) A fetch-like API for obtaining verified & trustless IPFS content on the web
+- [`@helia/verified-fetch-interop`](./packages/interop) Interop tests for @helia/verified-fetch
 
 # API Docs
 
-- <https://ipfs.github.io/helia-verified-fetch>
+- <https://ipfs.github.io/helia-verified-fetch/modules.html>
 
 # License
 
