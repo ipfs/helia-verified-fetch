@@ -98,15 +98,19 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
           resolvedPath = resolveResult?.path
           log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
           ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
-        } catch (err) {
+        } catch (err: any) {
           log.error('Could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)
-          errors.push(err as Error)
+          errors.push(err)
         }
       }
     }
   }
 
   if (cid == null) {
+    if (errors.length === 1) {
+      throw errors[0]
+    }
+
     throw new AggregateError(errors, `Invalid resource. Cannot determine CID from URL "${urlString}"`)
   }
 
@@ -129,26 +133,37 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
     }
   }
 
-  /**
-   * join the path from resolve result & given path.
-   * e.g. /ipns/<peerId>/ that is resolved to /ipfs/<cid>/<path1>, when requested as /ipns/<peerId>/<path2>, should be
-   * resolved to /ipfs/<cid>/<path1>/<path2>
-   */
-  const pathParts = []
-
-  if (urlPath.length > 0) {
-    pathParts.push(urlPath)
-  }
-
-  if (resolvedPath != null && resolvedPath.length > 0) {
-    pathParts.push(resolvedPath)
-  }
-  const path = pathParts.join('/')
-
   return {
     protocol,
     cid,
-    path,
+    path: joinPaths(resolvedPath, urlPath),
     query
   }
+}
+
+/**
+ * join the path from resolve result & given path.
+ * e.g. /ipns/<peerId>/ that is resolved to /ipfs/<cid>/<path1>, when requested as /ipns/<peerId>/<path2>, should be
+ * resolved to /ipfs/<cid>/<path1>/<path2>
+ */
+function joinPaths (resolvedPath: string | undefined, urlPath: string): string {
+  let path = ''
+
+  if (resolvedPath != null) {
+    path += resolvedPath
+  }
+
+  if (urlPath.length > 0) {
+    path = `${path.length > 0 ? `${path}/` : path}${urlPath}`
+  }
+
+  // replace duplicate forward slashes
+  path = path.replace(/\/(\/)+/g, '/')
+
+  // strip trailing forward slash if present
+  if (path.startsWith('/')) {
+    path = path.substring(1)
+  }
+
+  return path
 }
