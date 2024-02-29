@@ -18,7 +18,7 @@ This monorepo contains the `@helia/verified-fetch` package and its corresponding
 
 # Getting started
 
-See the [**`@helia/verified-fetch`**](./packages/verified-fetch) package for how to get started with the package including usage examples.
+See the [**`@helia/verified-fetch`**](./packages/verified-fetch#readme) package for how to get started with the package including usage examples.
 
 # Packages
 
