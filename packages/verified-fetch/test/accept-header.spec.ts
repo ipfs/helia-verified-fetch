@@ -6,14 +6,58 @@ import * as ipldDagJson from '@ipld/dag-json'
 import { stop } from '@libp2p/interface'
 import { createEd25519PeerId } from '@libp2p/peer-id-factory'
 import { expect } from 'aegir/chai'
+import * as cborg from 'cborg'
 import { marshal } from 'ipns'
+import { CID } from 'multiformats/cid'
+import * as raw from 'multiformats/codecs/raw'
+import { sha256 } from 'multiformats/hashes/sha2'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
 
+interface Codec {
+  encode(obj: any): Uint8Array
+  decode(obj: Uint8Array): any
+}
+
+interface AcceptCborTestArgs {
+  obj: any
+  type: string
+  codec?: Codec
+}
+
 describe('accept header', () => {
   let helia: Helia
   let verifiedFetch: VerifiedFetch
+
+  function shouldNotAcceptCborWith ({ obj, type, codec = ipldDagCbor }: AcceptCborTestArgs): void {
+    it(`should return 406 Not Acceptable if CBOR ${type} field is encountered`, async () => {
+      const buf = codec.encode(obj)
+      const rawCid = CID.createV1(raw.code, await sha256.digest(buf))
+      await helia.blockstore.put(rawCid, buf)
+      const dagCborCid = CID.createV1(ipldDagCbor.code, rawCid.multihash)
+
+      const resp = await verifiedFetch.fetch(dagCborCid, {
+        headers: {
+          accept: 'application/json'
+        }
+      })
+
+      expect(resp.status).to.equal(406)
+      expect(resp.statusText).to.equal('Not Acceptable')
+
+      const resp2 = await verifiedFetch.fetch(dagCborCid, {
+        headers: {
+          accept: 'application/octet-stream'
+        }
+      })
+
+      expect(resp2.status).to.equal(200)
+
+      const out = codec.decode(new Uint8Array(await resp2.arrayBuffer()))
+      expect(out).to.deep.equal(obj, 'could not round-trip as application/octet-stream')
+    })
+  }
 
   beforeEach(async () => {
     helia = await createHelia()
@@ -245,5 +289,40 @@ describe('accept header', () => {
     const buf = await resp.arrayBuffer()
 
     expect(buf).to.equalBytes(marshal(record))
+  })
+
+  shouldNotAcceptCborWith({
+    obj: {
+      hello: 'world',
+      invalid: undefined
+    },
+    type: 'undefined',
+    // `undefined` is not supported by the IPLD data model so we have to encode
+    // using cborg and not @ipld/dag-cbor
+    codec: cborg
+  })
+
+  shouldNotAcceptCborWith({
+    obj: {
+      hello: 'world',
+      invalid: BigInt(Number.MAX_SAFE_INTEGER) + 10n
+    },
+    type: 'BigInt'
+  })
+
+  shouldNotAcceptCborWith({
+    obj: {
+      hello: 'world',
+      invalid: Uint8Array.from([0, 1, 2, 3])
+    },
+    type: 'Uint8Array'
+  })
+
+  shouldNotAcceptCborWith({
+    obj: {
+      hello: 'world',
+      invalid: CID.parse('QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv')
+    },
+    type: 'CID'
   })
 })
