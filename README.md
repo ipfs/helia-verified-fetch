@@ -22,8 +22,8 @@ See the [**`@helia/verified-fetch`**](./packages/verified-fetch#readme) package 
 
 # Packages
 
-- [`@helia/verified-fetch-interop`](./packages/interop) Interop tests for @helia/verified-fetch
 - [`@helia/verified-fetch`](./packages/verified-fetch) A fetch-like API for obtaining verified & trustless IPFS content on the web
+- [`@helia/verified-fetch-interop`](./packages/interop) Interop tests for @helia/verified-fetch
 
 # API Docs
 
