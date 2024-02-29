@@ -31,6 +31,21 @@ export interface ParsedUrlStringResults {
 }
 
 const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\/?(?<path>[^$?]*)\??(?<queryString>.*)$/
+const PATH_REGEX = /^\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\/?(?<path>[^$?]*)\??(?<queryString>.*)$/
+const PATH_GATEWAY_REGEX = /^http(s?):\/\/(.*)\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\/?(?<path>[^$?]*)\??(?<queryString>.*)$/
+const SUBDOMAIN_GATEWAY_REGEX = /^http(s?):\/\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\.(?<protocol>ip[fn]s)\.([^/?]*)\/?(?<path>[^$?]*)\??(?<queryString>.*)$/
+
+function matchURLString (urlString: string): Record<string, string> {
+  for (const pattern of [URL_REGEX, PATH_REGEX, PATH_GATEWAY_REGEX, SUBDOMAIN_GATEWAY_REGEX]) {
+    const match = urlString.match(pattern)
+
+    if (match?.groups != null) {
+      return match.groups
+    }
+  }
+
+  throw new TypeError(`Invalid URL: ${urlString}, please use ipfs:// or ipns:// URLs only.`)
+}
 
 /**
  * A function that parses ipfs:// and ipns:// URLs, returning an object with easily recognizable properties.
@@ -41,13 +56,7 @@ const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\/?
  */
 export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStringInput, options?: ParseUrlStringOptions): Promise<ParsedUrlStringResults> {
   const log = logger.forComponent('helia:verified-fetch:parse-url-string')
-  const match = urlString.match(URL_REGEX)
-
-  if (match == null || match.groups == null) {
-    throw new TypeError(`Invalid URL: ${urlString}, please use ipfs:// or ipns:// URLs only.`)
-  }
-
-  const { protocol, cidOrPeerIdOrDnsLink, path: urlPath, queryString } = match.groups
+  const { protocol, cidOrPeerIdOrDnsLink, path: urlPath, queryString } = matchURLString(urlString)
 
   let cid: CID | undefined
   let resolvedPath: string | undefined
