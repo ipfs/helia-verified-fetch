@@ -136,13 +136,14 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
    */
   const pathParts = []
 
+  if (resolvedPath != null && resolvedPath.length > 0) {
+    pathParts.push(resolvedPath)
+  }
+
   if (urlPath.length > 0) {
     pathParts.push(urlPath)
   }
 
-  if (resolvedPath != null && resolvedPath.length > 0) {
-    pathParts.push(resolvedPath)
-  }
   const path = pathParts.join('/')
 
   return {
