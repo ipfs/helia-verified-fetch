@@ -33,7 +33,7 @@ export interface ParsedUrlStringResults {
 const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 const PATH_REGEX = /^\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 const PATH_GATEWAY_REGEX = /^https?:\/\/(.*[^/])\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
-const SUBDOMAIN_GATEWAY_REGEX = /^https?:\/\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\.(?<protocol>ip[fn]s)\.([^/?]*)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
+const SUBDOMAIN_GATEWAY_REGEX = /^https?:\/\/(?<cidOrPeerIdOrDnsLink>[^/.?]+)\.(?<protocol>ip[fn]s)\.([^/?]+)\/?(?<path>[^$?]*)\??(?<queryString>.*)$/
 
 function matchURLString (urlString: string): Record<string, string> {
   for (const pattern of [URL_REGEX, PATH_REGEX, PATH_GATEWAY_REGEX, SUBDOMAIN_GATEWAY_REGEX]) {
@@ -44,7 +44,7 @@ function matchURLString (urlString: string): Record<string, string> {
     }
   }
 
-  throw new TypeError(`Invalid URL: ${urlString}, please use ipfs://, ipns://, or gateway URLs only.`)
+  throw new TypeError(`Invalid URL: ${urlString}, please use ipfs://, ipns://, or gateway URLs only`)
 }
 
 /**

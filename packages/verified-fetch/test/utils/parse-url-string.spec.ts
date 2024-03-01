@@ -48,7 +48,7 @@ describe('parseUrlString', () => {
           logger
         })
       ).to.eventually.be.rejected
-        .with.property('message', 'Invalid URL: invalid, please use ipfs:// or ipns:// URLs only.')
+        .with.property('message', 'Invalid URL: invalid, please use ipfs://, ipns://, or gateway URLs only')
     })
 
     it('throws for invalid protocols', async () => {
@@ -59,7 +59,7 @@ describe('parseUrlString', () => {
           logger
         })
       ).to.eventually.be.rejected
-        .with.property('message', 'Invalid URL: invalid, please use ipfs:// or ipns:// URLs only.')
+        .with.property('message', 'Invalid URL: invalid, please use ipfs://, ipns://, or gateway URLs only')
     })
 
     it('throws an error if resulting CID is invalid', async () => {
