@@ -44,7 +44,7 @@ function matchURLString (urlString: string): Record<string, string> {
     }
   }
 
-  throw new TypeError(`Invalid URL: ${urlString}, please use ipfs:// or ipns:// URLs only.`)
+  throw new TypeError(`Invalid URL: ${urlString}, please use ipfs://, ipns://, or gateway URLs only.`)
 }
 
 /**
