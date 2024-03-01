@@ -268,7 +268,7 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
   })
 
-  it.skip('should support fetching IPNS records', async () => {
+  it('should support fetching IPNS records', async () => {
     const peerId = await createEd25519PeerId()
     const obj = {
       hello: 'world'
@@ -288,7 +288,7 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
     const buf = await resp.arrayBuffer()
 
-    expect(buf).to.equalBytes(marshal(record))
+    expect(new Uint8Array(buf)).to.equalBytes(marshal(record))
   })
 
   shouldNotAcceptCborWith({
