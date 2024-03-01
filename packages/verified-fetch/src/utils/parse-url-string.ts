@@ -30,10 +30,10 @@ export interface ParsedUrlStringResults {
   query: ParsedUrlQuery
 }
 
-const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\/?(?<path>[^$?]*)\??(?<queryString>.*)$/
-const PATH_REGEX = /^\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\/?(?<path>[^$?]*)\??(?<queryString>.*)$/
-const PATH_GATEWAY_REGEX = /^http(s?):\/\/(.*)\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\/?(?<path>[^$?]*)\??(?<queryString>.*)$/
-const SUBDOMAIN_GATEWAY_REGEX = /^http(s?):\/\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\.(?<protocol>ip[fn]s)\.([^/?]*)\/?(?<path>[^$?]*)\??(?<queryString>.*)$/
+const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
+const PATH_REGEX = /^\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
+const PATH_GATEWAY_REGEX = /^https?:\/\/(.*[^/])\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
+const SUBDOMAIN_GATEWAY_REGEX = /^https?:\/\/(?<cidOrPeerIdOrDnsLink>[^/$?]+)\.(?<protocol>ip[fn]s)\.([^/?]*)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 
 function matchURLString (urlString: string): Record<string, string> {
   for (const pattern of [URL_REGEX, PATH_REGEX, PATH_GATEWAY_REGEX, SUBDOMAIN_GATEWAY_REGEX]) {
