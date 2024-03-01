@@ -408,6 +408,79 @@ console.info(res.headers.get('accept')) // application/octet-stream
 const buf = await res.arrayBuffer() // raw bytes, not processed as JSON
 ```
 
+## Redirects
+
+If a requested URL contains a path component, that path component resolves to
+a UnixFS directory, but the URL does not have a trailing slash, one will be
+added to form a canonical URL for that resource, otherwise the request will
+be resolved as normal.
+
+```typescript
+import { verifiedFetch } from '@helia/verified-fetch'
+
+const res = await verifiedFetch('ipfs://bafyfoo/path/to/dir')
+
+console.info(res.url) // ipfs://bafyfoo/path/to/dir/
+```
+
+It's possible to prevent this behaviour and/or handle a redirect manually
+through use of the [redirect](https://developer.mozilla.org/en-US/docs/Web/API/fetch#redirect)
+option.
+
+## Example - Redirect: follow
+
+This is the default value and is what happens if no value is specified.
+
+```typescript
+import { verifiedFetch } from '@helia/verified-fetch'
+
+const res = await verifiedFetch('ipfs://bafyfoo/path/to/dir', {
+  redirect: 'follow'
+})
+
+console.info(res.status) // 200
+console.info(res.url) // ipfs://bafyfoo/path/to/dir/
+console.info(res.redirected) // true
+```
+
+## Example - Redirect: error
+
+This causes a `TypeError` to be thrown if a URL would cause a redirect.
+
+```typescript
+
+import { verifiedFetch } from '@helia/verified-fetch'
+
+const res = await verifiedFetch('ipfs://bafyfoo/path/to/dir', {
+  redirect: 'error'
+})
+// throw TypeError('Failed to fetch')
+```
+
+## Example - Redirect: manual
+
+Manual redirects allow the user to process the redirect. A [301](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/301)
+is returned, and the location to redirect to is available as the "location"
+response header.
+
+This differs slightly from HTTP fetch which returns an opaque response as the
+browser itself is expected to process the redirect and hide all details from
+the user.
+
+```typescript
+
+import { verifiedFetch } from '@helia/verified-fetch'
+
+const res = await verifiedFetch('ipfs://bafyfoo/path/to/dir', {
+  redirect: 'manual'
+})
+
+console.info(res.status) // 301
+console.info(res.url) // ipfs://bafyfoo/path/to/dir
+console.info(res.redirected) // false
+console.info(res.headers.get('location')) // ipfs://bafyfoo/path/to/dir/
+```
+
 ## Comparison to fetch
 
 This module attempts to act as similarly to the `fetch()` API as possible.
