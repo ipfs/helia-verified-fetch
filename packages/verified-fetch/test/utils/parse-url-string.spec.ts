@@ -752,7 +752,7 @@ describe('parseUrlString', () => {
   })
 
   HTTP_PROTOCOLS.forEach(proto => {
-    describe(`${proto}://<CID>.ipns.example.com URLs`, () => {
+    describe(`${proto}://<key>.ipns.example.com URLs`, () => {
       let peerId: PeerId
       let cid: CID
 
