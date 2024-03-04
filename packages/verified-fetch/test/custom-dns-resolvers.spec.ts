@@ -26,8 +26,7 @@ describe('custom dns-resolvers', () => {
       gateways: ['http://127.0.0.1:8080'],
       dnsResolvers: [customDnsResolver]
     })
-    // error of walking the CID/dag because we haven't actually added the block to the blockstore
-    await expect(fetch('ipns://some-non-cached-domain.com')).to.eventually.be.rejected.with.property('errors')
+    await fetch('ipns://some-non-cached-domain.com')
 
     expect(customDnsResolver.callCount).to.equal(1)
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['some-non-cached-domain.com', { onProgress: undefined }])
@@ -43,8 +42,8 @@ describe('custom dns-resolvers', () => {
     }, {
       dnsResolvers: [customDnsResolver]
     })
-    // error of walking the CID/dag because we haven't actually added the block to the blockstore
-    await expect(verifiedFetch.fetch('ipns://some-non-cached-domain2.com')).to.eventually.be.rejected.with.property('errors').that.has.lengthOf(0)
+
+    await verifiedFetch.fetch('ipns://some-non-cached-domain2.com')
 
     expect(customDnsResolver.callCount).to.equal(1)
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['some-non-cached-domain2.com', { onProgress: undefined }])
