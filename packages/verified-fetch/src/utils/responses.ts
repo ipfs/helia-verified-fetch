@@ -1,3 +1,4 @@
+import { getContentRangeHeader } from './response-headers.js'
 import type { SupportedBodyTypes } from '../types.js'
 
 function setField (response: Response, name: string, value: string | boolean): void {
@@ -91,6 +92,56 @@ export function movedPermanentlyResponse (url: string, location: string, init?: 
       ...(init?.headers ?? {}),
       location
     }
+  })
+
+  setType(response, 'basic')
+  setUrl(response, url)
+
+  return response
+}
+
+/**
+ * Some caveats about range responses here:
+ * * We only support single range requests (multi-range is optional), see https://specs.ipfs.tech/http-gateways/path-gateway/#range-request-header
+ * * Range responses are only supported for unixfs and raw data, see https://specs.ipfs.tech/http-gateways/path-gateway/#range-request-header.
+ *
+ * If the user requests something other than unixfs or raw data, we should not call this method and ignore the range header (200 OK). See https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests#partial_request_responses
+ *
+ * TODO: Supporting multiple range requests will require additional changes to the `handleDagPb` and `handleRaw` functions in `src/verified-fetch.js`
+ */
+export function okRangeResponse (url: string, range: { offset: number, length: number }, body: SupportedBodyTypes, init?: ResponseOptions): Response {
+  // if we know the full size of the body, we should use it in the content-range header. See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
+  const response = new Response(body, {
+    ...(init ?? {}),
+    status: 206,
+    statusText: 'Partial Content',
+    headers: {
+      ...(init?.headers ?? {}),
+      'content-range': getContentRangeHeader(range.offset, range.length, { body })
+    }
+  })
+
+  if (init?.redirected === true) {
+    setRedirected(response)
+  }
+
+  setType(response, 'basic')
+  setUrl(response, url)
+
+  return response
+}
+
+/**
+ * We likely need to catch errors handled by upstream helia libraries if range-request throws an error. Some examples:
+ * * The range is out of bounds
+ * * The range is invalid
+ * * The range is not supported for the given type
+ */
+export function badRangeResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+  const response = new Response(body, {
+    ...(init ?? {}),
+    status: 416,
+    statusText: 'Requested Range Not Satisfiable'
   })
 
   setType(response, 'basic')

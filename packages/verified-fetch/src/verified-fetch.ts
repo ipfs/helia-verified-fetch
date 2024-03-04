@@ -22,13 +22,14 @@ import { getETag } from './utils/get-e-tag.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse } from './utils/responses.js'
+import { getRequestRange } from './utils/request-headers.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse } from './utils/responses.js'
 import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
 import type { Helia } from '@helia/interface'
-import type { AbortOptions, Logger, PeerId } from '@libp2p/interface'
+import type { AbortOptions, CodeError, Logger, PeerId } from '@libp2p/interface'
 import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
@@ -280,13 +281,26 @@ export class VerifiedFetch {
     let terminalElement: UnixFSEntry | undefined
     let ipfsRoots: CID[] | undefined
     let redirected = false
+    const rangeOptions = getRequestRange(options?.headers)
+    const offset = rangeOptions?.offset
+    const length = rangeOptions?.length
 
     try {
-      const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
+      const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, { ...options, offset, length })
       ipfsRoots = pathDetails.ipfsRoots
       terminalElement = pathDetails.terminalElement
     } catch (err) {
+      this.log.error('RANGE TEST', err)
       this.log.error('Error walking path %s', path, err)
+      if ((err as CodeError)?.code === 'ERR_INVALID_PARAMS') {
+        /**
+         * the code is not explicit but seems to be the only error for invalid range requests
+         *
+         * @see https://github.com/search?q=repo%3Aipfs%2Fjs-ipfs-unixfs+ERR_INVALID_PARAMS+path%3Apackages%2Fipfs-unixfs-exporter&type=code
+         * @see https://github.com/ipfs/js-ipfs-unixfs/blob/4749d9a7c1eddd86b8fc42c3fa47f88c7b1b75ae/packages/ipfs-unixfs-exporter/src/utils/validate-offset-and-length.ts#L16-L30
+         */
+        return badRangeResponse(resource)
+      }
     }
 
     let resolvedCID = terminalElement?.cid ?? cid
@@ -330,23 +344,33 @@ export class VerifiedFetch {
 
     const asyncIter = this.unixfs.cat(resolvedCID, {
       signal: options?.signal,
-      onProgress: options?.onProgress
+      onProgress: options?.onProgress,
+      offset,
+      length
     })
     this.log('got async iterator for %c/%s', cid, path)
 
-    const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
-      onProgress: options?.onProgress
-    })
-    const response = okResponse(resource, stream, {
-      redirected
-    })
-    await this.setContentType(firstChunk, path, response)
+    try {
+      const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
+        onProgress: options?.onProgress
+      })
+      const response = okResponse(resource, stream, {
+        redirected
+      })
+      await this.setContentType(firstChunk, path, response)
 
-    if (ipfsRoots != null) {
-      response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
+      if (ipfsRoots != null) {
+        response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
+      }
+
+      return response
+    } catch (err) {
+      this.log.error('Error streaming %c/%s', cid, path, err)
+      if ((err as CodeError)?.code === 'ERR_INVALID_PARAMS') {
+        return badRangeResponse(resource)
+      }
+      return notSupportedResponse('Unable to stream content')
     }
-
-    return response
   }
 
   private async handleRaw ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
@@ -388,7 +412,7 @@ export class VerifiedFetch {
         this.log.error('Error parsing content type', err)
       }
     }
-
+    this.log.trace('setting content type to "%s"', contentType)
     response.headers.set('content-type', contentType)
   }
 
@@ -466,12 +490,14 @@ export class VerifiedFetch {
       query.filename = query.filename ?? `${cid.toString()}.tar`
       response = await this.handleTar(handlerArgs)
     } else {
+      this.log.trace('Finding handler for cid code "%s" and output type "%s"', cid.code, accept)
       // derive the handler from the CID type
       const codecHandler = this.codecHandlers[cid.code]
 
       if (codecHandler == null) {
         return notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia/issues/new`)
       }
+      this.log.trace('calling handler "%s"', codecHandler.name)
 
       response = await codecHandler.call(this, handlerArgs)
     }
