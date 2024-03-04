@@ -23,7 +23,7 @@ import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterab
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
 import { getRequestRange } from './utils/request-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse } from './utils/responses.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, internalServerErrorResponse } from './utils/responses.js'
 import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
@@ -369,7 +369,7 @@ export class VerifiedFetch {
       if ((err as CodeError)?.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
       }
-      return notSupportedResponse('Unable to stream content')
+      return internalServerErrorResponse('Unable to stream content')
     }
   }
 

@@ -43,6 +43,19 @@ export function okResponse (url: string, body?: SupportedBodyTypes, init?: Respo
   return response
 }
 
+export function internalServerErrorResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+  const response = new Response(body, {
+    ...(init ?? {}),
+    status: 500,
+    statusText: 'Internal Server Error'
+  })
+
+  setType(response, 'basic')
+  setUrl(response, url)
+
+  return response
+}
+
 export function notSupportedResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),

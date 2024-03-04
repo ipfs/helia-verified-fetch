@@ -26,7 +26,9 @@ describe('custom dns-resolvers', () => {
       gateways: ['http://127.0.0.1:8080'],
       dnsResolvers: [customDnsResolver]
     })
-    await fetch('ipns://some-non-cached-domain.com')
+    const response = await fetch('ipns://some-non-cached-domain.com')
+    expect(response.status).to.equal(500)
+    expect(response.statusText).to.equal('Internal Server Error')
 
     expect(customDnsResolver.callCount).to.equal(1)
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['some-non-cached-domain.com', { onProgress: undefined }])
@@ -43,7 +45,9 @@ describe('custom dns-resolvers', () => {
       dnsResolvers: [customDnsResolver]
     })
 
-    await verifiedFetch.fetch('ipns://some-non-cached-domain2.com')
+    const response = await verifiedFetch.fetch('ipns://some-non-cached-domain2.com')
+    expect(response.status).to.equal(500)
+    expect(response.statusText).to.equal('Internal Server Error')
 
     expect(customDnsResolver.callCount).to.equal(1)
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['some-non-cached-domain2.com', { onProgress: undefined }])
