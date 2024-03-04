@@ -1,3 +1,5 @@
+import type { SupportedBodyTypes } from '../types.js'
+
 function setField (response: Response, name: string, value: string | boolean): void {
   Object.defineProperty(response, name, {
     enumerable: true,
@@ -23,7 +25,7 @@ export interface ResponseOptions extends ResponseInit {
   redirected?: boolean
 }
 
-export function okResponse (url: string, body?: BodyInit | null, init?: ResponseOptions): Response {
+export function okResponse (url: string, body?: SupportedBodyTypes, init?: ResponseOptions): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 200,
@@ -40,7 +42,7 @@ export function okResponse (url: string, body?: BodyInit | null, init?: Response
   return response
 }
 
-export function notSupportedResponse (url: string, body?: BodyInit | null, init?: ResponseInit): Response {
+export function notSupportedResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 501,
@@ -54,7 +56,7 @@ export function notSupportedResponse (url: string, body?: BodyInit | null, init?
   return response
 }
 
-export function notAcceptableResponse (url: string, body?: BodyInit | null, init?: ResponseInit): Response {
+export function notAcceptableResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 406,
@@ -67,7 +69,7 @@ export function notAcceptableResponse (url: string, body?: BodyInit | null, init
   return response
 }
 
-export function badRequestResponse (url: string, body?: BodyInit | null, init?: ResponseInit): Response {
+export function badRequestResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 400,
