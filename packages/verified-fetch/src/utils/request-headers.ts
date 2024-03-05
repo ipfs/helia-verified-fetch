@@ -13,14 +13,12 @@ export function getHeader (headers: HeadersInit | undefined, header: string): st
     const entry = headers.find(([key]) => key.toLowerCase() === header.toLowerCase())
     return entry?.[1]
   }
-  if (typeof headers === 'object') {
-    const key = Object.keys(headers).find(k => k.toLowerCase() === header.toLowerCase())
-    if (key == null) {
-      return undefined
-    }
-    return headers[key]
+  const key = Object.keys(headers).find(k => k.toLowerCase() === header.toLowerCase())
+  if (key == null) {
+    return undefined
   }
-  return headers[header]
+
+  return headers[key]
 }
 
 /**

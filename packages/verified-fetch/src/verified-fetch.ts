@@ -378,28 +378,9 @@ export class VerifiedFetch {
           length = rangeWithSize.length
         }
       }
-
-      if (offset != null) {
-        if (offset < 0) {
-          // the requested range start is negative
-          this.log.error('range start %d is negative', offset)
-          return badRangeResponse(resource)
-        } else if (stat.fileSize < offset) {
-          // the requested range start is larger than the requested content size
-          this.log.error('range start %d is larger than the requested content size %d', offset, stat.fileSize)
-          return badRangeResponse(resource)
-        } else if (length != null && Number(stat.fileSize) < (offset + length)) {
-          // the requested range is larger than the requested content size
-          this.log.error('range end %d is larger than the requested content size %d', offset + length, stat.fileSize)
-          return badRangeResponse(resource)
-        }
-      }
-      if (length != null) {
-        if (Number(stat.fileSize) < length) {
-          // the requested range is larger than the requested content size
-          this.log.error('range end %d is larger than the requested content size %d', length, stat.fileSize)
-          return badRangeResponse(resource)
-        }
+      const resp = this.checkForInvalidRangeRequest({ stat, offset, length, resource })
+      if (resp != null) {
+        return resp
       }
     }
 
@@ -485,6 +466,31 @@ export class VerifiedFetch {
     }
     this.log.trace('setting content type to "%s"', contentType)
     response.headers.set('content-type', contentType)
+  }
+
+  private checkForInvalidRangeRequest ({ offset, length, resource, stat }: { offset?: number, length?: number, resource: string, stat: UnixFSStats }): Response | undefined {
+    if (offset != null) {
+      if (offset < 0) {
+        // the requested range start is negative
+        this.log.error('range start %d is negative', offset)
+        return badRangeResponse(resource)
+      } else if (stat.fileSize < offset) {
+        // the requested range start is larger than the requested content size
+        this.log.error('range start %d is larger than the requested content size %d', offset, stat.fileSize)
+        return badRangeResponse(resource)
+      } else if (length != null && Number(stat.fileSize) < (offset + length)) {
+        // the requested range is larger than the requested content size
+        this.log.error('range end %d is larger than the requested content size %d', offset + length, stat.fileSize)
+        return badRangeResponse(resource)
+      }
+    }
+    if (length != null) {
+      if (Number(stat.fileSize) < length) {
+        // the requested range is larger than the requested content size
+        this.log.error('range end %d is larger than the requested content size %d', length, stat.fileSize)
+        return badRangeResponse(resource)
+      }
+    }
   }
 
   /**

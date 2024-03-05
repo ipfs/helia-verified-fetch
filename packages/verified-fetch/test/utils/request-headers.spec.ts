@@ -4,8 +4,10 @@ import { getHeader, getRequestRange } from '../../src/utils/request-headers.js'
 describe('request-headers', () => {
   describe('getHeader', () => {
     it('should return undefined when headers are undefined', () => {
-      const result = getHeader(undefined, 'dummy')
-      expect(result).to.be.undefined()
+      expect(getHeader(undefined, 'dummy')).to.be.undefined()
+      expect(getHeader(new Headers(), 'dummy')).to.be.undefined()
+      expect(getHeader({}, 'dummy')).to.be.undefined()
+      expect(getHeader([], 'dummy')).to.be.undefined()
     })
 
     it('should return correct header value for Headers instance', () => {
