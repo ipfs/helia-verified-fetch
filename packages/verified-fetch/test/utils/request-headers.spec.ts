@@ -44,25 +44,24 @@ describe('request-headers', () => {
     })
 
     it('should return correct range options when a valid Range header has start only', () => {
-      const headers = new Headers({ Range: 'bytes=2-' })
-      const result = getRequestRange(headers)
-      expect(result).to.deep.equal({ offset: 2, length: undefined })
+      const result = getRequestRange(new Headers({ Range: 'bytes=2-' }))
+      expect(result).to.deep.equal({ offset: 2, length: undefined, suffixLength: undefined })
     })
 
     it('should return correct range options when a valid Range header has start and end', () => {
-      const headers = new Headers({ Range: 'bytes=0-500' })
-      const result = getRequestRange(headers)
-      expect(result).to.deep.equal({ offset: 0, length: 501 })
+      const result = getRequestRange(new Headers({ Range: 'bytes=0-500' }))
+      expect(result).to.deep.equal({ offset: 0, length: 501, suffixLength: undefined })
     })
 
-    it('should throw when Range header has end only and size is not passed', () => {
-      expect(() => getRequestRange(new Headers({ Range: 'bytes=-20' }))).to.throw('ERR_HANDLING_RANGE_REQUEST')
+    it('should return only suffixLength when not passed range-start nor size', () => {
+      const result = getRequestRange(new Headers({ Range: 'bytes=-20' }))
+      expect(result).to.deep.equal({ offset: undefined, length: undefined, suffixLength: 20 })
     })
 
     it('should return correct range options when a valid Range header has end only', () => {
       const headers = new Headers({ Range: 'bytes=-25' })
       const result = getRequestRange(headers, 100n)
-      expect(result).to.deep.equal({ offset: 75, length: 25 })
+      expect(result).to.deep.equal({ offset: 75, length: 25, suffixLength: undefined })
     })
   })
 })

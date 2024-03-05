@@ -23,7 +23,7 @@ import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterab
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
 import { getRequestRange } from './utils/request-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, internalServerErrorResponse } from './utils/responses.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, internalServerErrorResponse, okRangeResponse } from './utils/responses.js'
 import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
@@ -277,22 +277,36 @@ export class VerifiedFetch {
     return response
   }
 
+  // eslint-disable-next-line complexity
   private async handleDagPb ({ cid, path, resource, options }: FetchHandlerFunctionArg): Promise<Response> {
     let terminalElement: UnixFSEntry | undefined
     let ipfsRoots: CID[] | undefined
     let redirected = false
-    const rangeOptions = getRequestRange(options?.headers)
-    const offset = rangeOptions?.offset
-    const length = rangeOptions?.length
+    let offset: number | undefined
+    let length: number | undefined
+    let suffixLength: number | undefined
+    let isRangeRequest = false
+    try {
+      const rangeOptions = getRequestRange(options?.headers)
+      offset = rangeOptions?.offset
+      length = rangeOptions?.length
+      suffixLength = rangeOptions?.suffixLength
+      this.log.trace('range options %o', rangeOptions)
+      if (offset != null || length != null || suffixLength != null) {
+        isRangeRequest = true
+      }
+    } catch (err) {
+      this.log.error('Error parsing range request', err)
+      return badRangeResponse('Invalid range request')
+    }
 
     try {
       const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, { ...options, offset, length })
       ipfsRoots = pathDetails.ipfsRoots
       terminalElement = pathDetails.terminalElement
     } catch (err) {
-      this.log.error('RANGE TEST', err)
       this.log.error('Error walking path %s', path, err)
-      if ((err as CodeError)?.code === 'ERR_INVALID_PARAMS') {
+      if (isRangeRequest && (err as CodeError)?.code === 'ERR_INVALID_PARAMS') {
         /**
          * the code is not explicit but seems to be the only error for invalid range requests
          *
@@ -301,10 +315,12 @@ export class VerifiedFetch {
          */
         return badRangeResponse(resource)
       }
+
+      return internalServerErrorResponse('Error walking path')
     }
 
     let resolvedCID = terminalElement?.cid ?? cid
-    let stat: UnixFSStats
+    let stat: UnixFSStats | undefined
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
 
@@ -342,6 +358,51 @@ export class VerifiedFetch {
       }
     }
 
+    /**
+     * range-request validation. This shouldn't be required, but unixfs.cat isn't throwing in some cases.
+     */
+    if (isRangeRequest) {
+      /**
+       * if requested CID was a directory, we already have a unixfs stat object
+       * if requested CID was a file or raw, we need to fetch the stat object
+       */
+      stat = stat ?? await this.unixfs.stat(resolvedCID, {
+        signal: options?.signal,
+        onProgress: options?.onProgress
+      })
+
+      if (suffixLength != null) {
+        const rangeWithSize = getRequestRange(options?.headers, stat.fileSize)
+        if (rangeWithSize != null) {
+          offset = rangeWithSize.offset
+          length = rangeWithSize.length
+        }
+      }
+
+      if (offset != null) {
+        if (offset < 0) {
+          // the requested range start is negative
+          this.log.error('range start %d is negative', offset)
+          return badRangeResponse(resource)
+        } else if (stat.fileSize < offset) {
+          // the requested range start is larger than the requested content size
+          this.log.error('range start %d is larger than the requested content size %d', offset, stat.fileSize)
+          return badRangeResponse(resource)
+        } else if (length != null && Number(stat.fileSize) < (offset + length)) {
+          // the requested range is larger than the requested content size
+          this.log.error('range end %d is larger than the requested content size %d', offset + length, stat.fileSize)
+          return badRangeResponse(resource)
+        }
+      }
+      if (length != null) {
+        if (Number(stat.fileSize) < length) {
+          // the requested range is larger than the requested content size
+          this.log.error('range end %d is larger than the requested content size %d', length, stat.fileSize)
+          return badRangeResponse(resource)
+        }
+      }
+    }
+
     const asyncIter = this.unixfs.cat(resolvedCID, {
       signal: options?.signal,
       onProgress: options?.onProgress,
@@ -354,9 +415,19 @@ export class VerifiedFetch {
       const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress
       })
-      const response = okResponse(resource, stream, {
-        redirected
-      })
+      let response: Response
+      if (isRangeRequest) {
+        // type assertion says stat may still be undefined, but we've set it again in the above check for isRangeRequest
+        const totalSize = Number(stat?.fileSize)
+        offset = offset ?? 0
+        response = okRangeResponse(resource, stream, { offset, length, totalSize }, {
+          redirected
+        })
+      } else {
+        response = okResponse(resource, stream, {
+          redirected
+        })
+      }
       await this.setContentType(firstChunk, path, response)
 
       if (ipfsRoots != null) {
@@ -366,7 +437,7 @@ export class VerifiedFetch {
       return response
     } catch (err) {
       this.log.error('Error streaming %c/%s', cid, path, err)
-      if ((err as CodeError)?.code === 'ERR_INVALID_PARAMS') {
+      if (isRangeRequest && (err as CodeError)?.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
       }
       return internalServerErrorResponse('Unable to stream content')

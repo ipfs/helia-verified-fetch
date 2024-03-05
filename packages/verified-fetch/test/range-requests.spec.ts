@@ -35,10 +35,14 @@ describe('range requests', () => {
     await stop(helia, verifiedFetch)
   })
 
-  async function testRange (cid: CID, range: { start: number, end: number }): Promise<void> {
+  interface SuccessfulTestExpectation {
+    contentRange?: string
+    byteSize?: number
+  }
+  async function testRange (cid: CID, headerRange: string, expected: SuccessfulTestExpectation): Promise<void> {
     const response = await verifiedFetch.fetch(cid, {
       headers: {
-        Range: `bytes=${range.start}-${range.end}`
+        Range: headerRange
       }
     })
 
@@ -46,24 +50,87 @@ describe('range requests', () => {
     expect(response.statusText).to.equal('Partial Content')
 
     expect(response).to.have.property('headers')
-    expect(response.headers).to.have.property('content-range')
-    expect(response.headers.get('content-range')).to.equal(`bytes ${range.start}-${range.end}/*`) // the response should include the range that was requested
+    const contentRange = response.headers.get('content-range')
+    expect(contentRange).to.be.ok()
+    expect(contentRange).to.equal(expected.contentRange) // the response should include the range that was requested
 
     const content = await response.arrayBuffer()
-    expect(content.byteLength).to.equal(range.end - range.start + 1) // the length of the data should match the requested range
+    expect(content.byteLength).to.equal(expected.byteSize) // the length of the data should match the requested range
   }
 
-  it('should return 206 Partial Content with correct byte range for unixfs', async () => {
-    await expect(testRange(dagPbCid, { start: 0, end: 500 })).to.eventually.not.be.rejected()
-  })
+  async function assertFailingRange (response: Promise<Response>): Promise<void> {
+    await expect(response).to.eventually.have.property('status', 416)
+    await expect(response).to.eventually.have.property('statusText', 'Requested Range Not Satisfiable')
+  }
 
-  it('should return 416 Range Not Satisfiable when the range is out of bounds', async () => {
-    const response = await verifiedFetch.fetch(dagPbCid, {
-      headers: {
-        Range: 'bytes=50-900'
+  describe('unixfs', () => {
+    it('should return correct 206 Partial Content response for byte=<range-start>-<range-end>', async () => {
+      const expected: SuccessfulTestExpectation = {
+        byteSize: 6,
+        contentRange: 'bytes 0-5/11'
       }
+      await testRange(dagPbCid, 'bytes=0-5', expected)
     })
-    expect(response.status).to.equal(416)
-    expect(response.statusText).to.equal('Requested Range Not Satisfiable')
+
+    it('should return correct 206 Partial Content response for byte=<range-start>-', async () => {
+      const expected = {
+        byteSize: 7,
+        contentRange: 'bytes 4-11/11'
+      }
+      await testRange(dagPbCid, 'bytes=4-', expected)
+    })
+
+    it('should return correct 206 Partial Content response for byte=-<suffix-length>', async () => {
+      const expected = {
+        byteSize: 9,
+        contentRange: 'bytes 2-10/11'
+      }
+      await testRange(dagPbCid, 'bytes=-9', expected)
+    })
+
+    it('should return 416 Range Not Satisfiable when the range is invalid', async () => {
+      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
+        headers: {
+          Range: 'bytes=-0-'
+        }
+      }))
+      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
+        headers: {
+          Range: 'bytes=foobar'
+        }
+      }))
+    })
+
+    it('should return 416 Range Not Satisfiable when the range offset is larger than content', async () => {
+      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
+        headers: {
+          Range: 'bytes=50-'
+        }
+      }))
+    })
+
+    it('should return 416 Range Not Satisfiable when the suffix-length is larger than content', async () => {
+      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
+        headers: {
+          Range: 'bytes=-50'
+        }
+      }))
+    })
+
+    it('should return 416 Range Not Satisfiable when the range is out of bounds', async () => {
+      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
+        headers: {
+          Range: 'bytes=0-900'
+        }
+      }))
+    })
+
+    it('should return 416 Range Not Satisfiable when passed multiple ranges', async () => {
+      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
+        headers: {
+          Range: 'bytes=0-2,3-5'
+        }
+      }))
+    })
   })
 })

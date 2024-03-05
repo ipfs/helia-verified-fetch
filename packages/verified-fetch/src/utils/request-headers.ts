@@ -27,6 +27,7 @@ export function getHeader (headers: HeadersInit | undefined, header: string): st
  * Type abstraction that will break the build if the supported range options change.
  */
 export interface HeliaRangeOptions extends Pick<ExporterOptions | CatOptions, 'offset' | 'length'> {
+  suffixLength?: number
 }
 
 /**
@@ -52,31 +53,26 @@ export function getRequestRange (headers: Headers | HeadersInit | undefined, siz
     return undefined
   }
 
-  // const match = range.match(/^bytes=(\d+)-(\d+)$/)
   /**
-   * Range: bytes=<start>-<end>
-   * Range: bytes=<start2>-
-   * Range: bytes=-<end2>
+   * Range: bytes=<start>-<end> | bytes=<start2>- | bytes=-<end2>
    */
   const match = range.match(/^bytes=((?<start>\d+)-(?<end>\d+)|(?<start2>\d+)-|-(?<end2>\d+))$/)
   if (match?.groups == null) {
     throw new CodeError('ERR_INVALID_RANGE_REQUEST', 'Invalid range request')
   }
   const { start, end, start2, end2 } = match.groups
-  if (start2 != null && end2 != null) {
-    // this should never happen
-    throw new CodeError('ERR_INVALID_RANGE_REQUEST', 'Invalid range request')
-  }
 
   let offset: number | undefined
   let length: number | undefined
+  let suffixLength: number | undefined
   if (end2 != null) {
     if (size == null) {
-      throw new CodeError('ERR_HANDLING_RANGE_REQUEST', 'Cannot use suffix length without knowing the size of the resource')
+      suffixLength = Number(end2)
+    } else {
+      const stop = BigInt(end2)
+      offset = Number(size - stop)
+      length = Number(stop)
     }
-    const stop = BigInt(end2)
-    offset = Number(size - stop)
-    length = Number(stop)
   } else if (start2 != null) {
     offset = parseInt(start2)
   } else {
@@ -86,6 +82,7 @@ export function getRequestRange (headers: Headers | HeadersInit | undefined, siz
 
   return {
     offset,
-    length
+    length,
+    suffixLength
   }
 }

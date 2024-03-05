@@ -113,6 +113,8 @@ export function movedPermanentlyResponse (url: string, location: string, init?: 
   return response
 }
 
+type RangeOptions = { offset: number, length: number, totalSize?: number } | { offset: number, length?: number, totalSize: number }
+
 /**
  * Some caveats about range responses here:
  * * We only support single range requests (multi-range is optional), see https://specs.ipfs.tech/http-gateways/path-gateway/#range-request-header
@@ -122,15 +124,23 @@ export function movedPermanentlyResponse (url: string, location: string, init?: 
  *
  * TODO: Supporting multiple range requests will require additional changes to the `handleDagPb` and `handleRaw` functions in `src/verified-fetch.js`
  */
-export function okRangeResponse (url: string, range: { offset: number, length: number }, body: SupportedBodyTypes, init?: ResponseOptions): Response {
+export function okRangeResponse (url: string, body: SupportedBodyTypes, range: RangeOptions, init?: ResponseOptions): Response {
   // if we know the full size of the body, we should use it in the content-range header. See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
+  let contentRangeHeader: string | undefined
+
+  try {
+    contentRangeHeader = getContentRangeHeader({ body, total: range.totalSize, offset: range.offset, length: range.length })
+  } catch (e) {
+    return badRangeResponse(url, body, init)
+  }
+
   const response = new Response(body, {
     ...(init ?? {}),
     status: 206,
     statusText: 'Partial Content',
     headers: {
       ...(init?.headers ?? {}),
-      'content-range': getContentRangeHeader(range.offset, range.length, { body })
+      'content-range': contentRangeHeader
     }
   })
 
