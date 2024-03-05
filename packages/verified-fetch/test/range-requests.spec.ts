@@ -60,7 +60,7 @@ describe('range requests', () => {
       beforeEach(async () => {
         cid = await getCid()
       })
-      it('should return correct 206 Partial Content response for byte=<range-start>-<range-end>', async () => {
+      it('should return correct 206 Partial Content response for byte=0-5', async () => {
         const expected: SuccessfulTestExpectation = {
           byteSize: 6,
           contentRange: 'bytes 0-5/11'
@@ -68,7 +68,7 @@ describe('range requests', () => {
         await testRange(cid, 'bytes=0-5', expected)
       })
 
-      it('should return correct 206 Partial Content response for byte=<range-start>-', async () => {
+      it('should return correct 206 Partial Content response for byte=4-', async () => {
         const expected = {
           byteSize: 7,
           contentRange: 'bytes 4-11/11'
@@ -76,7 +76,7 @@ describe('range requests', () => {
         await testRange(cid, 'bytes=4-', expected)
       })
 
-      it('should return correct 206 Partial Content response for byte=-<suffix-length>', async () => {
+      it('should return correct 206 Partial Content response for byte=-9', async () => {
         const expected = {
           byteSize: 9,
           contentRange: 'bytes 3-11/11'

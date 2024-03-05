@@ -282,9 +282,6 @@ export class VerifiedFetch {
     let ipfsRoots: CID[] | undefined
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
-    if (byteRangeContext.isRangeRequest && !byteRangeContext.isValidRangeRequest) {
-      return badRangeResponse(resource)
-    }
 
     try {
       const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
@@ -353,10 +350,10 @@ export class VerifiedFetch {
           onProgress: options?.onProgress
         })
         byteRangeContext.fileSize = stat.fileSize
-        byteRangeContext.body = stream
+        byteRangeContext.setBody(stream)
       }
       // if not a valid range request, okRangeRequest will call okResponse
-      const response = okRangeResponse(resource, byteRangeContext.body, { byteRangeContext }, {
+      const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext }, {
         redirected
       })
 
@@ -370,6 +367,7 @@ export class VerifiedFetch {
     } catch (err: any) {
       this.log.error('Error streaming %c/%s', cid, path, err)
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
+        // this.log.error('Invalid range request for %c/%s', cid, path)
         return badRangeResponse(resource)
       }
       return internalServerErrorResponse('Unable to stream content')
@@ -379,10 +377,10 @@ export class VerifiedFetch {
   private async handleRaw ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const result = await this.helia.blockstore.get(cid, options)
-    byteRangeContext.body = result
+    byteRangeContext.setBody(result)
     let response: Response
     if (byteRangeContext.isRangeRequest) {
-      response = okRangeResponse(resource, result, { byteRangeContext }, {
+      response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext }, {
         redirected: false
       })
     } else {

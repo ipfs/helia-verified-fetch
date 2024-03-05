@@ -3,7 +3,7 @@ import { parseUrlString } from './parse-url-string.js'
 import type { ParsedUrlStringResults } from './parse-url-string.js'
 import type { Resource } from '../index.js'
 import type { IPNS, IPNSRoutingEvents, ResolveDnsLinkProgressEvents, ResolveProgressEvents } from '@helia/ipns'
-import type { ComponentLogger } from '@libp2p/interface'
+import type { ComponentLogger } from '@libp2p/logger'
 import type { ProgressOptions } from 'progress-events'
 
 export interface ParseResourceComponents {

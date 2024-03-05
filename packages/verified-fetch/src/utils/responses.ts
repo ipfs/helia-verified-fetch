@@ -39,6 +39,7 @@ export function okResponse (url: string, body?: SupportedBodyTypes, init?: Respo
 
   setType(response, 'basic')
   setUrl(response, url)
+  response.headers.set('Accept-Ranges', 'bytes')
 
   return response
 }
@@ -121,20 +122,16 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
   if (!byteRangeContext.isRangeRequest) {
     return okResponse(url, body, init)
   }
-  byteRangeContext.body = body
+
   if (!byteRangeContext.isValidRangeRequest) {
+    // eslint-disable-next-line no-console
+    console.error('Invalid range request', byteRangeContext)
     return badRangeResponse(url, body, init)
   }
 
   let response: Response
-  // let body: SupportedBodyTypes
   try {
-    body = byteRangeContext.body
-  } catch {
-    return badRangeResponse(url, body, init)
-  }
-  try {
-    response = new Response(byteRangeContext.body, {
+    response = new Response(body, {
       ...(init ?? {}),
       status: 206,
       statusText: 'Partial Content',
@@ -143,8 +140,10 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
         'content-range': byteRangeContext.contentRangeHeaderValue
       }
     })
-  } catch {
+  } catch (e) {
     // TODO: should we return a different status code here?
+    // eslint-disable-next-line no-console
+    console.error('Invalid range request', e)
     return badRangeResponse(url, body, init)
   }
 
@@ -154,6 +153,7 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
 
   setType(response, 'basic')
   setUrl(response, url)
+  response.headers.set('Accept-Ranges', 'bytes')
 
   return response
 }
