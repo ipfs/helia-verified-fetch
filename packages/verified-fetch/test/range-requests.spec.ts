@@ -1,7 +1,9 @@
-import { unixfs, type UnixFS } from '@helia/unixfs'
+import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
-import { type CID } from 'multiformats/cid'
+import { CID } from 'multiformats/cid'
+import * as raw from 'multiformats/codecs/raw'
+import { sha256 } from 'multiformats/hashes/sha2'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
@@ -12,22 +14,11 @@ import type { Helia } from '@helia/interface'
 describe('range requests', () => {
   let helia: Helia
   let verifiedFetch: VerifiedFetch
-  let fs: UnixFS
-  let dagPbCid: CID
 
   beforeEach(async () => {
     helia = await createHelia()
-    fs = unixfs(helia)
     verifiedFetch = new VerifiedFetch({
       helia
-    })
-
-    dagPbCid = await fs.addFile({
-      path: 'bigbuckbunny.mp4',
-      content: new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    }, {
-      rawLeaves: false,
-      leafType: 'file'
     })
   })
 
@@ -63,74 +54,102 @@ describe('range requests', () => {
     await expect(response).to.eventually.have.property('statusText', 'Requested Range Not Satisfiable')
   }
 
-  describe('unixfs', () => {
-    it('should return correct 206 Partial Content response for byte=<range-start>-<range-end>', async () => {
-      const expected: SuccessfulTestExpectation = {
-        byteSize: 6,
-        contentRange: 'bytes 0-5/11'
-      }
-      await testRange(dagPbCid, 'bytes=0-5', expected)
-    })
-
-    it('should return correct 206 Partial Content response for byte=<range-start>-', async () => {
-      const expected = {
-        byteSize: 7,
-        contentRange: 'bytes 4-11/11'
-      }
-      await testRange(dagPbCid, 'bytes=4-', expected)
-    })
-
-    it('should return correct 206 Partial Content response for byte=-<suffix-length>', async () => {
-      const expected = {
-        byteSize: 9,
-        contentRange: 'bytes 2-10/11'
-      }
-      await testRange(dagPbCid, 'bytes=-9', expected)
-    })
-
-    it('should return 416 Range Not Satisfiable when the range is invalid', async () => {
-      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
-        headers: {
-          Range: 'bytes=-0-'
+  function runTests (description: string, getCid: () => Promise<CID>): void {
+    describe(description, () => {
+      let cid: CID
+      beforeEach(async () => {
+        cid = await getCid()
+      })
+      it('should return correct 206 Partial Content response for byte=<range-start>-<range-end>', async () => {
+        const expected: SuccessfulTestExpectation = {
+          byteSize: 6,
+          contentRange: 'bytes 0-5/11'
         }
-      }))
-      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
-        headers: {
-          Range: 'bytes=foobar'
-        }
-      }))
-    })
+        await testRange(cid, 'bytes=0-5', expected)
+      })
 
-    it('should return 416 Range Not Satisfiable when the range offset is larger than content', async () => {
-      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
-        headers: {
-          Range: 'bytes=50-'
+      it('should return correct 206 Partial Content response for byte=<range-start>-', async () => {
+        const expected = {
+          byteSize: 7,
+          contentRange: 'bytes 4-11/11'
         }
-      }))
-    })
+        await testRange(cid, 'bytes=4-', expected)
+      })
 
-    it('should return 416 Range Not Satisfiable when the suffix-length is larger than content', async () => {
-      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
-        headers: {
-          Range: 'bytes=-50'
+      it('should return correct 206 Partial Content response for byte=-<suffix-length>', async () => {
+        const expected = {
+          byteSize: 9,
+          contentRange: 'bytes 3-11/11'
         }
-      }))
-    })
+        await testRange(cid, 'bytes=-9', expected)
+      })
 
-    it('should return 416 Range Not Satisfiable when the range is out of bounds', async () => {
-      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
-        headers: {
-          Range: 'bytes=0-900'
-        }
-      }))
-    })
+      it('should return 416 Range Not Satisfiable when the range is invalid', async () => {
+        await assertFailingRange(verifiedFetch.fetch(cid, {
+          headers: {
+            Range: 'bytes=-0-'
+          }
+        }))
+        await assertFailingRange(verifiedFetch.fetch(cid, {
+          headers: {
+            Range: 'bytes=foobar'
+          }
+        }))
+      })
 
-    it('should return 416 Range Not Satisfiable when passed multiple ranges', async () => {
-      await assertFailingRange(verifiedFetch.fetch(dagPbCid, {
-        headers: {
-          Range: 'bytes=0-2,3-5'
-        }
-      }))
+      it('should return 416 Range Not Satisfiable when the range offset is larger than content', async () => {
+        await assertFailingRange(verifiedFetch.fetch(cid, {
+          headers: {
+            Range: 'bytes=50-'
+          }
+        }))
+      })
+
+      it('should return 416 Range Not Satisfiable when the suffix-length is larger than content', async () => {
+        await assertFailingRange(verifiedFetch.fetch(cid, {
+          headers: {
+            Range: 'bytes=-50'
+          }
+        }))
+      })
+
+      it('should return 416 Range Not Satisfiable when the range is out of bounds', async () => {
+        await assertFailingRange(verifiedFetch.fetch(cid, {
+          headers: {
+            Range: 'bytes=0-900'
+          }
+        }))
+      })
+
+      it('should return 416 Range Not Satisfiable when passed multiple ranges', async () => {
+        await assertFailingRange(verifiedFetch.fetch(cid, {
+          headers: {
+            Range: 'bytes=0-2,3-5'
+          }
+        }))
+      })
     })
+  }
+
+  const content = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  const testTuples = [
+    ['unixfs', async () => {
+      return unixfs(helia).addFile({
+        content
+      }, {
+        rawLeaves: false,
+        leafType: 'file'
+      })
+    }],
+    ['raw', async () => {
+      const buf = raw.encode(content)
+      const cid = CID.createV1(raw.code, await sha256.digest(buf))
+      await helia.blockstore.put(cid, buf)
+      return cid
+    }]
+  ] as const
+
+  testTuples.forEach(([name, fn]) => {
+    runTests(name, fn)
   })
 })

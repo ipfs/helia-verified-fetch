@@ -16,20 +16,20 @@ import { CustomProgressEvent } from 'progress-events'
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { ByteRangeContext } from './utils/byte-range-context.js'
 import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
-import { getRequestRange } from './utils/request-headers.js'
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, internalServerErrorResponse, okRangeResponse } from './utils/responses.js'
 import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
 import type { Helia } from '@helia/interface'
-import type { AbortOptions, CodeError, Logger, PeerId } from '@libp2p/interface'
+import type { AbortOptions, Logger, PeerId } from '@libp2p/interface'
 import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
@@ -277,44 +277,21 @@ export class VerifiedFetch {
     return response
   }
 
-  // eslint-disable-next-line complexity
   private async handleDagPb ({ cid, path, resource, options }: FetchHandlerFunctionArg): Promise<Response> {
     let terminalElement: UnixFSEntry | undefined
     let ipfsRoots: CID[] | undefined
     let redirected = false
-    let offset: number | undefined
-    let length: number | undefined
-    let suffixLength: number | undefined
-    let isRangeRequest = false
-    try {
-      const rangeOptions = getRequestRange(options?.headers)
-      offset = rangeOptions?.offset
-      length = rangeOptions?.length
-      suffixLength = rangeOptions?.suffixLength
-      this.log.trace('range options %o', rangeOptions)
-      if (offset != null || length != null || suffixLength != null) {
-        isRangeRequest = true
-      }
-    } catch (err) {
-      this.log.error('Error parsing range request', err)
-      return badRangeResponse('Invalid range request')
+    const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
+    if (byteRangeContext.isRangeRequest && !byteRangeContext.isValidRangeRequest) {
+      return badRangeResponse(resource)
     }
 
     try {
-      const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, { ...options, offset, length })
+      const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
       ipfsRoots = pathDetails.ipfsRoots
       terminalElement = pathDetails.terminalElement
     } catch (err) {
       this.log.error('Error walking path %s', path, err)
-      if (isRangeRequest && (err as CodeError)?.code === 'ERR_INVALID_PARAMS') {
-        /**
-         * the code is not explicit but seems to be the only error for invalid range requests
-         *
-         * @see https://github.com/search?q=repo%3Aipfs%2Fjs-ipfs-unixfs+ERR_INVALID_PARAMS+path%3Apackages%2Fipfs-unixfs-exporter&type=code
-         * @see https://github.com/ipfs/js-ipfs-unixfs/blob/4749d9a7c1eddd86b8fc42c3fa47f88c7b1b75ae/packages/ipfs-unixfs-exporter/src/utils/validate-offset-and-length.ts#L16-L30
-         */
-        return badRangeResponse(resource)
-      }
 
       return internalServerErrorResponse('Error walking path')
     }
@@ -358,37 +335,11 @@ export class VerifiedFetch {
       }
     }
 
-    /**
-     * range-request validation. This shouldn't be required, but unixfs.cat isn't throwing in some cases.
-     */
-    if (isRangeRequest) {
-      /**
-       * if requested CID was a directory, we already have a unixfs stat object
-       * if requested CID was a file or raw, we need to fetch the stat object
-       */
-      stat = stat ?? await this.unixfs.stat(resolvedCID, {
-        signal: options?.signal,
-        onProgress: options?.onProgress
-      })
-
-      if (suffixLength != null) {
-        const rangeWithSize = getRequestRange(options?.headers, stat.fileSize)
-        if (rangeWithSize != null) {
-          offset = rangeWithSize.offset
-          length = rangeWithSize.length
-        }
-      }
-      const resp = this.checkForInvalidRangeRequest({ stat, offset, length, resource })
-      if (resp != null) {
-        return resp
-      }
-    }
-
     const asyncIter = this.unixfs.cat(resolvedCID, {
       signal: options?.signal,
       onProgress: options?.onProgress,
-      offset,
-      length
+      offset: byteRangeContext.offset,
+      length: byteRangeContext.length
     })
     this.log('got async iterator for %c/%s', cid, path)
 
@@ -396,19 +347,19 @@ export class VerifiedFetch {
       const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress
       })
-      let response: Response
-      if (isRangeRequest) {
-        // type assertion says stat may still be undefined, but we've set it again in the above check for isRangeRequest
-        const totalSize = Number(stat?.fileSize)
-        offset = offset ?? 0
-        response = okRangeResponse(resource, stream, { offset, length, totalSize }, {
-          redirected
+      if (byteRangeContext.isRangeRequest && byteRangeContext.isValidRangeRequest) {
+        stat = stat ?? await this.unixfs.stat(resolvedCID, {
+          signal: options?.signal,
+          onProgress: options?.onProgress
         })
-      } else {
-        response = okResponse(resource, stream, {
-          redirected
-        })
+        byteRangeContext.fileSize = stat.fileSize
+        byteRangeContext.body = stream
       }
+      // if not a valid range request, okRangeRequest will call okResponse
+      const response = okRangeResponse(resource, byteRangeContext.body, { byteRangeContext }, {
+        redirected
+      })
+
       await this.setContentType(firstChunk, path, response)
 
       if (ipfsRoots != null) {
@@ -416,9 +367,9 @@ export class VerifiedFetch {
       }
 
       return response
-    } catch (err) {
+    } catch (err: any) {
       this.log.error('Error streaming %c/%s', cid, path, err)
-      if (isRangeRequest && (err as CodeError)?.code === 'ERR_INVALID_PARAMS') {
+      if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
       }
       return internalServerErrorResponse('Unable to stream content')
@@ -426,8 +377,17 @@ export class VerifiedFetch {
   }
 
   private async handleRaw ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
+    const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const result = await this.helia.blockstore.get(cid, options)
-    const response = okResponse(resource, result)
+    byteRangeContext.body = result
+    let response: Response
+    if (byteRangeContext.isRangeRequest) {
+      response = okRangeResponse(resource, result, { byteRangeContext }, {
+        redirected: false
+      })
+    } else {
+      response = okResponse(resource, result)
+    }
 
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
@@ -466,31 +426,6 @@ export class VerifiedFetch {
     }
     this.log.trace('setting content type to "%s"', contentType)
     response.headers.set('content-type', contentType)
-  }
-
-  private checkForInvalidRangeRequest ({ offset, length, resource, stat }: { offset?: number, length?: number, resource: string, stat: UnixFSStats }): Response | undefined {
-    if (offset != null) {
-      if (offset < 0) {
-        // the requested range start is negative
-        this.log.error('range start %d is negative', offset)
-        return badRangeResponse(resource)
-      } else if (stat.fileSize < offset) {
-        // the requested range start is larger than the requested content size
-        this.log.error('range start %d is larger than the requested content size %d', offset, stat.fileSize)
-        return badRangeResponse(resource)
-      } else if (length != null && Number(stat.fileSize) < (offset + length)) {
-        // the requested range is larger than the requested content size
-        this.log.error('range end %d is larger than the requested content size %d', offset + length, stat.fileSize)
-        return badRangeResponse(resource)
-      }
-    }
-    if (length != null) {
-      if (Number(stat.fileSize) < length) {
-        // the requested range is larger than the requested content size
-        this.log.error('range end %d is larger than the requested content size %d', length, stat.fileSize)
-        return badRangeResponse(resource)
-      }
-    }
   }
 
   /**

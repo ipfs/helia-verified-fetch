@@ -1,4 +1,4 @@
-import { getContentRangeHeader } from './response-headers.js'
+import type { ByteRangeContext } from './byte-range-context'
 import type { SupportedBodyTypes } from '../types.js'
 
 function setField (response: Response, name: string, value: string | boolean): void {
@@ -113,36 +113,40 @@ export function movedPermanentlyResponse (url: string, location: string, init?: 
   return response
 }
 
-type RangeOptions = { offset: number, length: number, totalSize?: number } | { offset: number, length?: number, totalSize: number }
+interface RangeOptions {
+  byteRangeContext: ByteRangeContext
+}
 
-/**
- * Some caveats about range responses here:
- * * We only support single range requests (multi-range is optional), see https://specs.ipfs.tech/http-gateways/path-gateway/#range-request-header
- * * Range responses are only supported for unixfs and raw data, see https://specs.ipfs.tech/http-gateways/path-gateway/#range-request-header.
- *
- * If the user requests something other than unixfs or raw data, we should not call this method and ignore the range header (200 OK). See https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests#partial_request_responses
- *
- * TODO: Supporting multiple range requests will require additional changes to the `handleDagPb` and `handleRaw` functions in `src/verified-fetch.js`
- */
-export function okRangeResponse (url: string, body: SupportedBodyTypes, range: RangeOptions, init?: ResponseOptions): Response {
-  // if we know the full size of the body, we should use it in the content-range header. See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
-  let contentRangeHeader: string | undefined
-
-  try {
-    contentRangeHeader = getContentRangeHeader({ body, total: range.totalSize, offset: range.offset, length: range.length })
-  } catch (e) {
+export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRangeContext }: RangeOptions, init?: ResponseOptions): Response {
+  if (!byteRangeContext.isRangeRequest) {
+    return okResponse(url, body, init)
+  }
+  byteRangeContext.body = body
+  if (!byteRangeContext.isValidRangeRequest) {
     return badRangeResponse(url, body, init)
   }
 
-  const response = new Response(body, {
-    ...(init ?? {}),
-    status: 206,
-    statusText: 'Partial Content',
-    headers: {
-      ...(init?.headers ?? {}),
-      'content-range': contentRangeHeader
-    }
-  })
+  let response: Response
+  // let body: SupportedBodyTypes
+  try {
+    body = byteRangeContext.body
+  } catch {
+    return badRangeResponse(url, body, init)
+  }
+  try {
+    response = new Response(byteRangeContext.body, {
+      ...(init ?? {}),
+      status: 206,
+      statusText: 'Partial Content',
+      headers: {
+        ...(init?.headers ?? {}),
+        'content-range': byteRangeContext.contentRangeHeaderValue
+      }
+    })
+  } catch {
+    // TODO: should we return a different status code here?
+    return badRangeResponse(url, body, init)
+  }
 
   if (init?.redirected === true) {
     setRedirected(response)
