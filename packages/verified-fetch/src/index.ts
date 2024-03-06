@@ -152,7 +152,8 @@
  *
  * const fetch = await createVerifiedFetch({
  *   gateways: ['https://trustless-gateway.link'],
- *   routers: ['http://delegated-ipfs.dev'],
+ *   routers: ['http://delegated-ipfs.dev']
+ * }, {
  *   dnsResolvers: [
  *     dnsJsonOverHttps('https://my-dns-resolver.example.com/dns-json'),
  *     dnsOverHttps('https://my-dns-resolver.example.com/dns-query')
@@ -607,18 +608,6 @@ export interface VerifiedFetch {
 export interface CreateVerifiedFetchInit {
   gateways: string[]
   routers?: string[]
-
-  /**
-   * In order to parse DNSLink records, we need to resolve DNS queries. You can
-   * pass a list of DNS resolvers that we will provide to the @helia/ipns
-   * instance for you. You must construct them using the `dnsJsonOverHttps` or
-   * `dnsOverHttps` functions exported from `@helia/ipns/dns-resolvers`.
-   *
-   * We use cloudflare and google's dnsJsonOverHttps resolvers by default.
-   *
-   * @default [dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
-   */
-  dnsResolvers?: DNSResolver[]
 }
 
 export interface CreateVerifiedFetchOptions {
@@ -631,6 +620,18 @@ export interface CreateVerifiedFetchOptions {
    * @default undefined
    */
   contentTypeParser?: ContentTypeParser
+
+  /**
+   * In order to parse DNSLink records, we need to resolve DNS queries. You can
+   * pass a list of DNS resolvers that we will provide to the @helia/ipns
+   * instance for you. You must construct them using the `dnsJsonOverHttps` or
+   * `dnsOverHttps` functions exported from `@helia/ipns/dns-resolvers`.
+   *
+   * We use cloudflare and google's dnsJsonOverHttps resolvers by default.
+   *
+   * @default [dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
+   */
+  dnsResolvers?: DNSResolver[]
 }
 
 /**
@@ -676,7 +677,7 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
   let dnsResolvers: DNSResolver[] | undefined
   if (!isHelia(init)) {
-    dnsResolvers = init?.dnsResolvers
+    dnsResolvers = options?.dnsResolvers
     init = await createHeliaHTTP({
       blockBrokers: [
         trustlessGateway({
