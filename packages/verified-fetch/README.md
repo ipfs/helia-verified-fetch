@@ -610,7 +610,7 @@ Loading this module through a script tag will make it's exports available as `He
 
 # API Docs
 
-- <https://ipfs.github.io/helia-verified-fetch/modules/_helia_verified_fetch.html>
+- <https://ipfs.github.io/helia-verified-fetch/modules.html>
 
 # License
 
