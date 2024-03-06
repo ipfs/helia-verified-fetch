@@ -23,7 +23,8 @@ describe('custom dns-resolvers', () => {
     customDnsResolver.returns(Promise.resolve('/ipfs/QmVP2ip92jQuMDezVSzQBWDqWFbp9nyCHNQSiciRauPLDg'))
 
     const fetch = await createVerifiedFetch({
-      gateways: ['http://127.0.0.1:8080'],
+      gateways: ['http://127.0.0.1:8080']
+    }, {
       dnsResolvers: [customDnsResolver]
     })
     // error of walking the CID/dag because we haven't actually added the block to the blockstore
