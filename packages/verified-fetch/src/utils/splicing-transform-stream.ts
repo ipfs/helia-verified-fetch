@@ -5,12 +5,14 @@ import type { ComponentLogger } from '@libp2p/logger'
  */
 export function splicingTransformStream (originalStream: ReadableStream<Uint8Array>, offset: number | undefined, length: number | undefined, logger: ComponentLogger): ReadableStream<Uint8Array> {
   const log = logger.forComponent('helia:splicing-transform-stream')
+  log.trace('splicingTransformStream: offset=%O, length=%O', offset, length)
   // default is noop
   let transform: TransformerTransformCallback<Uint8Array, Uint8Array> = async () => {}
   let flush: TransformerFlushCallback<Uint8Array> | undefined
   const offsetOnlyUseCase = offset != null && length == null // read from the offset to the end of the stream
   const lengthOnlyUseCase = offset == null && length != null // only enqueue the last <length> bytes of the stream
   const offsetAndLengthUseCase = offset != null && length != null // read <length> bytes from the offset
+  log.trace('splicingTransformStream: offsetOnlyUseCase=%O, lengthOnlyUseCase=%O, offsetAndLengthUseCase=%O', offsetOnlyUseCase, lengthOnlyUseCase, offsetAndLengthUseCase)
 
   if (lengthOnlyUseCase) {
     const bufferSize = length // The size of the buffer to keep the last 'length' bytes

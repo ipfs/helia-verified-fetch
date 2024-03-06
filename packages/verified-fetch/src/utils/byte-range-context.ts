@@ -48,10 +48,10 @@ export class ByteRangeContext {
   private _isValidRangeRequest: boolean | null = null
   private _offset: number | undefined = undefined
   private _length: number | undefined = undefined
-  private readonly requestRangeStart!: number | undefined
-  private readonly requestRangeEnd!: number | undefined
-  private responseRangeStart!: number
-  private responseRangeEnd!: number
+  private readonly requestRangeStart: number | null
+  private readonly requestRangeEnd: number | null
+  // private responseRangeStart!: number
+  // private responseRangeEnd!: number
 
   constructor (private readonly logger: ComponentLogger, private readonly headers?: HeadersInit) {
     this.log = logger.forComponent('helia:verified-fetch:byte-range-context')
@@ -61,19 +61,21 @@ export class ByteRangeContext {
       this._isRangeRequest = true
       try {
         const { start, end } = getByteRangeFromHeader(this._rangeRequestHeader)
-        this.requestRangeStart = start == null ? undefined : parseInt(start)
-        this.requestRangeEnd = end == null ? undefined : parseInt(end)
+        this.requestRangeStart = start != null ? parseInt(start) : null
+        this.requestRangeEnd = end != null ? parseInt(end) : null
       } catch (e) {
         this.log.error('error parsing range request header: %o', e)
         this.isValidRangeRequest = false
+        this.requestRangeStart = null
+        this.requestRangeEnd = null
       }
 
       this.setOffsetDetails()
     } else {
       this.log.trace('No range request detected')
       this._isRangeRequest = false
-      this.requestRangeStart = undefined
-      this.requestRangeEnd = undefined
+      this.requestRangeStart = null
+      this.requestRangeEnd = null
     }
   }
 
@@ -98,7 +100,7 @@ export class ByteRangeContext {
       return body
     }
     const offset = this.offset
-    const length = this.length
+    const length = this.length != null ? this.length : undefined
     if (offset != null || length != null) {
       this.log.trace('returning body with offset %o and length %o', offset, length)
       if (body instanceof Uint8Array) {
@@ -118,7 +120,7 @@ export class ByteRangeContext {
 
   private getSlicedBody <T extends Uint8Array | ArrayBuffer | Blob>(body: T, offset: number | undefined, length: number | undefined): T {
     if (offset != null && length != null) {
-      return body.slice(offset, offset + length + 1) as T
+      return body.slice(offset, offset + length) as T
     } else if (offset != null) {
       return body.slice(offset) as T
     } else if (length != null) {
@@ -146,13 +148,17 @@ export class ByteRangeContext {
 
   public get isValidRangeRequest (): boolean {
     if (this.length != null && this.length < 0) {
+      this.log.trace('invalid range request, length is less than 0')
       this._isValidRangeRequest = false
     } else if (this.offset != null && this.offset < 0) {
+      this.log.trace('invalid range request, offset is less than 0')
       this._isValidRangeRequest = false
     } else if (this.length != null && this._fileSize != null && this.length > this._fileSize) {
+      this.log.trace('invalid range request, length(%d) is greater than fileSize(%d)', this.length, this._fileSize)
       this._isValidRangeRequest = false
     } else if (this.requestRangeStart != null && this.requestRangeEnd != null) {
       if (this.requestRangeStart > this.requestRangeEnd) {
+        this.log.trace('invalid range request, start is greater than end')
         this._isValidRangeRequest = false
       }
     }
@@ -162,7 +168,7 @@ export class ByteRangeContext {
   }
 
   private set offset (val: number | undefined) {
-    this._offset = this._offset ?? val
+    this._offset = this._offset ?? val ?? undefined
     this.log.trace('set _offset to %o', this._offset)
   }
 
@@ -201,40 +207,72 @@ export class ByteRangeContext {
       this.log.trace('requestRangeStart and requestRangeEnd are null')
       return
     }
+
     if (this.requestRangeStart != null && this.requestRangeEnd != null) {
       // we have a specific rangeRequest start & end
       this.offset = this.requestRangeStart
-      this.length = this.requestRangeEnd - this.requestRangeStart
-      this.responseRangeStart = this.requestRangeStart
-      this.responseRangeEnd = this.requestRangeEnd
-    } else if (this.requestRangeStart != null) {
-      // we have a specific rangeRequest start
-      this.offset = this.requestRangeStart
-      this.responseRangeStart = this.offset
-      if (this._fileSize != null) {
-        this.length = this._fileSize - this.offset
-        this.responseRangeEnd = this.offset + this.length
-      } else {
-        this.length = undefined
-      }
-    } else if (this.requestRangeEnd != null && this._fileSize != null) {
-      // we have a specific rangeRequest end (suffix-length) & filesize
-      const lengthRequested = this.requestRangeEnd
-      // if the user requested length of N, the offset is N bytes from the end of the file
-      this.offset = this._fileSize - lengthRequested
-      this.length = lengthRequested
-      this.responseRangeStart = this.offset === 0 ? this.offset : this.offset + 1
-      this.responseRangeEnd = this._fileSize
-    } else if (this.requestRangeEnd != null) {
-      this.log.trace('requestRangeEnd %o, but no fileSize', this.requestRangeEnd)
-      // we have a specific rangeRequest end (suffix-length) but no filesize
-      this.offset = undefined
       this.length = this.requestRangeEnd
-      this.responseRangeEnd = this.requestRangeEnd
+      // this.responseRangeEnd = this.requestRangeEnd
+    } else if (this.requestRangeStart != null) {
+      this.offset = this.requestRangeStart
+      // we have a specific rangeRequest start
+      if (this._fileSize != null) {
+        const length = this._fileSize - this.offset
+        this.log('only got offset, setting length to fileSize - offset', length)
+        this.length = length
+      } else {
+        this.log.trace('only got offset, no fileSize')
+      }
+      // this.responseRangeEnd = this.length != null ? this.offset + this.length - 1 : 0 // Assign a default value of 0 if length is undefined
+    } else if (this.requestRangeEnd != null) {
+    // we have a specific rangeRequest end (suffix-length)
+      this.length = this.requestRangeEnd
+      this.offset = this._fileSize != null ? this._fileSize - this.length : undefined
+      // this.responseRangeStart = this.offset != null ? this.offset : undefined
+      // this.responseRangeEnd = this._fileSize != null ? this._fileSize - 1 : this.requestRangeEnd
     } else {
       this.log.trace('Not enough information to set offset and length')
     }
   }
+  // private setOffsetDetails (): void {
+  //   if (this.requestRangeStart == null && this.requestRangeEnd == null) {
+  //     this.log.trace('requestRangeStart and requestRangeEnd are null')
+  //     return
+  //   }
+  //   if (this.requestRangeStart != null && this.requestRangeEnd != null) {
+  //     // we have a specific rangeRequest start & end
+  //     this.offset = this.requestRangeStart
+  //     this.length = this.requestRangeEnd - this.requestRangeStart
+  //     this.responseRangeStart = this.requestRangeStart
+  //     this.responseRangeEnd = this.requestRangeEnd
+  //   } else if (this.requestRangeStart != null) {
+  //     // we have a specific rangeRequest start
+  //     this.offset = this.requestRangeStart
+  //     this.responseRangeStart = this.offset
+  //     if (this._fileSize != null) {
+  //       this.length = this._fileSize - this.offset
+  //       this.responseRangeEnd = this.offset + this.length
+  //     } else {
+  //       this.length = undefined
+  //     }
+  //   } else if (this.requestRangeEnd != null && this._fileSize != null) {
+  //     // we have a specific rangeRequest end (suffix-length) & filesize
+  //     const lengthRequested = this.requestRangeEnd
+  //     // if the user requested length of N, the offset is N bytes from the end of the file
+  //     this.offset = this._fileSize - lengthRequested
+  //     this.length = lengthRequested
+  //     this.responseRangeStart = this.offset === 0 ? this.offset : this.offset + 1
+  //     this.responseRangeEnd = this._fileSize
+  //   } else if (this.requestRangeEnd != null) {
+  //     this.log.trace('requestRangeEnd %o, but no fileSize', this.requestRangeEnd)
+  //     // we have a specific rangeRequest end (suffix-length) but no filesize
+  //     this.offset = undefined
+  //     this.length = this.requestRangeEnd
+  //     this.responseRangeEnd = this.requestRangeEnd
+  //   } else {
+  //     this.log.trace('Not enough information to set offset and length')
+  //   }
+  // }
 
   // This function returns the value of the "content-range" header.
   // Content-Range: <unit> <range-start>-<range-end>/<size>
@@ -256,13 +294,23 @@ export class ByteRangeContext {
     // "bytes *-<range-end>/*"
     // or "bytes */*" ? Are these valid?
     // or do we want to consume the stream and calculate the size?
+    let rangeStart = '*'
+    let rangeEnd = '*'
     if (this._body instanceof ReadableStream) {
-      const rangeStart = this.responseRangeStart ?? this.requestRangeStart ?? '*'
-      const rangeEnd = this.responseRangeEnd ?? this.requestRangeEnd ?? '*'
-      this._contentRangeHeaderValue = `bytes ${rangeStart}-${rangeEnd}/${fileSize}`
-    } else {
-      this._contentRangeHeaderValue = `bytes ${this.responseRangeStart}-${this.responseRangeEnd}/${fileSize}`
+      rangeStart = this.requestRangeStart?.toString() ?? '*'
+      rangeEnd = this.requestRangeEnd?.toString() ?? '*'
+    } else if (this.requestRangeEnd != null && this.requestRangeStart != null) {
+      rangeStart = this.requestRangeStart.toString()
+      rangeEnd = this.requestRangeEnd.toString()
+    } else if (this.requestRangeStart != null) {
+      rangeStart = this.requestRangeStart.toString()
+      rangeEnd = this._fileSize != null ? this._fileSize.toString() : '*'
+    } else if (this.requestRangeEnd != null) {
+      rangeEnd = this.requestRangeEnd.toString()
+      rangeStart = this._fileSize != null ? (this._fileSize - this.requestRangeEnd).toString() : '*'
     }
+    this._contentRangeHeaderValue = `bytes ${rangeStart}-${rangeEnd}/${fileSize}`
+    this.log.trace('contentRangeHeaderValue: %o', this._contentRangeHeaderValue)
     return this._contentRangeHeaderValue
   }
 }
