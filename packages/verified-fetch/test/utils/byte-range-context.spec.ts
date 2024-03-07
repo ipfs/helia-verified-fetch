@@ -2,8 +2,6 @@ import { unixfs, type UnixFS } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { defaultLogger, prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
-import toIt from 'browser-readablestream-to-it'
-import all from 'it-all'
 import { ByteRangeContext } from '../../src/utils/byte-range-context.js'
 import { getStreamFromAsyncIterable } from '../../src/utils/get-stream-from-async-iterable.js'
 import { createHelia } from '../fixtures/create-offline-helia.js'
@@ -91,13 +89,15 @@ describe('ByteRangeContext', () => {
   validRanges.forEach(({ type, range, expected, body, contentRange }) => {
     it(`should correctly slice ${type} body with range ${range}`, () => {
       const context = new ByteRangeContext(logger, { Range: range })
+
       context.setBody(body)
+
       expect(context.getBody()).to.deep.equal(expected)
       expect(context.contentRangeHeaderValue).to.equal(contentRange)
     })
   })
 
-  describe.skip('handling ReadableStreams', () => {
+  describe('handling ReadableStreams', () => {
     let helia: Helia
     let fs: UnixFS
     let cid: CID
@@ -129,8 +129,9 @@ describe('ByteRangeContext', () => {
         context.fileSize = stat.fileSize
 
         context.setBody(await getBodyStream(context.offset, context.length))
-        const bodyResult = await all(toIt(context.getBody() as ReadableStream<Uint8Array>))
-        expect(bodyResult).to.deep.equal(expected)
+        const response = new Response(context.getBody())
+        const bodyResult = await response.arrayBuffer()
+        expect(new Uint8Array(bodyResult)).to.deep.equal(expected)
         expect(context.contentRangeHeaderValue).to.equal(contentRange)
       })
     })
