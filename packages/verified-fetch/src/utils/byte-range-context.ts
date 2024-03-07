@@ -1,5 +1,4 @@
 import { calculateByteRangeIndexes, getHeader } from './request-headers.js'
-// import { splicingTransformStream } from './splicing-transform-stream.js'
 import { getContentRangeHeader } from './response-headers.js'
 import type { SupportedBodyTypes } from '../types.js'
 import type { ComponentLogger, Logger } from '@libp2p/logger'
@@ -47,17 +46,11 @@ export class ByteRangeContext {
   private readonly _rangeRequestHeader: string | undefined
   private readonly log: Logger
   private _isValidRangeRequest: boolean | null = null
-  // private _offset: number | undefined = undefined
-  // private _length: number | undefined = undefined
   private readonly requestRangeStart: number | null
   private readonly requestRangeEnd: number | null
   byteStart: number | undefined
   byteEnd: number | undefined
   byteSize: number | undefined
-
-  // private readonly actualLength: number | null
-  // private responseRangeStart!: number
-  // private responseRangeEnd!: number
 
   constructor (logger: ComponentLogger, private readonly headers?: HeadersInit) {
     this.log = logger.forComponent('helia:verified-fetch:byte-range-context')
@@ -69,18 +62,11 @@ export class ByteRangeContext {
         const { start, end } = getByteRangeFromHeader(this._rangeRequestHeader)
         this.requestRangeStart = start != null ? parseInt(start) : null
         this.requestRangeEnd = end != null ? parseInt(end) : null
-        if (this.requestRangeStart != null && this.requestRangeEnd != null) {
-          // we can set the length here
-
-        } else {
-          // this.actualLength = null
-        }
       } catch (e) {
         this.log.error('error parsing range request header: %o', e)
         this.isValidRangeRequest = false
         this.requestRangeStart = null
         this.requestRangeEnd = null
-        // this.actualLength = null
       }
 
       this.setOffsetDetails()
@@ -89,7 +75,6 @@ export class ByteRangeContext {
       this._isRangeRequest = false
       this.requestRangeStart = null
       this.requestRangeEnd = null
-      // this.actualLength = null
     }
   }
 
@@ -134,32 +119,19 @@ export class ByteRangeContext {
   }
 
   private getSlicedBody <T extends Uint8Array | ArrayBuffer | Blob>(body: T): T {
-    // if (offset != null && length != null) {
-    //   this.log.trace('sliced body with offset %o and length %o', offset, length)
-    //   return body.slice(offset, offset + length) as T
-    // } else if (offset != null) {
-    //   this.log.trace('sliced body with offset %o', offset)
-    //   return body.slice(offset) as T
-    // } else if (length != null) {
-    //   this.log.trace('sliced body with length %o', length)
-    //   return body.slice(0, length + 1) as T
-    // }
-    if (this.byteStart != null && this.byteEnd != null) {
-      this.log.trace('sliced body with byteStart %o and byteEnd %o', this.byteStart, this.byteEnd)
-      return body.slice(this.byteStart, this.byteSize ?? this.byteEnd + 1) as T
-    } else if (this.byteStart != null) {
+    if (this.isPrefixLengthRequest) {
       this.log.trace('sliced body with byteStart %o', this.byteStart)
-      return body.slice(this.byteStart) as T
-    } else if (this.byteEnd != null) {
-      this.log.trace('sliced body with byteEnd %o', this.byteStart)
-      return body.slice(-this.byteEnd) as T
-    } else if (this.byteSize != null) {
-      this.log.trace('sliced body with byteSize %o', this.byteSize)
-      return body.slice(0, this.byteSize + 1) as T
+      return body.slice(this.offset) as T
     }
+    if (this.isSuffixLengthRequest && this.length != null) {
+      this.log.trace('sliced body with length %o', -this.length)
+      return body.slice(-this.length) as T
+    }
+    const offset = this.byteStart ?? 0
+    const length = this.byteEnd == null ? undefined : this.byteEnd + 1 ?? undefined
+    this.log.trace('returning body with offset %o and length %o', offset, length)
 
-    this.log.trace('returning body unmodified')
-    return body
+    return body.slice(offset, length) as T
   }
 
   private get isSuffixLengthRequest (): boolean {
@@ -191,7 +163,10 @@ export class ByteRangeContext {
   }
 
   public get isValidRangeRequest (): boolean {
-    if (this.length != null && this.length < 0) {
+    if (this.byteSize != null && this.byteSize < 0) {
+      this.log.trace('invalid range request, byteSize is less than 0')
+      this._isValidRangeRequest = false
+    } else if (this.length != null && this.length < 0) {
       this.log.trace('invalid range request, length is less than 0')
       this._isValidRangeRequest = false
     } else if (this.offset != null && this.offset < 0) {
@@ -207,6 +182,14 @@ export class ByteRangeContext {
       }
     }
     this._isValidRangeRequest = this._isValidRangeRequest ?? true
+    this.log.trace('isValidRangeRequest is %o. details: %o', this._isValidRangeRequest, {
+      offset: this.offset,
+      length: this.length,
+      fileSize: this._fileSize,
+      byteStart: this.byteStart,
+      byteEnd: this.byteEnd,
+      byteSize: this.byteSize
+    })
 
     return this._isValidRangeRequest
   }
@@ -220,9 +203,7 @@ export class ByteRangeContext {
     if (this.byteStart == null || this.byteStart === 0) {
       return 0
     }
-    // if length is undefined, unixfs.cat will not use an inclusive offset, so we have to subtract by 1
-    // TODO: file tracking issue to fix this in unixfs.cat
-    // if (this.length == null) {
+    // if length is undefined, unixfs.cat and ArrayBuffer.slice will not use an inclusive offset, so we have to subtract by 1
     if (this.isPrefixLengthRequest || this.isSuffixLengthRequest) {
       return this.byteStart - 1
     }
