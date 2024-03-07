@@ -29,7 +29,6 @@ describe('range requests', () => {
 
   interface SuccessfulTestExpectation {
     contentRange: string
-    // byteSize?: number
     bytes: Uint8Array
   }
   async function testRange (cid: CID, headerRange: string, expected: SuccessfulTestExpectation): Promise<void> {
@@ -49,7 +48,6 @@ describe('range requests', () => {
 
     const responseContent = await response.arrayBuffer()
     expect(new Uint8Array(responseContent)).to.deep.equal(expected.bytes)
-    // expect(responseContent.byteLength).to.equal(expected.byteSize) // the length of the data should match the requested range
   }
 
   async function assertFailingRange (response: Promise<Response>): Promise<void> {

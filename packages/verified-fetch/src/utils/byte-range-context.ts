@@ -48,9 +48,9 @@ export class ByteRangeContext {
   private _isValidRangeRequest: boolean | null = null
   private readonly requestRangeStart: number | null
   private readonly requestRangeEnd: number | null
-  byteStart: number | undefined
-  byteEnd: number | undefined
-  byteSize: number | undefined
+  private byteStart: number | undefined
+  private byteEnd: number | undefined
+  private byteSize: number | undefined
 
   constructor (logger: ComponentLogger, private readonly headers?: HeadersInit) {
     this.log = logger.forComponent('helia:verified-fetch:byte-range-context')
@@ -80,7 +80,7 @@ export class ByteRangeContext {
 
   public setBody (body: SupportedBodyTypes): void {
     this._body = body
-    // if fileSize was set explicitly or already set, don't recalculate it
+    // if fileSize was already set, don't recalculate it
     this.fileSize = this.fileSize ?? getBodySizeSync(body)
 
     this.log.trace('set request body with fileSize %o', this._fileSize)
@@ -111,7 +111,6 @@ export class ByteRangeContext {
       } else if (body instanceof ReadableStream) {
         // stream should already be spliced by dagPb/unixfs
         return body
-        // return splicingTransformStream(body, offset, length, this.logger)
       }
     }
     // offset and length are not set, so not a range request, return body untouched.
@@ -146,7 +145,7 @@ export class ByteRangeContext {
   public set fileSize (size: number | bigint | null) {
     this._fileSize = size != null ? Number(size) : null
     this.log.trace('set _fileSize to %o', this._fileSize)
-    // if fileSize was set explicitly, we need to recalculate the offset details
+    // when fileSize changes, we need to recalculate the offset details
     this.setOffsetDetails()
   }
 
@@ -220,11 +219,10 @@ export class ByteRangeContext {
     if (this.byteStart == null || this.byteStart === 0) {
       return 0
     }
-    // if length is undefined, unixfs.cat and ArrayBuffer.slice will not use an inclusive offset, so we have to subtract by 1
+    // if byteStart is undefined, unixfs.cat and ArrayBuffer.slice will not use an inclusive offset, so we have to subtract by 1
     if (this.isPrefixLengthRequest || this.isSuffixLengthRequest) {
       return this.byteStart - 1
     }
-    // this value will be passed to unixfs.cat
     return this.byteStart
   }
 
@@ -235,8 +233,9 @@ export class ByteRangeContext {
    */
   public get length (): number | undefined {
     // this value will be passed to unixfs.cat.
-    if (this.requestRangeEnd == null) {
-      return undefined // this is a suffix-length request and unixfs has a bug where it doesn't always respect the length parameter
+    if (this.isSuffixLengthRequest) {
+      // this is a suffix-length request and unixfs has a bug where it doesn't always respect the length parameter
+      return undefined
     }
     return this.byteSize ?? undefined
   }

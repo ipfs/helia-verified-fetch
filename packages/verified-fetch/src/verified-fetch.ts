@@ -332,12 +332,13 @@ export class VerifiedFetch {
       }
     }
 
+    // we have to .stat before .cat so we can get the size and make sure byte offsets are calculated properly
     if (byteRangeContext.isRangeRequest && byteRangeContext.isValidRangeRequest) {
       stat = stat ?? await this.unixfs.stat(resolvedCID, {
         signal: options?.signal,
         onProgress: options?.onProgress
       })
-      this.log.trace('stat for %c/%s: %o', resolvedCID, path, stat)
+      this.log.trace('stat.fileSize for rangeRequest %d', stat.fileSize)
       byteRangeContext.fileSize = stat.fileSize
     }
     const offset = byteRangeContext.offset
