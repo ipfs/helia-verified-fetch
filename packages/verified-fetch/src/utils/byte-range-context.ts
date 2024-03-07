@@ -1,7 +1,7 @@
 import { calculateByteRangeIndexes, getHeader } from './request-headers.js'
 import { getContentRangeHeader } from './response-headers.js'
 import type { SupportedBodyTypes } from '../types.js'
-import type { ComponentLogger, Logger } from '@libp2p/logger'
+import type { ComponentLogger, Logger } from '@libp2p/interface'
 
 /**
  * Gets the body size of a given body if it's possible to calculate it synchronously.

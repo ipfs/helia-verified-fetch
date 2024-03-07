@@ -3,7 +3,7 @@ import { CID } from 'multiformats/cid'
 import { TLRU } from './tlru.js'
 import type { RequestFormatShorthand } from '../types.js'
 import type { IPNS, IPNSRoutingEvents, ResolveDnsLinkProgressEvents, ResolveProgressEvents, ResolveResult } from '@helia/ipns'
-import type { ComponentLogger } from '@libp2p/logger'
+import type { ComponentLogger } from '@libp2p/interface'
 import type { ProgressOptions } from 'progress-events'
 
 const ipnsCache = new TLRU<ResolveResult>(1000)

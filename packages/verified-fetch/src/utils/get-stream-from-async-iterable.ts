@@ -1,6 +1,6 @@
 import { CustomProgressEvent } from 'progress-events'
 import type { VerifiedFetchInit } from '../index.js'
-import type { ComponentLogger } from '@libp2p/logger'
+import type { ComponentLogger } from '@libp2p/interface'
 
 /**
  * Converts an async iterator of Uint8Array bytes to a stream and returns the first chunk of bytes
