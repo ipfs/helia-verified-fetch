@@ -128,7 +128,7 @@ export class ByteRangeContext {
       return body.slice(-this.length) as T
     }
     const offset = this.byteStart ?? 0
-    const length = this.byteEnd == null ? undefined : this.byteEnd + 1 ?? undefined
+    const length = this.byteEnd == null ? undefined : this.byteEnd + 1
     this.log.trace('returning body with offset %o and length %o', offset, length)
 
     return body.slice(offset, length) as T
@@ -158,38 +158,55 @@ export class ByteRangeContext {
     return this._isRangeRequest
   }
 
+  private isValidByteStart (): boolean {
+    if (this.byteStart != null) {
+      if (this.byteStart < 0) {
+        return false
+      }
+      if (this.fileSize != null && this.byteStart > this.fileSize) {
+        return false
+      }
+    }
+    return true
+  }
+
+  private isValidByteEnd (): boolean {
+    if (this.byteEnd != null) {
+      if (this.byteEnd < 0) {
+        return false
+      }
+      if (this.fileSize != null && this.byteEnd > this.fileSize) {
+        return false
+      }
+    }
+    return true
+  }
+
   public set isValidRangeRequest (val: boolean) {
     this._isValidRangeRequest = val
   }
 
   public get isValidRangeRequest (): boolean {
-    if (this.byteSize != null && this.byteSize < 0) {
-      this.log.trace('invalid range request, byteSize is less than 0')
+    if (!this.isValidByteStart()) {
+      this.log.trace('invalid range request, byteStart is less than 0 or greater than fileSize')
       this._isValidRangeRequest = false
-    } else if (this.length != null && this.length < 0) {
-      this.log.trace('invalid range request, length is less than 0')
+    } else if (!this.isValidByteEnd()) {
+      this.log.trace('invalid range request, byteEnd is less than 0 or greater than fileSize')
       this._isValidRangeRequest = false
-    } else if (this.offset != null && this.offset < 0) {
-      this.log.trace('invalid range request, offset is less than 0')
-      this._isValidRangeRequest = false
-    } else if (this.length != null && this._fileSize != null && this.length > this._fileSize) {
-      this.log.trace('invalid range request, length(%d) is greater than fileSize(%d)', this.length, this._fileSize)
-      this._isValidRangeRequest = false
-    } else if (this.requestRangeStart != null && this.requestRangeEnd != null) {
+    } else if (this.requestRangeEnd != null && this.requestRangeStart != null) {
+      // we may not have enough info.. base check on requested bytes
       if (this.requestRangeStart > this.requestRangeEnd) {
         this.log.trace('invalid range request, start is greater than end')
+        this._isValidRangeRequest = false
+      } else if (this.requestRangeStart < 0) {
+        this.log.trace('invalid range request, start is less than 0')
+        this._isValidRangeRequest = false
+      } else if (this.requestRangeEnd < 0) {
+        this.log.trace('invalid range request, end is less than 0')
         this._isValidRangeRequest = false
       }
     }
     this._isValidRangeRequest = this._isValidRangeRequest ?? true
-    this.log.trace('isValidRangeRequest is %o. details: %o', this._isValidRangeRequest, {
-      offset: this.offset,
-      length: this.length,
-      fileSize: this._fileSize,
-      byteStart: this.byteStart,
-      byteEnd: this.byteEnd,
-      byteSize: this.byteSize
-    })
 
     return this._isValidRangeRequest
   }

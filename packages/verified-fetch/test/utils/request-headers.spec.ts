@@ -44,7 +44,9 @@ describe('request-headers', () => {
       // Range: bytes=0-0 with unknown filesize
       { start: 0, end: 0, fileSize: undefined, expected: { byteSize: 1, start: 0, end: 0 } },
       // Range: bytes=-9 & fileSize=11
-      { start: undefined, end: 9, fileSize: 11, expected: { byteSize: 9, start: 3, end: 11 } }
+      { start: undefined, end: 9, fileSize: 11, expected: { byteSize: 9, start: 3, end: 11 } },
+      // Range: bytes=0-11 & fileSize=11
+      { start: 0, end: 11, fileSize: 11, expected: { byteSize: 12, start: 0, end: 11 } }
     ]
     testCases.forEach(({ start, end, fileSize, expected }) => {
       it(`should return expected result for bytes=${start ?? ''}-${end ?? ''} and fileSize=${fileSize}`, () => {
