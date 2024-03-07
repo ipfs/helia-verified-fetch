@@ -14,6 +14,7 @@ import type { Helia } from '@helia/interface'
 describe('range requests', () => {
   let helia: Helia
   let verifiedFetch: VerifiedFetch
+  const content = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
   beforeEach(async () => {
     helia = await createHelia()
@@ -27,8 +28,9 @@ describe('range requests', () => {
   })
 
   interface SuccessfulTestExpectation {
-    contentRange?: string
-    byteSize?: number
+    contentRange: string
+    // byteSize?: number
+    bytes: Uint8Array
   }
   async function testRange (cid: CID, headerRange: string, expected: SuccessfulTestExpectation): Promise<void> {
     const response = await verifiedFetch.fetch(cid, {
@@ -45,8 +47,9 @@ describe('range requests', () => {
     expect(contentRange).to.be.ok()
     expect(contentRange).to.equal(expected.contentRange) // the response should include the range that was requested
 
-    const content = await response.arrayBuffer()
-    expect(content.byteLength).to.equal(expected.byteSize) // the length of the data should match the requested range
+    const responseContent = await response.arrayBuffer()
+    expect(new Uint8Array(responseContent)).to.deep.equal(expected.bytes)
+    // expect(responseContent.byteLength).to.equal(expected.byteSize) // the length of the data should match the requested range
   }
 
   async function assertFailingRange (response: Promise<Response>): Promise<void> {
@@ -60,28 +63,34 @@ describe('range requests', () => {
       beforeEach(async () => {
         cid = await getCid()
       })
-      it('should return correct 206 Partial Content response for byte=0-5', async () => {
-        const expected: SuccessfulTestExpectation = {
+      const validTestCases = [
+        {
           byteSize: 6,
-          contentRange: 'bytes 0-5/11'
-        }
-        await testRange(cid, 'bytes=0-5', expected)
-      })
-
-      it('should return correct 206 Partial Content response for byte=4-', async () => {
-        const expected = {
-          byteSize: 7,
-          contentRange: 'bytes 4-11/11'
-        }
-        await testRange(cid, 'bytes=4-', expected)
-      })
-
-      it('should return correct 206 Partial Content response for byte=-9', async () => {
-        const expected = {
+          contentRange: 'bytes 0-5/11',
+          rangeHeader: 'bytes=0-5',
+          bytes: new Uint8Array([0, 1, 2, 3, 4, 5])
+        },
+        {
+          byteSize: 8,
+          contentRange: 'bytes 4-11/11',
+          rangeHeader: 'bytes=4-',
+          bytes: new Uint8Array([3, 4, 5, 6, 7, 8, 9, 10])
+        },
+        {
           byteSize: 9,
-          contentRange: 'bytes 3-11/11'
+          contentRange: 'bytes 3-11/11',
+          rangeHeader: 'bytes=-9',
+          bytes: new Uint8Array([2, 3, 4, 5, 6, 7, 8, 9, 10])
         }
-        await testRange(cid, 'bytes=-9', expected)
+      ]
+      validTestCases.forEach(({ bytes, contentRange, rangeHeader }) => {
+        it(`should return correct 206 Partial Content response for ${rangeHeader}`, async () => {
+          const expected: SuccessfulTestExpectation = {
+            bytes,
+            contentRange
+          }
+          await testRange(cid, rangeHeader, expected)
+        })
       })
 
       it('should return 416 Range Not Satisfiable when the range is invalid', async () => {
@@ -131,7 +140,6 @@ describe('range requests', () => {
     })
   }
 
-  const content = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
   const testTuples = [
     ['unixfs', async () => {
       return unixfs(helia).addFile({

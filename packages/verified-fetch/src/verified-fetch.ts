@@ -332,11 +332,22 @@ export class VerifiedFetch {
       }
     }
 
+    if (byteRangeContext.isRangeRequest && byteRangeContext.isValidRangeRequest) {
+      stat = stat ?? await this.unixfs.stat(resolvedCID, {
+        signal: options?.signal,
+        onProgress: options?.onProgress
+      })
+      this.log.trace('stat for %c/%s: %o', resolvedCID, path, stat)
+      byteRangeContext.fileSize = stat.fileSize
+    }
+    const offset = byteRangeContext.offset
+    const length = byteRangeContext.length
+    this.log.trace('calling unixfs.cat for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
     const asyncIter = this.unixfs.cat(resolvedCID, {
       signal: options?.signal,
       onProgress: options?.onProgress,
-      offset: byteRangeContext.offset,
-      length: byteRangeContext.length
+      offset,
+      length
     })
     this.log('got async iterator for %c/%s', cid, path)
 
@@ -344,14 +355,7 @@ export class VerifiedFetch {
       const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress
       })
-      if (byteRangeContext.isRangeRequest && byteRangeContext.isValidRangeRequest) {
-        stat = stat ?? await this.unixfs.stat(resolvedCID, {
-          signal: options?.signal,
-          onProgress: options?.onProgress
-        })
-        byteRangeContext.fileSize = stat.fileSize
-        byteRangeContext.setBody(stream)
-      }
+      byteRangeContext.setBody(stream)
       // if not a valid range request, okRangeRequest will call okResponse
       const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext }, {
         redirected
@@ -378,14 +382,13 @@ export class VerifiedFetch {
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const result = await this.helia.blockstore.get(cid, options)
     byteRangeContext.setBody(result)
-    let response: Response
-    if (byteRangeContext.isRangeRequest) {
-      response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext }, {
-        redirected: false
-      })
-    } else {
-      response = okResponse(resource, result)
-    }
+    const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext }, {
+      redirected: false
+    })
+    // if (byteRangeContext.isRangeRequest) {
+    // } else {
+    //   response = okResponse(resource, result)
+    // }
 
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request

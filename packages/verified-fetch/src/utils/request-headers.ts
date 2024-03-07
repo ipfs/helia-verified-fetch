@@ -35,7 +35,7 @@ export function calculateByteRangeIndexes (start: number | undefined, end: numbe
     if (fileSize == null) {
       return { end }
     }
-    const result = { byteSize: end, start: fileSize - end, end: fileSize }
+    const result = { byteSize: end, start: fileSize - end + 1, end: fileSize }
     return result
   } else if (start != null && end == null) {
     if (fileSize == null) {

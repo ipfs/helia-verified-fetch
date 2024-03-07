@@ -124,8 +124,6 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
   }
 
   if (!byteRangeContext.isValidRangeRequest) {
-    // eslint-disable-next-line no-console
-    console.error('Invalid range request', byteRangeContext)
     return badRangeResponse(url, body, init)
   }
 
