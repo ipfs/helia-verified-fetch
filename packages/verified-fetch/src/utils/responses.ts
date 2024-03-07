@@ -1,5 +1,6 @@
 import type { ByteRangeContext } from './byte-range-context'
 import type { SupportedBodyTypes } from '../types.js'
+import type { Logger } from '@libp2p/interface'
 
 function setField (response: Response, name: string, value: string | boolean): void {
   Object.defineProperty(response, name, {
@@ -116,9 +117,10 @@ export function movedPermanentlyResponse (url: string, location: string, init?: 
 
 interface RangeOptions {
   byteRangeContext: ByteRangeContext
+  log?: Logger
 }
 
-export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRangeContext }: RangeOptions, init?: ResponseOptions): Response {
+export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRangeContext, log }: RangeOptions, init?: ResponseOptions): Response {
   if (!byteRangeContext.isRangeRequest) {
     return okResponse(url, body, init)
   }
@@ -138,10 +140,8 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
         'content-range': byteRangeContext.contentRangeHeaderValue
       }
     })
-  } catch (e) {
-    // TODO: should we return a different status code here?
-    // eslint-disable-next-line no-console
-    console.error('Invalid range request', e)
+  } catch (e: any) {
+    log?.error('failed to create range response', e)
     return badRangeResponse(url, body, init)
   }
 

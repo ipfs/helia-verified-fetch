@@ -357,7 +357,7 @@ export class VerifiedFetch {
       })
       byteRangeContext.setBody(stream)
       // if not a valid range request, okRangeRequest will call okResponse
-      const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext }, {
+      const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
         redirected
       })
 
@@ -381,13 +381,9 @@ export class VerifiedFetch {
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const result = await this.helia.blockstore.get(cid, options)
     byteRangeContext.setBody(result)
-    const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext }, {
+    const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
       redirected: false
     })
-    // if (byteRangeContext.isRangeRequest) {
-    // } else {
-    //   response = okResponse(resource, result)
-    // }
 
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
