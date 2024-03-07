@@ -82,6 +82,7 @@ describe('range requests', () => {
         }
       ]
       validTestCases.forEach(({ bytes, contentRange, rangeHeader }) => {
+        // if these fail, check response-headers.spec.ts first
         it(`should return correct 206 Partial Content response for ${rangeHeader}`, async () => {
           const expected: SuccessfulTestExpectation = {
             bytes,

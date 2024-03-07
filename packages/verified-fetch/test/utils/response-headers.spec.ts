@@ -14,8 +14,12 @@ describe('response-headers', () => {
       expect(getContentRangeHeader({ byteStart: undefined, byteEnd: 9, byteSize: 11 })).to.equal('bytes 3-11/11')
     })
 
+    it('should return correct content range header when only byteStart and byteSize are provided', () => {
+      expect(getContentRangeHeader({ byteStart: 5, byteEnd: undefined, byteSize: 11 })).to.equal('bytes 5-11/11')
+    })
+
     it('should return correct content range header when only byteStart is provided', () => {
-      expect(getContentRangeHeader({ byteStart: 500, byteEnd: undefined, byteSize: undefined })).to.equal('bytes 500-*/*')
+      expect(getContentRangeHeader({ byteStart: 500, byteEnd: undefined, byteSize: undefined })).to.equal('bytes */*')
     })
 
     it('should return correct content range header when only byteEnd is provided', () => {

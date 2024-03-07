@@ -216,14 +216,17 @@ export class ByteRangeContext {
    * 2. slicing the body
    */
   public get offset (): number {
-    if (this.byteStart == null || this.byteStart === 0) {
+    if (this.byteStart === 0) {
       return 0
     }
-    // if byteStart is undefined, unixfs.cat and ArrayBuffer.slice will not use an inclusive offset, so we have to subtract by 1
     if (this.isPrefixLengthRequest || this.isSuffixLengthRequest) {
-      return this.byteStart - 1
+      if (this.byteStart != null) {
+        // we have to subtract by 1 because the offset is inclusive
+        return this.byteStart - 1
+      }
     }
-    return this.byteStart
+
+    return this.byteStart ?? 0
   }
 
   /**
@@ -232,11 +235,6 @@ export class ByteRangeContext {
    * 2. slicing the body
    */
   public get length (): number | undefined {
-    // this value will be passed to unixfs.cat.
-    if (this.isSuffixLengthRequest) {
-      // this is a suffix-length request and unixfs has a bug where it doesn't always respect the length parameter
-      return undefined
-    }
     return this.byteSize ?? undefined
   }
 

@@ -8,16 +8,24 @@ export function getContentRangeHeader ({ byteStart, byteEnd, byteSize }: { byteS
   const total = byteSize ?? '*' // if we don't know the total size, we should use *
 
   if (byteStart != null && byteEnd == null) {
+    // only byteStart in range
     if (byteSize == null) {
       return `bytes */${total}`
     }
     return `bytes ${byteStart}-${byteSize}/${byteSize}`
   }
+
   if (byteStart == null && byteEnd != null) {
+    // only byteEnd in range
     if (byteSize == null) {
       return `bytes */${total}`
     }
     return `bytes ${byteSize - byteEnd + 1}-${byteSize}/${byteSize}`
+  }
+
+  if (byteStart == null && byteEnd == null) {
+    // neither are provided, we can't return a valid range.
+    return `bytes */${total}`
   }
 
   return `bytes ${byteStart}-${byteEnd}/${total}`
