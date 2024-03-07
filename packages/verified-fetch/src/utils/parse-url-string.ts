@@ -78,7 +78,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       log.trace('resolved %s to %c from cache', cidOrPeerIdOrDnsLink, cid)
     } else {
       // protocol is ipns
-      log.trace('Attempting to resolve PeerId for %s', cidOrPeerIdOrDnsLink)
+      log.trace('attempting to resolve PeerId for %s', cidOrPeerIdOrDnsLink)
       let peerId = null
 
       try {
@@ -90,16 +90,16 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
       } catch (err) {
         if (peerId == null) {
-          log.error('Could not parse PeerId string "%s"', cidOrPeerIdOrDnsLink, err)
+          log.error('could not parse PeerId string "%s"', cidOrPeerIdOrDnsLink, err)
           errors.push(new TypeError(`Could not parse PeerId in ipns url "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
         } else {
-          log.error('Could not resolve PeerId %c', peerId, err)
+          log.error('could not resolve PeerId %c', peerId, err)
           errors.push(new TypeError(`Could not resolve PeerId "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
         }
       }
 
       if (cid == null) {
-        log.trace('Attempting to resolve DNSLink for %s', cidOrPeerIdOrDnsLink)
+        log.trace('attempting to resolve DNSLink for %s', cidOrPeerIdOrDnsLink)
 
         try {
           resolveResult = await ipns.resolveDns(cidOrPeerIdOrDnsLink, { onProgress: options?.onProgress })
@@ -108,7 +108,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
           log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
           ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
         } catch (err: any) {
-          log.error('Could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)
+          log.error('could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)
           errors.push(err)
         }
       }

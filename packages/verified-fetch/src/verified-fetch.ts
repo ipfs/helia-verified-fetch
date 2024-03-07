@@ -288,7 +288,7 @@ export class VerifiedFetch {
       ipfsRoots = pathDetails.ipfsRoots
       terminalElement = pathDetails.terminalElement
     } catch (err) {
-      this.log.error('Error walking path %s', path, err)
+      this.log.error('error walking path %s', path, err)
 
       return internalServerErrorResponse('Error walking path')
     }
@@ -369,9 +369,8 @@ export class VerifiedFetch {
 
       return response
     } catch (err: any) {
-      this.log.error('Error streaming %c/%s', cid, path, err)
+      this.log.error('error streaming %c/%s', cid, path, err)
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
-        // this.log.error('Invalid range request for %c/%s', cid, path)
         return badRangeResponse(resource)
       }
       return internalServerErrorResponse('Unable to stream content')
@@ -422,7 +421,7 @@ export class VerifiedFetch {
           contentType = parsed
         }
       } catch (err) {
-        this.log.error('Error parsing content type', err)
+        this.log.error('error parsing content type', err)
       }
     }
     this.log.trace('setting content type to "%s"', contentType)
@@ -503,7 +502,7 @@ export class VerifiedFetch {
       query.filename = query.filename ?? `${cid.toString()}.tar`
       response = await this.handleTar(handlerArgs)
     } else {
-      this.log.trace('Finding handler for cid code "%s" and output type "%s"', cid.code, accept)
+      this.log.trace('finding handler for cid code "%s" and output type "%s"', cid.code, accept)
       // derive the handler from the CID type
       const codecHandler = this.codecHandlers[cid.code]
 

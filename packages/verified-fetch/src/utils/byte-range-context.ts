@@ -56,7 +56,7 @@ export class ByteRangeContext {
     this.log = logger.forComponent('helia:verified-fetch:byte-range-context')
     this._rangeRequestHeader = getHeader(this.headers, 'Range')
     if (this._rangeRequestHeader != null) {
-      this.log.trace('Range request detected')
+      this.log.trace('range request detected')
       this._isRangeRequest = true
       try {
         const { start, end } = getByteRangeFromHeader(this._rangeRequestHeader)
@@ -71,7 +71,7 @@ export class ByteRangeContext {
 
       this.setOffsetDetails()
     } else {
-      this.log.trace('No range request detected')
+      this.log.trace('no range request detected')
       this._isRangeRequest = false
       this.requestRangeStart = null
       this.requestRangeEnd = null
