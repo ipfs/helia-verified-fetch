@@ -44,11 +44,11 @@ export function okResponse (url: string, body?: SupportedBodyTypes, init?: Respo
   return response
 }
 
-export function internalServerErrorResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+export function badGatewayResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
-    status: 500,
-    statusText: 'Internal Server Error'
+    status: 502,
+    statusText: 'Bad Gateway'
   })
 
   setType(response, 'basic')

@@ -23,7 +23,7 @@ import { getETag } from './utils/get-e-tag.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, internalServerErrorResponse, okRangeResponse } from './utils/responses.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
 import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
@@ -290,7 +290,7 @@ export class VerifiedFetch {
     } catch (err) {
       this.log.error('error walking path %s', path, err)
 
-      return internalServerErrorResponse('Error walking path')
+      return badGatewayResponse('Error walking path')
     }
 
     let resolvedCID = terminalElement?.cid ?? cid
@@ -373,7 +373,7 @@ export class VerifiedFetch {
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
       }
-      return internalServerErrorResponse('Unable to stream content')
+      return badGatewayResponse('Unable to stream content')
     }
   }
 
