@@ -93,7 +93,7 @@ export class ByteRangeContext {
       return body
     }
     if (!this.isRangeRequest || !this.isValidRangeRequest) {
-      this.log.trace('returning body unmodified')
+      this.log.trace('returning body unmodified for non-range, or invalid range, request')
       return body
     }
     const byteStart = this.byteStart
@@ -101,19 +101,17 @@ export class ByteRangeContext {
     const byteSize = this.byteSize
     if (byteStart != null || byteEnd != null) {
       this.log.trace('returning body with byteStart %o byteEnd %o byteSize', byteStart, byteEnd, byteSize)
-      if (body instanceof Uint8Array) {
+      if (body instanceof ArrayBuffer || body instanceof Blob || body instanceof Uint8Array) {
         this.log.trace('body is Uint8Array')
-        return this.getSlicedBody(body)
-      } else if (body instanceof ArrayBuffer) {
-        return this.getSlicedBody(body)
-      } else if (body instanceof Blob) {
         return this.getSlicedBody(body)
       } else if (body instanceof ReadableStream) {
         // stream should already be spliced by dagPb/unixfs
         return body
       }
     }
-    // offset and length are not set, so not a range request, return body untouched.
+
+    // we should not reach this point, but return body untouched.
+    this.log.error('returning unmofified body for valid range request')
     return body
   }
 
