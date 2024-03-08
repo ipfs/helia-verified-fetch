@@ -1,3 +1,15 @@
+## @helia/verified-fetch [1.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.1.0...@helia/verified-fetch-1.1.1) (2024-03-08)
+
+
+### Trivial Changes
+
+* add tests for directory redirects for gateways ([#15](https://github.com/ipfs/helia-verified-fetch/issues/15)) ([269609d](https://github.com/ipfs/helia-verified-fetch/commit/269609d189864be4306cb4df5ad235ed9b91fdb8))
+
+
+### Documentation
+
+* update api docs link in readme ([#14](https://github.com/ipfs/helia-verified-fetch/issues/14)) ([d615633](https://github.com/ipfs/helia-verified-fetch/commit/d615633dcc6a04f78975863df49733dccb9fbb98))
+
 ## @helia/verified-fetch [1.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.0.2...@helia/verified-fetch-1.1.0) (2024-03-03)
 
 
