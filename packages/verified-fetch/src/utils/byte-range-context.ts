@@ -100,14 +100,12 @@ export class ByteRangeContext {
     const byteEnd = this.byteEnd
     const byteSize = this.byteSize
     if (byteStart != null || byteEnd != null) {
-      this.log.trace('returning body with byteStart %o byteEnd %o byteSize', byteStart, byteEnd, byteSize)
-      if (body instanceof ArrayBuffer || body instanceof Blob || body instanceof Uint8Array) {
-        this.log.trace('body is Uint8Array')
-        return this.getSlicedBody(body)
-      } else if (body instanceof ReadableStream) {
-        // stream should already be spliced by dagPb/unixfs
+      this.log.trace('returning body with byteStart=%o, byteEnd=%o, byteSize=%o', byteStart, byteEnd, byteSize)
+      if (body instanceof ReadableStream) {
+        // stream should already be spliced by `unixfs.cat`
         return body
       }
+      return this.getSlicedBody(body)
     }
 
     // we should not reach this point, but return body untouched.
@@ -115,7 +113,7 @@ export class ByteRangeContext {
     return body
   }
 
-  private getSlicedBody <T extends Uint8Array | ArrayBuffer | Blob>(body: T): T {
+  private getSlicedBody <T extends Uint8Array | ArrayBuffer | Blob | string>(body: T): T {
     if (this.isPrefixLengthRequest) {
       this.log.trace('sliced body with byteStart %o', this.byteStart)
       return body.slice(this.offset) as T
