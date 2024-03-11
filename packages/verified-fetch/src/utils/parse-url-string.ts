@@ -108,23 +108,20 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       // protocol is ipns
       log.trace('Attempting to resolve PeerId for %s', cidOrPeerIdOrDnsLink)
       let peerId = null
-      if (!isInlinedDnsLink(cidOrPeerIdOrDnsLink)) {
-        try {
-          peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
-          resolveResult = await ipns.resolve(peerId, { onProgress: options?.onProgress })
-          cid = resolveResult?.cid
-          resolvedPath = resolveResult?.path
-          log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
-          ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
-        } catch (err) {
-          // eslint-disable-next-line max-depth
-          if (peerId == null) {
-            log.error('Could not parse PeerId string "%s"', cidOrPeerIdOrDnsLink, err)
-            errors.push(new TypeError(`Could not parse PeerId in ipns url "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
-          } else {
-            log.error('Could not resolve PeerId %c', peerId, err)
-            errors.push(new TypeError(`Could not resolve PeerId "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
-          }
+      try {
+        peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
+        resolveResult = await ipns.resolve(peerId, { onProgress: options?.onProgress })
+        cid = resolveResult?.cid
+        resolvedPath = resolveResult?.path
+        log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
+        ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
+      } catch (err) {
+        if (peerId == null) {
+          log.error('Could not parse PeerId string "%s"', cidOrPeerIdOrDnsLink, err)
+          errors.push(new TypeError(`Could not parse PeerId in ipns url "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
+        } else {
+          log.error('Could not resolve PeerId %c', peerId, err)
+          errors.push(new TypeError(`Could not resolve PeerId "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
         }
       }
 
