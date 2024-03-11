@@ -3,6 +3,7 @@ import { defaultLogger } from '@libp2p/logger'
 import { createEd25519PeerId } from '@libp2p/peer-id-factory'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
+import { match } from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { parseUrlString } from '../../src/utils/parse-url-string.js'
 import type { IPNS } from '@helia/ipns'
@@ -751,23 +752,48 @@ describe('parseUrlString', () => {
     })
   })
 
-  HTTP_PROTOCOLS.forEach(proto => {
-    describe(`${proto}://<key>.ipns.example.com URLs`, () => {
-      let peerId: PeerId
-      let cid: CID
+  const IPNS_TYPES = [
+    ['dnslink-encoded', (i: number) => `${i}-example-com`],
+    ['dnslink-decoded', (i: number) => `${i}.example.com`],
+    ['peerid', async () => createEd25519PeerId()]
+  ] as const
 
+  IPNS_TYPES.flatMap(([type, fn]) => {
+    // merge IPNS_TYPES with HTTP_PROTOCOLS
+    return HTTP_PROTOCOLS.reduce<Array<[string, string, (i: number) => string | Promise<PeerId>]>>((acc, proto) => {
+      acc.push([proto, type, fn])
+      return acc
+    }, [])
+  }, []).forEach(([proto, type, getVal]) => {
+    describe(`${proto}://<${type}>.ipns.example.com URLs`, () => {
+      let value: PeerId | string
+      let cid: CID
+      let i = 0
       beforeEach(async () => {
-        peerId = await createEd25519PeerId()
+        value = await getVal(i++)
         cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
-        ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
-          cid,
-          path: ''
-        })
+        if (type === 'peerid') {
+          ipns.resolve.withArgs(matchPeerId(value as PeerId)).resolves({
+            cid,
+            path: ''
+          })
+        } else if (type === 'dnslink-encoded') {
+          const matchValue = (value as string).replace(/-/g, '.')
+          ipns.resolveDns.withArgs(match(matchValue)).resolves({
+            cid,
+            path: ''
+          })
+        } else {
+          ipns.resolveDns.withArgs(match(value as string)).resolves({
+            cid,
+            path: ''
+          })
+        }
       })
 
       it('should parse a IPNS Subdomain Gateway URL with a CID only', async () => {
         await assertMatchUrl(
-          `${proto}://${peerId}.ipns.example.com`, {
+          `${proto}://${value.toString()}.ipns.example.com`, {
             protocol: 'ipns',
             cid: cid.toString(),
             path: '',
@@ -778,7 +804,7 @@ describe('parseUrlString', () => {
 
       it('can parse a IPNS Subdomain Gateway URL with CID+path', async () => {
         await assertMatchUrl(
-          `${proto}://${peerId}.ipns.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
+          `${proto}://${value.toString()}.ipns.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
             protocol: 'ipns',
             cid: cid.toString(),
             path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
@@ -789,7 +815,7 @@ describe('parseUrlString', () => {
 
       it('can parse a IPNS Subdomain Gateway URL with CID+directoryPath', async () => {
         await assertMatchUrl(
-          `${proto}://${peerId}.ipns.example.com/path/to/dir/`, {
+          `${proto}://${value.toString()}.ipns.example.com/path/to/dir/`, {
             protocol: 'ipns',
             cid: cid.toString(),
             path: 'path/to/dir/',
@@ -800,7 +826,7 @@ describe('parseUrlString', () => {
 
       it('can parse a IPNS Subdomain Gateway URL with CID+queryString', async () => {
         await assertMatchUrl(
-          `${proto}://${peerId}.ipns.example.com?format=car`, {
+          `${proto}://${value.toString()}.ipns.example.com?format=car`, {
             protocol: 'ipns',
             cid: cid.toString(),
             path: '',
@@ -813,7 +839,7 @@ describe('parseUrlString', () => {
 
       it('can parse a IPNS Subdomain Gateway URL with CID+path+queryString', async () => {
         await assertMatchUrl(
-          `${proto}://${peerId}.ipns.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar`, {
+          `${proto}://${value.toString()}.ipns.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar`, {
             protocol: 'ipns',
             cid: cid.toString(),
             path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
@@ -826,7 +852,7 @@ describe('parseUrlString', () => {
 
       it('can parse a IPNS Subdomain Gateway URL with CID+directoryPath+queryString', async () => {
         await assertMatchUrl(
-          `${proto}://${peerId}.ipns.example.com/path/to/dir/?format=tar`, {
+          `${proto}://${value.toString()}.ipns.example.com/path/to/dir/?format=tar`, {
             protocol: 'ipns',
             cid: cid.toString(),
             path: 'path/to/dir/',
