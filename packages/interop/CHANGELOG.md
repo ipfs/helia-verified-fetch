@@ -1,3 +1,10 @@
+## @helia/verified-fetch-interop [1.5.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.5.0...@helia/verified-fetch-interop-1.5.1) (2024-03-12)
+
+
+### Dependencies
+
+* bump kubo from 0.26.0 to 0.27.0 ([#12](https://github.com/ipfs/helia-verified-fetch/issues/12)) ([92cad49](https://github.com/ipfs/helia-verified-fetch/commit/92cad49de60a34cad031a07ee89f5c046004982f))
+
 ## @helia/verified-fetch-interop [1.5.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.4.0...@helia/verified-fetch-interop-1.5.0) (2024-03-11)
 
 
