@@ -2,7 +2,7 @@ import { peerIdFromString } from '@libp2p/peer-id'
 import { CID } from 'multiformats/cid'
 import { TLRU } from './tlru.js'
 import type { RequestFormatShorthand } from '../types.js'
-import type { IPNS, IPNSRoutingEvents, ResolveDnsLinkProgressEvents, ResolveProgressEvents, ResolveResult } from '@helia/ipns'
+import type { IPNS, ResolveDNSLinkProgressEvents, ResolveResult } from '@helia/ipns'
 import type { ComponentLogger } from '@libp2p/interface'
 import type { ProgressOptions } from 'progress-events'
 
@@ -13,7 +13,7 @@ export interface ParseUrlStringInput {
   ipns: IPNS
   logger: ComponentLogger
 }
-export interface ParseUrlStringOptions extends ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents | ResolveDnsLinkProgressEvents> {
+export interface ParseUrlStringOptions extends ProgressOptions<ResolveDNSLinkProgressEvents> {
 
 }
 
@@ -134,7 +134,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         log.trace('Attempting to resolve DNSLink for %s', decodedDnsLinkLabel)
 
         try {
-          resolveResult = await ipns.resolveDns(decodedDnsLinkLabel, { onProgress: options?.onProgress })
+          resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, { onProgress: options?.onProgress })
           cid = resolveResult?.cid
           resolvedPath = resolveResult?.path
           log.trace('resolved %s to %c', decodedDnsLinkLabel, cid)
