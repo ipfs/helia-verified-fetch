@@ -413,7 +413,7 @@ export class VerifiedFetch {
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:start', { resource }))
 
     // resolve the CID/path from the requested resource
-    const { path, query, cid } = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
+    const { path, query, cid, protocol } = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
 
@@ -477,7 +477,10 @@ export class VerifiedFetch {
     }
 
     response.headers.set('etag', getETag({ cid, reqFormat, weak: false }))
-    response.headers.set('cache-control', 'public, max-age=29030400, immutable')
+
+    if (protocol === 'ipfs') {
+      response.headers.set('cache-control', 'public, max-age=29030400, immutable')
+    }
     // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-path-response-header
     response.headers.set('X-Ipfs-Path', resource.toString())
 
