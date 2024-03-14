@@ -155,7 +155,7 @@ describe('parseUrlString', () => {
   describe('ipns://<dnsLinkDomain> URLs', () => {
     it('handles invalid DNSLinkDomains', async () => {
       ipns.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
-      ipns.resolveDns.rejects(new Error('Unexpected failure from ipns dns query'))
+      ipns.resolveDNSLink.rejects(new Error('Unexpected failure from ipns dns query'))
 
       await expect(parseUrlString({ urlString: 'ipns://mydomain.com', ipns, logger })).to.eventually.be.rejected
         .with.property('errors').that.deep.equals([
@@ -165,7 +165,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with DNSLinkDomain only', async () => {
-      ipns.resolveDns.withArgs('mydomain.com').resolves({
+      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: ''
       })
@@ -181,7 +181,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with DNSLinkDomain+path', async () => {
-      ipns.resolveDns.withArgs('mydomain.com').resolves({
+      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: ''
       })
@@ -197,7 +197,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with DNSLinkDomain+queryString', async () => {
-      ipns.resolveDns.withArgs('mydomain.com').resolves({
+      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: ''
       })
@@ -215,7 +215,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with DNSLinkDomain+path+queryString', async () => {
-      ipns.resolveDns.withArgs('mydomain.com').resolves({
+      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: ''
       })
@@ -233,7 +233,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with DNSLinkDomain+directoryPath+queryString', async () => {
-      ipns.resolveDns.withArgs('mydomain.com').resolves({
+      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: ''
       })
@@ -410,7 +410,7 @@ describe('parseUrlString', () => {
 
     it('handles invalid PeerIds', async () => {
       ipns.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
-      ipns.resolveDns.rejects(new Error('Unexpected failure from ipns dns query'))
+      ipns.resolveDNSLink.rejects(new Error('Unexpected failure from ipns dns query'))
 
       await expect(parseUrlString({ urlString: 'ipns://123PeerIdIsFake456', ipns, logger })).to.eventually.be.rejected
         .with.property('errors').that.deep.equals([
@@ -421,7 +421,7 @@ describe('parseUrlString', () => {
 
     it('handles valid PeerId resolve failures', async () => {
       ipns.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
-      ipns.resolveDns.rejects(new Error('Unexpected failure from ipns dns query'))
+      ipns.resolveDNSLink.rejects(new Error('Unexpected failure from ipns dns query'))
 
       await expect(parseUrlString({ urlString: `ipns://${testPeerId}`, ipns, logger })).to.eventually.be.rejected
         .with.property('errors').that.deep.equals([
@@ -779,12 +779,12 @@ describe('parseUrlString', () => {
           })
         } else if (type === 'dnslink-encoded') {
           const matchValue = (value as string).replace(/-/g, '.')
-          ipns.resolveDns.withArgs(match(matchValue)).resolves({
+          ipns.resolveDNSLink.withArgs(match(matchValue)).resolves({
             cid,
             path: ''
           })
         } else {
-          ipns.resolveDns.withArgs(match(value as string)).resolves({
+          ipns.resolveDNSLink.withArgs(match(value as string)).resolves({
             cid,
             path: ''
           })

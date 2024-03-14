@@ -148,7 +148,7 @@
  *
  * ```typescript
  * import { createVerifiedFetch } from '@helia/verified-fetch'
- * import { dnsJsonOverHttps, dnsOverHttps } from '@helia/ipns/dns-resolvers'
+ * import { dnsJsonOverHttps, dnsOverHttps } from '@multiformats/dns/resolvers'
  *
  * const fetch = await createVerifiedFetch({
  *   gateways: ['https://trustless-gateway.link'],
@@ -157,6 +157,29 @@
  *     dnsJsonOverHttps('https://my-dns-resolver.example.com/dns-json'),
  *     dnsOverHttps('https://my-dns-resolver.example.com/dns-query')
  *   ]
+ * })
+ * ```
+ *
+ * @example Customizing DNS per-TLD resolvers
+ *
+ * DNS resolvers can be configured to only service DNS queries for specific
+ * TLDs:
+ *
+ * ```typescript
+ * import { createVerifiedFetch } from '@helia/verified-fetch'
+ * import { dnsJsonOverHttps, dnsOverHttps } from '@multiformats/dns/resolvers'
+ *
+ * const fetch = await createVerifiedFetch({
+ *   gateways: ['https://trustless-gateway.link'],
+ *   routers: ['http://delegated-ipfs.dev'],
+ *   dnsResolvers: {
+ *     // this resolver will only be used for `.com` domains (note - this could
+ *     // also be an array of resolvers)
+ *     'com.': dnsJsonOverHttps('https://my-dns-resolver.example.com/dns-json'),
+ *     // this resolver will be used for everything else (note - this could
+ *     // also be an array of resolvers)
+ *     '.': dnsOverHttps('https://my-dns-resolver.example.com/dns-query')
+ *   }
  * })
  * ```
  *
@@ -569,10 +592,13 @@
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
 import { delegatedHTTPRouting } from '@helia/routers'
+import { dns } from '@multiformats/dns'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { Helia } from '@helia/interface'
-import type { DNSResolver, IPNSRoutingEvents, ResolveDnsLinkProgressEvents, ResolveProgressEvents } from '@helia/ipns'
+import type { ResolveDNSLinkProgressEvents } from '@helia/ipns'
 import type { GetEvents } from '@helia/unixfs'
+import type { DNSResolvers, DNS } from '@multiformats/dns'
+import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
 
@@ -618,7 +644,7 @@ export interface CreateVerifiedFetchInit {
    *
    * @default [dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
    */
-  dnsResolvers?: DNSResolver[]
+  dnsResolvers?: DNSResolver[] | DNSResolvers
 }
 
 export interface CreateVerifiedFetchOptions {
@@ -651,7 +677,7 @@ export type BubbledProgressEvents =
   // unixfs
   GetEvents |
   // ipns
-  ResolveProgressEvents | ResolveDnsLinkProgressEvents | IPNSRoutingEvents
+  ResolveDNSLinkProgressEvents
 
 export type VerifiedFetchProgressEvents =
   ProgressEvent<'verified-fetch:request:start', CIDDetail> |
@@ -674,20 +700,19 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
  * Create and return a Helia node
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
-  let dnsResolvers: DNSResolver[] | undefined
   if (!isHelia(init)) {
-    dnsResolvers = init?.dnsResolvers
     init = await createHeliaHTTP({
       blockBrokers: [
         trustlessGateway({
           gateways: init?.gateways
         })
       ],
-      routers: (init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl))
+      routers: (init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
+      dns: createDns(init?.dnsResolvers)
     })
   }
 
-  const verifiedFetchInstance = new VerifiedFetchClass({ helia: init }, { dnsResolvers, ...options })
+  const verifiedFetchInstance = new VerifiedFetchClass({ helia: init }, options)
   async function verifiedFetch (resource: Resource, options?: VerifiedFetchInit): Promise<Response> {
     return verifiedFetchInstance.fetch(resource, options)
   }
@@ -706,4 +731,20 @@ function isHelia (obj: any): obj is Helia {
     obj?.gc != null &&
     obj?.stop != null &&
     obj?.start != null
+}
+
+function createDns (resolvers?: DNSResolver[] | DNSResolvers): DNS | undefined {
+  if (resolvers == null) {
+    return
+  }
+
+  if (Array.isArray(resolvers)) {
+    return dns({
+      resolvers: {
+        '.': resolvers
+      }
+    })
+  }
+
+  return dns({ resolvers })
 }

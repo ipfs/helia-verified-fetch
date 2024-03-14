@@ -2,7 +2,7 @@ import { CID } from 'multiformats/cid'
 import { parseUrlString } from './parse-url-string.js'
 import type { ParsedUrlStringResults } from './parse-url-string.js'
 import type { Resource } from '../index.js'
-import type { IPNS, IPNSRoutingEvents, ResolveDnsLinkProgressEvents, ResolveProgressEvents } from '@helia/ipns'
+import type { IPNS, IPNSRoutingEvents, ResolveDNSLinkProgressEvents, ResolveProgressEvents } from '@helia/ipns'
 import type { ComponentLogger } from '@libp2p/interface'
 import type { ProgressOptions } from 'progress-events'
 
@@ -11,7 +11,7 @@ export interface ParseResourceComponents {
   logger: ComponentLogger
 }
 
-export interface ParseResourceOptions extends ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents | ResolveDnsLinkProgressEvents> {
+export interface ParseResourceOptions extends ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents | ResolveDNSLinkProgressEvents> {
 
 }
 /**
