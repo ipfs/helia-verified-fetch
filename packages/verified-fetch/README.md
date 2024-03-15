@@ -177,7 +177,7 @@ Note that you do not need to provide both a DNS-over-HTTPS and a DNS-over-JSON r
 
 ```typescript
 import { createVerifiedFetch } from '@helia/verified-fetch'
-import { dnsJsonOverHttps, dnsOverHttps } from '@helia/ipns/dns-resolvers'
+import { dnsJsonOverHttps, dnsOverHttps } from '@multiformats/dns/resolvers'
 
 const fetch = await createVerifiedFetch({
   gateways: ['https://trustless-gateway.link'],
@@ -186,6 +186,29 @@ const fetch = await createVerifiedFetch({
     dnsJsonOverHttps('https://my-dns-resolver.example.com/dns-json'),
     dnsOverHttps('https://my-dns-resolver.example.com/dns-query')
   ]
+})
+```
+
+## Example - Customizing DNS per-TLD resolvers
+
+DNS resolvers can be configured to only service DNS queries for specific
+TLDs:
+
+```typescript
+import { createVerifiedFetch } from '@helia/verified-fetch'
+import { dnsJsonOverHttps, dnsOverHttps } from '@multiformats/dns/resolvers'
+
+const fetch = await createVerifiedFetch({
+  gateways: ['https://trustless-gateway.link'],
+  routers: ['http://delegated-ipfs.dev'],
+  dnsResolvers: {
+    // this resolver will only be used for `.com` domains (note - this could
+    // also be an array of resolvers)
+    'com.': dnsJsonOverHttps('https://my-dns-resolver.example.com/dns-json'),
+    // this resolver will be used for everything else (note - this could
+    // also be an array of resolvers)
+    '.': dnsOverHttps('https://my-dns-resolver.example.com/dns-query')
+  }
 })
 ```
 

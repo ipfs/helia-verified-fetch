@@ -13,7 +13,7 @@ describe('parseResource', () => {
     const shouldNotBeCalled2 = sinon.stub().throws(new Error('should not be called'))
     const { cid, path, query } = await parseResource(testCID, {
       ipns: stubInterface<IPNS>({
-        resolveDns: shouldNotBeCalled1,
+        resolveDNSLink: shouldNotBeCalled1,
         resolve: shouldNotBeCalled2
       }),
       logger: defaultLogger()

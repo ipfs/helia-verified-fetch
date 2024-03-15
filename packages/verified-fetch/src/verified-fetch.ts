@@ -1,6 +1,5 @@
 import { car } from '@helia/car'
-import { ipns as heliaIpns, type DNSResolver, type IPNS } from '@helia/ipns'
-import { dnsJsonOverHttps } from '@helia/ipns/dns-resolvers'
+import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
 import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs, type UnixFSStats } from '@helia/unixfs'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
@@ -29,6 +28,7 @@ import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as Verif
 import type { RequestFormatShorthand } from './types.js'
 import type { Helia } from '@helia/interface'
 import type { AbortOptions, Logger, PeerId } from '@libp2p/interface'
+import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
@@ -126,12 +126,7 @@ export class VerifiedFetch {
   constructor ({ helia, ipns, unixfs }: VerifiedFetchComponents, init?: VerifiedFetchInit) {
     this.helia = helia
     this.log = helia.logger.forComponent('helia:verified-fetch')
-    this.ipns = ipns ?? heliaIpns(helia, {
-      resolvers: init?.dnsResolvers ?? [
-        dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),
-        dnsJsonOverHttps('https://dns.google/resolve')
-      ]
-    })
+    this.ipns = ipns ?? heliaIpns(helia)
     this.unixfs = unixfs ?? heliaUnixFs(helia)
     this.contentTypeParser = init?.contentTypeParser
     this.log.trace('created VerifiedFetch instance')

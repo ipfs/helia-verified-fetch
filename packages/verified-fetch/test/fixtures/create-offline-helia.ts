@@ -1,9 +1,10 @@
 import { Helia as HeliaClass } from '@helia/utils'
 import { MemoryBlockstore } from 'blockstore-core'
 import { MemoryDatastore } from 'datastore-core'
+import type { HeliaHTTPInit } from '@helia/http'
 import type { Helia } from '@helia/interface'
 
-export async function createHelia (): Promise<Helia> {
+export async function createHelia (init: Partial<HeliaHTTPInit> = {}): Promise<Helia> {
   const datastore = new MemoryDatastore()
   const blockstore = new MemoryBlockstore()
 
@@ -11,7 +12,8 @@ export async function createHelia (): Promise<Helia> {
     datastore,
     blockstore,
     blockBrokers: [],
-    routers: []
+    routers: [],
+    ...init
   })
 
   await helia.start()
