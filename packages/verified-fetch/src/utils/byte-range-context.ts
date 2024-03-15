@@ -41,7 +41,7 @@ function getByteRangeFromHeader (rangeHeader: string): { start: string, end: str
 }
 
 export class ByteRangeContext {
-  private readonly _isRangeRequest: boolean
+  private readonly isRangeRequest: boolean
 
   /**
    * This property is purposefully only set in `set fileSize` and should not be set directly.
@@ -49,7 +49,7 @@ export class ByteRangeContext {
   private _fileSize: number | null | undefined
   private readonly _contentRangeHeaderValue: string | undefined
   private _body: SupportedBodyTypes = null
-  private readonly _rangeRequestHeader: string | undefined
+  private readonly rangeRequestHeader: string | undefined
   private readonly log: Logger
   private _isValidRangeRequest: boolean | null = null
   private readonly requestRangeStart: number | null
@@ -60,25 +60,26 @@ export class ByteRangeContext {
 
   constructor (logger: ComponentLogger, private readonly headers?: HeadersInit) {
     this.log = logger.forComponent('helia:verified-fetch:byte-range-context')
-    this._rangeRequestHeader = getHeader(this.headers, 'Range')
-    if (this._rangeRequestHeader != null) {
+    this.rangeRequestHeader = getHeader(this.headers, 'Range')
+    if (this.rangeRequestHeader != null) {
       this.log.trace('range request detected')
-      this._isRangeRequest = true
       try {
-        const { start, end } = getByteRangeFromHeader(this._rangeRequestHeader)
+        const { start, end } = getByteRangeFromHeader(this.rangeRequestHeader)
         this.requestRangeStart = start != null ? parseInt(start) : null
         this.requestRangeEnd = end != null ? parseInt(end) : null
+        this.isRangeRequest = true
       } catch (e) {
         this.log.error('error parsing range request header: %o', e)
         this.isValidRangeRequest = false
         this.requestRangeStart = null
         this.requestRangeEnd = null
+        this.isRangeRequest = false
       }
 
       this.setOffsetDetails()
     } else {
       this.log.trace('no range request detected')
-      this._isRangeRequest = false
+      this.isRangeRequest = false
       this.requestRangeStart = null
       this.requestRangeEnd = null
     }
@@ -159,10 +160,6 @@ export class ByteRangeContext {
 
   public get fileSize (): number | null | undefined {
     return this._fileSize
-  }
-
-  public get isRangeRequest (): boolean {
-    return this._isRangeRequest
   }
 
   private isValidByteStart (): boolean {
