@@ -99,7 +99,7 @@ describe('cache-control header', () => {
      * @see https://github.com/ipfs/js-ipns/blob/16e0e10682fa9a663e0bb493a44d3e99a5200944/src/index.ts#L200
      * @see https://github.com/ipfs/js-ipns/pull/308
      */
-    await name.publish(peerId, cid, { lifetime: oneHourInMs / 100000 })
+    await name.publish(peerId, cid, { lifetime: oneHourInMs })
 
     const resp = await verifiedFetch.fetch(`ipns://${peerId}`)
     expect(resp).to.be.ok()

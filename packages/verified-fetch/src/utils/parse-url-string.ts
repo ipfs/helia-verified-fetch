@@ -26,10 +26,13 @@ export interface ParsedUrlQuery extends Record<string, string | unknown> {
 interface ParsedUrlStringResultsBase extends ResolveResult {
   protocol: 'ipfs' | 'ipns'
   query: ParsedUrlQuery
-  ttl: number
+  /**
+   * milliseconds as a number
+   */
+  ttl?: number
 }
 
-export type ParsedUrlStringResults = ParsedUrlStringResultsBase // | DNSLinkResolveResult | IPNSResolveResult
+export type ParsedUrlStringResults = ParsedUrlStringResultsBase
 
 const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 const PATH_REGEX = /^\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
@@ -53,6 +56,26 @@ function matchURLString (urlString: string): MatchUrlGroups {
   }
 
   throw new TypeError(`Invalid URL: ${urlString}, please use ipfs://, ipns://, or gateway URLs only`)
+}
+
+/**
+ * determines the TTL for the resolved resource.
+ *
+ * If we have ipnsTtlNs, it will be a BigInt representing nanoseconds. We need to convert it back to milliseconds.
+ *
+ * For more TTL nuances:
+ *
+ * @see https://github.com/ipfs/js-ipns/blob/16e0e10682fa9a663e0bb493a44d3e99a5200944/src/index.ts#L200
+ * @see https://github.com/ipfs/js-ipns/pull/308
+ */
+function calculateTtl (resolveResult?: IPNSResolveResult | DNSLinkResolveResult): number | undefined {
+  if (resolveResult == null) {
+    return undefined
+  }
+  const dnsLinkTtl = (resolveResult as DNSLinkResolveResult).answer?.TTL
+  const ipnsTtlNs = (resolveResult as IPNSResolveResult).record?.ttl
+  const ipnsTtl = ipnsTtlNs != null ? Number(BigInt(ipnsTtlNs) / BigInt(1e5)) : undefined
+  return dnsLinkTtl ?? ipnsTtl
 }
 
 /**
@@ -98,12 +121,13 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
   let resolvedPath: string | undefined
   const errors: Error[] = []
   let resolveResult: IPNSResolveResult | DNSLinkResolveResult | undefined
-  let ttl: number = 5 * 60 // 5 minutes based on https://github.com/ipfs/boxo/issues/329#issuecomment-1995236409
 
   if (protocol === 'ipfs') {
     try {
       cid = CID.parse(cidOrPeerIdOrDnsLink)
-      ttl = 29030400 // 1 year for ipfs content
+      /**
+       * no ttl set. @link {setCacheControlHeader}
+       */
     } catch (err) {
       log.error(err)
       errors.push(new TypeError('Invalid CID for ipfs://<cid> URL'))
@@ -115,27 +139,17 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
     if (resolveResult != null) {
       cid = resolveResult.cid
       resolvedPath = resolveResult.path
-      const answerTtl = (resolveResult as DNSLinkResolveResult).answer?.TTL
-      const recordTtl = (resolveResult as IPNSResolveResult).record?.ttl
-      ttl = Number(answerTtl ?? recordTtl ?? ttl)
       log.trace('resolved %s to %c from cache', cidOrPeerIdOrDnsLink, cid)
     } else {
       log.trace('Attempting to resolve PeerId for %s', cidOrPeerIdOrDnsLink)
       let peerId = null
       try {
+        // try resolving as an IPNS name
         peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
         resolveResult = await ipns.resolve(peerId, { onProgress: options?.onProgress })
-        cid = resolveResult?.cid
-        resolvedPath = resolveResult?.path
-        /**
-         * For TTL nuances, see
-         *
-         * @see https://github.com/ipfs/js-ipns/blob/16e0e10682fa9a663e0bb493a44d3e99a5200944/src/index.ts#L200
-         * @see https://github.com/ipfs/js-ipns/pull/308
-         */
-        ttl = Number(resolveResult.record.ttl)
+        cid = resolveResult.cid
+        resolvedPath = resolveResult.path
         log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
-        ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
       } catch (err) {
         if (peerId == null) {
           log.error('Could not parse PeerId string "%s"', cidOrPeerIdOrDnsLink, err)
@@ -147,6 +161,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       }
 
       if (cid == null) {
+        // cid is still null, try resolving as a DNSLink
         let decodedDnsLinkLabel = cidOrPeerIdOrDnsLink
         if (isInlinedDnsLink(cidOrPeerIdOrDnsLink)) {
           decodedDnsLinkLabel = dnsLinkLabelDecoder(cidOrPeerIdOrDnsLink)
@@ -158,9 +173,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
           resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, { onProgress: options?.onProgress })
           cid = resolveResult?.cid
           resolvedPath = resolveResult?.path
-          ttl = resolveResult.answer.TTL
           log.trace('resolved %s to %c', decodedDnsLinkLabel, cid)
-          ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
         } catch (err: any) {
           log.error('Could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)
           errors.push(err)
@@ -175,6 +188,13 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
     }
 
     throw new AggregateError(errors, `Invalid resource. Cannot determine CID from URL "${urlString}"`)
+  }
+
+  const ttl = calculateTtl(resolveResult)
+
+  if (resolveResult != null) {
+    // use the ttl for the resolved resouce for the cache, but fallback to 2 minutes if not available
+    ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, ttl ?? 60 * 1000 * 2)
   }
 
   // parse query string
