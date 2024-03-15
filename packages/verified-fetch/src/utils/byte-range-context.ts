@@ -42,6 +42,10 @@ function getByteRangeFromHeader (rangeHeader: string): { start: string, end: str
 
 export class ByteRangeContext {
   private readonly _isRangeRequest: boolean
+
+  /**
+   * This property is purposefully only set in `set fileSize` and should not be set directly.
+   */
   private _fileSize: number | null | undefined
   private readonly _contentRangeHeaderValue: string | undefined
   private _body: SupportedBodyTypes = null
@@ -139,7 +143,13 @@ export class ByteRangeContext {
     return this.requestRangeStart != null && this.requestRangeEnd == null
   }
 
-  // sometimes, we need to set the fileSize explicitly because we can't calculate the size of the body (e.g. for unixfs content where we call .stat)
+  /**
+   * Sometimes, we need to set the fileSize explicitly because we can't calculate
+   * the size of the body (e.g. for unixfs content where we call .stat).
+   *
+   * This fileSize should otherwise only be called from `setBody`, and `.fileSize`
+   * should not be set directly.
+   */
   public set fileSize (size: number | bigint | null) {
     this._fileSize = size != null ? Number(size) : null
     this.log.trace('set _fileSize to %o', this._fileSize)
