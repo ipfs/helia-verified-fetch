@@ -2,7 +2,7 @@ import { peerIdFromString } from '@libp2p/peer-id'
 import { CID } from 'multiformats/cid'
 import { TLRU } from './tlru.js'
 import type { RequestFormatShorthand } from '../types.js'
-import type { IPNS, IPNSRoutingEvents, ResolveDnsLinkProgressEvents, ResolveProgressEvents, ResolveResult } from '@helia/ipns'
+import type { IPNS, ResolveDNSLinkProgressEvents, ResolveResult } from '@helia/ipns'
 import type { ComponentLogger } from '@libp2p/interface'
 import type { ProgressOptions } from 'progress-events'
 
@@ -13,7 +13,7 @@ export interface ParseUrlStringInput {
   ipns: IPNS
   logger: ComponentLogger
 }
-export interface ParseUrlStringOptions extends ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents | ResolveDnsLinkProgressEvents> {
+export interface ParseUrlStringOptions extends ProgressOptions<ResolveDNSLinkProgressEvents> {
 
 }
 
@@ -33,7 +33,7 @@ export interface ParsedUrlStringResults {
 const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 const PATH_REGEX = /^\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 const PATH_GATEWAY_REGEX = /^https?:\/\/(.*[^/])\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
-const SUBDOMAIN_GATEWAY_REGEX = /^https?:\/\/(?<cidOrPeerIdOrDnsLink>[^/.?]+)\.(?<protocol>ip[fn]s)\.([^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
+const SUBDOMAIN_GATEWAY_REGEX = /^https?:\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\.(?<protocol>ip[fn]s)\.([^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 
 function matchURLString (urlString: string): Record<string, string> {
   for (const pattern of [URL_REGEX, PATH_REGEX, PATH_GATEWAY_REGEX, SUBDOMAIN_GATEWAY_REGEX]) {
@@ -45,6 +45,34 @@ function matchURLString (urlString: string): Record<string, string> {
   }
 
   throw new TypeError(`Invalid URL: ${urlString}, please use ipfs://, ipns://, or gateway URLs only`)
+}
+
+/**
+ * For dnslinks see https://specs.ipfs.tech/http-gateways/subdomain-gateway/#host-request-header
+ * DNSLink names include . which means they must be inlined into a single DNS label to provide unique origin and work with wildcard TLS certificates.
+ */
+
+// DNS label can have up to 63 characters, consisting of alphanumeric
+// characters or hyphens -, but it must not start or end with a hyphen.
+const dnsLabelRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/
+
+/**
+ * Checks if label looks like inlined DNSLink.
+ * (https://specs.ipfs.tech/http-gateways/subdomain-gateway/#host-request-header)
+ */
+function isInlinedDnsLink (label: string): boolean {
+  return dnsLabelRegex.test(label) && label.includes('-') && !label.includes('.')
+}
+
+/**
+ * DNSLink label decoding
+ * * Every standalone - is replaced with .
+ * * Every remaining -- is replaced with -
+ *
+ * @example en-wikipedia--on--ipfs-org.ipns.example.net -> example.net/ipns/en.wikipedia-on-ipfs.org
+ */
+function dnsLinkLabelDecoder (linkLabel: string): string {
+  return linkLabel.replace(/--/g, '%').replace(/-/g, '.').replace(/%/g, '-')
 }
 
 /**
@@ -80,7 +108,6 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       // protocol is ipns
       log.trace('attempting to resolve PeerId for %s', cidOrPeerIdOrDnsLink)
       let peerId = null
-
       try {
         peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
         resolveResult = await ipns.resolve(peerId, { onProgress: options?.onProgress })
@@ -99,13 +126,18 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       }
 
       if (cid == null) {
-        log.trace('attempting to resolve DNSLink for %s', cidOrPeerIdOrDnsLink)
+        let decodedDnsLinkLabel = cidOrPeerIdOrDnsLink
+        if (isInlinedDnsLink(cidOrPeerIdOrDnsLink)) {
+          decodedDnsLinkLabel = dnsLinkLabelDecoder(cidOrPeerIdOrDnsLink)
+          log.trace('decoded dnslink from "%s" to "%s"', cidOrPeerIdOrDnsLink, decodedDnsLinkLabel)
+        }
+        log.trace('Attempting to resolve DNSLink for %s', decodedDnsLinkLabel)
 
         try {
-          resolveResult = await ipns.resolveDns(cidOrPeerIdOrDnsLink, { onProgress: options?.onProgress })
+          resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, { onProgress: options?.onProgress })
           cid = resolveResult?.cid
           resolvedPath = resolveResult?.path
-          log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
+          log.trace('resolved %s to %c', decodedDnsLinkLabel, cid)
           ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
         } catch (err: any) {
           log.error('could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)

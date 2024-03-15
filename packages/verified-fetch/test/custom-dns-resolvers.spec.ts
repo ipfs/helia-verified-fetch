@@ -1,4 +1,5 @@
 import { stop } from '@libp2p/interface'
+import { dns, RecordType } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
 import Sinon from 'sinon'
 import { createVerifiedFetch } from '../src/index.js'
@@ -18,9 +19,11 @@ describe('custom dns-resolvers', () => {
   })
 
   it('is used when passed to createVerifiedFetch', async () => {
-    const customDnsResolver = Sinon.stub()
-
-    customDnsResolver.returns(Promise.resolve('/ipfs/QmVP2ip92jQuMDezVSzQBWDqWFbp9nyCHNQSiciRauPLDg'))
+    const customDnsResolver = Sinon.stub().withArgs('_dnslink.some-non-cached-domain.com').resolves({
+      Answer: [{
+        data: 'dnslink=/ipfs/QmVP2ip92jQuMDezVSzQBWDqWFbp9nyCHNQSiciRauPLDg'
+      }]
+    })
 
     const fetch = await createVerifiedFetch({
       gateways: ['http://127.0.0.1:8080'],
@@ -31,18 +34,32 @@ describe('custom dns-resolvers', () => {
     expect(response.statusText).to.equal('Bad Gateway')
 
     expect(customDnsResolver.callCount).to.equal(1)
-    expect(customDnsResolver.getCall(0).args).to.deep.equal(['some-non-cached-domain.com', { onProgress: undefined }])
+    expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain.com', {
+      onProgress: undefined,
+      types: [
+        RecordType.TXT
+      ]
+    }])
   })
 
   it('is used when passed to VerifiedFetch', async () => {
-    const customDnsResolver = Sinon.stub()
+    const customDnsResolver = Sinon.stub().withArgs('_dnslink.some-non-cached-domain2.com').resolves({
+      Answer: [{
+        data: 'dnslink=/ipfs/QmVP2ip92jQuMDezVSzQBWDqWFbp9nyCHNQSiciRauPLDg'
+      }]
+    })
 
-    customDnsResolver.returns(Promise.resolve('/ipfs/QmVP2ip92jQuMDezVSzQBWDqWFbp9nyCHNQSiciRauPLDg'))
+    await stop(helia)
+    helia = await createHelia({
+      dns: dns({
+        resolvers: {
+          '.': customDnsResolver
+        }
+      })
+    })
 
     const verifiedFetch = new VerifiedFetch({
       helia
-    }, {
-      dnsResolvers: [customDnsResolver]
     })
 
     const response = await verifiedFetch.fetch('ipns://some-non-cached-domain2.com')
@@ -50,6 +67,11 @@ describe('custom dns-resolvers', () => {
     expect(response.statusText).to.equal('Bad Gateway')
 
     expect(customDnsResolver.callCount).to.equal(1)
-    expect(customDnsResolver.getCall(0).args).to.deep.equal(['some-non-cached-domain2.com', { onProgress: undefined }])
+    expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain2.com', {
+      onProgress: undefined,
+      types: [
+        RecordType.TXT
+      ]
+    }])
   })
 })

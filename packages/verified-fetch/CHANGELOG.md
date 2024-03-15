@@ -1,3 +1,17 @@
+## @helia/verified-fetch [1.1.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.1.2...@helia/verified-fetch-1.1.3) (2024-03-14)
+
+
+### Bug Fixes
+
+* update @helia/ipns and dns config ([#18](https://github.com/ipfs/helia-verified-fetch/issues/18)) ([9f88c54](https://github.com/ipfs/helia-verified-fetch/commit/9f88c5492f3418143c9b69907b212d29ecec4f91))
+
+## @helia/verified-fetch [1.1.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.1.1...@helia/verified-fetch-1.1.2) (2024-03-11)
+
+
+### Bug Fixes
+
+* support https?://<dnsLink>.ipns.<gateway> urls ([#16](https://github.com/ipfs/helia-verified-fetch/issues/16)) ([0ece19a](https://github.com/ipfs/helia-verified-fetch/commit/0ece19a4bd355d75e52390bb5c8fdb477e99293b))
+
 ## @helia/verified-fetch [1.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.1.0...@helia/verified-fetch-1.1.1) (2024-03-08)
 
 

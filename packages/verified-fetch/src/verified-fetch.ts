@@ -1,6 +1,5 @@
 import { car } from '@helia/car'
-import { ipns as heliaIpns, type DNSResolver, type IPNS } from '@helia/ipns'
-import { dnsJsonOverHttps } from '@helia/ipns/dns-resolvers'
+import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
 import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs, type UnixFSStats } from '@helia/unixfs'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
@@ -28,8 +27,10 @@ import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-outp
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
+import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia } from '@helia/interface'
 import type { AbortOptions, Logger, PeerId } from '@libp2p/interface'
+import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
@@ -127,12 +128,7 @@ export class VerifiedFetch {
   constructor ({ helia, ipns, unixfs }: VerifiedFetchComponents, init?: VerifiedFetchInit) {
     this.helia = helia
     this.log = helia.logger.forComponent('helia:verified-fetch')
-    this.ipns = ipns ?? heliaIpns(helia, {
-      resolvers: init?.dnsResolvers ?? [
-        dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),
-        dnsJsonOverHttps('https://dns.google/resolve')
-      ]
-    })
+    this.ipns = ipns ?? heliaIpns(helia)
     this.unixfs = unixfs ?? heliaUnixFs(helia)
     this.contentTypeParser = init?.contentTypeParser
     this.log.trace('created VerifiedFetch instance')
@@ -443,7 +439,19 @@ export class VerifiedFetch {
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:start', { resource }))
 
     // resolve the CID/path from the requested resource
-    const { path, query, cid } = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
+    let cid: ParsedUrlStringResults['cid']
+    let path: ParsedUrlStringResults['path']
+    let query: ParsedUrlStringResults['query']
+    try {
+      const result = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
+      cid = result.cid
+      path = result.path
+      query = result.query
+    } catch (err) {
+      this.log.error('error parsing resource %s', resource, err)
+
+      return badRequestResponse('Invalid resource')
+    }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
 
