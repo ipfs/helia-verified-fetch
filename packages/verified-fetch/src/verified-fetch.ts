@@ -334,7 +334,7 @@ export class VerifiedFetch {
 
     // we have to .stat before .cat so we can get the size and make sure byte offsets are calculated properly
     if (byteRangeContext.isRangeRequest && byteRangeContext.isValidRangeRequest && terminalElement.type === 'file') {
-      byteRangeContext.fileSize = terminalElement.unixfs.fileSize()
+      byteRangeContext.setFileSize(terminalElement.unixfs.fileSize())
 
       this.log.trace('fileSize for rangeRequest %d', byteRangeContext.fileSize)
     }
