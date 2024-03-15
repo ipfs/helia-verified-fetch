@@ -3,6 +3,8 @@ import { getContentRangeHeader } from './response-headers.js'
 import type { SupportedBodyTypes } from '../types.js'
 import type { ComponentLogger, Logger } from '@libp2p/interface'
 
+type SliceableBody = Exclude<SupportedBodyTypes, ReadableStream<Uint8Array> | null>
+
 /**
  * Gets the body size of a given body if it's possible to calculate it synchronously.
  */
@@ -113,20 +115,20 @@ export class ByteRangeContext {
     return body
   }
 
-  private getSlicedBody <T extends Uint8Array | ArrayBuffer | Blob | string>(body: T): T {
+  private getSlicedBody <T extends SliceableBody>(body: T): SliceableBody {
     if (this.isPrefixLengthRequest) {
       this.log.trace('sliced body with byteStart %o', this.byteStart)
-      return body.slice(this.offset) as T
+      return body.slice(this.offset) satisfies SliceableBody
     }
     if (this.isSuffixLengthRequest && this.length != null) {
       this.log.trace('sliced body with length %o', -this.length)
-      return body.slice(-this.length) as T
+      return body.slice(-this.length) satisfies SliceableBody
     }
     const offset = this.byteStart ?? 0
     const length = this.byteEnd == null ? undefined : this.byteEnd + 1
     this.log.trace('returning body with offset %o and length %o', offset, length)
 
-    return body.slice(offset, length) as T
+    return body.slice(offset, length) satisfies SliceableBody
   }
 
   private get isSuffixLengthRequest (): boolean {
