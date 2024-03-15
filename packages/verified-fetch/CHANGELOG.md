@@ -1,3 +1,15 @@
+## @helia/verified-fetch [1.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.1.3...@helia/verified-fetch-1.2.0) (2024-03-15)
+
+
+### Features
+
+* support http range header ([#10](https://github.com/ipfs/helia-verified-fetch/issues/10)) ([9f5078a](https://github.com/ipfs/helia-verified-fetch/commit/9f5078a09846ba6569d637ea1dd90a6d8fb4e629))
+
+
+### Trivial Changes
+
+* fix build ([#22](https://github.com/ipfs/helia-verified-fetch/issues/22)) ([01261fe](https://github.com/ipfs/helia-verified-fetch/commit/01261feabd4397c10446609b072a7cb97fb81911))
+
 ## @helia/verified-fetch [1.1.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.1.2...@helia/verified-fetch-1.1.3) (2024-03-14)
 
 
