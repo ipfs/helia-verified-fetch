@@ -267,12 +267,17 @@ export class ByteRangeContext {
   }
 
   /**
-   * This function returns the value of the "content-range" header.
-   * Content-Range: <unit> <range-start>-<range-end>/<size>
-   * Content-Range: <unit> <range-start>-<range-end>/*
-   * Content-Range: <unit> */<size>
+   * This function returns the values of the "content-range" header.
+   *
    * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
+   *
+   * Returns data to support the following content ranges:
+   *
+   * @example
+   * - Content-Range: <unit> <byteStart>-<byteEnd>/<byteSize>
+   * - Content-Range: <unit> <byteStart>-<byteEnd>/&#8205;*
    */
+  // - Content-Range: <unit> */<byteSize> // this is purposefully not in jsdoc block
   public get contentRangeHeaderValue (): string {
     if (this._contentRangeHeaderValue != null) {
       return this._contentRangeHeaderValue
