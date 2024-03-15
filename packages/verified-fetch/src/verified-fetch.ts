@@ -1,6 +1,6 @@
 import { car } from '@helia/car'
 import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
-import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs, type UnixFSStats } from '@helia/unixfs'
+import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs } from '@helia/unixfs'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
@@ -290,7 +290,6 @@ export class VerifiedFetch {
     }
 
     let resolvedCID = terminalElement?.cid ?? cid
-    let stat: UnixFSStats | undefined
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
 
@@ -312,7 +311,7 @@ export class VerifiedFetch {
       const rootFilePath = 'index.html'
       try {
         this.log.trace('found directory at %c/%s, looking for index.html', cid, path)
-        stat = await this.unixfs.stat(dirCid, {
+        const stat = await this.unixfs.stat(dirCid, {
           path: rootFilePath,
           signal: options?.signal,
           onProgress: options?.onProgress
@@ -328,7 +327,7 @@ export class VerifiedFetch {
       }
     }
 
-    // we have to .stat before .cat so we can get the size and make sure byte offsets are calculated properly
+    // we have a validRangeRequest & terminalElement is a file, we know the size and should set it
     if (byteRangeContext.isRangeRequest && byteRangeContext.isValidRangeRequest && terminalElement.type === 'file') {
       byteRangeContext.setFileSize(terminalElement.unixfs.fileSize())
 
