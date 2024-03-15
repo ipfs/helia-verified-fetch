@@ -19,16 +19,19 @@ describe('custom dns-resolvers', () => {
   })
 
   it('is used when passed to createVerifiedFetch', async () => {
-    const customDnsResolver = Sinon.stub()
-
-    customDnsResolver.returns(Promise.resolve('/ipfs/QmVP2ip92jQuMDezVSzQBWDqWFbp9nyCHNQSiciRauPLDg'))
+    const customDnsResolver = Sinon.stub().withArgs('_dnslink.some-non-cached-domain.com').resolves({
+      Answer: [{
+        data: 'dnslink=/ipfs/QmVP2ip92jQuMDezVSzQBWDqWFbp9nyCHNQSiciRauPLDg'
+      }]
+    })
 
     const fetch = await createVerifiedFetch({
       gateways: ['http://127.0.0.1:8080'],
       dnsResolvers: [customDnsResolver]
     })
-    // error of walking the CID/dag because we haven't actually added the block to the blockstore
-    await expect(fetch('ipns://some-non-cached-domain.com')).to.eventually.be.rejected.with.property('errors')
+    const response = await fetch('ipns://some-non-cached-domain.com')
+    expect(response.status).to.equal(502)
+    expect(response.statusText).to.equal('Bad Gateway')
 
     expect(customDnsResolver.callCount).to.equal(1)
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain.com', {
@@ -58,8 +61,10 @@ describe('custom dns-resolvers', () => {
     const verifiedFetch = new VerifiedFetch({
       helia
     })
-    // error of walking the CID/dag because we haven't actually added the block to the blockstore
-    await expect(verifiedFetch.fetch('ipns://some-non-cached-domain2.com')).to.eventually.be.rejected.with.property('errors').that.has.lengthOf(0)
+
+    const response = await verifiedFetch.fetch('ipns://some-non-cached-domain2.com')
+    expect(response.status).to.equal(502)
+    expect(response.statusText).to.equal('Bad Gateway')
 
     expect(customDnsResolver.callCount).to.equal(1)
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain2.com', {
