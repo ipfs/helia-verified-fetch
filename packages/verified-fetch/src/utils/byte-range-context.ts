@@ -84,7 +84,7 @@ export class ByteRangeContext {
   public setBody (body: SupportedBodyTypes): void {
     this._body = body
     // if fileSize was already set, don't recalculate it
-    this.fileSize = this.fileSize ?? getBodySizeSync(body)
+    this.setFileSize(this._fileSize ?? getBodySizeSync(body))
 
     this.log.trace('set request body with fileSize %o', this._fileSize)
   }
@@ -144,17 +144,16 @@ export class ByteRangeContext {
    * Sometimes, we need to set the fileSize explicitly because we can't calculate
    * the size of the body (e.g. for unixfs content where we call .stat).
    *
-   * This fileSize should otherwise only be called from `setBody`, and `.fileSize`
-   * should not be set directly.
+   * This fileSize should otherwise only be called from `setBody`.
    */
-  public set fileSize (size: number | bigint | null) {
+  public setFileSize (size: number | bigint | null): void {
     this._fileSize = size != null ? Number(size) : null
     this.log.trace('set _fileSize to %o', this._fileSize)
     // when fileSize changes, we need to recalculate the offset details
     this.setOffsetDetails()
   }
 
-  public get fileSize (): number | null | undefined {
+  public getFileSize (): number | null | undefined {
     return this._fileSize
   }
 
@@ -163,7 +162,7 @@ export class ByteRangeContext {
       if (this.byteStart < 0) {
         return false
       }
-      if (this.fileSize != null && this.byteStart > this.fileSize) {
+      if (this._fileSize != null && this.byteStart > this._fileSize) {
         return false
       }
     }
@@ -175,7 +174,7 @@ export class ByteRangeContext {
       if (this.byteEnd < 0) {
         return false
       }
-      if (this.fileSize != null && this.byteEnd > this.fileSize) {
+      if (this._fileSize != null && this.byteEnd > this._fileSize) {
         return false
       }
     }

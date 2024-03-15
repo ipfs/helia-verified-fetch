@@ -26,7 +26,7 @@ describe('ByteRangeContext', () => {
     const body = new Uint8Array([1, 2, 3, 4, 5])
     context.setBody(body)
     expect(context.getBody()).to.equal(body)
-    expect(context.fileSize).to.equal(body.length)
+    expect(context.getFileSize()).to.equal(body.length)
   })
 
   it('should correctly handle invalid range request', () => {
@@ -137,7 +137,7 @@ describe('ByteRangeContext', () => {
           leafType: 'file'
         })
         const stat = await fs.stat(cid)
-        context.fileSize = stat.fileSize
+        context.setFileSize(stat.fileSize)
 
         context.setBody(await getBodyStream(context.offset, context.length))
         const response = new Response(context.getBody())
