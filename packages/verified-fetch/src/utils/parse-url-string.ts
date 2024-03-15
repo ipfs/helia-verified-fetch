@@ -26,7 +26,7 @@ export interface ParsedUrlQuery extends Record<string, string | unknown> {
 interface ParsedUrlStringResultsBase extends ResolveResult {
   protocol: 'ipfs' | 'ipns'
   query: ParsedUrlQuery
-  ttl?: number
+  ttl: number
 }
 
 export type ParsedUrlStringResults = ParsedUrlStringResultsBase // | DNSLinkResolveResult | IPNSResolveResult
@@ -109,14 +109,17 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       errors.push(new TypeError('Invalid CID for ipfs://<cid> URL'))
     }
   } else {
+    // protocol is ipns
     resolveResult = ipnsCache.get(cidOrPeerIdOrDnsLink)
 
     if (resolveResult != null) {
       cid = resolveResult.cid
       resolvedPath = resolveResult.path
+      const answerTtl = (resolveResult as DNSLinkResolveResult).answer?.TTL
+      const recordTtl = (resolveResult as IPNSResolveResult).record?.ttl
+      ttl = Number(answerTtl ?? recordTtl ?? ttl)
       log.trace('resolved %s to %c from cache', cidOrPeerIdOrDnsLink, cid)
     } else {
-      // protocol is ipns
       log.trace('Attempting to resolve PeerId for %s', cidOrPeerIdOrDnsLink)
       let peerId = null
       try {
