@@ -50,7 +50,7 @@ export class ByteRangeContext {
    */
   public fileSize: Readonly<number | null | undefined>
   private readonly _contentRangeHeaderValue: string | undefined
-  private _body: SupportedBodyTypes | null = null
+  private _body: SupportedBodyTypes = null
   private readonly _rangeRequestHeader: string | undefined
   private readonly log: Logger
   private _isValidRangeRequest: boolean | null = null
