@@ -47,7 +47,6 @@ export class ByteRangeContext {
    * This property is purposefully only set in `set fileSize` and should not be set directly.
    */
   private _fileSize: number | null | undefined
-  private readonly _contentRangeHeaderValue: string | undefined
   private _body: SupportedBodyTypes = null
   private readonly rangeRequestHeader: string | undefined
   private readonly log: Logger
@@ -291,9 +290,6 @@ export class ByteRangeContext {
    */
   // - Content-Range: <unit> */<byteSize> // this is purposefully not in jsdoc block
   public get contentRangeHeaderValue (): string {
-    if (this._contentRangeHeaderValue != null) {
-      return this._contentRangeHeaderValue
-    }
     if (!this.isValidRangeRequest) {
       this.log.error('cannot get contentRangeHeaderValue for invalid range request')
       throw new Error('Invalid range request')
