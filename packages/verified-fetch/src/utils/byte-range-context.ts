@@ -286,7 +286,7 @@ export class ByteRangeContext {
    *
    * @example
    * - Content-Range: <unit> <byteStart>-<byteEnd>/<byteSize>
-   * - Content-Range: <unit> <byteStart>-<byteEnd>/&#8205;*
+   * - Content-Range: <unit> <byteStart>-<byteEnd>/*
    */
   // - Content-Range: <unit> */<byteSize> // this is purposefully not in jsdoc block
   public get contentRangeHeaderValue (): string {
