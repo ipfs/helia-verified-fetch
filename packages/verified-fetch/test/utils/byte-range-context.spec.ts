@@ -87,12 +87,23 @@ describe('ByteRangeContext', () => {
     }))
   ]
   validRanges.forEach(({ type, range, expected, body, contentRange }) => {
-    it(`should correctly slice ${type} body with range ${range}`, () => {
+    it(`should correctly slice ${type} body with range ${range}`, async () => {
       const context = new ByteRangeContext(logger, { Range: range })
 
       context.setBody(body)
+      const actualBody = context.getBody()
 
-      expect(context.getBody()).to.deep.equal(expected)
+      if (actualBody instanceof Blob || type === 'Blob') {
+        const bodyAsUint8Array = new Uint8Array(await (actualBody as Blob).arrayBuffer())
+        const expectedAsUint8Array = new Uint8Array(await (expected as Blob).arrayBuffer())
+        // loop through the bytes and compare them
+        for (let i = 0; i < bodyAsUint8Array.length; i++) {
+          expect(bodyAsUint8Array[i]).to.equal(expectedAsUint8Array[i])
+        }
+      } else {
+        expect(actualBody).to.deep.equal(expected)
+      }
+
       expect(context.contentRangeHeaderValue).to.equal(contentRange)
     })
   })
