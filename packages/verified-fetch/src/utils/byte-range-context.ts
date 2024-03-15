@@ -41,7 +41,7 @@ function getByteRangeFromHeader (rangeHeader: string): { start: string, end: str
 }
 
 export class ByteRangeContext {
-  private readonly isRangeRequest: boolean
+  public readonly isRangeRequest: boolean
 
   /**
    * This property is purposefully only set in `set fileSize` and should not be set directly.
@@ -51,7 +51,6 @@ export class ByteRangeContext {
   private _body: SupportedBodyTypes = null
   private readonly rangeRequestHeader: string | undefined
   private readonly log: Logger
-  private _isValidRangeRequest: boolean | null = null
   private readonly requestRangeStart: number | null
   private readonly requestRangeEnd: number | null
   private byteStart: number | undefined
@@ -62,18 +61,16 @@ export class ByteRangeContext {
     this.log = logger.forComponent('helia:verified-fetch:byte-range-context')
     this.rangeRequestHeader = getHeader(this.headers, 'Range')
     if (this.rangeRequestHeader != null) {
+      this.isRangeRequest = true
       this.log.trace('range request detected')
       try {
         const { start, end } = getByteRangeFromHeader(this.rangeRequestHeader)
         this.requestRangeStart = start != null ? parseInt(start) : null
         this.requestRangeEnd = end != null ? parseInt(end) : null
-        this.isRangeRequest = true
       } catch (e) {
         this.log.error('error parsing range request header: %o', e)
-        this.isValidRangeRequest = false
         this.requestRangeStart = null
         this.requestRangeEnd = null
-        this.isRangeRequest = false
       }
 
       this.setOffsetDetails()
@@ -186,33 +183,41 @@ export class ByteRangeContext {
     return true
   }
 
-  public set isValidRangeRequest (val: boolean) {
-    this._isValidRangeRequest = val
-  }
-
+  /**
+   * We may get the values required to determine if this is a valid range request at different times
+   * so we need to calculate it when asked.
+   */
   public get isValidRangeRequest (): boolean {
+    if (!this.isRangeRequest) {
+      return false
+    }
+    if (this.requestRangeStart == null && this.requestRangeEnd == null) {
+      this.log.trace('invalid range request, range request values not provided')
+      return false
+    }
     if (!this.isValidByteStart()) {
       this.log.trace('invalid range request, byteStart is less than 0 or greater than fileSize')
-      this._isValidRangeRequest = false
-    } else if (!this.isValidByteEnd()) {
+      return false
+    }
+    if (!this.isValidByteEnd()) {
       this.log.trace('invalid range request, byteEnd is less than 0 or greater than fileSize')
-      this._isValidRangeRequest = false
-    } else if (this.requestRangeEnd != null && this.requestRangeStart != null) {
+      return false
+    }
+    if (this.requestRangeEnd != null && this.requestRangeStart != null) {
       // we may not have enough info.. base check on requested bytes
       if (this.requestRangeStart > this.requestRangeEnd) {
         this.log.trace('invalid range request, start is greater than end')
-        this._isValidRangeRequest = false
+        return false
       } else if (this.requestRangeStart < 0) {
         this.log.trace('invalid range request, start is less than 0')
-        this._isValidRangeRequest = false
+        return false
       } else if (this.requestRangeEnd < 0) {
         this.log.trace('invalid range request, end is less than 0')
-        this._isValidRangeRequest = false
+        return false
       }
     }
-    this._isValidRangeRequest = this._isValidRangeRequest ?? true
 
-    return this._isValidRangeRequest
+    return true
   }
 
   /**
@@ -274,11 +279,11 @@ export class ByteRangeContext {
   }
 
   /**
-   * This function returns the values of the "content-range" header.
+   * This function returns the value of the "content-range" header.
    *
    * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
    *
-   * Returns data to support the following content ranges:
+   * Returns a string representing the following content ranges:
    *
    * @example
    * - Content-Range: <unit> <byteStart>-<byteEnd>/<byteSize>
