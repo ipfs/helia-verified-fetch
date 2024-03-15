@@ -1,15 +1,15 @@
 import { matchPeerId } from '@libp2p/interface-compliance-tests/matchers'
 import { defaultLogger } from '@libp2p/logger'
 import { createEd25519PeerId } from '@libp2p/peer-id-factory'
+import { type Answer } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
+import { type IPNSRecord } from 'ipns'
 import { CID } from 'multiformats/cid'
 import { match } from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { parseUrlString } from '../../src/utils/parse-url-string.js'
 import type { IPNS } from '@helia/ipns'
 import type { ComponentLogger, PeerId } from '@libp2p/interface'
-import type { Answer } from '@multiformats/dns'
-import type { IPNSRecordV2 } from 'ipns'
 import type { StubbedInstance } from 'sinon-ts'
 
 const HTTP_PROTOCOLS = [
@@ -441,7 +441,7 @@ describe('parseUrlString', () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
-        record: stubInterface<IPNSRecordV2>()
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -458,7 +458,7 @@ describe('parseUrlString', () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
-        record: stubInterface<IPNSRecordV2>()
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -475,7 +475,7 @@ describe('parseUrlString', () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
-        record: stubInterface<IPNSRecordV2>()
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -492,7 +492,7 @@ describe('parseUrlString', () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
-        record: stubInterface<IPNSRecordV2>()
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -511,7 +511,7 @@ describe('parseUrlString', () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
-        record: stubInterface<IPNSRecordV2>()
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -535,7 +535,7 @@ describe('parseUrlString', () => {
       ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
         cid,
         path: recordPath,
-        record: stubInterface<IPNSRecordV2>()
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -557,7 +557,7 @@ describe('parseUrlString', () => {
       ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
         cid,
         path: recordPath,
-        record: stubInterface<IPNSRecordV2>()
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -579,7 +579,7 @@ describe('parseUrlString', () => {
       ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
         cid,
         path: recordPath,
-        record: stubInterface<IPNSRecordV2>()
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -603,7 +603,7 @@ describe('parseUrlString', () => {
       ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
         cid,
         path: '',
-        record: stubInterface<IPNSRecordV2>()
+        record: stubInterface<IPNSRecord>()
       })
     })
 
@@ -691,7 +691,7 @@ describe('parseUrlString', () => {
         ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
           cid,
           path: '',
-          record: stubInterface<IPNSRecordV2>()
+          record: stubInterface<IPNSRecord>()
         })
       })
 
@@ -793,7 +793,7 @@ describe('parseUrlString', () => {
           ipns.resolve.withArgs(matchPeerId(value as PeerId)).resolves({
             cid,
             path: '',
-            record: stubInterface<IPNSRecordV2>()
+            record: stubInterface<IPNSRecord>()
           })
         } else if (type === 'dnslink-encoded') {
           const matchValue = (value as string).replace(/-/g, '.')
