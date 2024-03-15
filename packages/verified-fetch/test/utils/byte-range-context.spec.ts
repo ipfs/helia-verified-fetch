@@ -137,7 +137,7 @@ describe('ByteRangeContext', () => {
           leafType: 'file'
         })
         const stat = await fs.stat(cid)
-        context.setFileSize(stat.fileSize)
+        context.fileSize = stat.fileSize
 
         context.setBody(await getBodyStream(context.offset, context.length))
         const response = new Response(context.getBody())

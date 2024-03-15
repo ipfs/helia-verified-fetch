@@ -42,13 +42,7 @@ function getByteRangeFromHeader (rangeHeader: string): { start: string, end: str
 
 export class ByteRangeContext {
   private readonly _isRangeRequest: boolean
-
-  /**
-   * This property should only be set by calling `setFileSize` or `setBody`.
-   *
-   * @access private
-   */
-  public fileSize: Readonly<number | null | undefined>
+  private _fileSize: number | null | undefined
   private readonly _contentRangeHeaderValue: string | undefined
   private _body: SupportedBodyTypes = null
   private readonly _rangeRequestHeader: string | undefined
@@ -86,15 +80,12 @@ export class ByteRangeContext {
     }
   }
 
-  /**
-   * When you get a body, it should be set here, and we will calculate the fileSize if possible.
-   */
   public setBody (body: SupportedBodyTypes): void {
     this._body = body
     // if fileSize was already set, don't recalculate it
-    this.setFileSize(this.fileSize ?? getBodySizeSync(body))
+    this.fileSize = this.fileSize ?? getBodySizeSync(body)
 
-    this.log.trace('set request body with fileSize %o', this.fileSize)
+    this.log.trace('set request body with fileSize %o', this._fileSize)
   }
 
   public getBody (): SupportedBodyTypes {
@@ -148,18 +139,16 @@ export class ByteRangeContext {
     return this.requestRangeStart != null && this.requestRangeEnd == null
   }
 
-  /**
-   * Sometimes, we need to set the fileSize explicitly because we can't calculate
-   * the size of the body (e.g. for unixfs content where we call .stat).
-   *
-   * This fileSize should otherwise only be called from `setBody`, and `.fileSize`
-   * should not be set directly.
-   */
-  public setFileSize (size: number | bigint | null): void {
-    this.fileSize = size != null ? Number(size) : null
-    this.log.trace('set _fileSize to %o', this.fileSize)
+  // sometimes, we need to set the fileSize explicitly because we can't calculate the size of the body (e.g. for unixfs content where we call .stat)
+  public set fileSize (size: number | bigint | null) {
+    this._fileSize = size != null ? Number(size) : null
+    this.log.trace('set _fileSize to %o', this._fileSize)
     // when fileSize changes, we need to recalculate the offset details
     this.setOffsetDetails()
+  }
+
+  public get fileSize (): number | null | undefined {
+    return this._fileSize
   }
 
   public get isRangeRequest (): boolean {
@@ -270,7 +259,7 @@ export class ByteRangeContext {
       return
     }
 
-    const { start, end, byteSize } = calculateByteRangeIndexes(this.requestRangeStart ?? undefined, this.requestRangeEnd ?? undefined, this.fileSize ?? undefined)
+    const { start, end, byteSize } = calculateByteRangeIndexes(this.requestRangeStart ?? undefined, this.requestRangeEnd ?? undefined, this._fileSize ?? undefined)
     this.log.trace('set byteStart to %o, byteEnd to %o, byteSize to %o', start, end, byteSize)
     this.byteStart = start
     this.byteEnd = end
@@ -301,7 +290,7 @@ export class ByteRangeContext {
     return getContentRangeHeader({
       byteStart: this.byteStart,
       byteEnd: this.byteEnd,
-      byteSize: this.fileSize ?? undefined
+      byteSize: this._fileSize ?? undefined
     })
   }
 }
