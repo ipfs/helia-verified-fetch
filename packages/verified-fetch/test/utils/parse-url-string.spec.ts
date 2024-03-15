@@ -1,7 +1,9 @@
 import { matchPeerId } from '@libp2p/interface-compliance-tests/matchers'
 import { defaultLogger } from '@libp2p/logger'
 import { createEd25519PeerId } from '@libp2p/peer-id-factory'
+import { type Answer } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
+import { type IPNSRecord } from 'ipns'
 import { CID } from 'multiformats/cid'
 import { match } from 'sinon'
 import { stubInterface } from 'sinon-ts'
@@ -167,7 +169,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with DNSLinkDomain only', async () => {
       ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        answer: stubInterface<Answer>()
       })
 
       await assertMatchUrl(
@@ -183,7 +186,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with DNSLinkDomain+path', async () => {
       ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        answer: stubInterface<Answer>()
       })
 
       await assertMatchUrl(
@@ -199,7 +203,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with DNSLinkDomain+queryString', async () => {
       ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        answer: stubInterface<Answer>()
       })
 
       await assertMatchUrl(
@@ -217,7 +222,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with DNSLinkDomain+path+queryString', async () => {
       ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        answer: stubInterface<Answer>()
       })
 
       await assertMatchUrl(
@@ -235,7 +241,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with DNSLinkDomain+directoryPath+queryString', async () => {
       ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        answer: stubInterface<Answer>()
       })
 
       await assertMatchUrl(
@@ -433,7 +440,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with PeerId only', async () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -449,7 +457,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with PeerId+path', async () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -465,7 +474,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with PeerId+path with a trailing slash', async () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -481,7 +491,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with PeerId+queryString', async () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -499,7 +510,8 @@ describe('parseUrlString', () => {
     it('can parse a URL with PeerId+path+queryString', async () => {
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
-        path: ''
+        path: '',
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -522,7 +534,8 @@ describe('parseUrlString', () => {
 
       ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
         cid,
-        path: recordPath
+        path: recordPath,
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -543,7 +556,8 @@ describe('parseUrlString', () => {
 
       ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
         cid,
-        path: recordPath
+        path: recordPath,
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -564,7 +578,8 @@ describe('parseUrlString', () => {
 
       ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
         cid,
-        path: recordPath
+        path: recordPath,
+        record: stubInterface<IPNSRecord>()
       })
 
       await assertMatchUrl(
@@ -587,7 +602,8 @@ describe('parseUrlString', () => {
       cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
       ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
         cid,
-        path: ''
+        path: '',
+        record: stubInterface<IPNSRecord>()
       })
     })
 
@@ -674,7 +690,8 @@ describe('parseUrlString', () => {
         cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
         ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
           cid,
-          path: ''
+          path: '',
+          record: stubInterface<IPNSRecord>()
         })
       })
 
@@ -775,18 +792,21 @@ describe('parseUrlString', () => {
         if (type === 'peerid') {
           ipns.resolve.withArgs(matchPeerId(value as PeerId)).resolves({
             cid,
-            path: ''
+            path: '',
+            record: stubInterface<IPNSRecord>()
           })
         } else if (type === 'dnslink-encoded') {
           const matchValue = (value as string).replace(/-/g, '.')
           ipns.resolveDNSLink.withArgs(match(matchValue)).resolves({
             cid,
-            path: ''
+            path: '',
+            answer: stubInterface<Answer>()
           })
         } else {
           ipns.resolveDNSLink.withArgs(match(value as string)).resolves({
             cid,
-            path: ''
+            path: '',
+            answer: stubInterface<Answer>()
           })
         }
       })
