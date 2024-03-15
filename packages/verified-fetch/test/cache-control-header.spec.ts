@@ -88,7 +88,7 @@ describe('cache-control header', () => {
     const c = dagCbor(helia)
     const cid = await c.add(obj)
 
-    const oneHourInMs = 1000 * 60 * 60
+    const oneHourInSeconds = 60 * 60
     const peerId = await createEd25519PeerId()
 
     /**
@@ -99,13 +99,13 @@ describe('cache-control header', () => {
      * @see https://github.com/ipfs/js-ipns/blob/16e0e10682fa9a663e0bb493a44d3e99a5200944/src/index.ts#L200
      * @see https://github.com/ipfs/js-ipns/pull/308
      */
-    await name.publish(peerId, cid, { lifetime: oneHourInMs })
+    await name.publish(peerId, cid, { lifetime: oneHourInSeconds * 1000 }) // pass to ipns as milliseconds
 
     const resp = await verifiedFetch.fetch(`ipns://${peerId}`)
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
 
-    expect(resp.headers.get('Cache-Control')).to.equal(`public, max-age=${oneHourInMs}`)
+    expect(resp.headers.get('Cache-Control')).to.equal(`public, max-age=${oneHourInSeconds}`)
   })
 
   it('should not contain immutable in the cache-control header for a DNSLink name', async () => {

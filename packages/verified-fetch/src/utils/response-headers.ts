@@ -1,4 +1,9 @@
 interface CacheControlHeaderOptions {
+  /**
+   * This should be seconds as a number.
+   *
+   * See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#response_directives
+   */
   ttl?: number
   protocol: 'ipfs' | 'ipns'
   response: Response

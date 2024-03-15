@@ -26,8 +26,9 @@ export interface ParsedUrlQuery extends Record<string, string | unknown> {
 interface ParsedUrlStringResultsBase extends ResolveResult {
   protocol: 'ipfs' | 'ipns'
   query: ParsedUrlQuery
+
   /**
-   * milliseconds as a number
+   * seconds as a number
    */
   ttl?: number
 }
@@ -59,9 +60,12 @@ function matchURLString (urlString: string): MatchUrlGroups {
 }
 
 /**
- * determines the TTL for the resolved resource.
+ * determines the TTL for the resolved resource that will be used for the `Cache-Control` header's `max-age` directive.
+ * max-age is in seconds
  *
- * If we have ipnsTtlNs, it will be a BigInt representing nanoseconds. We need to convert it back to milliseconds.
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#response_directives
+ *
+ * If we have ipnsTtlNs, it will be a BigInt representing "nanoseconds". We need to convert it back to seconds.
  *
  * For more TTL nuances:
  *
@@ -74,7 +78,8 @@ function calculateTtl (resolveResult?: IPNSResolveResult | DNSLinkResolveResult)
   }
   const dnsLinkTtl = (resolveResult as DNSLinkResolveResult).answer?.TTL
   const ipnsTtlNs = (resolveResult as IPNSResolveResult).record?.ttl
-  const ipnsTtl = ipnsTtlNs != null ? Number(BigInt(ipnsTtlNs) / BigInt(1e5)) : undefined
+  // For some reason, ipns "nanoseconds" are 1e-8 of a second, instead of 1e-9.
+  const ipnsTtl = ipnsTtlNs != null ? Number(ipnsTtlNs / BigInt(1e8)) : undefined
   return dnsLinkTtl ?? ipnsTtl
 }
 
