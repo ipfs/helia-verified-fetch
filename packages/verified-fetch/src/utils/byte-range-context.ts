@@ -109,7 +109,7 @@ export class ByteRangeContext {
     }
 
     // we should not reach this point, but return body untouched.
-    this.log.error('returning unmofified body for valid range request')
+    this.log.error('returning unmodified body for valid range request')
     return body
   }
 
@@ -264,11 +264,13 @@ export class ByteRangeContext {
     this.byteSize = byteSize
   }
 
-  // This function returns the value of the "content-range" header.
-  // Content-Range: <unit> <range-start>-<range-end>/<size>
-  // Content-Range: <unit> <range-start>-<range-end>/*
-  // Content-Range: <unit> */<size>
-  // @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
+  /**
+   * This function returns the value of the "content-range" header.
+   * Content-Range: <unit> <range-start>-<range-end>/<size>
+   * Content-Range: <unit> <range-start>-<range-end>/*
+   * Content-Range: <unit> */<size>
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
+   */
   public get contentRangeHeaderValue (): string {
     if (this._contentRangeHeaderValue != null) {
       return this._contentRangeHeaderValue
