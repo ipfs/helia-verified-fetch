@@ -21,11 +21,13 @@ import { getETag } from './utils/get-e-tag.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
+import { setCacheControlHeader } from './utils/response-headers.js'
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse } from './utils/responses.js'
 import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
+import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia } from '@helia/interface'
 import type { AbortOptions, Logger, PeerId } from '@libp2p/interface'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
@@ -408,7 +410,23 @@ export class VerifiedFetch {
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:start', { resource }))
 
     // resolve the CID/path from the requested resource
-    const { path, query, cid, protocol } = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
+    let cid: ParsedUrlStringResults['cid']
+    let path: ParsedUrlStringResults['path']
+    let query: ParsedUrlStringResults['query']
+    let ttl: ParsedUrlStringResults['ttl']
+    let protocol: ParsedUrlStringResults['protocol']
+    try {
+      const result = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
+      cid = result.cid
+      path = result.path
+      query = result.query
+      ttl = result.ttl
+      protocol = result.protocol
+    } catch (err) {
+      this.log.error('error parsing resource %s', resource, err)
+
+      return badRequestResponse('Invalid resource')
+    }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
 
@@ -473,9 +491,7 @@ export class VerifiedFetch {
 
     response.headers.set('etag', getETag({ cid, reqFormat, weak: false }))
 
-    if (protocol === 'ipfs') {
-      response.headers.set('cache-control', 'public, max-age=29030400, immutable')
-    }
+    setCacheControlHeader({ response, ttl, protocol })
     // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-path-response-header
     response.headers.set('X-Ipfs-Path', resource.toString())
 

@@ -2,11 +2,11 @@ import { peerIdFromString } from '@libp2p/peer-id'
 import { CID } from 'multiformats/cid'
 import { TLRU } from './tlru.js'
 import type { RequestFormatShorthand } from '../types.js'
-import type { IPNS, ResolveDNSLinkProgressEvents, ResolveResult } from '@helia/ipns'
+import type { DNSLinkResolveResult, IPNS, IPNSResolveResult, ResolveDNSLinkProgressEvents, ResolveResult } from '@helia/ipns'
 import type { ComponentLogger } from '@libp2p/interface'
 import type { ProgressOptions } from 'progress-events'
 
-const ipnsCache = new TLRU<ResolveResult>(1000)
+const ipnsCache = new TLRU<DNSLinkResolveResult | IPNSResolveResult>(1000)
 
 export interface ParseUrlStringInput {
   urlString: string
@@ -23,24 +23,32 @@ export interface ParsedUrlQuery extends Record<string, string | unknown> {
   filename?: string
 }
 
-export interface ParsedUrlStringResults {
-  protocol: string
-  path: string
-  cid: CID
+interface ParsedUrlStringResultsBase extends ResolveResult {
+  protocol: 'ipfs' | 'ipns'
   query: ParsedUrlQuery
+  ttl?: number
 }
+
+export type ParsedUrlStringResults = ParsedUrlStringResultsBase // | DNSLinkResolveResult | IPNSResolveResult
 
 const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 const PATH_REGEX = /^\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 const PATH_GATEWAY_REGEX = /^https?:\/\/(.*[^/])\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 const SUBDOMAIN_GATEWAY_REGEX = /^https?:\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\.(?<protocol>ip[fn]s)\.([^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 
-function matchURLString (urlString: string): Record<string, string> {
+interface MatchUrlGroups {
+  protocol: 'ipfs' | 'ipns'
+  cidOrPeerIdOrDnsLink: string
+  path?: string
+  queryString?: string
+
+}
+function matchURLString (urlString: string): MatchUrlGroups {
   for (const pattern of [URL_REGEX, PATH_REGEX, PATH_GATEWAY_REGEX, SUBDOMAIN_GATEWAY_REGEX]) {
     const match = urlString.match(pattern)
 
     if (match?.groups != null) {
-      return match.groups
+      return match.groups as unknown as MatchUrlGroups // force cast to MatchUrlGroups, because if it matches, it has to contain this structure.
     }
   }
 
@@ -89,16 +97,19 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
   let cid: CID | undefined
   let resolvedPath: string | undefined
   const errors: Error[] = []
+  let resolveResult: IPNSResolveResult | DNSLinkResolveResult | undefined
+  let ttl: number = 5 * 60 // 5 minutes based on https://github.com/ipfs/boxo/issues/329#issuecomment-1995236409
 
   if (protocol === 'ipfs') {
     try {
       cid = CID.parse(cidOrPeerIdOrDnsLink)
+      ttl = 29030400 // 1 year for ipfs content
     } catch (err) {
       log.error(err)
       errors.push(new TypeError('Invalid CID for ipfs://<cid> URL'))
     }
   } else {
-    let resolveResult = ipnsCache.get(cidOrPeerIdOrDnsLink)
+    resolveResult = ipnsCache.get(cidOrPeerIdOrDnsLink)
 
     if (resolveResult != null) {
       cid = resolveResult.cid
@@ -113,6 +124,13 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         resolveResult = await ipns.resolve(peerId, { onProgress: options?.onProgress })
         cid = resolveResult?.cid
         resolvedPath = resolveResult?.path
+        /**
+         * For TTL nuances, see
+         *
+         * @see https://github.com/ipfs/js-ipns/blob/16e0e10682fa9a663e0bb493a44d3e99a5200944/src/index.ts#L200
+         * @see https://github.com/ipfs/js-ipns/pull/308
+         */
+        ttl = Number(resolveResult.record.ttl)
         log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
         ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
       } catch (err) {
@@ -137,6 +155,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
           resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, { onProgress: options?.onProgress })
           cid = resolveResult?.cid
           resolvedPath = resolveResult?.path
+          ttl = resolveResult.answer.TTL
           log.trace('resolved %s to %c', decodedDnsLinkLabel, cid)
           ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, 60 * 1000 * 2)
         } catch (err: any) {
@@ -177,9 +196,10 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
   return {
     protocol,
     cid,
-    path: joinPaths(resolvedPath, urlPath),
-    query
-  }
+    path: joinPaths(resolvedPath, urlPath ?? ''),
+    query,
+    ttl
+  } satisfies ParsedUrlStringResults
 }
 
 /**

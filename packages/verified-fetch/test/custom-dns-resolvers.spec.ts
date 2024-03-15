@@ -19,9 +19,11 @@ describe('custom dns-resolvers', () => {
   })
 
   it('is used when passed to createVerifiedFetch', async () => {
-    const customDnsResolver = Sinon.stub()
-
-    customDnsResolver.returns(Promise.resolve('/ipfs/QmVP2ip92jQuMDezVSzQBWDqWFbp9nyCHNQSiciRauPLDg'))
+    const customDnsResolver = Sinon.stub().withArgs('_dnslink.some-non-cached-domain.com').resolves({
+      Answer: [{
+        data: 'dnslink=/ipfs/QmVP2ip92jQuMDezVSzQBWDqWFbp9nyCHNQSiciRauPLDg'
+      }]
+    })
 
     const fetch = await createVerifiedFetch({
       gateways: ['http://127.0.0.1:8080'],

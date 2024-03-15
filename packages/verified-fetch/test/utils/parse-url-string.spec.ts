@@ -76,7 +76,10 @@ describe('parseUrlString', () => {
           logger
         })
       ).to.eventually.be.rejected
-        .with.property('message', 'Could not parse PeerId in ipns url "mydomain.com", Non-base64 character')
+        .and.to.have.property('errors').that.deep.equals([
+          new TypeError('Could not parse PeerId in ipns url "mydomain.com", Non-base64 character'),
+          new TypeError('Cannot read properties of undefined (reading \'answer\')')
+        ])
     })
   })
 
