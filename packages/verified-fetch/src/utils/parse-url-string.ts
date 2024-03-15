@@ -152,10 +152,10 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
       } catch (err) {
         if (peerId == null) {
-          log.error('Could not parse PeerId string "%s"', cidOrPeerIdOrDnsLink, err)
+          log.error('could not parse PeerId string "%s"', cidOrPeerIdOrDnsLink, err)
           errors.push(new TypeError(`Could not parse PeerId in ipns url "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
         } else {
-          log.error('Could not resolve PeerId %c', peerId, err)
+          log.error('could not resolve PeerId %c', peerId, err)
           errors.push(new TypeError(`Could not resolve PeerId "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
         }
       }
@@ -175,7 +175,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
           resolvedPath = resolveResult?.path
           log.trace('resolved %s to %c', decodedDnsLinkLabel, cid)
         } catch (err: any) {
-          log.error('Could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)
+          log.error('could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)
           errors.push(err)
         }
       }
