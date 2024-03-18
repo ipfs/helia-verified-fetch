@@ -146,7 +146,10 @@ export class ByteRangeContext {
       if (this.byteStart < 0) {
         return false
       }
-      if (this._fileSize != null && this.byteStart > this._fileSize) {
+      if (this._fileSize != null && this.byteStart >= this._fileSize) {
+        return false
+      }
+      if (this.byteEnd != null && this.byteStart > this.byteEnd) {
         return false
       }
     }
@@ -158,7 +161,10 @@ export class ByteRangeContext {
       if (this.byteEnd < 0) {
         return false
       }
-      if (this._fileSize != null && this.byteEnd > this._fileSize) {
+      if (this._fileSize != null && this.byteEnd >= this._fileSize) {
+        return false
+      }
+      if (this.byteStart != null && this.byteEnd < this.byteStart) {
         return false
       }
     }
@@ -197,6 +203,10 @@ export class ByteRangeContext {
         this.log.trace('invalid range request, end is less than 0')
         return false
       }
+    }
+    if (this.byteEnd == null && this.byteStart == null && this.byteSize == null) {
+      this.log.trace('invalid range request, could not calculate byteStart, byteEnd, or byteSize')
+      return false
     }
 
     return true
@@ -250,11 +260,18 @@ export class ByteRangeContext {
       return
     }
 
-    const { start, end, byteSize } = calculateByteRangeIndexes(this.requestRangeStart ?? undefined, this.requestRangeEnd ?? undefined, this._fileSize ?? undefined)
-    this.log.trace('set byteStart to %o, byteEnd to %o, byteSize to %o', start, end, byteSize)
-    this.byteStart = start
-    this.byteEnd = end
-    this.byteSize = byteSize
+    try {
+      const { start, end, byteSize } = calculateByteRangeIndexes(this.requestRangeStart ?? undefined, this.requestRangeEnd ?? undefined, this._fileSize ?? undefined)
+      this.log.trace('set byteStart to %o, byteEnd to %o, byteSize to %o', start, end, byteSize)
+      this.byteStart = start
+      this.byteEnd = end
+      this.byteSize = byteSize
+    } catch (e) {
+      this.log.error('error setting offset details: %o', e)
+      this.byteStart = undefined
+      this.byteEnd = undefined
+      this.byteSize = undefined
+    }
   }
 
   /**

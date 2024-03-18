@@ -70,13 +70,13 @@ describe('range requests', () => {
         },
         {
           byteSize: 8,
-          contentRange: 'bytes 4-11/11',
+          contentRange: 'bytes 4-10/11',
           rangeHeader: 'bytes=4-',
-          bytes: new Uint8Array([3, 4, 5, 6, 7, 8, 9, 10])
+          bytes: new Uint8Array([4, 5, 6, 7, 8, 9, 10])
         },
         {
           byteSize: 9,
-          contentRange: 'bytes 3-11/11',
+          contentRange: 'bytes 2-10/11',
           rangeHeader: 'bytes=-9',
           bytes: new Uint8Array([2, 3, 4, 5, 6, 7, 8, 9, 10])
         }
