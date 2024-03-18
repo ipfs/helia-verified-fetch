@@ -11,7 +11,7 @@ export async function getStreamFromAsyncIterable (iterator: AsyncIterable<Uint8A
   const { value: firstChunk, done } = await reader.next()
 
   if (done === true) {
-    log.error('No content found for path', path)
+    log.error('no content found for path', path)
     throw new Error('No content found')
   }
 

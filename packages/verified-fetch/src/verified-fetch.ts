@@ -1,6 +1,6 @@
 import { car } from '@helia/car'
 import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
-import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs, type UnixFSStats } from '@helia/unixfs'
+import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs } from '@helia/unixfs'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
@@ -15,17 +15,20 @@ import { CustomProgressEvent } from 'progress-events'
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { ByteRangeContext } from './utils/byte-range-context.js'
 import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse } from './utils/responses.js'
+import { setCacheControlHeader } from './utils/response-headers.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
 import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
+import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia } from '@helia/interface'
 import type { AbortOptions, Logger, PeerId } from '@libp2p/interface'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
@@ -275,17 +278,19 @@ export class VerifiedFetch {
     let terminalElement: UnixFSEntry | undefined
     let ipfsRoots: CID[] | undefined
     let redirected = false
+    const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
 
     try {
       const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
       ipfsRoots = pathDetails.ipfsRoots
       terminalElement = pathDetails.terminalElement
     } catch (err) {
-      this.log.error('Error walking path %s', path, err)
+      this.log.error('error walking path %s', path, err)
+
+      return badGatewayResponse('Error walking path')
     }
 
     let resolvedCID = terminalElement?.cid ?? cid
-    let stat: UnixFSStats
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
 
@@ -307,7 +312,7 @@ export class VerifiedFetch {
       const rootFilePath = 'index.html'
       try {
         this.log.trace('found directory at %c/%s, looking for index.html', cid, path)
-        stat = await this.unixfs.stat(dirCid, {
+        const stat = await this.unixfs.stat(dirCid, {
           path: rootFilePath,
           signal: options?.signal,
           onProgress: options?.onProgress
@@ -323,30 +328,56 @@ export class VerifiedFetch {
       }
     }
 
+    // we have a validRangeRequest & terminalElement is a file, we know the size and should set it
+    if (byteRangeContext.isRangeRequest && byteRangeContext.isValidRangeRequest && terminalElement.type === 'file') {
+      byteRangeContext.setFileSize(terminalElement.unixfs.fileSize())
+
+      this.log.trace('fileSize for rangeRequest %d', byteRangeContext.getFileSize())
+    }
+    const offset = byteRangeContext.offset
+    const length = byteRangeContext.length
+    this.log.trace('calling unixfs.cat for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
     const asyncIter = this.unixfs.cat(resolvedCID, {
       signal: options?.signal,
-      onProgress: options?.onProgress
+      onProgress: options?.onProgress,
+      offset,
+      length
     })
     this.log('got async iterator for %c/%s', cid, path)
 
-    const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
-      onProgress: options?.onProgress
-    })
-    const response = okResponse(resource, stream, {
-      redirected
-    })
-    await this.setContentType(firstChunk, path, response)
+    try {
+      const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
+        onProgress: options?.onProgress
+      })
+      byteRangeContext.setBody(stream)
+      // if not a valid range request, okRangeRequest will call okResponse
+      const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
+        redirected
+      })
 
-    if (ipfsRoots != null) {
-      response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
+      await this.setContentType(firstChunk, path, response)
+
+      if (ipfsRoots != null) {
+        response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
+      }
+
+      return response
+    } catch (err: any) {
+      this.log.error('error streaming %c/%s', cid, path, err)
+      if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
+        return badRangeResponse(resource)
+      }
+      return badGatewayResponse('Unable to stream content')
     }
-
-    return response
   }
 
   private async handleRaw ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
+    const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const result = await this.helia.blockstore.get(cid, options)
-    const response = okResponse(resource, result)
+    byteRangeContext.setBody(result)
+    const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
+      redirected: false
+    })
 
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
@@ -380,10 +411,10 @@ export class VerifiedFetch {
           contentType = parsed
         }
       } catch (err) {
-        this.log.error('Error parsing content type', err)
+        this.log.error('error parsing content type', err)
       }
     }
-
+    this.log.trace('setting content type to "%s"', contentType)
     response.headers.set('content-type', contentType)
   }
 
@@ -408,7 +439,23 @@ export class VerifiedFetch {
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:start', { resource }))
 
     // resolve the CID/path from the requested resource
-    const { path, query, cid, protocol } = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
+    let cid: ParsedUrlStringResults['cid']
+    let path: ParsedUrlStringResults['path']
+    let query: ParsedUrlStringResults['query']
+    let ttl: ParsedUrlStringResults['ttl']
+    let protocol: ParsedUrlStringResults['protocol']
+    try {
+      const result = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
+      cid = result.cid
+      path = result.path
+      query = result.query
+      ttl = result.ttl
+      protocol = result.protocol
+    } catch (err) {
+      this.log.error('error parsing resource %s', resource, err)
+
+      return badRequestResponse('Invalid resource')
+    }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
 
@@ -461,21 +508,21 @@ export class VerifiedFetch {
       query.filename = query.filename ?? `${cid.toString()}.tar`
       response = await this.handleTar(handlerArgs)
     } else {
+      this.log.trace('finding handler for cid code "%s" and output type "%s"', cid.code, accept)
       // derive the handler from the CID type
       const codecHandler = this.codecHandlers[cid.code]
 
       if (codecHandler == null) {
         return notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia/issues/new`)
       }
+      this.log.trace('calling handler "%s"', codecHandler.name)
 
       response = await codecHandler.call(this, handlerArgs)
     }
 
     response.headers.set('etag', getETag({ cid, reqFormat, weak: false }))
 
-    if (protocol === 'ipfs') {
-      response.headers.set('cache-control', 'public, max-age=29030400, immutable')
-    }
+    setCacheControlHeader({ response, ttl, protocol })
     // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-path-response-header
     response.headers.set('X-Ipfs-Path', resource.toString())
 
