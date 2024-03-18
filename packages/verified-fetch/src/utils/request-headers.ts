@@ -26,7 +26,10 @@ export function getHeader (headers: HeadersInit | undefined, header: string): st
 export function calculateByteRangeIndexes (start: number | undefined, end: number | undefined, fileSize?: number): { byteSize?: number, start?: number, end?: number } {
   if (start != null && end != null) {
     if (start > end) {
-      throw new Error('Invalid range')
+      throw new Error('Invalid range: Range-start index is greater than range-end index.')
+    }
+    if (end >= (fileSize ?? Infinity)) {
+      throw new Error('Invalid range: Range-end index is greater than or equal to the size of the file.')
     }
 
     return { byteSize: end - start + 1, start, end }
@@ -35,14 +38,21 @@ export function calculateByteRangeIndexes (start: number | undefined, end: numbe
     if (fileSize == null) {
       return { end }
     }
-    const result = { byteSize: end, start: fileSize - end + 1, end: fileSize }
+    if (end > fileSize) {
+      throw new Error('Invalid range: Range-end index is greater than the size of the file.')
+    }
+    if (end === fileSize) {
+      return { byteSize: fileSize, start: 0, end: fileSize - 1 }
+    }
+    const result = { byteSize: end, start: fileSize - end + 1, end: fileSize - 1 }
     return result
   } else if (start != null && end == null) {
     if (fileSize == null) {
+      // we only have the start index, and no fileSize, so we can't return a valid range.
       return { start }
     }
-    const byteSize = fileSize - start + 1
-    const end = fileSize
+    const end = fileSize - 1
+    const byteSize = fileSize - start
     return { byteSize, start, end }
   }
 
