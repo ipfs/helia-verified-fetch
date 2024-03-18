@@ -11,11 +11,11 @@ describe('response-headers', () => {
     })
 
     it('should return correct content range header when only byteEnd and byteSize are provided', () => {
-      expect(getContentRangeHeader({ byteStart: undefined, byteEnd: 9, byteSize: 11 })).to.equal('bytes 3-11/11')
+      expect(getContentRangeHeader({ byteStart: undefined, byteEnd: 9, byteSize: 11 })).to.equal('bytes 2-10/11')
     })
 
     it('should return correct content range header when only byteStart and byteSize are provided', () => {
-      expect(getContentRangeHeader({ byteStart: 5, byteEnd: undefined, byteSize: 11 })).to.equal('bytes 5-11/11')
+      expect(getContentRangeHeader({ byteStart: 5, byteEnd: undefined, byteSize: 11 })).to.equal('bytes 5-10/11')
     })
 
     it('should return correct content range header when only byteStart is provided', () => {
@@ -28,6 +28,13 @@ describe('response-headers', () => {
 
     it('should return content range header with when only byteSize is provided', () => {
       expect(getContentRangeHeader({ byteStart: undefined, byteEnd: undefined, byteSize: 50 })).to.equal('bytes */50')
+    })
+
+    it('should not allow range-end to equal or exceed the size of the file', () => {
+      expect(() => getContentRangeHeader({ byteStart: 0, byteEnd: 11, byteSize: 11 })).to.throw('Invalid range') // byteEnd is equal to byteSize
+      expect(() => getContentRangeHeader({ byteStart: undefined, byteEnd: 11, byteSize: 11 })).to.throw('Invalid range') // byteEnd is equal to byteSize
+      expect(() => getContentRangeHeader({ byteStart: undefined, byteEnd: 12, byteSize: 11 })).to.throw('Invalid range') // byteEnd is greater than byteSize
+      expect(() => getContentRangeHeader({ byteStart: 11, byteEnd: undefined, byteSize: 11 })).to.throw('Invalid range') // byteEnd is greater than byteSize
     })
   })
 })
