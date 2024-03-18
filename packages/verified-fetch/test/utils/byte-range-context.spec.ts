@@ -45,9 +45,9 @@ describe('ByteRangeContext', () => {
   const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
   const uint8arrayRangeTests = [
     // full ranges:
-    { type: 'Uint8Array', range: 'bytes=0-11', contentRange: 'bytes 0-11/11', body: new Uint8Array(array), expected: new Uint8Array(array) },
-    { type: 'Uint8Array', range: 'bytes=-11', contentRange: 'bytes 1-11/11', body: new Uint8Array(array), expected: new Uint8Array(array) },
-    { type: 'Uint8Array', range: 'bytes=0-', contentRange: 'bytes 0-11/11', body: new Uint8Array(array), expected: new Uint8Array(array) },
+    { type: 'Uint8Array', range: 'bytes=0-10', contentRange: 'bytes 0-10/11', body: new Uint8Array(array), expected: new Uint8Array(array) },
+    { type: 'Uint8Array', range: 'bytes=-11', contentRange: 'bytes 0-10/11', body: new Uint8Array(array), expected: new Uint8Array(array) },
+    { type: 'Uint8Array', range: 'bytes=0-', contentRange: 'bytes 0-10/11', body: new Uint8Array(array), expected: new Uint8Array(array) },
 
     // partial ranges:
     { type: 'Uint8Array', range: 'bytes=0-1', contentRange: 'bytes 0-1/11', body: new Uint8Array(array), expected: new Uint8Array([1, 2]) },
@@ -60,13 +60,13 @@ describe('ByteRangeContext', () => {
     { type: 'Uint8Array', range: 'bytes=0-8', contentRange: 'bytes 0-8/11', body: new Uint8Array(array), expected: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]) },
     { type: 'Uint8Array', range: 'bytes=0-9', contentRange: 'bytes 0-9/11', body: new Uint8Array(array), expected: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) },
     { type: 'Uint8Array', range: 'bytes=0-10', contentRange: 'bytes 0-10/11', body: new Uint8Array(array), expected: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) },
-    { type: 'Uint8Array', range: 'bytes=1-', contentRange: 'bytes 1-11/11', body: new Uint8Array(array), expected: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) },
-    { type: 'Uint8Array', range: 'bytes=2-', contentRange: 'bytes 2-11/11', body: new Uint8Array(array), expected: new Uint8Array([2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) },
-    { type: 'Uint8Array', range: 'bytes=-2', contentRange: 'bytes 10-11/11', body: new Uint8Array(array), expected: new Uint8Array(array.slice(-2)) },
+    { type: 'Uint8Array', range: 'bytes=1-', contentRange: 'bytes 1-10/11', body: new Uint8Array(array), expected: new Uint8Array([2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) },
+    { type: 'Uint8Array', range: 'bytes=2-', contentRange: 'bytes 2-10/11', body: new Uint8Array(array), expected: new Uint8Array([3, 4, 5, 6, 7, 8, 9, 10, 11]) },
+    { type: 'Uint8Array', range: 'bytes=-2', contentRange: 'bytes 9-10/11', body: new Uint8Array(array), expected: new Uint8Array(array.slice(-2)) },
 
     // single byte ranges:
     { type: 'Uint8Array', range: 'bytes=1-1', contentRange: 'bytes 1-1/11', body: new Uint8Array(array), expected: new Uint8Array(array.slice(1, 2)) },
-    { type: 'Uint8Array', range: 'bytes=-1', contentRange: 'bytes 11-11/11', body: new Uint8Array(array), expected: new Uint8Array(array.slice(-1)) }
+    { type: 'Uint8Array', range: 'bytes=-1', contentRange: 'bytes 10-10/11', body: new Uint8Array(array), expected: new Uint8Array(array.slice(-1)) }
 
   ]
   const validRanges = [
@@ -138,12 +138,11 @@ describe('ByteRangeContext', () => {
         })
         const stat = await fs.stat(cid)
         context.setFileSize(stat.fileSize)
-
         context.setBody(await getBodyStream(context.offset, context.length))
         const response = new Response(context.getBody())
         const bodyResult = await response.arrayBuffer()
-        expect(new Uint8Array(bodyResult)).to.deep.equal(expected)
         expect(context.contentRangeHeaderValue).to.equal(contentRange)
+        expect(new Uint8Array(bodyResult)).to.deep.equal(expected)
       })
     })
   })
