@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.2.0...@helia/verified-fetch-1.2.1) (2024-03-18)
+
+
+### Bug Fixes
+
+* byte range request end should never equal file size ([#24](https://github.com/ipfs/helia-verified-fetch/issues/24)) ([aafc567](https://github.com/ipfs/helia-verified-fetch/commit/aafc567ded60e8c3702ae91383c049d26ca40784))
+
 ## @helia/verified-fetch [1.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.1.3...@helia/verified-fetch-1.2.0) (2024-03-15)
 
 
