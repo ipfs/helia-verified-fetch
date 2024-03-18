@@ -116,28 +116,12 @@ export class ByteRangeContext {
     return body
   }
 
+  // TODO: we should be able to use this.offset and this.length to slice the body
   private getSlicedBody <T extends SliceableBody>(body: T): SliceableBody {
-    if (this.isPrefixLengthRequest) {
-      this.log.trace('sliced body with byteStart %o', this.byteStart)
-      return body.slice(this.offset) satisfies SliceableBody
-    }
-    if (this.isSuffixLengthRequest && this.length != null) {
-      this.log.trace('sliced body with length %o', -this.length)
-      return body.slice(-this.length) satisfies SliceableBody
-    }
     const offset = this.byteStart ?? 0
     const length = this.byteEnd == null ? undefined : this.byteEnd + 1
     this.log.trace('returning body with offset %o and length %o', offset, length)
-
     return body.slice(offset, length) satisfies SliceableBody
-  }
-
-  private get isSuffixLengthRequest (): boolean {
-    return this.requestRangeStart == null && this.requestRangeEnd != null
-  }
-
-  private get isPrefixLengthRequest (): boolean {
-    return this.requestRangeStart != null && this.requestRangeEnd == null
   }
 
   /**
@@ -224,16 +208,6 @@ export class ByteRangeContext {
    * 2. slicing the body
    */
   public get offset (): number {
-    if (this.byteStart === 0) {
-      return 0
-    }
-    if (this.isPrefixLengthRequest || this.isSuffixLengthRequest) {
-      if (this.byteStart != null) {
-        // we have to subtract by 1 because the offset is inclusive
-        return this.byteStart - 1
-      }
-    }
-
     return this.byteStart ?? 0
   }
 
@@ -243,7 +217,14 @@ export class ByteRangeContext {
    * 2. slicing the body
    */
   public get length (): number | undefined {
-    return this.byteSize ?? undefined
+    if (this.byteEnd != null && this.byteStart != null && this.byteStart === this.byteEnd) {
+      return 1
+    }
+    if (this.byteEnd != null) {
+      return this.byteEnd + 1
+    }
+
+    return this.byteSize != null ? this.byteSize - 1 : undefined
   }
 
   /**
