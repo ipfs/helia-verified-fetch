@@ -116,28 +116,12 @@ export class ByteRangeContext {
     return body
   }
 
+  // TODO: we should be able to use this.offset and this.length to slice the body
   private getSlicedBody <T extends SliceableBody>(body: T): SliceableBody {
-    if (this.isPrefixLengthRequest) {
-      this.log.trace('sliced body with byteStart %o', this.byteStart)
-      return body.slice(this.offset) satisfies SliceableBody
-    }
-    if (this.isSuffixLengthRequest && this.length != null) {
-      this.log.trace('sliced body with length %o', -this.length)
-      return body.slice(-this.length) satisfies SliceableBody
-    }
     const offset = this.byteStart ?? 0
     const length = this.byteEnd == null ? undefined : this.byteEnd + 1
     this.log.trace('returning body with offset %o and length %o', offset, length)
-
     return body.slice(offset, length) satisfies SliceableBody
-  }
-
-  private get isSuffixLengthRequest (): boolean {
-    return this.requestRangeStart == null && this.requestRangeEnd != null
-  }
-
-  private get isPrefixLengthRequest (): boolean {
-    return this.requestRangeStart != null && this.requestRangeEnd == null
   }
 
   /**
@@ -162,7 +146,10 @@ export class ByteRangeContext {
       if (this.byteStart < 0) {
         return false
       }
-      if (this._fileSize != null && this.byteStart > this._fileSize) {
+      if (this._fileSize != null && this.byteStart >= this._fileSize) {
+        return false
+      }
+      if (this.byteEnd != null && this.byteStart > this.byteEnd) {
         return false
       }
     }
@@ -174,7 +161,10 @@ export class ByteRangeContext {
       if (this.byteEnd < 0) {
         return false
       }
-      if (this._fileSize != null && this.byteEnd > this._fileSize) {
+      if (this._fileSize != null && this.byteEnd >= this._fileSize) {
+        return false
+      }
+      if (this.byteStart != null && this.byteEnd < this.byteStart) {
         return false
       }
     }
@@ -214,6 +204,10 @@ export class ByteRangeContext {
         return false
       }
     }
+    if (this.byteEnd == null && this.byteStart == null && this.byteSize == null) {
+      this.log.trace('invalid range request, could not calculate byteStart, byteEnd, or byteSize')
+      return false
+    }
 
     return true
   }
@@ -224,16 +218,6 @@ export class ByteRangeContext {
    * 2. slicing the body
    */
   public get offset (): number {
-    if (this.byteStart === 0) {
-      return 0
-    }
-    if (this.isPrefixLengthRequest || this.isSuffixLengthRequest) {
-      if (this.byteStart != null) {
-        // we have to subtract by 1 because the offset is inclusive
-        return this.byteStart - 1
-      }
-    }
-
     return this.byteStart ?? 0
   }
 
@@ -243,7 +227,14 @@ export class ByteRangeContext {
    * 2. slicing the body
    */
   public get length (): number | undefined {
-    return this.byteSize ?? undefined
+    if (this.byteEnd != null && this.byteStart != null && this.byteStart === this.byteEnd) {
+      return 1
+    }
+    if (this.byteEnd != null) {
+      return this.byteEnd + 1
+    }
+
+    return this.byteSize != null ? this.byteSize - 1 : undefined
   }
 
   /**
@@ -269,11 +260,18 @@ export class ByteRangeContext {
       return
     }
 
-    const { start, end, byteSize } = calculateByteRangeIndexes(this.requestRangeStart ?? undefined, this.requestRangeEnd ?? undefined, this._fileSize ?? undefined)
-    this.log.trace('set byteStart to %o, byteEnd to %o, byteSize to %o', start, end, byteSize)
-    this.byteStart = start
-    this.byteEnd = end
-    this.byteSize = byteSize
+    try {
+      const { start, end, byteSize } = calculateByteRangeIndexes(this.requestRangeStart ?? undefined, this.requestRangeEnd ?? undefined, this._fileSize ?? undefined)
+      this.log.trace('set byteStart to %o, byteEnd to %o, byteSize to %o', start, end, byteSize)
+      this.byteStart = start
+      this.byteEnd = end
+      this.byteSize = byteSize
+    } catch (e) {
+      this.log.error('error setting offset details: %o', e)
+      this.byteStart = undefined
+      this.byteEnd = undefined
+      this.byteSize = undefined
+    }
   }
 
   /**

@@ -45,12 +45,19 @@ export function setCacheControlHeader ({ ttl, protocol, response }: CacheControl
 export function getContentRangeHeader ({ byteStart, byteEnd, byteSize }: { byteStart: number | undefined, byteEnd: number | undefined, byteSize: number | undefined }): string {
   const total = byteSize ?? '*' // if we don't know the total size, we should use *
 
+  if ((byteEnd ?? 0) >= (byteSize ?? Infinity)) {
+    throw new Error('Invalid range: Range-end index is greater than or equal to the size of the file.')
+  }
+  if ((byteStart ?? 0) >= (byteSize ?? Infinity)) {
+    throw new Error('Invalid range: Range-start index is greater than or equal to the size of the file.')
+  }
+
   if (byteStart != null && byteEnd == null) {
     // only byteStart in range
     if (byteSize == null) {
       return `bytes */${total}`
     }
-    return `bytes ${byteStart}-${byteSize}/${byteSize}`
+    return `bytes ${byteStart}-${byteSize - 1}/${byteSize}`
   }
 
   if (byteStart == null && byteEnd != null) {
@@ -58,7 +65,10 @@ export function getContentRangeHeader ({ byteStart, byteEnd, byteSize }: { byteS
     if (byteSize == null) {
       return `bytes */${total}`
     }
-    return `bytes ${byteSize - byteEnd + 1}-${byteSize}/${byteSize}`
+    const end = byteSize - 1
+    const start = end - byteEnd + 1
+
+    return `bytes ${start}-${end}/${byteSize}`
   }
 
   if (byteStart == null && byteEnd == null) {

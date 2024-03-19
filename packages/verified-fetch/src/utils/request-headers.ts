@@ -23,29 +23,41 @@ export function getHeader (headers: HeadersInit | undefined, header: string): st
  * 2. the start index of the range. // inclusive
  * 3. the end index of the range. // inclusive
  */
+// eslint-disable-next-line complexity
 export function calculateByteRangeIndexes (start: number | undefined, end: number | undefined, fileSize?: number): { byteSize?: number, start?: number, end?: number } {
-  if (start != null && end != null) {
-    if (start > end) {
-      throw new Error('Invalid range')
-    }
+  if ((start ?? 0) > (end ?? Infinity)) {
+    throw new Error('Invalid range: Range-start index is greater than range-end index.')
+  }
+  if (start != null && (end ?? 0) >= (fileSize ?? Infinity)) {
+    throw new Error('Invalid range: Range-end index is greater than or equal to the size of the file.')
+  }
+  if (start == null && (end ?? 0) > (fileSize ?? Infinity)) {
+    throw new Error('Invalid range: Range-end index is greater than the size of the file.')
+  }
+  if (start != null && start < 0) {
+    throw new Error('Invalid range: Range-start index cannot be negative.')
+  }
 
+  if (start != null && end != null) {
     return { byteSize: end - start + 1, start, end }
   } else if (start == null && end != null) {
     // suffix byte range requested
     if (fileSize == null) {
       return { end }
     }
-    const result = { byteSize: end, start: fileSize - end + 1, end: fileSize }
-    return result
+    if (end === fileSize) {
+      return { byteSize: fileSize, start: 0, end: fileSize - 1 }
+    }
+    return { byteSize: end, start: fileSize - end, end: fileSize - 1 }
   } else if (start != null && end == null) {
     if (fileSize == null) {
+      // we only have the start index, and no fileSize, so we can't return a valid range.
       return { start }
     }
-    const byteSize = fileSize - start + 1
-    const end = fileSize
+    const end = fileSize - 1
+    const byteSize = fileSize - start
     return { byteSize, start, end }
   }
 
-  // both start and end are undefined
-  return { byteSize: fileSize }
+  return { byteSize: fileSize, start: 0, end: fileSize != null ? fileSize - 1 : 0 }
 }
