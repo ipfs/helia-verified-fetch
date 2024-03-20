@@ -31,9 +31,7 @@ export function setCacheControlHeader ({ ttl, protocol, response }: CacheControl
     headerValue = `public, max-age=${ttl}`
   }
 
-  if (headerValue != null) {
-    response.headers.set('cache-control', headerValue)
-  }
+  response.headers.set('cache-control', headerValue)
 }
 
 /**
