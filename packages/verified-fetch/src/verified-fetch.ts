@@ -77,7 +77,10 @@ function convertOptions (options?: VerifiedFetchOptions): (Omit<VerifiedFetchOpt
   let signal: AbortSignal | undefined
   if (options?.signal === null) {
     signal = undefined
+  } else {
+    signal = options?.signal
   }
+
   return {
     ...options,
     signal
