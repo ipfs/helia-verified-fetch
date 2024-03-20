@@ -45,14 +45,28 @@ interface MatchUrlGroups {
   cidOrPeerIdOrDnsLink: string
   path?: string
   queryString?: string
-
 }
+
+function matchUrlGroupsGuard (groups?: null | { [key in string]: string; } | MatchUrlGroups): groups is MatchUrlGroups {
+  const protocol = groups?.protocol
+  if (protocol == null) return false
+  const cidOrPeerIdOrDnsLink = groups?.cidOrPeerIdOrDnsLink
+  if (cidOrPeerIdOrDnsLink == null) return false
+  const path = groups?.path
+  const queryString = groups?.queryString
+
+  return ['ipns', 'ipfs'].includes(protocol) &&
+    typeof cidOrPeerIdOrDnsLink === 'string' &&
+    (path == null || typeof path === 'string') &&
+    (queryString == null || typeof queryString === 'string')
+}
+
 function matchURLString (urlString: string): MatchUrlGroups {
   for (const pattern of [URL_REGEX, PATH_REGEX, PATH_GATEWAY_REGEX, SUBDOMAIN_GATEWAY_REGEX]) {
     const match = urlString.match(pattern)
 
-    if (match?.groups != null) {
-      return match.groups as unknown as MatchUrlGroups // force cast to MatchUrlGroups, because if it matches, it has to contain this structure.
+    if (matchUrlGroupsGuard(match?.groups)) {
+      return match.groups satisfies MatchUrlGroups
     }
   }
 
