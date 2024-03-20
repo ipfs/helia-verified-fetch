@@ -109,12 +109,6 @@ describe('cache-control header', () => {
   })
 
   it('should not contain immutable in the cache-control header for a DNSLink name', async () => {
-    verifiedFetch = new VerifiedFetch({
-      helia
-    }, {
-      dnsResolvers: [customDnsResolver]
-    })
-
     const obj = {
       hello: 'world'
     }
