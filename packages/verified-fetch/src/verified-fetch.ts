@@ -464,7 +464,6 @@ export class VerifiedFetch {
       options.signal.onabort = this.abortHandler.bind(this, opController)
       options.signal = opController.signal
     }
-    this.log('options %o', options)
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:start', { resource }))
 
