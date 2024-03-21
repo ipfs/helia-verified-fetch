@@ -1,17 +1,16 @@
 import { CID } from 'multiformats/cid'
 import { parseUrlString } from './parse-url-string.js'
-import type { ParsedUrlStringResults } from './parse-url-string.js'
+import type { ParseUrlStringOptions, ParsedUrlStringResults } from './parse-url-string.js'
 import type { Resource } from '../index.js'
-import type { IPNS, IPNSRoutingEvents, ResolveDNSLinkProgressEvents, ResolveProgressEvents } from '@helia/ipns'
-import type { AbortOptions, ComponentLogger } from '@libp2p/interface'
-import type { ProgressOptions } from 'progress-events'
+import type { IPNS } from '@helia/ipns'
+import type { ComponentLogger } from '@libp2p/interface'
 
 export interface ParseResourceComponents {
   ipns: IPNS
   logger: ComponentLogger
 }
 
-export interface ParseResourceOptions extends ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents | ResolveDNSLinkProgressEvents>, AbortOptions {
+export interface ParseResourceOptions extends ParseUrlStringOptions {
 
 }
 /**
@@ -32,8 +31,9 @@ export async function parseResource (resource: Resource, { ipns, logger }: Parse
       cid,
       protocol: 'ipfs',
       path: '',
-      query: {}
-    }
+      query: {},
+      ttl: 29030400 // 1 year for ipfs content
+    } satisfies ParsedUrlStringResults
   }
 
   throw new TypeError(`Invalid resource. Cannot determine CID from resource: ${resource}`)
