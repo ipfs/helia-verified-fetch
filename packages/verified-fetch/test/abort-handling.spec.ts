@@ -22,9 +22,7 @@ describe('abort-handling', function () {
    */
   const notPublishedCid = CID.parse('bafybeichqiz32cw5c3vdpvh2xtfgl42veqbsr6sw2g6c7ffz6atvh2vise')
   let helia: Helia
-  // let name: IPNS
   let name: StubbedInstance<IPNS>
-
   let logger: ComponentLogger
   let componentLoggers: Logger[] = []
   let verifiedFetch: VerifiedFetch
