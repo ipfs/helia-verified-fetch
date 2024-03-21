@@ -23,6 +23,11 @@ export async function getStreamFromAsyncIterable (iterator: AsyncIterable<Uint8A
     },
     async pull (controller) {
       const { value, done } = await reader.next()
+      if (options?.signal?.aborted === true) {
+        controller.error(new Error(options.signal.reason ?? 'signal aborted by user'))
+        controller.close()
+        return
+      }
 
       if (done === true) {
         if (value != null) {
