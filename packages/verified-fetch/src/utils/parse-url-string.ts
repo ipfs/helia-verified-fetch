@@ -131,7 +131,10 @@ function dnsLinkLabelDecoder (linkLabel: string): string {
  * After determining the protocol successfully, we process the cidOrPeerIdOrDnsLink:
  * * If it's ipfs, it parses the CID or throws an Aggregate error
  * * If it's ipns, it attempts to resolve the PeerId and then the DNSLink. If both fail, an Aggregate error is thrown.
+ *
+ * @todo we need to break out each step of this function (cid parsing, ipns resolving, dnslink resolving) into separate functions and then remove the eslint-disable comment
  */
+// eslint-disable-next-line complexity
 export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStringInput, options?: ParseUrlStringOptions): Promise<ParsedUrlStringResults> {
   const log = logger.forComponent('helia:verified-fetch:parse-url-string')
   const { protocol, cidOrPeerIdOrDnsLink, path: urlPath, queryString } = matchURLString(urlString)
@@ -170,6 +173,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         resolvedPath = resolveResult?.path
         log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
       } catch (err) {
+        options?.signal?.throwIfAborted()
         if (peerId == null) {
           log.error('could not parse PeerId string "%s"', cidOrPeerIdOrDnsLink, err)
           errors.push(new TypeError(`Could not parse PeerId in ipns url "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
@@ -194,6 +198,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
           resolvedPath = resolveResult?.path
           log.trace('resolved %s to %c', decodedDnsLinkLabel, cid)
         } catch (err: any) {
+          options?.signal?.throwIfAborted()
           log.error('could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)
           errors.push(err)
         }

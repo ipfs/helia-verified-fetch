@@ -289,13 +289,8 @@ export class VerifiedFetch {
       terminalElement = pathDetails.terminalElement
     } catch (err: any) {
       this.log.error('error walking path %s', path, err)
-      /**
-       * TODO: do this better. We should be able to distinguish between an abortError and a regular error
-       * However, `helia:networked-storage:error` throws an AggregateError with the abort error inside it
-       */
-      const abortError = err.errors?.find((e: Error) => e.message.includes('abort'))
-      if (abortError != null) {
-        return badRequestResponse(resource.toString(), abortError.message)
+      if (options?.signal?.aborted === true) {
+        return badRequestResponse(resource.toString(), new Error('signal aborted by user'))
       }
 
       return badGatewayResponse(resource.toString(), 'Error walking path')
@@ -450,7 +445,6 @@ export class VerifiedFetch {
   private async abortHandler (opController: AbortController): Promise<void> {
     this.log.error('signal aborted by user')
     opController.abort('signal aborted by user')
-    await this.stop()
   }
 
   /**
