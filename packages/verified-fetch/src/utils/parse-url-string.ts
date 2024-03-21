@@ -165,7 +165,6 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       try {
         // try resolving as an IPNS name
         peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
-        options?.signal?.throwIfAborted()
         resolveResult = await ipns.resolve(peerId, options)
         cid = resolveResult?.cid
         resolvedPath = resolveResult?.path
@@ -190,7 +189,6 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         log.trace('Attempting to resolve DNSLink for %s', decodedDnsLinkLabel)
 
         try {
-          options?.signal?.throwIfAborted()
           resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, options)
           cid = resolveResult?.cid
           resolvedPath = resolveResult?.path
@@ -202,8 +200,6 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       }
     }
   }
-
-  options?.signal?.throwIfAborted()
 
   if (cid == null) {
     if (errors.length === 1) {

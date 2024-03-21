@@ -487,7 +487,6 @@ export class VerifiedFetch {
       query = result.query
       ttl = result.ttl
       protocol = result.protocol
-      options?.signal?.throwIfAborted()
     } catch (err: any) {
       this.log.error('error parsing resource %s', resource, err)
 
@@ -554,7 +553,6 @@ export class VerifiedFetch {
       }
       this.log.trace('calling handler "%s"', codecHandler.name)
 
-      options?.signal?.throwIfAborted()
       response = await codecHandler.call(this, handlerArgs)
     }
 

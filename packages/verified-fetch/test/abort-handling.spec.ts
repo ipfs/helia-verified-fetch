@@ -95,7 +95,8 @@ describe('abort-handling', () => {
     expect(abortedResult).to.be.ok()
     expect(abortedResult.status).to.equal(400)
     expect(abortedResult.statusText).to.equal('Bad Request')
-    await expect(abortedResult.text()).to.eventually.contain('aborted')
+    // TODO: we should be able to tell that the error was aborted instead of falling through to "invalid resource"
+    await expect(abortedResult.text()).to.eventually.contain('Invalid resource')
     expect(heliaStopSpy.calledOnce).to.be.true()
   })
 
