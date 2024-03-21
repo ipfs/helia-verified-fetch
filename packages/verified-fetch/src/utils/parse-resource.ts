@@ -32,8 +32,9 @@ export async function parseResource (resource: Resource, { ipns, logger }: Parse
       cid,
       protocol: 'ipfs',
       path: '',
-      query: {}
-    }
+      query: {},
+      ttl: 29030400 // 1 year for ipfs content
+    } satisfies ParsedUrlStringResults
   }
 
   throw new TypeError(`Invalid resource. Cannot determine CID from resource: ${resource}`)
