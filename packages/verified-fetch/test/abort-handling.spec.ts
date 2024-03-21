@@ -10,38 +10,9 @@ import Sinon from 'sinon'
 import { stubInterface, type StubbedInstance } from 'sinon-ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
+import { getAbortablePromise } from './fixtures/get-abortable-promise.js'
+import { makeAbortedRequest } from './fixtures/make-aborted-request.js'
 import type { BlockRetriever, Helia } from '@helia/interface'
-
-async function makeAbortedRequest (verifiedFetch: VerifiedFetch, [resource, options = {}]: Parameters<typeof verifiedFetch.fetch>, promise: Promise<any>): Promise<Response> {
-  const controller = new AbortController()
-  const resultPromise = verifiedFetch.fetch(resource, {
-    ...options,
-    signal: controller.signal
-  })
-
-  void promise.then(() => {
-    controller.abort()
-  })
-  return resultPromise
-}
-
-/**
- * we need to emulate signal handling (blockBrokers/dnsResolvers/etc should handle abort signals too)
- * this is a simplified version of what libs we depend on should do, and the
- * tests in this file verify how verified-fetch would handle the failure
- */
-async function getAbortablePromise <T> (signal?: AbortSignal): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      reject(new Error('timeout while resolving'))
-    }, 5000)
-
-    signal?.addEventListener('abort', () => {
-      clearTimeout(timeoutId)
-      reject(new Error('aborted'))
-    })
-  })
-}
 
 describe('abort-handling', function () {
   this.timeout(500) // these tests should all fail extremely quickly. if they don't, they're not aborting properly, or they're being ran on an extremely slow machine.

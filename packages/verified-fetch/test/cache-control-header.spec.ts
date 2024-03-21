@@ -5,23 +5,13 @@ import { createEd25519PeerId } from '@libp2p/peer-id-factory'
 import { dns } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
 import Sinon from 'sinon'
-import { stubInterface } from 'sinon-ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
+import { answerFake } from './fixtures/dns-answer-fake.js'
 import type { Helia } from '@helia/interface'
 import type { IPNS } from '@helia/ipns'
 import type { DNSResponse } from '@multiformats/dns'
 
-function answerFake (data: string, TTL: number, name: string, type: number): DNSResponse {
-  const fake = stubInterface<DNSResponse>()
-  fake.Answer = [{
-    data,
-    TTL,
-    name,
-    type
-  }]
-  return fake
-}
 describe('cache-control header', () => {
   let helia: Helia
   let name: IPNS
