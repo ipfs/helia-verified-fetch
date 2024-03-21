@@ -1,3 +1,15 @@
+## @helia/verified-fetch [1.3.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.2.1...@helia/verified-fetch-1.3.0) (2024-03-21)
+
+
+### Features
+
+* abort signals are respected ([#26](https://github.com/ipfs/helia-verified-fetch/issues/26)) ([30148fe](https://github.com/ipfs/helia-verified-fetch/commit/30148fe6c894fd8879ccbb1ae66e3e72b2233de7))
+
+
+### Bug Fixes
+
+* set cache-control header correctly ([#19](https://github.com/ipfs/helia-verified-fetch/issues/19)) ([114f3a4](https://github.com/ipfs/helia-verified-fetch/commit/114f3a45fb2682d5202f80f41ecef9ed013f7b00)), closes [#17](https://github.com/ipfs/helia-verified-fetch/issues/17) [#23](https://github.com/ipfs/helia-verified-fetch/issues/23) [#10](https://github.com/ipfs/helia-verified-fetch/issues/10)
+
 ## @helia/verified-fetch [1.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.2.0...@helia/verified-fetch-1.2.1) (2024-03-18)
 
 
