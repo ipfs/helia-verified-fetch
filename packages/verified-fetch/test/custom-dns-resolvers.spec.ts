@@ -35,7 +35,6 @@ describe('custom dns-resolvers', () => {
 
     expect(customDnsResolver.callCount).to.equal(1)
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain.com', {
-      onProgress: undefined,
       types: [
         RecordType.TXT
       ]
@@ -68,7 +67,6 @@ describe('custom dns-resolvers', () => {
 
     expect(customDnsResolver.callCount).to.equal(1)
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain2.com', {
-      onProgress: undefined,
       types: [
         RecordType.TXT
       ]

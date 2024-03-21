@@ -85,7 +85,13 @@ export function notAcceptableResponse (url: string, body?: SupportedBodyTypes, i
   return response
 }
 
-export function badRequestResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+/**
+ * if body is an Error, it will be converted to a string containing the error message.
+ */
+export function badRequestResponse (url: string, body?: SupportedBodyTypes | Error, init?: ResponseInit): Response {
+  if (body instanceof Error) {
+    body = body.message
+  }
   const response = new Response(body, {
     ...(init ?? {}),
     status: 400,

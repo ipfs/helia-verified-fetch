@@ -286,10 +286,18 @@ export class VerifiedFetch {
       const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
       ipfsRoots = pathDetails.ipfsRoots
       terminalElement = pathDetails.terminalElement
-    } catch (err) {
+    } catch (err: any) {
       this.log.error('error walking path %s', path, err)
+      /**
+       * TODO: do this better. We should be able to distinguish between an abortError and a regular error
+       * However, `helia:networked-storage:error` throws an AggregateError with the abort error inside it
+       */
+      const abortError = err.errors?.find((e: Error) => e.message.includes('abort'))
+      if (abortError != null) {
+        return badRequestResponse(resource.toString(), abortError.message)
+      }
 
-      return badGatewayResponse('Error walking path')
+      return badGatewayResponse(resource.toString(), 'Error walking path')
     }
 
     let resolvedCID = terminalElement?.cid ?? cid
@@ -349,7 +357,8 @@ export class VerifiedFetch {
 
     try {
       const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
-        onProgress: options?.onProgress
+        onProgress: options?.onProgress,
+        signal: options?.signal
       })
       byteRangeContext.setBody(stream)
       // if not a valid range request, okRangeRequest will call okResponse
@@ -369,7 +378,7 @@ export class VerifiedFetch {
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
       }
-      return badGatewayResponse('Unable to stream content')
+      return badGatewayResponse(resource.toString(), 'Unable to stream content')
     }
   }
 
@@ -433,10 +442,34 @@ export class VerifiedFetch {
     [identity.code]: this.handleRaw
   }
 
+  /**
+   *
+   * TODO: Should we use 400, 408, 418, or 425, or throw and not even return a response?
+   */
+  private async abortHandler (opController: AbortController): Promise<void> {
+    this.log.error('signal aborted by user')
+    opController.abort('signal aborted by user')
+    await this.stop()
+  }
+
+  /**
+   * We're starting to get to the point where we need a queue or pipeline of
+   * operations to perform and a single place to handle errors.
+   *
+   * TODO: move operations called by fetch to a queue of operations where we can
+   * always exit early (and cleanly) if a given signal is aborted
+   */
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s', resource)
 
     const options = convertOptions(opts)
+
+    const opController = new AbortController()
+    if (options?.signal != null) {
+      options.signal.onabort = this.abortHandler.bind(this, opController)
+      options.signal = opController.signal
+    }
+    this.log('options %o', options)
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:start', { resource }))
 
@@ -449,10 +482,11 @@ export class VerifiedFetch {
       cid = result.cid
       path = result.path
       query = result.query
-    } catch (err) {
+      options?.signal?.throwIfAborted()
+    } catch (err: any) {
       this.log.error('error parsing resource %s', resource, err)
 
-      return badRequestResponse('Invalid resource')
+      return badRequestResponse(resource.toString(), err)
     }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
@@ -515,6 +549,7 @@ export class VerifiedFetch {
       }
       this.log.trace('calling handler "%s"', codecHandler.name)
 
+      options?.signal?.throwIfAborted()
       response = await codecHandler.call(this, handlerArgs)
     }
 

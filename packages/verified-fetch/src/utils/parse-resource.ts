@@ -3,7 +3,7 @@ import { parseUrlString } from './parse-url-string.js'
 import type { ParsedUrlStringResults } from './parse-url-string.js'
 import type { Resource } from '../index.js'
 import type { IPNS, IPNSRoutingEvents, ResolveDNSLinkProgressEvents, ResolveProgressEvents } from '@helia/ipns'
-import type { ComponentLogger } from '@libp2p/interface'
+import type { AbortOptions, ComponentLogger } from '@libp2p/interface'
 import type { ProgressOptions } from 'progress-events'
 
 export interface ParseResourceComponents {
@@ -11,7 +11,7 @@ export interface ParseResourceComponents {
   logger: ComponentLogger
 }
 
-export interface ParseResourceOptions extends ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents | ResolveDNSLinkProgressEvents> {
+export interface ParseResourceOptions extends ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents | ResolveDNSLinkProgressEvents>, AbortOptions {
 
 }
 /**
@@ -21,7 +21,7 @@ export interface ParseResourceOptions extends ProgressOptions<ResolveProgressEve
  */
 export async function parseResource (resource: Resource, { ipns, logger }: ParseResourceComponents, options?: ParseResourceOptions): Promise<ParsedUrlStringResults> {
   if (typeof resource === 'string') {
-    return parseUrlString({ urlString: resource, ipns, logger }, { onProgress: options?.onProgress })
+    return parseUrlString({ urlString: resource, ipns, logger }, options)
   }
 
   const cid = CID.asCID(resource)

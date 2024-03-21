@@ -1,10 +1,10 @@
 import { peerIdFromString } from '@libp2p/peer-id'
 import { CID } from 'multiformats/cid'
 import { TLRU } from './tlru.js'
+import type { ParseResourceOptions } from './parse-resource.js'
 import type { RequestFormatShorthand } from '../types.js'
-import type { IPNS, ResolveDNSLinkProgressEvents, ResolveResult } from '@helia/ipns'
+import type { IPNS, ResolveResult } from '@helia/ipns'
 import type { ComponentLogger } from '@libp2p/interface'
-import type { ProgressOptions } from 'progress-events'
 
 const ipnsCache = new TLRU<ResolveResult>(1000)
 
@@ -13,7 +13,7 @@ export interface ParseUrlStringInput {
   ipns: IPNS
   logger: ComponentLogger
 }
-export interface ParseUrlStringOptions extends ProgressOptions<ResolveDNSLinkProgressEvents> {
+export interface ParseUrlStringOptions extends ParseResourceOptions {
 
 }
 
@@ -110,7 +110,8 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       let peerId = null
       try {
         peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
-        resolveResult = await ipns.resolve(peerId, { onProgress: options?.onProgress })
+        options?.signal?.throwIfAborted()
+        resolveResult = await ipns.resolve(peerId, options)
         cid = resolveResult?.cid
         resolvedPath = resolveResult?.path
         log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
@@ -134,7 +135,8 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         log.trace('Attempting to resolve DNSLink for %s', decodedDnsLinkLabel)
 
         try {
-          resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, { onProgress: options?.onProgress })
+          options?.signal?.throwIfAborted()
+          resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, options)
           cid = resolveResult?.cid
           resolvedPath = resolveResult?.path
           log.trace('resolved %s to %c', decodedDnsLinkLabel, cid)
@@ -146,6 +148,8 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       }
     }
   }
+
+  options?.signal?.throwIfAborted()
 
   if (cid == null) {
     if (errors.length === 1) {
