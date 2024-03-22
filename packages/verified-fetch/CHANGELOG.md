@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.0...@helia/verified-fetch-1.3.1) (2024-03-22)
+
+
+### Bug Fixes
+
+* aborted signals throw libp2p AbortError ([#30](https://github.com/ipfs/helia-verified-fetch/issues/30)) ([4575791](https://github.com/ipfs/helia-verified-fetch/commit/4575791816d67634e802e461ef524a3d9b27de3f))
+
 ## @helia/verified-fetch [1.3.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.2.1...@helia/verified-fetch-1.3.0) (2024-03-21)
 
 
