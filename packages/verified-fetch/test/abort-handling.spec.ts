@@ -1,5 +1,6 @@
 import { dagCbor } from '@helia/dag-cbor'
 import { type DNSLinkResolveResult, type IPNS, type IPNSResolveResult } from '@helia/ipns'
+import { type UnixFS, type UnixFSStats, unixfs } from '@helia/unixfs'
 import { stop, type ComponentLogger, type Logger } from '@libp2p/interface'
 import { prefixLogger, logger as libp2pLogger } from '@libp2p/logger'
 import { createEd25519PeerId } from '@libp2p/peer-id-factory'
@@ -23,6 +24,7 @@ describe('abort-handling', function () {
   const notPublishedCid = CID.parse('bafybeichqiz32cw5c3vdpvh2xtfgl42veqbsr6sw2g6c7ffz6atvh2vise')
   let helia: Helia
   let name: StubbedInstance<IPNS>
+  let fs: StubbedInstance<UnixFS>
   let logger: ComponentLogger
   let componentLoggers: Logger[] = []
   let verifiedFetch: VerifiedFetch
@@ -33,6 +35,8 @@ describe('abort-handling', function () {
   let blockRetriever: StubbedInstance<BlockRetriever>
   let dnsLinkResolver: Sinon.SinonStub<any[], Promise<DNSLinkResolveResult>>
   let peerIdResolver: Sinon.SinonStub<any[], Promise<IPNSResolveResult>>
+  let unixFsCatStub: Sinon.SinonStub<any[], AsyncIterable<Uint8Array>>
+  let unixFsStatStub: Sinon.SinonStub<any[], Promise<UnixFSStats>>
 
   /**
    * used as promises to pass to makeAbortedRequest that will abort the request as soon as it's resolved.
@@ -40,13 +44,19 @@ describe('abort-handling', function () {
   let blockBrokerRetrieveCalled: DeferredPromise<void>
   let dnsLinkResolverCalled: DeferredPromise<void>
   let peerIdResolverCalled: DeferredPromise<void>
+  let unixFsStatCalled: DeferredPromise<void>
+  let unixFsCatCalled: DeferredPromise<void>
 
   beforeEach(async () => {
     peerIdResolver = sandbox.stub()
     dnsLinkResolver = sandbox.stub()
+    unixFsCatStub = sandbox.stub()
+    unixFsStatStub = sandbox.stub()
     peerIdResolverCalled = pDefer()
     dnsLinkResolverCalled = pDefer()
     blockBrokerRetrieveCalled = pDefer()
+    unixFsStatCalled = pDefer()
+    unixFsCatCalled = pDefer()
 
     dnsLinkResolver.withArgs('timeout-5000-example.com', Sinon.match.any).callsFake(async (_domain, options) => {
       dnsLinkResolverCalled.resolve()
@@ -61,6 +71,29 @@ describe('abort-handling', function () {
         blockBrokerRetrieveCalled.resolve()
         return getAbortablePromise(options.signal)
       })
+    })
+    unixFsCatStub.callsFake((cid, options) => {
+      unixFsCatCalled.resolve()
+      return {
+        async * [Symbol.asyncIterator] () {
+          await getAbortablePromise(options.signal)
+          yield new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        }
+      }
+    })
+
+    unixFsStatStub.callsFake(async (cid, options): Promise<UnixFSStats> => {
+      unixFsStatCalled.resolve()
+      await getAbortablePromise(options.signal)
+      return {
+        cid,
+        type: 'file',
+        fileSize: BigInt(0),
+        dagSize: BigInt(0),
+        blocks: 1,
+        localFileSize: BigInt(0),
+        localDagSize: BigInt(0)
+      }
     })
 
     logger = prefixLogger('test:abort-handling')
@@ -77,9 +110,14 @@ describe('abort-handling', function () {
       resolveDNSLink: dnsLinkResolver,
       resolve: peerIdResolver
     })
+    fs = stubInterface<UnixFS>({
+      cat: unixFsCatStub,
+      stat: unixFsStatStub
+    })
     verifiedFetch = new VerifiedFetch({
       helia,
-      ipns: name
+      ipns: name,
+      unixfs: fs
     })
   })
 
@@ -121,5 +159,39 @@ describe('abort-handling', function () {
     expect(blockRetriever.retrieve.callCount).to.equal(1)
   })
 
-  // TODO: verify that the request is aborted when calling unixfs.cat and unixfs.walkPath
+  it('should abort a request during unixfs.stat call', async function () {
+    const fs = unixfs(helia)
+    const fileCid = await fs.addBytes(Uint8Array.from([0, 1, 2, 3]))
+    const directoryCid = await fs.addDirectory()
+    const cid = await fs.cp(fileCid, directoryCid, 'index.html')
+
+    await expect(makeAbortedRequest(verifiedFetch, [cid], unixFsStatCalled.promise)).to.eventually.be.rejectedWith('aborted')
+
+    expect(peerIdResolver.callCount).to.equal(0) // not called because parseResource never passes the resource to parseUrlString
+    expect(dnsLinkResolver.callCount).to.equal(0) // not called because parseResource never passes the resource to parseUrlString
+    expect(blockRetriever.retrieve.callCount).to.equal(0) // not called because the blockstore has the content
+    expect(unixFsStatStub.callCount).to.equal(1)
+    expect(unixFsCatStub.callCount).to.equal(0) // not called because the request was aborted during .stat call
+  })
+
+  it('should abort a request during unixfs.cat call', async function () {
+    const fs = unixfs(helia)
+    const fileCid = await fs.addBytes(Uint8Array.from([0, 1, 2, 3]))
+    const directoryCid = await fs.addDirectory()
+    const cid = await fs.cp(fileCid, directoryCid, 'index.html')
+
+    // override the default fake set in beforeEach that would timeout.
+    unixFsStatStub.callsFake(async (cid, options) => {
+      unixFsStatCalled.resolve()
+      return fs.stat(cid, options)
+    })
+
+    await expect(makeAbortedRequest(verifiedFetch, [cid], unixFsCatCalled.promise)).to.eventually.be.rejectedWith('aborted')
+
+    expect(peerIdResolver.callCount).to.equal(0) // not called because parseResource never passes the resource to parseUrlString
+    expect(dnsLinkResolver.callCount).to.equal(0) // not called because parseResource never passes the resource to parseUrlString
+    expect(blockRetriever.retrieve.callCount).to.equal(0) // not called because the blockstore has the content
+    expect(unixFsStatStub.callCount).to.equal(1)
+    expect(unixFsCatStub.callCount).to.equal(1)
+  })
 })
