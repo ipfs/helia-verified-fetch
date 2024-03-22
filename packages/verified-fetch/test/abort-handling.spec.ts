@@ -99,40 +99,26 @@ describe('abort-handling', function () {
 
     await name.publish(peerId, cid, { lifetime: 1000 * 60 * 60 })
 
-    const abortedResult = await makeAbortedRequest(verifiedFetch, [`ipns://${peerId}`], peerIdResolverCalled.promise)
-
+    await expect(makeAbortedRequest(verifiedFetch, [`ipns://${peerId}`], peerIdResolverCalled.promise)).to.eventually.be.rejectedWith('aborted')
     expect(peerIdResolver.callCount).to.equal(1)
     expect(dnsLinkResolver.callCount).to.equal(0) // not called because signal abort was detected
     expect(blockRetriever.retrieve.callCount).to.equal(0) // not called because we never got the cid
-    expect(abortedResult).to.be.ok()
-    expect(abortedResult.status).to.equal(400)
-    expect(abortedResult.statusText).to.equal('Bad Request')
-    await expect(abortedResult.text()).to.eventually.contain('aborted')
   })
 
   it('should abort a request before dns resolution', async function () {
-    const abortedResult = await makeAbortedRequest(verifiedFetch, ['ipns://timeout-5000-example.com'], dnsLinkResolverCalled.promise)
+    await expect(makeAbortedRequest(verifiedFetch, ['ipns://timeout-5000-example.com'], dnsLinkResolverCalled.promise)).to.eventually.be.rejectedWith('aborted')
 
     expect(peerIdResolver.callCount).to.equal(0) // not called because peerIdFromString fails
     expect(dnsLinkResolver.callCount).to.equal(1)
     expect(blockRetriever.retrieve.callCount).to.equal(0) // not called because we never got the cid
-    expect(abortedResult).to.be.ok()
-    expect(abortedResult.status).to.equal(400)
-    expect(abortedResult.statusText).to.equal('Bad Request')
-    await expect(abortedResult.text()).to.eventually.contain('aborted')
   })
 
   it('should abort a request while looking for cid', async function () {
-    const abortedResult = await makeAbortedRequest(verifiedFetch, [notPublishedCid, { headers: { accept: 'application/octet-stream' } }], blockBrokerRetrieveCalled.promise)
+    await expect(makeAbortedRequest(verifiedFetch, [notPublishedCid, { headers: { accept: 'application/octet-stream' } }], blockBrokerRetrieveCalled.promise)).to.eventually.be.rejectedWith('aborted')
 
     expect(peerIdResolver.callCount).to.equal(0) // not called because parseResource never passes the resource to parseUrlString
     expect(dnsLinkResolver.callCount).to.equal(0) // not called because parseResource never passes the resource to parseUrlString
     expect(blockRetriever.retrieve.callCount).to.equal(1)
-    expect(abortedResult).to.be.ok()
-    expect(abortedResult.status).to.equal(400)
-    expect(abortedResult.statusText).to.equal('Bad Request')
-    // this error is exactly what blockRetriever throws, so we can check for "aborted" in the error message
-    await expect(abortedResult.text()).to.eventually.contain('aborted')
   })
 
   // TODO: verify that the request is aborted when calling unixfs.cat and unixfs.walkPath
