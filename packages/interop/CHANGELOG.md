@@ -1,3 +1,11 @@
+## @helia/verified-fetch-interop [1.10.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.9.0...@helia/verified-fetch-interop-1.10.0) (2024-03-22)
+
+
+
+### Dependencies
+
+* **@helia/verified-fetch:** upgraded to 1.3.1
+
 ## @helia/verified-fetch-interop [1.9.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.8.0...@helia/verified-fetch-interop-1.9.0) (2024-03-21)
 
 
