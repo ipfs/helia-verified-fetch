@@ -552,7 +552,7 @@ export class VerifiedFetch {
       const codecHandler = this.codecHandlers[cid.code]
 
       if (codecHandler == null) {
-        return notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia/issues/new`)
+        return notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`)
       }
       this.log.trace('calling handler "%s"', codecHandler.name)
 
