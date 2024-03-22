@@ -615,7 +615,7 @@ Known Errors that can be thrown:
 1. `TypeError` - If the resource argument is not a string, CID, or CID string.
 2. `TypeError` - If the options argument is passed and not an object.
 3. `TypeError` - If the options argument is passed and is malformed.
-4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal.
+4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal. Note that this is a `AbortError` from `@libp2p/interface` and not the standard `AbortError` from the Fetch API.
 
 # Install
 
