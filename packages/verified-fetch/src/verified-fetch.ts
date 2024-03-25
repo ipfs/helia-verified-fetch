@@ -299,9 +299,10 @@ export class VerifiedFetch {
     let resolvedCID = terminalElement?.cid ?? cid
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
+      const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
 
       // https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
-      if (path !== '' && !path.endsWith('/')) {
+      if (redirectCheckNeeded) {
         if (options?.redirect === 'error') {
           this.log('could not redirect to %s/ as redirect option was set to "error"', resource)
           throw new TypeError('Failed to fetch')

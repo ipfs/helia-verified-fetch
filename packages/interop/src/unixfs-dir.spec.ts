@@ -26,6 +26,25 @@ describe('@helia/verified-fetch - unixfs directory', () => {
     await verifiedFetch.stop()
   })
 
+  describe('unixfs-dir-redirect', () => {
+    before(async () => {
+      await loadFixtureDataCar(controller, 'gateway-conformance-fixtures.car')
+    });
+
+    [
+      'https://example.com/ipfs/bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q',
+      'ipfs://bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q',
+      'http://example.com/ipfs/bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q'
+    ].forEach((url: string) => {
+      it(`request to unixfs directory with ${url} should return a 301 with a trailing slash`, async () => {
+        const response = await verifiedFetch(url, { redirect: 'manual' })
+        expect(response).to.be.ok()
+        expect(response.status).to.equal(301)
+        expect(response.headers.get('location')).to.equal(`${url}/`)
+      })
+    })
+  })
+
   describe('XKCD Barrel Part 1', () => {
     before(async () => {
       // This is the content of https://explore.ipld.io/#/explore/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1%20-%20Barrel%20-%20Part%201
