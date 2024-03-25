@@ -160,6 +160,33 @@ describe('@helia/verifed-fetch', () => {
       expect(ipfsResponse.url).to.equal(`ipfs://${res.cid}/foo`)
     })
 
+    it('should return a 301 with a trailing slash when a root directory is requested without a trailing slash', async () => {
+      const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
+
+      const fs = unixfs(helia)
+      const res = await last(fs.addAll([{
+        path: '/index.html',
+        content: finalRootFileContent
+      }], {
+        wrapWithDirectory: true
+      }))
+
+      if (res == null) {
+        throw new Error('Import failed')
+      }
+
+      const stat = await fs.stat(res.cid)
+      expect(stat.type).to.equal('directory')
+
+      const ipfsResponse = await verifiedFetch.fetch(`https://ipfs.local/ipfs/${res.cid}`, {
+        redirect: 'manual'
+      })
+      expect(ipfsResponse).to.be.ok()
+      expect(ipfsResponse.status).to.equal(301)
+      expect(ipfsResponse.headers.get('location')).to.equal(`https://ipfs.local/ipfs/${res.cid}/`)
+      expect(ipfsResponse.url).to.equal(`https://ipfs.local/ipfs/${res.cid}`)
+    })
+
     it('should return a 301 with a trailing slash when a gateway directory is requested without a trailing slash', async () => {
       const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
 
