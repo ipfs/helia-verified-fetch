@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.1...@helia/verified-fetch-1.3.2) (2024-03-25)
+
+
+### Bug Fixes
+
+* unixfs dir redirect ([#33](https://github.com/ipfs/helia-verified-fetch/issues/33)) ([32ca87f](https://github.com/ipfs/helia-verified-fetch/commit/32ca87f74840410a435412da64c8e22208fa2ec2))
+
 ## @helia/verified-fetch [1.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.0...@helia/verified-fetch-1.3.1) (2024-03-22)
 
 
