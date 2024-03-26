@@ -85,6 +85,7 @@ function matchURLString (urlString: string): MatchUrlGroups {
  *
  * @see https://github.com/ipfs/js-ipns/blob/16e0e10682fa9a663e0bb493a44d3e99a5200944/src/index.ts#L200
  * @see https://github.com/ipfs/js-ipns/pull/308
+ * @returns the ttl in seconds
  */
 function calculateTtl (resolveResult?: IPNSResolveResult | DNSLinkResolveResult): number | undefined {
   if (resolveResult == null) {
@@ -92,8 +93,7 @@ function calculateTtl (resolveResult?: IPNSResolveResult | DNSLinkResolveResult)
   }
   const dnsLinkTtl = (resolveResult as DNSLinkResolveResult).answer?.TTL
   const ipnsTtlNs = (resolveResult as IPNSResolveResult).record?.ttl
-  // For some reason, ipns "nanoseconds" are 1e-8 of a second, instead of 1e-9.
-  const ipnsTtl = ipnsTtlNs != null ? Number(ipnsTtlNs / BigInt(1e8)) : undefined
+  const ipnsTtl = ipnsTtlNs != null ? Number(ipnsTtlNs / BigInt(1e9)) : undefined
   return dnsLinkTtl ?? ipnsTtl
 }
 
