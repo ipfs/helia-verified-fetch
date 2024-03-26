@@ -257,6 +257,40 @@ describe('parseUrlString', () => {
     })
   })
 
+  describe('TTL', () => {
+    const oneHourInSeconds = 3600
+    const oneHourInNanoseconds = BigInt(3600 * 1e9)
+
+    it('should return the correct TTL from the DNS Answer ', async () => {
+      ipns.resolveDNSLink.withArgs('newdomain.com').resolves({
+        cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
+        path: '',
+        answer: {
+          TTL: oneHourInSeconds,
+          type: 16,
+          name: 'n/a',
+          data: 'n/a'
+        }
+      })
+
+      const result = await parseUrlString({ urlString: 'ipns://newdomain.com/', ipns, logger })
+      expect(result.ttl).to.equal(oneHourInSeconds)
+    })
+
+    it('should return the correct TTL from the IPNS answer', async () => {
+      const testPeerId = await createEd25519PeerId()
+
+      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+        cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
+        path: '',
+        record: ipnsRecordStub({ peerId: testPeerId, ttl: oneHourInNanoseconds })
+      })
+
+      const result = await parseUrlString({ urlString: `ipns://${testPeerId}`, ipns, logger })
+      expect(result.ttl).to.equal(3600)
+    })
+  })
+
   describe('/ipfs/<CID> URLs', () => {
     it('should parse an IPFS Path with a CID only', async () => {
       await assertMatchUrl(
