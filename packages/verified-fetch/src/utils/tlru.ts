@@ -28,8 +28,8 @@ export class TLRU<T> {
     return undefined
   }
 
-  set (key: string, value: T, ttl: number): void {
-    this.lru.set(key, { value, expire: Date.now() + ttl })
+  set (key: string, value: T, ttlMs: number): void {
+    this.lru.set(key, { value, expire: Date.now() + ttlMs })
   }
 
   has (key: string): boolean {
