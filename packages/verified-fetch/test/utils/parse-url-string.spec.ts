@@ -287,7 +287,7 @@ describe('parseUrlString', () => {
       })
 
       const result = await parseUrlString({ urlString: `ipns://${testPeerId}`, ipns, logger })
-      expect(result.ttl).to.equal(3600)
+      expect(result.ttl).to.equal(oneHourInSeconds)
     })
   })
 
