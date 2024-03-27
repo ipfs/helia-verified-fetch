@@ -71,7 +71,10 @@ describe('cache-control header', () => {
     expect(resp.headers.get('Cache-Control')).to.not.containIgnoreCase('immutable')
   })
 
-  it('should return the correct max-age in the cache-control header for an IPNS name', async () => {
+  // Skipping until https://github.com/ipfs/js-ipns/issues/310 is resolved
+  // Note that the source of the error is from the `name.publish` call rather than the max-age value
+  // in the cache control header.
+  it.skip('should return the correct max-age in the cache-control header for an IPNS name', async () => {
     const obj = {
       hello: 'world'
     }
