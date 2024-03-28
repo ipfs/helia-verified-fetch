@@ -85,6 +85,7 @@ function matchURLString (urlString: string): MatchUrlGroups {
  *
  * @see https://github.com/ipfs/js-ipns/blob/16e0e10682fa9a663e0bb493a44d3e99a5200944/src/index.ts#L200
  * @see https://github.com/ipfs/js-ipns/pull/308
+ * @returns the ttl in seconds
  */
 function calculateTtl (resolveResult?: IPNSResolveResult | DNSLinkResolveResult): number | undefined {
   if (resolveResult == null) {
@@ -92,8 +93,7 @@ function calculateTtl (resolveResult?: IPNSResolveResult | DNSLinkResolveResult)
   }
   const dnsLinkTtl = (resolveResult as DNSLinkResolveResult).answer?.TTL
   const ipnsTtlNs = (resolveResult as IPNSResolveResult).record?.ttl
-  // For some reason, ipns "nanoseconds" are 1e-8 of a second, instead of 1e-9.
-  const ipnsTtl = ipnsTtlNs != null ? Number(ipnsTtlNs / BigInt(1e8)) : undefined
+  const ipnsTtl = ipnsTtlNs != null ? Number(ipnsTtlNs / BigInt(1e9)) : undefined
   return dnsLinkTtl ?? ipnsTtl
 }
 
@@ -214,11 +214,14 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
     throw new AggregateError(errors, `Invalid resource. Cannot determine CID from URL "${urlString}"`)
   }
 
-  const ttl = calculateTtl(resolveResult)
+  let ttl = calculateTtl(resolveResult)
 
   if (resolveResult != null) {
     // use the ttl for the resolved resouce for the cache, but fallback to 2 minutes if not available
-    ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, ttl ?? 60 * 1000 * 2)
+    ttl = ttl ?? 60 * 2
+    log.trace('caching %s resolved to %s with TTL: %s', cidOrPeerIdOrDnsLink, cid, ttl)
+    // convert ttl from seconds to ms for the cache
+    ipnsCache.set(cidOrPeerIdOrDnsLink, resolveResult, ttl * 1000)
   }
 
   // parse query string
