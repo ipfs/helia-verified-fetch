@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.2...@helia/verified-fetch-1.3.3) (2024-03-28)
+
+
+### Bug Fixes
+
+* ttl and caching for ipns urls ([#34](https://github.com/ipfs/helia-verified-fetch/issues/34)) ([44ac5a1](https://github.com/ipfs/helia-verified-fetch/commit/44ac5a1f0b8ade5943bd688fcd5132a44dcc5c9e))
+
 ## @helia/verified-fetch [1.3.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.1...@helia/verified-fetch-1.3.2) (2024-03-25)
 
 
