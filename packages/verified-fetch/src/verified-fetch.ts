@@ -25,15 +25,15 @@ import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterab
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
 import { setCacheControlHeader } from './utils/response-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
-import { walkPath } from './utils/walk-path.js'
+import { objectNodeGuard, walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
 import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia } from '@helia/interface'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
-import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { ObjectNode, UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
 interface VerifiedFetchComponents {
@@ -236,8 +236,33 @@ export class VerifiedFetch {
 
   private async handleDagCbor ({ resource, cid, path, accept, options }: FetchHandlerFunctionArg): Promise<Response> {
     this.log.trace('fetching %c/%s', cid, path)
+    let terminalElement: ObjectNode | undefined
+    let ipfsRoots: CID[] | undefined
 
-    const block = await this.helia.blockstore.get(cid, options)
+    // need to walk path, if it exists, to get the terminal element
+    try {
+      const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
+      ipfsRoots = pathDetails.ipfsRoots
+      const potentialTerminalElement = pathDetails.terminalElement
+      if (potentialTerminalElement == null) {
+        return notFoundResponse(resource.toString())
+      }
+      if (objectNodeGuard(potentialTerminalElement)) {
+        terminalElement = potentialTerminalElement
+      }
+    } catch (err: any) {
+      if (options?.signal?.aborted === true) {
+        throw new AbortError('signal aborted by user')
+      }
+      if (['ERR_NO_PROP', 'NO_TERMINAL_ELEMENT'].includes(err.code)) {
+        return notFoundResponse(resource.toString())
+      }
+
+      this.log.error('error walking path %s', path, err)
+      return badGatewayResponse(resource.toString(), 'Error walking path')
+    }
+    const block = terminalElement?.node ?? await this.helia.blockstore.get(cid, options)
+
     let body: string | Uint8Array
 
     if (accept === 'application/octet-stream' || accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {
@@ -277,9 +302,14 @@ export class VerifiedFetch {
 
     response.headers.set('content-type', accept)
 
+    if (ipfsRoots != null) {
+      response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
+    }
+
     return response
   }
 
+  // eslint-disable-next-line complexity
   private async handleDagPb ({ cid, path, resource, options }: FetchHandlerFunctionArg): Promise<Response> {
     let terminalElement: UnixFSEntry | undefined
     let ipfsRoots: CID[] | undefined
@@ -293,6 +323,9 @@ export class VerifiedFetch {
     } catch (err: any) {
       if (options?.signal?.aborted === true) {
         throw new AbortError('signal aborted by user')
+      }
+      if (['ERR_NO_PROP', 'NO_TERMINAL_ELEMENT'].includes(err.code)) {
+        return notFoundResponse(resource.toString())
       }
       this.log.error('error walking path %s', path, err)
 

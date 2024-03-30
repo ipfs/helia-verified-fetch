@@ -1,4 +1,5 @@
-import { walkPath as exporterWalk, type ExporterOptions, type ReadableStorage, type UnixFSEntry } from 'ipfs-unixfs-exporter'
+import { CodeError } from '@libp2p/interface'
+import { walkPath as exporterWalk, type ExporterOptions, type ReadableStorage, type ObjectNode, type UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
 export interface PathWalkerOptions extends ExporterOptions {
@@ -24,11 +25,15 @@ export async function walkPath (blockstore: ReadableStorage, path: string, optio
   }
 
   if (terminalElement == null) {
-    throw new Error('No terminal element found')
+    throw new CodeError('No terminal element found', 'NO_TERMINAL_ELEMENT')
   }
 
   return {
     ipfsRoots,
     terminalElement
   }
+}
+
+export function objectNodeGuard (node: UnixFSEntry): node is ObjectNode {
+  return node.type === 'object'
 }
