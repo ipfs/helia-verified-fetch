@@ -765,6 +765,7 @@ describe('@helia/verifed-fetch', () => {
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
       const data = await resp.arrayBuffer()
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
       expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
     })
   })
