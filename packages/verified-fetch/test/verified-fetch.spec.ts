@@ -710,4 +710,42 @@ describe('@helia/verifed-fetch', () => {
       expect(output).to.deep.equal(obj)
     })
   })
+
+  describe('encoded URI paths', () => {
+    let verifiedFetch: VerifiedFetch
+
+    beforeEach(async () => {
+      verifiedFetch = new VerifiedFetch({
+        helia
+      })
+    })
+
+    afterEach(async () => {
+      await verifiedFetch.stop()
+    })
+
+    // tests for https://github.com/ipfs-shipyard/service-worker-gateway/issues/83 issue
+    it('should decode encoded URI paths', async () => {
+      const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
+
+      const fs = unixfs(helia)
+      const res = await last(fs.addAll([{
+        path: "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp",
+        content: finalRootFileContent
+      }], {
+        wrapWithDirectory: true
+      }))
+
+      if (res == null) {
+        throw new Error('Import failed')
+      }
+      const { cid } = res
+      const resp = await verifiedFetch.fetch(`ipfs://${cid}/${encodeURIComponent("Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp")}`)
+      expect(resp).to.be.ok()
+      expect(resp.status).to.equal(200)
+      expect(resp.statusText).to.equal('OK')
+      const data = await resp.arrayBuffer()
+      expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
+    })
+  })
 })
