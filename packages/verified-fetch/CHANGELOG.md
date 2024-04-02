@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.3...@helia/verified-fetch-1.3.4) (2024-04-02)
+
+
+### Bug Fixes
+
+* decodeURIComponent on path parts ([#40](https://github.com/ipfs/helia-verified-fetch/issues/40)) ([f628cf6](https://github.com/ipfs/helia-verified-fetch/commit/f628cf6b20cf5b23aeb37c7493cbd265c3db6b71))
+
 ## @helia/verified-fetch [1.3.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.2...@helia/verified-fetch-1.3.3) (2024-03-28)
 
 
