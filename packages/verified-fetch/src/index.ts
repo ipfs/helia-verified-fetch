@@ -594,11 +594,11 @@ import { createHeliaHTTP } from '@helia/http'
 import { delegatedHTTPRouting } from '@helia/routers'
 import { dns } from '@multiformats/dns'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
-import type { Helia } from '@helia/interface'
+import type { GetBlockProgressEvents, Helia } from '@helia/interface'
 import type { ResolveDNSLinkProgressEvents } from '@helia/ipns'
-import type { GetEvents } from '@helia/unixfs'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
+import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
 
@@ -674,8 +674,10 @@ export interface ContentTypeParser {
 }
 
 export type BubbledProgressEvents =
-  // unixfs
-  GetEvents |
+  // unixfs-exporter
+  ExporterProgressEvents |
+  // helia blockstore
+  GetBlockProgressEvents |
   // ipns
   ResolveDNSLinkProgressEvents
 

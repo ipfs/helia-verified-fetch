@@ -1,6 +1,5 @@
 import { car } from '@helia/car'
 import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
-import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs } from '@helia/unixfs'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
@@ -8,6 +7,7 @@ import { AbortError, type AbortOptions, type Logger, type PeerId } from '@libp2p
 import { Record as DHTRecord } from '@libp2p/kad-dht'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { Key } from 'interface-datastore'
+import { exporter } from 'ipfs-unixfs-exporter'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
@@ -38,7 +38,6 @@ import type { CID } from 'multiformats/cid'
 interface VerifiedFetchComponents {
   helia: Helia
   ipns?: IPNS
-  unixfs?: HeliaUnixFs
 }
 
 /**
@@ -125,15 +124,13 @@ function getOverridenRawContentType (headers?: HeadersInit): string | undefined 
 export class VerifiedFetch {
   private readonly helia: Helia
   private readonly ipns: IPNS
-  private readonly unixfs: HeliaUnixFs
   private readonly log: Logger
   private readonly contentTypeParser: ContentTypeParser | undefined
 
-  constructor ({ helia, ipns, unixfs }: VerifiedFetchComponents, init?: VerifiedFetchInit) {
+  constructor ({ helia, ipns }: VerifiedFetchComponents, init?: VerifiedFetchInit) {
     this.helia = helia
     this.log = helia.logger.forComponent('helia:verified-fetch')
     this.ipns = ipns ?? heliaIpns(helia)
-    this.unixfs = unixfs ?? heliaUnixFs(helia)
     this.contentTypeParser = init?.contentTypeParser
     this.log.trace('created VerifiedFetch instance')
   }
@@ -319,14 +316,15 @@ export class VerifiedFetch {
       const rootFilePath = 'index.html'
       try {
         this.log.trace('found directory at %c/%s, looking for index.html', cid, path)
-        const stat = await this.unixfs.stat(dirCid, {
-          path: rootFilePath,
+
+        const entry = await exporter(`/ipfs/${dirCid}/${rootFilePath}`, this.helia.blockstore, {
           signal: options?.signal,
           onProgress: options?.onProgress
         })
-        this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, stat.cid)
+
+        this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
         path = rootFilePath
-        resolvedCID = stat.cid
+        resolvedCID = entry.cid
       } catch (err: any) {
         if (options?.signal?.aborted === true) {
           throw new AbortError('signal aborted by user')
@@ -346,8 +344,13 @@ export class VerifiedFetch {
     }
     const offset = byteRangeContext.offset
     const length = byteRangeContext.length
-    this.log.trace('calling unixfs.cat for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
-    const asyncIter = this.unixfs.cat(resolvedCID, {
+    this.log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
+
+    const entry = await exporter(resolvedCID, this.helia.blockstore, {
+      signal: options?.signal,
+      onProgress: options?.onProgress
+    })
+    const asyncIter = entry.content({
       signal: options?.signal,
       onProgress: options?.onProgress,
       offset,
