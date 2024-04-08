@@ -27,7 +27,7 @@ import { parseResource } from './utils/parse-resource.js'
 import { setCacheControlHeader } from './utils/response-headers.js'
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
-import { objectNodeGuard, walkPath } from './utils/walk-path.js'
+import { isObjectNode, walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
 import type { ParsedUrlStringResults } from './utils/parse-url-string'
@@ -245,21 +245,19 @@ export class VerifiedFetch {
       ipfsRoots = pathDetails.ipfsRoots
       const potentialTerminalElement = pathDetails.terminalElement
       if (potentialTerminalElement == null) {
-        return notFoundResponse(resource.toString())
+        return notFoundResponse(resource)
       }
-      if (objectNodeGuard(potentialTerminalElement)) {
+      if (isObjectNode(potentialTerminalElement)) {
         terminalElement = potentialTerminalElement
       }
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
-      }
-      if (['ERR_NO_PROP', 'NO_TERMINAL_ELEMENT'].includes(err.code)) {
-        return notFoundResponse(resource.toString())
+      options?.signal?.throwIfAborted()
+      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
+        return notFoundResponse(resource)
       }
 
       this.log.error('error walking path %s', path, err)
-      return badGatewayResponse(resource.toString(), 'Error walking path')
+      return badGatewayResponse(resource, 'Error walking path')
     }
     const block = terminalElement?.node ?? await this.helia.blockstore.get(cid, options)
 
@@ -324,7 +322,7 @@ export class VerifiedFetch {
       if (options?.signal?.aborted === true) {
         throw new AbortError('signal aborted by user')
       }
-      if (['ERR_NO_PROP', 'NO_TERMINAL_ELEMENT'].includes(err.code)) {
+      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
         return notFoundResponse(resource.toString())
       }
       this.log.error('error walking path %s', path, err)

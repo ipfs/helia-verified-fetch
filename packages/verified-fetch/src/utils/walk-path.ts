@@ -25,7 +25,7 @@ export async function walkPath (blockstore: ReadableStorage, path: string, optio
   }
 
   if (terminalElement == null) {
-    throw new CodeError('No terminal element found', 'NO_TERMINAL_ELEMENT')
+    throw new CodeError('No terminal element found', 'ERR_NO_TERMINAL_ELEMENT')
   }
 
   return {
@@ -34,6 +34,6 @@ export async function walkPath (blockstore: ReadableStorage, path: string, optio
   }
 }
 
-export function objectNodeGuard (node: UnixFSEntry): node is ObjectNode {
+export function isObjectNode (node: UnixFSEntry): node is ObjectNode {
   return node.type === 'object'
 }
