@@ -748,4 +748,63 @@ describe('@helia/verifed-fetch', () => {
       expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
     })
   })
+
+  describe('?format', () => {
+    let helia: Helia
+    let verifiedFetch: VerifiedFetch
+    let contentTypeParser: Sinon.SinonStub
+
+    beforeEach(async () => {
+      contentTypeParser = Sinon.stub()
+      helia = await createHelia()
+      verifiedFetch = new VerifiedFetch({
+        helia
+      }, {
+        contentTypeParser
+      })
+    })
+
+    afterEach(async () => {
+      await stop(helia, verifiedFetch)
+    })
+
+    it('cbor?format=dag-json should be able to override curl/browser default accept header when query parameter is provided', async () => {
+      const obj = {
+        hello: 'world'
+      }
+      const c = dagCbor(helia)
+      const cid = await c.add(obj)
+
+      const resp = await verifiedFetch.fetch(`http://example.com/ipfs/${cid}?format=dag-json`, {
+        headers: {
+          // see https://github.com/ipfs/helia-verified-fetch/issues/35
+          accept: '*/*'
+        }
+      })
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
+      const data = ipldDagJson.decode(await resp.arrayBuffer())
+      expect(data).to.deep.equal(obj)
+    })
+
+    it('raw?format=dag-json should be able to override curl/browser default accept header when query parameter is provided', async () => {
+      const finalRootFileContent = uint8ArrayFromString(JSON.stringify({
+        hello: 'world'
+      }))
+      const cid = CID.createV1(raw.code, await sha256.digest(finalRootFileContent))
+      await helia.blockstore.put(cid, finalRootFileContent)
+
+      const resp = await verifiedFetch.fetch(`http://example.com/ipfs/${cid}?format=dag-json`, {
+        headers: {
+          // see https://github.com/ipfs/helia-verified-fetch/issues/35
+          accept: '*/*'
+        }
+      })
+      expect(resp).to.be.ok()
+      expect(resp.status).to.equal(200)
+      expect(resp.statusText).to.equal('OK')
+      const data = await resp.arrayBuffer()
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
+      expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
+    })
+  })
 })

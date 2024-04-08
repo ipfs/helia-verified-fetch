@@ -55,6 +55,7 @@ const CID_TYPE_MAP: Record<number, string[]> = {
     'application/octet-stream',
     'application/vnd.ipld.raw',
     'application/vnd.ipfs.ipns-record',
+    'application/vnd.ipld.dag-json',
     'application/vnd.ipld.car',
     'application/x-tar'
   ]
@@ -145,7 +146,7 @@ function parseQFactor (str?: string): number {
   return factor
 }
 
-const FORMAT_TO_MIME_TYPE: Record<RequestFormatShorthand, string> = {
+export const FORMAT_TO_MIME_TYPE: Record<RequestFormatShorthand, string> = {
   raw: 'application/vnd.ipld.raw',
   car: 'application/vnd.ipld.car',
   'dag-json': 'application/vnd.ipld.dag-json',

@@ -20,12 +20,13 @@ import { ByteRangeContext } from './utils/byte-range-context.js'
 import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
+import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
 import { setCacheControlHeader } from './utils/response-headers.js'
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
-import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
+import { selectOutputType } from './utils/select-output-type.js'
 import { walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
@@ -93,6 +94,7 @@ function convertOptions (options?: VerifiedFetchOptions): (Omit<VerifiedFetchOpt
  * skipped and set to these values.
  */
 const RAW_HEADERS = [
+  'application/vnd.ipld.dag-json',
   'application/vnd.ipld.raw',
   'application/octet-stream'
 ]
@@ -103,8 +105,9 @@ const RAW_HEADERS = [
  * type. This avoids the user from receiving something different when they
  * signal that they want to `Accept` a specific mime type.
  */
-function getOverridenRawContentType (headers?: HeadersInit): string | undefined {
-  const acceptHeader = new Headers(headers).get('accept') ?? ''
+function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersInit, accept?: string }): string | undefined {
+  // accept has already been resolved by getResolvedAcceptHeader, if we have it, use it.
+  const acceptHeader = accept ?? new Headers(headers).get('accept') ?? ''
 
   // e.g. "Accept: text/html, application/xhtml+xml, application/xml;q=0.9, image/webp, */*;q=0.8"
   const acceptHeaders = acceptHeader.split(',')
@@ -385,7 +388,7 @@ export class VerifiedFetch {
     }
   }
 
-  private async handleRaw ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleRaw ({ resource, cid, path, options, accept }: FetchHandlerFunctionArg): Promise<Response> {
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const result = await this.helia.blockstore.get(cid, options)
     byteRangeContext.setBody(result)
@@ -396,7 +399,7 @@ export class VerifiedFetch {
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    const overriddenContentType = getOverridenRawContentType(options?.headers)
+    const overriddenContentType = getOverridenRawContentType({ headers: options?.headers, accept })
     if (overriddenContentType != null) {
       response.headers.set('content-type', overriddenContentType)
     } else {
@@ -484,20 +487,8 @@ export class VerifiedFetch {
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
 
-    const requestHeaders = new Headers(options?.headers)
-    const incomingAcceptHeader = requestHeaders.get('accept')
+    const acceptHeader = getResolvedAcceptHeader({ query, headers: options?.headers, logger: this.helia.logger })
 
-    if (incomingAcceptHeader != null) {
-      this.log('incoming accept header "%s"', incomingAcceptHeader)
-    }
-
-    const queryFormatMapping = queryFormatToAcceptHeader(query.format)
-
-    if (query.format != null) {
-      this.log('incoming query format "%s", mapped to %s', query.format, queryFormatMapping)
-    }
-
-    const acceptHeader = incomingAcceptHeader ?? queryFormatMapping
     const accept = selectOutputType(cid, acceptHeader)
     this.log('output type %s', accept)
 
@@ -508,7 +499,7 @@ export class VerifiedFetch {
     let response: Response
     let reqFormat: RequestFormatShorthand | undefined
 
-    const handlerArgs = { resource: resource.toString(), cid, path, accept, options }
+    const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, options }
 
     if (accept === 'application/vnd.ipfs.ipns-record') {
       // the user requested a raw IPNS record
