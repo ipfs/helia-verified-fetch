@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.6](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.5...@helia/verified-fetch-1.3.6) (2024-04-08)
+
+
+### Bug Fixes
+
+* implicit accept header can be overridden by format query ([#36](https://github.com/ipfs/helia-verified-fetch/issues/36)) ([75c0b75](https://github.com/ipfs/helia-verified-fetch/commit/75c0b75f1b5d340b68063db0eab94c0228c261c4))
+
 ## @helia/verified-fetch [1.3.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.4...@helia/verified-fetch-1.3.5) (2024-04-08)
 
 
