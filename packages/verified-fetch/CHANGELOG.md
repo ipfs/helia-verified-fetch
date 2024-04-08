@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.4...@helia/verified-fetch-1.3.5) (2024-04-08)
+
+
+### Bug Fixes
+
+* remove redundant abort controller ([#41](https://github.com/ipfs/helia-verified-fetch/issues/41)) ([04b220d](https://github.com/ipfs/helia-verified-fetch/commit/04b220dab3ee9e617eb5ba920f4bb00112d1a861))
+
 ## @helia/verified-fetch [1.3.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.3...@helia/verified-fetch-1.3.4) (2024-04-02)
 
 
