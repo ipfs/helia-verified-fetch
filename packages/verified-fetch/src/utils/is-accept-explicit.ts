@@ -2,7 +2,6 @@ import { FORMAT_TO_MIME_TYPE } from './select-output-type.js'
 import type { ParsedUrlStringResults } from './parse-url-string.js'
 
 export interface IsAcceptExplicitOptions {
-
   query?: ParsedUrlStringResults['query']
   headers: Headers
 }
