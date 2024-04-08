@@ -492,6 +492,7 @@ export class VerifiedFetch {
     let query: ParsedUrlStringResults['query']
     let ttl: ParsedUrlStringResults['ttl']
     let protocol: ParsedUrlStringResults['protocol']
+    let ipfsPath: string
     try {
       const result = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
       cid = result.cid
@@ -499,6 +500,7 @@ export class VerifiedFetch {
       query = result.query
       ttl = result.ttl
       protocol = result.protocol
+      ipfsPath = result.ipfsPath
     } catch (err: any) {
       options?.signal?.throwIfAborted()
       this.log.error('error parsing resource %s', resource, err)
@@ -560,8 +562,7 @@ export class VerifiedFetch {
     response.headers.set('etag', getETag({ cid, reqFormat, weak: false }))
 
     setCacheControlHeader({ response, ttl, protocol })
-    // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-path-response-header
-    response.headers.set('X-Ipfs-Path', resource.toString())
+    response.headers.set('X-Ipfs-Path', ipfsPath)
 
     // set Content-Disposition header
     let contentDisposition: string | undefined
