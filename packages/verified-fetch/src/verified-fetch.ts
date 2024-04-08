@@ -24,16 +24,16 @@ import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
-import { setCacheControlHeader } from './utils/response-headers.js'
+import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
-import { isObjectNode, walkPath } from './utils/walk-path.js'
+import { isObjectNode, walkPath, type PathWalkerResponse } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
 import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia } from '@helia/interface'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
-import type { ObjectNode, UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { ObjectNode } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
 interface VerifiedFetchComponents {
@@ -234,22 +234,15 @@ export class VerifiedFetch {
     return response
   }
 
-  private async handleDagCbor ({ resource, cid, path, accept, options }: FetchHandlerFunctionArg): Promise<Response> {
-    this.log.trace('fetching %c/%s', cid, path)
-    let terminalElement: ObjectNode | undefined
-    let ipfsRoots: CID[] | undefined
-
-    // need to walk path, if it exists, to get the terminal element
+  /**
+   * Attempts to walk the path in the blockstore, returning ipfsRoots needed to resolve the path, and the terminal element.
+   * If the signal is aborted, the function will throw an AbortError
+   * If a terminal element is not found, a notFoundResponse is returned
+   * If another unknown error occurs, a badGatewayResponse is returned
+   */
+  private async handlePathWalking ({ cid, path, resource, options }: FetchHandlerFunctionArg): Promise<PathWalkerResponse | Response> {
     try {
-      const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
-      ipfsRoots = pathDetails.ipfsRoots
-      const potentialTerminalElement = pathDetails.terminalElement
-      if (potentialTerminalElement == null) {
-        return notFoundResponse(resource)
-      }
-      if (isObjectNode(potentialTerminalElement)) {
-        terminalElement = potentialTerminalElement
-      }
+      return await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
     } catch (err: any) {
       options?.signal?.throwIfAborted()
       if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
@@ -259,7 +252,27 @@ export class VerifiedFetch {
       this.log.error('error walking path %s', path, err)
       return badGatewayResponse(resource, 'Error walking path')
     }
-    const block = terminalElement?.node ?? await this.helia.blockstore.get(cid, options)
+  }
+
+  private async handleDagCbor ({ resource, cid, path, accept, options }: FetchHandlerFunctionArg): Promise<Response> {
+    this.log.trace('fetching %c/%s', cid, path)
+    let terminalElement: ObjectNode
+
+    // need to walk path, if it exists, to get the terminal element
+    const pathDetails = await this.handlePathWalking({ cid, path, resource, options })
+    if (pathDetails instanceof Response) {
+      return pathDetails
+    }
+    const ipfsRoots = pathDetails.ipfsRoots
+    if (isObjectNode(pathDetails.terminalElement)) {
+      terminalElement = pathDetails.terminalElement
+    } else {
+      // this should never happen, but if it does, we should log it and return notSupportedResponse
+      this.log.error('terminal element is not a dag-cbor node')
+      return notSupportedResponse(resource, 'Terminal element is not a dag-cbor node')
+    }
+
+    const block = terminalElement.node
 
     let body: string | Uint8Array
 
@@ -299,35 +312,23 @@ export class VerifiedFetch {
     }
 
     response.headers.set('content-type', accept)
-
-    if (ipfsRoots != null) {
-      response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
-    }
+    setIpfsRoots(response, ipfsRoots)
 
     return response
   }
 
   private async handleDagPb ({ cid, path, resource, options }: FetchHandlerFunctionArg): Promise<Response> {
-    let terminalElement: UnixFSEntry | undefined
-    let ipfsRoots: CID[] | undefined
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
 
-    try {
-      const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
-      ipfsRoots = pathDetails.ipfsRoots
-      terminalElement = pathDetails.terminalElement
-    } catch (err: any) {
-      options?.signal?.throwIfAborted()
-      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
-        return notFoundResponse(resource.toString())
-      }
-      this.log.error('error walking path %s', path, err)
-
-      return badGatewayResponse(resource.toString(), 'Error walking path')
+    const pathDetails = await this.handlePathWalking({ cid, path, resource, options })
+    if (pathDetails instanceof Response) {
+      return pathDetails
     }
+    const ipfsRoots = pathDetails.ipfsRoots
+    const terminalElement = pathDetails.terminalElement
 
-    let resolvedCID = terminalElement?.cid ?? cid
+    let resolvedCID = terminalElement.cid
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
       const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
@@ -397,9 +398,7 @@ export class VerifiedFetch {
 
       await this.setContentType(firstChunk, path, response)
 
-      if (ipfsRoots != null) {
-        response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
-      }
+      setIpfsRoots(response, ipfsRoots)
 
       return response
     } catch (err: any) {
