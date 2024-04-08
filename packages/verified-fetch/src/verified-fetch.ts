@@ -4,7 +4,7 @@ import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs } from '@helia/unixfs
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
-import { AbortError, type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
+import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
 import { Record as DHTRecord } from '@libp2p/kad-dht'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { Key } from 'interface-datastore'
@@ -25,15 +25,15 @@ import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterab
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
 import { setCacheControlHeader } from './utils/response-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
-import { walkPath } from './utils/walk-path.js'
+import { isObjectNode, walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
 import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia } from '@helia/interface'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
-import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { ObjectNode, UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
 interface VerifiedFetchComponents {
@@ -236,8 +236,31 @@ export class VerifiedFetch {
 
   private async handleDagCbor ({ resource, cid, path, accept, options }: FetchHandlerFunctionArg): Promise<Response> {
     this.log.trace('fetching %c/%s', cid, path)
+    let terminalElement: ObjectNode | undefined
+    let ipfsRoots: CID[] | undefined
 
-    const block = await this.helia.blockstore.get(cid, options)
+    // need to walk path, if it exists, to get the terminal element
+    try {
+      const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
+      ipfsRoots = pathDetails.ipfsRoots
+      const potentialTerminalElement = pathDetails.terminalElement
+      if (potentialTerminalElement == null) {
+        return notFoundResponse(resource)
+      }
+      if (isObjectNode(potentialTerminalElement)) {
+        terminalElement = potentialTerminalElement
+      }
+    } catch (err: any) {
+      options?.signal?.throwIfAborted()
+      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
+        return notFoundResponse(resource)
+      }
+
+      this.log.error('error walking path %s', path, err)
+      return badGatewayResponse(resource, 'Error walking path')
+    }
+    const block = terminalElement?.node ?? await this.helia.blockstore.get(cid, options)
+
     let body: string | Uint8Array
 
     if (accept === 'application/octet-stream' || accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {
@@ -277,6 +300,10 @@ export class VerifiedFetch {
 
     response.headers.set('content-type', accept)
 
+    if (ipfsRoots != null) {
+      response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
+    }
+
     return response
   }
 
@@ -291,8 +318,9 @@ export class VerifiedFetch {
       ipfsRoots = pathDetails.ipfsRoots
       terminalElement = pathDetails.terminalElement
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
+      options?.signal?.throwIfAborted()
+      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
+        return notFoundResponse(resource.toString())
       }
       this.log.error('error walking path %s', path, err)
 
@@ -331,9 +359,7 @@ export class VerifiedFetch {
         path = rootFilePath
         resolvedCID = stat.cid
       } catch (err: any) {
-        if (options?.signal?.aborted === true) {
-          throw new AbortError('signal aborted by user')
-        }
+        options?.signal?.throwIfAborted()
         this.log('error loading path %c/%s', dirCid, rootFilePath, err)
         return notSupportedResponse('Unable to find index.html for directory at given path. Support for directories with implicit root is not implemented')
       } finally {
@@ -377,9 +403,7 @@ export class VerifiedFetch {
 
       return response
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
-      }
+      options?.signal?.throwIfAborted()
       this.log.error('error streaming %c/%s', cid, path, err)
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
@@ -455,7 +479,6 @@ export class VerifiedFetch {
    * TODO: move operations called by fetch to a queue of operations where we can
    * always exit early (and cleanly) if a given signal is aborted
    */
-  // eslint-disable-next-line complexity
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s', resource)
 
@@ -477,9 +500,7 @@ export class VerifiedFetch {
       ttl = result.ttl
       protocol = result.protocol
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
-      }
+      options?.signal?.throwIfAborted()
       this.log.error('error parsing resource %s', resource, err)
 
       return badRequestResponse(resource.toString(), err)

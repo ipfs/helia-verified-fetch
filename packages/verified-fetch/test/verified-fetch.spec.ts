@@ -807,4 +807,35 @@ describe('@helia/verifed-fetch', () => {
       expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
     })
   })
+
+  describe('404 paths', () => {
+    let helia: Helia
+    let verifiedFetch: VerifiedFetch
+    let contentTypeParser: Sinon.SinonStub
+
+    beforeEach(async () => {
+      contentTypeParser = Sinon.stub()
+      helia = await createHelia()
+      verifiedFetch = new VerifiedFetch({
+        helia
+      }, {
+        contentTypeParser
+      })
+    })
+
+    afterEach(async () => {
+      await stop(helia, verifiedFetch)
+    })
+
+    it('returns a 404 when walking dag-cbor for non-existent path', async () => {
+      const obj = {
+        hello: 'world'
+      }
+      const c = dagCbor(helia)
+      const cid = await c.add(obj)
+
+      const resp = await verifiedFetch.fetch(`http://example.com/ipfs/${cid}/foo/i-do-not-exist`)
+      expect(resp.status).to.equal(404)
+    })
+  })
 })
