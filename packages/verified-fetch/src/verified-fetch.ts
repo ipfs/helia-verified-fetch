@@ -4,7 +4,7 @@ import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs } from '@helia/unixfs
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
-import { AbortError, type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
+import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
 import { Record as DHTRecord } from '@libp2p/kad-dht'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { Key } from 'interface-datastore'
@@ -307,7 +307,6 @@ export class VerifiedFetch {
     return response
   }
 
-  // eslint-disable-next-line complexity
   private async handleDagPb ({ cid, path, resource, options }: FetchHandlerFunctionArg): Promise<Response> {
     let terminalElement: UnixFSEntry | undefined
     let ipfsRoots: CID[] | undefined
@@ -319,9 +318,7 @@ export class VerifiedFetch {
       ipfsRoots = pathDetails.ipfsRoots
       terminalElement = pathDetails.terminalElement
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
-      }
+      options?.signal?.throwIfAborted()
       if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
         return notFoundResponse(resource.toString())
       }
@@ -362,9 +359,7 @@ export class VerifiedFetch {
         path = rootFilePath
         resolvedCID = stat.cid
       } catch (err: any) {
-        if (options?.signal?.aborted === true) {
-          throw new AbortError('signal aborted by user')
-        }
+        options?.signal?.throwIfAborted()
         this.log('error loading path %c/%s', dirCid, rootFilePath, err)
         return notSupportedResponse('Unable to find index.html for directory at given path. Support for directories with implicit root is not implemented')
       } finally {
@@ -408,9 +403,7 @@ export class VerifiedFetch {
 
       return response
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
-      }
+      options?.signal?.throwIfAborted()
       this.log.error('error streaming %c/%s', cid, path, err)
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
@@ -495,7 +488,6 @@ export class VerifiedFetch {
    * TODO: move operations called by fetch to a queue of operations where we can
    * always exit early (and cleanly) if a given signal is aborted
    */
-  // eslint-disable-next-line complexity
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s', resource)
 
@@ -523,9 +515,7 @@ export class VerifiedFetch {
       ttl = result.ttl
       protocol = result.protocol
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
-      }
+      options?.signal?.throwIfAborted()
       this.log.error('error parsing resource %s', resource, err)
 
       return badRequestResponse(resource.toString(), err)
