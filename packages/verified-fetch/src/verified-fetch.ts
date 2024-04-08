@@ -449,15 +449,6 @@ export class VerifiedFetch {
   }
 
   /**
-   *
-   * TODO: Should we use 400, 408, 418, or 425, or throw and not even return a response?
-   */
-  private async abortHandler (opController: AbortController): Promise<void> {
-    this.log.error('signal aborted by user')
-    opController.abort('signal aborted by user')
-  }
-
-  /**
    * We're starting to get to the point where we need a queue or pipeline of
    * operations to perform and a single place to handle errors.
    *
@@ -469,12 +460,6 @@ export class VerifiedFetch {
     this.log('fetch %s', resource)
 
     const options = convertOptions(opts)
-
-    const opController = new AbortController()
-    if (options?.signal != null) {
-      options.signal.onabort = this.abortHandler.bind(this, opController)
-      options.signal = opController.signal
-    }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:start', { resource }))
 

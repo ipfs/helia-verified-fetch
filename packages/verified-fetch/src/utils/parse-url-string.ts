@@ -276,5 +276,5 @@ function joinPaths (resolvedPath: string | undefined, urlPath: string): string {
     path = path.substring(1)
   }
 
-  return path
+  return path.split('/').map(decodeURIComponent).join('/')
 }
