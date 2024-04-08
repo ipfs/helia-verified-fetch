@@ -778,7 +778,7 @@ describe('@helia/verifed-fetch', () => {
       const resp = await verifiedFetch.fetch(`http://example.com/ipfs/${cid}?format=dag-json`, {
         headers: {
           // see https://github.com/ipfs/helia-verified-fetch/issues/35
-          // accept: '*/*'
+          accept: '*/*'
         }
       })
       expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
