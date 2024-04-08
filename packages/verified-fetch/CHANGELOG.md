@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.7](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.6...@helia/verified-fetch-1.3.7) (2024-04-08)
+
+
+### Bug Fixes
+
+* walking dag-cbor paths ([#39](https://github.com/ipfs/helia-verified-fetch/issues/39)) ([99668ce](https://github.com/ipfs/helia-verified-fetch/commit/99668cef249f223e143e359fb282c00d98b82f28))
+
 ## @helia/verified-fetch [1.3.6](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.5...@helia/verified-fetch-1.3.6) (2024-04-08)
 
 
