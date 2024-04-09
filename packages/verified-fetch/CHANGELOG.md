@@ -1,3 +1,15 @@
+## @helia/verified-fetch [1.3.8](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.7...@helia/verified-fetch-1.3.8) (2024-04-09)
+
+
+### Bug Fixes
+
+* pass url and body to badRequestResponse ([#44](https://github.com/ipfs/helia-verified-fetch/issues/44)) ([cc228e6](https://github.com/ipfs/helia-verified-fetch/commit/cc228e6fe74be0d340dc496191fe1dc06fd24486))
+
+
+### Dependencies
+
+* updating all deps ([#47](https://github.com/ipfs/helia-verified-fetch/issues/47)) ([6d0ffd8](https://github.com/ipfs/helia-verified-fetch/commit/6d0ffd837e15f1d5bb84a5b2c855d490301ac312))
+
 ## @helia/verified-fetch [1.3.7](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.6...@helia/verified-fetch-1.3.7) (2024-04-08)
 
 
