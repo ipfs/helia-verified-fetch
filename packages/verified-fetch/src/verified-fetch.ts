@@ -147,17 +147,17 @@ export class VerifiedFetch {
    */
   private async handleIPNSRecord ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
     if (path !== '' || !resource.startsWith('ipns://')) {
-      return badRequestResponse('Invalid IPNS name')
+      return badRequestResponse(resource, 'Invalid IPNS name')
     }
 
     let peerId: PeerId
 
     try {
       peerId = peerIdFromString(resource.replace('ipns://', ''))
-    } catch (err) {
+    } catch (err: any) {
       this.log.error('could not parse peer id from IPNS url %s', resource)
 
-      return badRequestResponse('Invalid IPNS name')
+      return badRequestResponse(resource, err)
     }
 
     // since this call happens after parseResource, we've already resolved the
