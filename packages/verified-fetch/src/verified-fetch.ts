@@ -450,7 +450,7 @@ export class VerifiedFetch {
         this.log.error('error parsing content type', err)
       }
     }
-    this.log.trace('setting content type to "%s"', contentType)
+    this.log.trace('setting content type to "%s"', contentType ?? defaultContentType)
     response.headers.set('content-type', contentType ?? defaultContentType)
   }
 
