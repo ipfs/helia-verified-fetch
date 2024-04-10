@@ -97,7 +97,7 @@
     "@sgtpooki/file-type": "^1.0.1",
     "@types/sinon": "^17.0.3",
     "aegir": "^42.2.5",
-    "blockstore-core": "^4.4.0",
+    "blockstore-core": "^4.4.1",
     "browser-readablestream-to-it": "^2.0.5",
     "datastore-core": "^9.2.9",
     "helia": "^4.1.0",

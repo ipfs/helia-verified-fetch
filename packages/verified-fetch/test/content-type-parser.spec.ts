@@ -1,15 +1,15 @@
-import { createHeliaHTTP } from '@helia/http'
 import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { fileTypeFromBuffer } from '@sgtpooki/file-type'
 import { expect } from 'aegir/chai'
 import { filetypemime } from 'magic-bytes.js'
+import { CID } from 'multiformats/cid'
 import Sinon from 'sinon'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { createVerifiedFetch } from '../src/index.js'
 import { VerifiedFetch } from '../src/verified-fetch.js'
+import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
-import type { CID } from 'multiformats/cid'
 
 describe('content-type-parser', () => {
   let helia: Helia
@@ -17,7 +17,7 @@ describe('content-type-parser', () => {
   let verifiedFetch: VerifiedFetch
 
   beforeEach(async () => {
-    helia = await createHeliaHTTP()
+    helia = await createHelia()
     const fs = unixfs(helia)
     cid = await fs.addByteStream((async function * () {
       yield uint8ArrayFromString('H4sICIlTHVIACw', 'base64')
@@ -131,5 +131,17 @@ describe('content-type-parser', () => {
     })
     const resp = await verifiedFetch.fetch(cid)
     expect(resp.headers.get('content-type')).to.equal('application/gzip')
+  })
+
+  it('can properly set content type for identity CIDs', async () => {
+    verifiedFetch = new VerifiedFetch({
+      helia
+    }, {
+      contentTypeParser: async (data) => {
+        return 'text/plain'
+      }
+    })
+    const resp = await verifiedFetch.fetch(CID.parse('bafkqablimvwgy3y'))
+    expect(resp.headers.get('content-type')).to.equal('text/plain')
   })
 })
