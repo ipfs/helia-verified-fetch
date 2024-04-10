@@ -423,18 +423,13 @@ export class VerifiedFetch {
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    const overriddenContentType = getOverridenRawContentType({ headers: options?.headers, accept })
-    if (overriddenContentType != null) {
-      response.headers.set('content-type', overriddenContentType)
-    } else {
-      await this.setContentType(result, path, response)
-    }
+    await this.setContentType(result, path, response, getOverridenRawContentType({ headers: options?.headers, accept }))
 
     return response
   }
 
-  private async setContentType (bytes: Uint8Array, path: string, response: Response): Promise<void> {
-    let contentType = 'application/octet-stream'
+  private async setContentType (bytes: Uint8Array, path: string, response: Response, defaultContentType = 'application/octet-stream'): Promise<void> {
+    let contentType: string | undefined
 
     if (this.contentTypeParser != null) {
       try {
@@ -456,7 +451,7 @@ export class VerifiedFetch {
       }
     }
     this.log.trace('setting content type to "%s"', contentType)
-    response.headers.set('content-type', contentType)
+    response.headers.set('content-type', contentType ?? defaultContentType)
   }
 
   /**
