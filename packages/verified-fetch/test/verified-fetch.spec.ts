@@ -14,6 +14,7 @@ import * as ipldJson from 'multiformats/codecs/json'
 import * as raw from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
 import { sha256 } from 'multiformats/hashes/sha2'
+import pDefer from 'p-defer'
 import Sinon from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
@@ -836,6 +837,71 @@ describe('@helia/verifed-fetch', () => {
 
       const resp = await verifiedFetch.fetch(`http://example.com/ipfs/${cid}/foo/i-do-not-exist`)
       expect(resp.status).to.equal(404)
+    })
+  })
+
+  describe('sessions', () => {
+    let helia: Helia
+    let verifiedFetch: VerifiedFetch
+
+    beforeEach(async () => {
+      helia = await createHelia()
+      verifiedFetch = new VerifiedFetch({
+        helia
+      })
+    })
+
+    afterEach(async () => {
+      await stop(helia, verifiedFetch)
+    })
+
+    it('should use sessions', async () => {
+      const getSpy = Sinon.spy(helia.blockstore, 'get')
+      const deferred = pDefer()
+      const controller = new AbortController()
+      const originalCreateSession = helia.blockstore.createSession.bind(helia.blockstore)
+
+      // blockstore.createSession is called, blockstore.get is not
+      helia.blockstore.createSession = Sinon.stub().callsFake((root, options) => {
+        deferred.resolve()
+        return originalCreateSession(root, options)
+      })
+
+      const p = verifiedFetch.fetch('http://example.com/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA', {
+        signal: controller.signal
+      })
+
+      await deferred.promise
+
+      expect(getSpy.called).to.be.false()
+
+      controller.abort()
+      await expect(p).to.eventually.be.rejected()
+    })
+
+    it('should not use sessions when session option is false', async () => {
+      const sessionSpy = Sinon.spy(helia.blockstore, 'createSession')
+      const deferred = pDefer()
+      const controller = new AbortController()
+      const originalGet = helia.blockstore.get.bind(helia.blockstore)
+
+      // blockstore.get is called, blockstore.createSession is not
+      helia.blockstore.get = Sinon.stub().callsFake(async (cid, options) => {
+        deferred.resolve()
+        return originalGet(cid, options)
+      })
+
+      const p = verifiedFetch.fetch('http://example.com/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN/foo/i-do-not-exist', {
+        signal: controller.signal,
+        session: false
+      })
+
+      await deferred.promise
+
+      expect(sessionSpy.called).to.be.false()
+
+      controller.abort()
+      await expect(p).to.eventually.be.rejected()
     })
   })
 })
