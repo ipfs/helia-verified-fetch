@@ -79,6 +79,7 @@
     "it-pipe": "^3.0.1",
     "it-tar": "^6.0.5",
     "it-to-browser-readablestream": "^2.0.6",
+    "lru-cache": "^10.2.0",
     "multiformats": "^13.1.0",
     "progress-events": "^1.0.0",
     "uint8arrays": "^5.0.3"

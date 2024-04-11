@@ -657,6 +657,22 @@ export interface CreateVerifiedFetchOptions {
    * @default undefined
    */
   contentTypeParser?: ContentTypeParser
+
+  /**
+   * Blockstore sessions are cached for reuse with requests with the same
+   * base URL or CID. This parameter controls how many to cache. Once this limit
+   * is reached older/less used sessions will be evicted from the cache.
+   *
+   * @default 100
+   */
+  sessionCacheSize?: number
+
+  /**
+   * How long each blockstore session should stay in the cache for.
+   *
+   * @default 60000
+   */
+  sessionTTLms?: number
 }
 
 /**
@@ -696,6 +712,21 @@ export type VerifiedFetchProgressEvents =
  * progress events.
  */
 export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledProgressEvents | VerifiedFetchProgressEvents> {
+  /**
+   * If true, try to create a blockstore session - this can reduce overall
+   * network traffic by first querying for a set of peers that have the data we
+   * wish to retrieve. Subsequent requests for data using the session will only
+   * be sent to those peers, unless they don't have the data, in which case
+   * further peers will be added to the session.
+   *
+   * Sessions are cached based on the CID/IPNS name they attempt to access. That
+   * is, requests for `https://qmfoo.ipfs.localhost/bar.txt` and
+   * `https://qmfoo.ipfs.localhost/baz.txt` would use the same session, if this
+   * argument is true for both fetch requests.
+   *
+   * @default true
+   */
+  session?: boolean
 }
 
 /**

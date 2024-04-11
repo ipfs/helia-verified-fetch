@@ -60,11 +60,14 @@ describe('abort-handling', function () {
       peerIdResolverCalled.resolve()
       return getAbortablePromise(options.signal)
     })
-    blockRetriever = stubInterface<Required<Pick<BlockBroker, 'retrieve'>>>({
+    blockRetriever = stubInterface<Required<Pick<BlockBroker, 'retrieve' | 'createSession'>>>({
       retrieve: sandbox.stub().callsFake(async (cid, options) => {
         blockBrokerRetrieveCalled.resolve()
         return getAbortablePromise(options.signal)
-      })
+      }),
+      createSession: () => {
+        return blockRetriever
+      }
     })
 
     logger = prefixLogger('test:abort-handling')
