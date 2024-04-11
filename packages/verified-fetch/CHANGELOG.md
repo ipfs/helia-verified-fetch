@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.9](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.8...@helia/verified-fetch-1.3.9) (2024-04-11)
+
+
+### Bug Fixes
+
+* identity CIDs use contentTypeParser ([#49](https://github.com/ipfs/helia-verified-fetch/issues/49)) ([3014498](https://github.com/ipfs/helia-verified-fetch/commit/30144981b5253b3269cbf186a24f1ef9dd04a452))
+
 ## @helia/verified-fetch [1.3.8](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.7...@helia/verified-fetch-1.3.8) (2024-04-09)
 
 
