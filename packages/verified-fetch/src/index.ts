@@ -88,7 +88,7 @@
  *
  * The [helia](https://www.npmjs.com/package/helia) module is configured with a libp2p node that is suited for decentralized applications, alternatively [@helia/http](https://www.npmjs.com/package/@helia/http) is available which uses HTTP gateways for all network operations.
  *
- * You can see variations of Helia and js-libp2p configuration options at https://helia.io/interfaces/helia.index.HeliaInit.html.
+ * See variations of [Helia and js-libp2p configuration options](https://helia.io/interfaces/helia.HeliaInit.html)
  *
  * ```typescript
  * import { trustlessGateway } from '@helia/block-brokers'
