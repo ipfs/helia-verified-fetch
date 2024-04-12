@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.10](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.9...@helia/verified-fetch-1.3.10) (2024-04-12)
+
+
+### Documentation
+
+* fix readme link ([#51](https://github.com/ipfs/helia-verified-fetch/issues/51)) ([8a41c57](https://github.com/ipfs/helia-verified-fetch/commit/8a41c5701f800ddac25ae59d790836e5b1c48d93))
+
 ## @helia/verified-fetch [1.3.9](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.8...@helia/verified-fetch-1.3.9) (2024-04-11)
 
 
