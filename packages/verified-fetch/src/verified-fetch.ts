@@ -375,19 +375,20 @@ export class VerifiedFetch {
     const length = byteRangeContext.length
     this.log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
-    const entry = await exporter(resolvedCID, this.helia.blockstore, {
-      signal: options?.signal,
-      onProgress: options?.onProgress
-    })
-    const asyncIter = entry.content({
-      signal: options?.signal,
-      onProgress: options?.onProgress,
-      offset,
-      length
-    })
-    this.log('got async iterator for %c/%s', cid, path)
-
     try {
+      const entry = await exporter(resolvedCID, this.helia.blockstore, {
+        signal: options?.signal,
+        onProgress: options?.onProgress
+      })
+
+      const asyncIter = entry.content({
+        signal: options?.signal,
+        onProgress: options?.onProgress,
+        offset,
+        length
+      })
+      this.log('got async iterator for %c/%s', cid, path)
+
       const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress,
         signal: options?.signal
@@ -403,7 +404,6 @@ export class VerifiedFetch {
       if (ipfsRoots != null) {
         response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
       }
-
       return response
     } catch (err: any) {
       options?.signal?.throwIfAborted()
