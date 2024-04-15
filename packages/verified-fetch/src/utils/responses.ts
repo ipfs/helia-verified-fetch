@@ -85,6 +85,19 @@ export function notAcceptableResponse (url: string, body?: SupportedBodyTypes, i
   return response
 }
 
+export function notFoundResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+  const response = new Response(body, {
+    ...(init ?? {}),
+    status: 404,
+    statusText: 'Not Found'
+  })
+
+  setType(response, 'basic')
+  setUrl(response, url)
+
+  return response
+}
+
 /**
  * if body is an Error, it will be converted to a string containing the error message.
  */

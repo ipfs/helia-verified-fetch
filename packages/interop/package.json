@@ -1,6 +1,6 @@
 {
   "name": "@helia/verified-fetch-interop",
-  "version": "1.12.0",
+  "version": "1.17.0",
   "description": "Interop tests for @helia/verified-fetch",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/interop#readme",
@@ -57,13 +57,13 @@
     "test:electron-main": "aegir test -t electron-main"
   },
   "dependencies": {
-    "@helia/verified-fetch": "1.3.4",
+    "@helia/verified-fetch": "1.3.10",
     "aegir": "^42.2.5",
     "ipfsd-ctl": "^13.0.0",
     "it-drain": "^3.0.5",
     "kubo": "^0.27.0",
-    "kubo-rpc-client": "^3.0.3",
-    "magic-bytes.js": "^1.8.0",
+    "kubo-rpc-client": "^3.0.4",
+    "magic-bytes.js": "^1.10.0",
     "multiformats": "^13.1.0"
   },
   "browser": {

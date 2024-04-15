@@ -3,7 +3,7 @@ import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
-import { AbortError, type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
+import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
 import { Record as DHTRecord } from '@libp2p/kad-dht'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { Key } from 'interface-datastore'
@@ -20,19 +20,20 @@ import { ByteRangeContext } from './utils/byte-range-context.js'
 import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
+import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
 import { setCacheControlHeader } from './utils/response-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
-import { selectOutputType, queryFormatToAcceptHeader } from './utils/select-output-type.js'
-import { walkPath } from './utils/walk-path.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
+import { selectOutputType } from './utils/select-output-type.js'
+import { isObjectNode, walkPath } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { RequestFormatShorthand } from './types.js'
 import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia } from '@helia/interface'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
-import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { ObjectNode, UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
 interface VerifiedFetchComponents {
@@ -92,6 +93,7 @@ function convertOptions (options?: VerifiedFetchOptions): (Omit<VerifiedFetchOpt
  * skipped and set to these values.
  */
 const RAW_HEADERS = [
+  'application/vnd.ipld.dag-json',
   'application/vnd.ipld.raw',
   'application/octet-stream'
 ]
@@ -102,8 +104,9 @@ const RAW_HEADERS = [
  * type. This avoids the user from receiving something different when they
  * signal that they want to `Accept` a specific mime type.
  */
-function getOverridenRawContentType (headers?: HeadersInit): string | undefined {
-  const acceptHeader = new Headers(headers).get('accept') ?? ''
+function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersInit, accept?: string }): string | undefined {
+  // accept has already been resolved by getResolvedAcceptHeader, if we have it, use it.
+  const acceptHeader = accept ?? new Headers(headers).get('accept') ?? ''
 
   // e.g. "Accept: text/html, application/xhtml+xml, application/xml;q=0.9, image/webp, */*;q=0.8"
   const acceptHeaders = acceptHeader.split(',')
@@ -141,17 +144,17 @@ export class VerifiedFetch {
    */
   private async handleIPNSRecord ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
     if (path !== '' || !resource.startsWith('ipns://')) {
-      return badRequestResponse('Invalid IPNS name')
+      return badRequestResponse(resource, 'Invalid IPNS name')
     }
 
     let peerId: PeerId
 
     try {
       peerId = peerIdFromString(resource.replace('ipns://', ''))
-    } catch (err) {
+    } catch (err: any) {
       this.log.error('could not parse peer id from IPNS url %s', resource)
 
-      return badRequestResponse('Invalid IPNS name')
+      return badRequestResponse(resource, err)
     }
 
     // since this call happens after parseResource, we've already resolved the
@@ -230,8 +233,31 @@ export class VerifiedFetch {
 
   private async handleDagCbor ({ resource, cid, path, accept, options }: FetchHandlerFunctionArg): Promise<Response> {
     this.log.trace('fetching %c/%s', cid, path)
+    let terminalElement: ObjectNode | undefined
+    let ipfsRoots: CID[] | undefined
 
-    const block = await this.helia.blockstore.get(cid, options)
+    // need to walk path, if it exists, to get the terminal element
+    try {
+      const pathDetails = await walkPath(this.helia.blockstore, `${cid.toString()}/${path}`, options)
+      ipfsRoots = pathDetails.ipfsRoots
+      const potentialTerminalElement = pathDetails.terminalElement
+      if (potentialTerminalElement == null) {
+        return notFoundResponse(resource)
+      }
+      if (isObjectNode(potentialTerminalElement)) {
+        terminalElement = potentialTerminalElement
+      }
+    } catch (err: any) {
+      options?.signal?.throwIfAborted()
+      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
+        return notFoundResponse(resource)
+      }
+
+      this.log.error('error walking path %s', path, err)
+      return badGatewayResponse(resource, 'Error walking path')
+    }
+    const block = terminalElement?.node ?? await this.helia.blockstore.get(cid, options)
+
     let body: string | Uint8Array
 
     if (accept === 'application/octet-stream' || accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {
@@ -271,6 +297,10 @@ export class VerifiedFetch {
 
     response.headers.set('content-type', accept)
 
+    if (ipfsRoots != null) {
+      response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
+    }
+
     return response
   }
 
@@ -285,8 +315,9 @@ export class VerifiedFetch {
       ipfsRoots = pathDetails.ipfsRoots
       terminalElement = pathDetails.terminalElement
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
+      options?.signal?.throwIfAborted()
+      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
+        return notFoundResponse(resource.toString())
       }
       this.log.error('error walking path %s', path, err)
 
@@ -326,9 +357,7 @@ export class VerifiedFetch {
         path = rootFilePath
         resolvedCID = entry.cid
       } catch (err: any) {
-        if (options?.signal?.aborted === true) {
-          throw new AbortError('signal aborted by user')
-        }
+        options?.signal?.throwIfAborted()
         this.log('error loading path %c/%s', dirCid, rootFilePath, err)
         return notSupportedResponse('Unable to find index.html for directory at given path. Support for directories with implicit root is not implemented')
       } finally {
@@ -377,9 +406,7 @@ export class VerifiedFetch {
 
       return response
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
-      }
+      options?.signal?.throwIfAborted()
       this.log.error('error streaming %c/%s', cid, path, err)
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
@@ -388,7 +415,7 @@ export class VerifiedFetch {
     }
   }
 
-  private async handleRaw ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleRaw ({ resource, cid, path, options, accept }: FetchHandlerFunctionArg): Promise<Response> {
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const result = await this.helia.blockstore.get(cid, options)
     byteRangeContext.setBody(result)
@@ -399,18 +426,13 @@ export class VerifiedFetch {
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    const overriddenContentType = getOverridenRawContentType(options?.headers)
-    if (overriddenContentType != null) {
-      response.headers.set('content-type', overriddenContentType)
-    } else {
-      await this.setContentType(result, path, response)
-    }
+    await this.setContentType(result, path, response, getOverridenRawContentType({ headers: options?.headers, accept }))
 
     return response
   }
 
-  private async setContentType (bytes: Uint8Array, path: string, response: Response): Promise<void> {
-    let contentType = 'application/octet-stream'
+  private async setContentType (bytes: Uint8Array, path: string, response: Response, defaultContentType = 'application/octet-stream'): Promise<void> {
+    let contentType: string | undefined
 
     if (this.contentTypeParser != null) {
       try {
@@ -431,8 +453,8 @@ export class VerifiedFetch {
         this.log.error('error parsing content type', err)
       }
     }
-    this.log.trace('setting content type to "%s"', contentType)
-    response.headers.set('content-type', contentType)
+    this.log.trace('setting content type to "%s"', contentType ?? defaultContentType)
+    response.headers.set('content-type', contentType ?? defaultContentType)
   }
 
   /**
@@ -449,32 +471,16 @@ export class VerifiedFetch {
   }
 
   /**
-   *
-   * TODO: Should we use 400, 408, 418, or 425, or throw and not even return a response?
-   */
-  private async abortHandler (opController: AbortController): Promise<void> {
-    this.log.error('signal aborted by user')
-    opController.abort('signal aborted by user')
-  }
-
-  /**
    * We're starting to get to the point where we need a queue or pipeline of
    * operations to perform and a single place to handle errors.
    *
    * TODO: move operations called by fetch to a queue of operations where we can
    * always exit early (and cleanly) if a given signal is aborted
    */
-  // eslint-disable-next-line complexity
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s', resource)
 
     const options = convertOptions(opts)
-
-    const opController = new AbortController()
-    if (options?.signal != null) {
-      options.signal.onabort = this.abortHandler.bind(this, opController)
-      options.signal = opController.signal
-    }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:start', { resource }))
 
@@ -492,9 +498,7 @@ export class VerifiedFetch {
       ttl = result.ttl
       protocol = result.protocol
     } catch (err: any) {
-      if (options?.signal?.aborted === true) {
-        throw new AbortError('signal aborted by user')
-      }
+      options?.signal?.throwIfAborted()
       this.log.error('error parsing resource %s', resource, err)
 
       return badRequestResponse(resource.toString(), err)
@@ -502,20 +506,8 @@ export class VerifiedFetch {
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
 
-    const requestHeaders = new Headers(options?.headers)
-    const incomingAcceptHeader = requestHeaders.get('accept')
+    const acceptHeader = getResolvedAcceptHeader({ query, headers: options?.headers, logger: this.helia.logger })
 
-    if (incomingAcceptHeader != null) {
-      this.log('incoming accept header "%s"', incomingAcceptHeader)
-    }
-
-    const queryFormatMapping = queryFormatToAcceptHeader(query.format)
-
-    if (query.format != null) {
-      this.log('incoming query format "%s", mapped to %s', query.format, queryFormatMapping)
-    }
-
-    const acceptHeader = incomingAcceptHeader ?? queryFormatMapping
     const accept = selectOutputType(cid, acceptHeader)
     this.log('output type %s', accept)
 
@@ -526,7 +518,7 @@ export class VerifiedFetch {
     let response: Response
     let reqFormat: RequestFormatShorthand | undefined
 
-    const handlerArgs = { resource: resource.toString(), cid, path, accept, options }
+    const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, options }
 
     if (accept === 'application/vnd.ipfs.ipns-record') {
       // the user requested a raw IPNS record
