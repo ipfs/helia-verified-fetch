@@ -177,7 +177,7 @@ describe('abort-handling', function () {
     expect(blockstoreGetSpy.getCalls().map(call => call.args[0].toString()))
       .to.include(fileCid.toString())
 
-    // the leaf nodes were not have been loaded because the request was aborted
+    // the leaf nodes were not loaded because the request was aborted
     // after the root node was loaded
     expect(blockstoreGetSpy.getCalls().map(call => call.args[0].toString()))
       .to.not.include(leaf1.toString())
