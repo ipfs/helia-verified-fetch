@@ -46,14 +46,6 @@ interface VerifiedFetchComponents {
   ipns?: IPNS
 }
 
-/**
- * Potential future options for the VerifiedFetch constructor.
- */
-interface VerifiedFetchInit {
-  contentTypeParser?: ContentTypeParser
-  dnsResolvers?: DNSResolver[]
-}
-
 interface FetchHandlerFunctionArg {
   cid: CID
   path: string
@@ -149,7 +141,7 @@ export class VerifiedFetch {
   private readonly contentTypeParser: ContentTypeParser | undefined
   private readonly blockstoreSessions: LRUCache<string, SessionBlockstore>
 
-  constructor ({ helia, ipns }: VerifiedFetchComponents, init?: VerifiedFetchInit) {
+  constructor ({ helia, ipns }: VerifiedFetchComponents, init?: CreateVerifiedFetchOptions) {
     this.helia = helia
     this.log = helia.logger.forComponent('helia:verified-fetch')
     this.ipns = ipns ?? heliaIpns(helia)
@@ -355,7 +347,6 @@ export class VerifiedFetch {
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const blockstore = this.getBlockstore(cid, cacheKey, session, options)
-    const fs = unixfs({ blockstore })
 
     try {
       const pathDetails = await walkPath(blockstore, `${cid.toString()}/${path}`, options)
