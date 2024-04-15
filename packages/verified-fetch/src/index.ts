@@ -642,7 +642,7 @@ export interface CreateVerifiedFetchInit {
    *
    * We use cloudflare and google's dnsJsonOverHttps resolvers by default.
    *
-   * @default [dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
+   * @default [dnsJsonOverHttps('https://cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
    */
   dnsResolvers?: DNSResolver[] | DNSResolvers
 }
