@@ -1,3 +1,43 @@
+## @helia/verified-fetch [1.3.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.11...@helia/verified-fetch-1.3.12) (2024-04-15)
+
+
+### Bug Fixes
+
+* use ipfs-unixfs-exporter directly ([#42](https://github.com/ipfs/helia-verified-fetch/issues/42)) ([4532bf1](https://github.com/ipfs/helia-verified-fetch/commit/4532bf1dd6017edae55ec5e8a56e9657e1301f58))
+
+## @helia/verified-fetch [1.3.11](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.10...@helia/verified-fetch-1.3.11) (2024-04-15)
+
+
+### Documentation
+
+* update documented default value ([161a470](https://github.com/ipfs/helia-verified-fetch/commit/161a4707a6e06411eed86ee68d5a07994574f00a)), closes [/github.com/multiformats/js-dns/blob/a56c9e0b953d644392cf10fd0792757da0d61c32/src/resolvers/default.browser.ts#L6-L7](https://github.com/ipfs//github.com/multiformats/js-dns/blob/a56c9e0b953d644392cf10fd0792757da0d61c32/src/resolvers/default.browser.ts/issues/L6-L7)
+
+## @helia/verified-fetch [1.3.10](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.9...@helia/verified-fetch-1.3.10) (2024-04-12)
+
+
+### Documentation
+
+* fix readme link ([#51](https://github.com/ipfs/helia-verified-fetch/issues/51)) ([8a41c57](https://github.com/ipfs/helia-verified-fetch/commit/8a41c5701f800ddac25ae59d790836e5b1c48d93))
+
+## @helia/verified-fetch [1.3.9](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.8...@helia/verified-fetch-1.3.9) (2024-04-11)
+
+
+### Bug Fixes
+
+* identity CIDs use contentTypeParser ([#49](https://github.com/ipfs/helia-verified-fetch/issues/49)) ([3014498](https://github.com/ipfs/helia-verified-fetch/commit/30144981b5253b3269cbf186a24f1ef9dd04a452))
+
+## @helia/verified-fetch [1.3.8](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.7...@helia/verified-fetch-1.3.8) (2024-04-09)
+
+
+### Bug Fixes
+
+* pass url and body to badRequestResponse ([#44](https://github.com/ipfs/helia-verified-fetch/issues/44)) ([cc228e6](https://github.com/ipfs/helia-verified-fetch/commit/cc228e6fe74be0d340dc496191fe1dc06fd24486))
+
+
+### Dependencies
+
+* updating all deps ([#47](https://github.com/ipfs/helia-verified-fetch/issues/47)) ([6d0ffd8](https://github.com/ipfs/helia-verified-fetch/commit/6d0ffd837e15f1d5bb84a5b2c855d490301ac312))
+
 ## @helia/verified-fetch [1.3.7](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.6...@helia/verified-fetch-1.3.7) (2024-04-08)
 
 

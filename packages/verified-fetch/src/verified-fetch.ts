@@ -1,6 +1,5 @@
 import { car } from '@helia/car'
 import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
-import { unixfs as heliaUnixFs, type UnixFS as HeliaUnixFs } from '@helia/unixfs'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
@@ -8,6 +7,7 @@ import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
 import { Record as DHTRecord } from '@libp2p/kad-dht'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { Key } from 'interface-datastore'
+import { exporter } from 'ipfs-unixfs-exporter'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
@@ -39,7 +39,6 @@ import type { CID } from 'multiformats/cid'
 interface VerifiedFetchComponents {
   helia: Helia
   ipns?: IPNS
-  unixfs?: HeliaUnixFs
 }
 
 /**
@@ -128,15 +127,13 @@ function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersIni
 export class VerifiedFetch {
   private readonly helia: Helia
   private readonly ipns: IPNS
-  private readonly unixfs: HeliaUnixFs
   private readonly log: Logger
   private readonly contentTypeParser: ContentTypeParser | undefined
 
-  constructor ({ helia, ipns, unixfs }: VerifiedFetchComponents, init?: VerifiedFetchInit) {
+  constructor ({ helia, ipns }: VerifiedFetchComponents, init?: VerifiedFetchInit) {
     this.helia = helia
     this.log = helia.logger.forComponent('helia:verified-fetch')
     this.ipns = ipns ?? heliaIpns(helia)
-    this.unixfs = unixfs ?? heliaUnixFs(helia)
     this.contentTypeParser = init?.contentTypeParser
     this.log.trace('created VerifiedFetch instance')
   }
@@ -147,17 +144,17 @@ export class VerifiedFetch {
    */
   private async handleIPNSRecord ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
     if (path !== '' || !resource.startsWith('ipns://')) {
-      return badRequestResponse('Invalid IPNS name')
+      return badRequestResponse(resource, 'Invalid IPNS name')
     }
 
     let peerId: PeerId
 
     try {
       peerId = peerIdFromString(resource.replace('ipns://', ''))
-    } catch (err) {
+    } catch (err: any) {
       this.log.error('could not parse peer id from IPNS url %s', resource)
 
-      return badRequestResponse('Invalid IPNS name')
+      return badRequestResponse(resource, err)
     }
 
     // since this call happens after parseResource, we've already resolved the
@@ -350,14 +347,15 @@ export class VerifiedFetch {
       const rootFilePath = 'index.html'
       try {
         this.log.trace('found directory at %c/%s, looking for index.html', cid, path)
-        const stat = await this.unixfs.stat(dirCid, {
-          path: rootFilePath,
+
+        const entry = await exporter(`/ipfs/${dirCid}/${rootFilePath}`, this.helia.blockstore, {
           signal: options?.signal,
           onProgress: options?.onProgress
         })
-        this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, stat.cid)
+
+        this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
         path = rootFilePath
-        resolvedCID = stat.cid
+        resolvedCID = entry.cid
       } catch (err: any) {
         options?.signal?.throwIfAborted()
         this.log('error loading path %c/%s', dirCid, rootFilePath, err)
@@ -375,16 +373,22 @@ export class VerifiedFetch {
     }
     const offset = byteRangeContext.offset
     const length = byteRangeContext.length
-    this.log.trace('calling unixfs.cat for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
-    const asyncIter = this.unixfs.cat(resolvedCID, {
-      signal: options?.signal,
-      onProgress: options?.onProgress,
-      offset,
-      length
-    })
-    this.log('got async iterator for %c/%s', cid, path)
+    this.log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
     try {
+      const entry = await exporter(resolvedCID, this.helia.blockstore, {
+        signal: options?.signal,
+        onProgress: options?.onProgress
+      })
+
+      const asyncIter = entry.content({
+        signal: options?.signal,
+        onProgress: options?.onProgress,
+        offset,
+        length
+      })
+      this.log('got async iterator for %c/%s', cid, path)
+
       const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress,
         signal: options?.signal
@@ -400,7 +404,6 @@ export class VerifiedFetch {
       if (ipfsRoots != null) {
         response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
       }
-
       return response
     } catch (err: any) {
       options?.signal?.throwIfAborted()
@@ -423,18 +426,13 @@ export class VerifiedFetch {
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    const overriddenContentType = getOverridenRawContentType({ headers: options?.headers, accept })
-    if (overriddenContentType != null) {
-      response.headers.set('content-type', overriddenContentType)
-    } else {
-      await this.setContentType(result, path, response)
-    }
+    await this.setContentType(result, path, response, getOverridenRawContentType({ headers: options?.headers, accept }))
 
     return response
   }
 
-  private async setContentType (bytes: Uint8Array, path: string, response: Response): Promise<void> {
-    let contentType = 'application/octet-stream'
+  private async setContentType (bytes: Uint8Array, path: string, response: Response, defaultContentType = 'application/octet-stream'): Promise<void> {
+    let contentType: string | undefined
 
     if (this.contentTypeParser != null) {
       try {
@@ -455,8 +453,8 @@ export class VerifiedFetch {
         this.log.error('error parsing content type', err)
       }
     }
-    this.log.trace('setting content type to "%s"', contentType)
-    response.headers.set('content-type', contentType)
+    this.log.trace('setting content type to "%s"', contentType ?? defaultContentType)
+    response.headers.set('content-type', contentType ?? defaultContentType)
   }
 
   /**
