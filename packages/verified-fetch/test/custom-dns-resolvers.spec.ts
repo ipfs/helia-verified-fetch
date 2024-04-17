@@ -63,7 +63,6 @@ describe('custom dns-resolvers', () => {
     expect(response.statusText).to.equal('Bad Gateway')
 
     expect(customDnsResolver.callCount).to.equal(1)
-
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain2.com', {
       types: [
         RecordType.TXT
