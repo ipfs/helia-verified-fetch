@@ -88,7 +88,7 @@
  *
  * The [helia](https://www.npmjs.com/package/helia) module is configured with a libp2p node that is suited for decentralized applications, alternatively [@helia/http](https://www.npmjs.com/package/@helia/http) is available which uses HTTP gateways for all network operations.
  *
- * You can see variations of Helia and js-libp2p configuration options at https://helia.io/interfaces/helia.index.HeliaInit.html.
+ * See variations of [Helia and js-libp2p configuration options](https://helia.io/interfaces/helia.HeliaInit.html)
  *
  * ```typescript
  * import { trustlessGateway } from '@helia/block-brokers'
@@ -594,11 +594,11 @@ import { createHeliaHTTP } from '@helia/http'
 import { delegatedHTTPRouting } from '@helia/routers'
 import { dns } from '@multiformats/dns'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
-import type { Helia } from '@helia/interface'
+import type { GetBlockProgressEvents, Helia } from '@helia/interface'
 import type { ResolveDNSLinkProgressEvents } from '@helia/ipns'
-import type { GetEvents } from '@helia/unixfs'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
+import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
 
@@ -642,7 +642,7 @@ export interface CreateVerifiedFetchInit {
    *
    * We use cloudflare and google's dnsJsonOverHttps resolvers by default.
    *
-   * @default [dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
+   * @default [dnsJsonOverHttps('https://cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
    */
   dnsResolvers?: DNSResolver[] | DNSResolvers
 }
@@ -674,8 +674,10 @@ export interface ContentTypeParser {
 }
 
 export type BubbledProgressEvents =
-  // unixfs
-  GetEvents |
+  // unixfs-exporter
+  ExporterProgressEvents |
+  // helia blockstore
+  GetBlockProgressEvents |
   // ipns
   ResolveDNSLinkProgressEvents
 
