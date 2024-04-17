@@ -29,16 +29,17 @@ describe('custom dns-resolvers', () => {
       gateways: ['http://127.0.0.1:8080'],
       dnsResolvers: [customDnsResolver]
     })
-    const response = await fetch('ipns://some-non-cached-domain.com')
+    const response = await fetch('ipns://some-non-cached-domain.com', { session: false })
     expect(response.status).to.equal(502)
     expect(response.statusText).to.equal('Bad Gateway')
 
     expect(customDnsResolver.callCount).to.equal(1)
-    expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain.com', {
+    expect(customDnsResolver.getCall(0).args[0]).to.equal('_dnslink.some-non-cached-domain.com')
+    expect(customDnsResolver.getCall(0).args[1]).to.deep.include({
       types: [
         RecordType.TXT
       ]
-    }])
+    })
   })
 
   it('is used when passed to VerifiedFetch', async () => {
@@ -61,15 +62,17 @@ describe('custom dns-resolvers', () => {
       helia
     })
 
-    const response = await verifiedFetch.fetch('ipns://some-non-cached-domain2.com')
+    const response = await verifiedFetch.fetch('ipns://some-non-cached-domain2.com', { session: false })
     expect(response.status).to.equal(502)
     expect(response.statusText).to.equal('Bad Gateway')
 
     expect(customDnsResolver.callCount).to.equal(1)
-    expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain2.com', {
+
+    expect(customDnsResolver.getCall(0).args[0]).to.equal('_dnslink.some-non-cached-domain2.com')
+    expect(customDnsResolver.getCall(0).args[1]).to.deep.include({
       types: [
         RecordType.TXT
       ]
-    }])
+    })
   })
 })
