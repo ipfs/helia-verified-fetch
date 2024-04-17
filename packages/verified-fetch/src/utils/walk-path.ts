@@ -19,9 +19,20 @@ export async function walkPath (blockstore: ReadableStorage, path: string, optio
   const ipfsRoots: CID[] = []
   let terminalElement: UnixFSEntry | undefined
 
-  for await (const entry of exporterWalk(path, blockstore, options)) {
-    ipfsRoots.push(entry.cid)
-    terminalElement = entry
+  try {
+    for await (const entry of exporterWalk(path, blockstore, options)) {
+      ipfsRoots.push(entry.cid)
+      terminalElement = entry
+    }
+  } catch (err: any) {
+    if (err.errors?.length > 0) {
+      for (const error of err.errors) {
+        if (error.code === 'ERR_NO_ROUTERS_AVAILABLE') {
+          throw error
+        }
+      }
+    }
+    throw err
   }
 
   if (terminalElement == null) {

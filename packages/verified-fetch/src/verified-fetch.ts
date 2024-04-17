@@ -161,14 +161,19 @@ export class VerifiedFetch {
       return this.helia.blockstore
     }
 
-    let session = this.blockstoreSessions.get(key)
+    try {
+      let session = this.blockstoreSessions.get(key)
 
-    if (session == null) {
-      session = this.helia.blockstore.createSession(root, options)
-      this.blockstoreSessions.set(key, session)
+      if (session == null) {
+        session = this.helia.blockstore.createSession(root, options)
+        this.blockstoreSessions.set(key, session)
+      }
+
+      return session
+    } catch (e) {
+      this.log.error('error creating blockstore session', e)
+      return this.helia.blockstore
     }
-
-    return session
   }
 
   /**
@@ -289,6 +294,11 @@ export class VerifiedFetch {
       if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
         return notFoundResponse(resource)
       }
+      if (err.code === 'ERR_NO_ROUTERS_AVAILABLE') {
+        // need to retry without sessions
+        // TODO: handle this better
+        return this.handleDagCbor({ resource, cid, path, accept, session: false, cacheKey, options })
+      }
 
       this.log.error('error walking path %s', path, err)
       return badGatewayResponse(resource, 'Error walking path')
@@ -356,6 +366,12 @@ export class VerifiedFetch {
       options?.signal?.throwIfAborted()
       if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
         return notFoundResponse(resource.toString())
+      }
+
+      if (err.code === 'ERR_NO_ROUTERS_AVAILABLE') {
+        // need to retry without sessions
+        // TODO: handle this better
+        return this.handleDagPb({ resource, cid, path, cacheKey, session: false, options })
       }
       this.log.error('error walking path %s', path, err)
 
