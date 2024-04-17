@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.11...@helia/verified-fetch-1.3.12) (2024-04-15)
+
+
+### Bug Fixes
+
+* use ipfs-unixfs-exporter directly ([#42](https://github.com/ipfs/helia-verified-fetch/issues/42)) ([4532bf1](https://github.com/ipfs/helia-verified-fetch/commit/4532bf1dd6017edae55ec5e8a56e9657e1301f58))
+
 ## @helia/verified-fetch [1.3.11](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.10...@helia/verified-fetch-1.3.11) (2024-04-15)
 
 
