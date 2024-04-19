@@ -62,7 +62,7 @@
     "ipfsd-ctl": "^13.0.0",
     "it-drain": "^3.0.5",
     "kubo": "^0.27.0",
-    "kubo-rpc-client": "^3.0.4",
+    "kubo-rpc-client": "^4.0.0",
     "magic-bytes.js": "^1.10.0",
     "multiformats": "^13.1.0"
   },
