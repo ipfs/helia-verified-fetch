@@ -837,5 +837,23 @@ describe('@helia/verifed-fetch', () => {
       const resp = await verifiedFetch.fetch(`http://example.com/ipfs/${cid}/foo/i-do-not-exist`)
       expect(resp.status).to.equal(404)
     })
+
+    it('returns a 404 when walking dag-pb for non-existent path', async () => {
+      const fs = unixfs(helia)
+
+      const res = await last(fs.addAll([{
+        path: 'index.html',
+        content: Uint8Array.from([0x01, 0x02, 0x03])
+      }], {
+        wrapWithDirectory: true
+      }))
+
+      if (res == null) {
+        throw new Error('Import failed')
+      }
+
+      const resp = await verifiedFetch.fetch(`ipfs://${res.cid}/does/not/exist`)
+      expect(resp.status).to.equal(404)
+    })
   })
 })

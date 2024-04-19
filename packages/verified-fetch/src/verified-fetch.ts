@@ -316,7 +316,7 @@ export class VerifiedFetch {
       terminalElement = pathDetails.terminalElement
     } catch (err: any) {
       options?.signal?.throwIfAborted()
-      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
+      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT', 'ERR_NOT_FOUND'].includes(err.code)) {
         return notFoundResponse(resource.toString())
       }
       this.log.error('error walking path %s', path, err)
