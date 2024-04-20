@@ -1,3 +1,11 @@
+## @helia/verified-fetch [1.3.13](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.12...@helia/verified-fetch-1.3.13) (2024-04-20)
+
+
+### Bug Fixes
+
+* missing paths returns 404 instead of 502 ([#59](https://github.com/ipfs/helia-verified-fetch/issues/59)) ([291a054](https://github.com/ipfs/helia-verified-fetch/commit/291a05476b6cdf274d095f6d35c64302d83eeb37)), closes [#53](https://github.com/ipfs/helia-verified-fetch/issues/53)
+* X-Ipfs-Path is set correctly ([#46](https://github.com/ipfs/helia-verified-fetch/issues/46)) ([5bb6685](https://github.com/ipfs/helia-verified-fetch/commit/5bb6685ce64aec0557be7dd13d19658992dc6e61))
+
 ## @helia/verified-fetch [1.3.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.11...@helia/verified-fetch-1.3.12) (2024-04-15)
 
 
