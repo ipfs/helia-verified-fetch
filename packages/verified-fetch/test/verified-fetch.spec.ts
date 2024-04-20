@@ -157,6 +157,7 @@ describe('@helia/verifed-fetch', () => {
       expect(ipfsResponse).to.be.ok()
       expect(ipfsResponse.status).to.equal(301)
       expect(ipfsResponse.headers.get('location')).to.equal(`ipfs://${res.cid}/foo/`)
+      expect(ipfsResponse.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${res.cid}/foo`)
       expect(ipfsResponse.url).to.equal(`ipfs://${res.cid}/foo`)
     })
 
