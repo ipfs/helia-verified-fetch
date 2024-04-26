@@ -122,17 +122,20 @@ You can see variations of Helia and js-libp2p configuration options at <https://
 ```typescript
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
-import { delegatedHTTPRouting } from '@helia/routers'
+import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
 import { createVerifiedFetch } from '@helia/verified-fetch'
 
 const fetch = await createVerifiedFetch(
   await createHeliaHTTP({
     blockBrokers: [
-      trustlessGateway({
+      trustlessGateway()
+    ],
+    routers: [
+      delegatedHTTPRouting('http://delegated-ipfs.dev'),
+      httpGatewayRouting({
         gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
       })
-    ],
-    routers: ['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl))
+    ]
   })
 )
 
