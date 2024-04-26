@@ -17,14 +17,14 @@ export function resourceToSessionCacheKey (url: string | CID): string {
   const cid = CID.asCID(url)
 
   if (cid != null) {
-    return `/ipfs/${cid}`
+    return `ipfs://${cid}`
   }
 
   try {
-    return `/ipfs/${CID.parse(url.toString())}`
+    return `ipfs://${CID.parse(url.toString())}`
   } catch {}
 
   const { protocol, cidOrPeerIdOrDnsLink } = matchURLString(url.toString())
 
-  return `/${protocol}/${cidOrPeerIdOrDnsLink}`
+  return `${protocol}://${cidOrPeerIdOrDnsLink}`
 }
