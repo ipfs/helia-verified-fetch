@@ -17,7 +17,9 @@ describe('@helia/verified-fetch - websites', () => {
       await loadFixtureDataCar(controller, 'QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv-helia-identify-website.car')
       verifiedFetch = await createVerifiedFetch({
         gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
-        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`]
+        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
+        allowInsecure: true,
+        allowLocal: true
       })
     })
 
@@ -27,7 +29,10 @@ describe('@helia/verified-fetch - websites', () => {
     })
 
     it('loads index.html when passed helia-identify.on.fleek.co root CID', async () => {
-      const resp = await verifiedFetch('ipfs://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv')
+      const resp = await verifiedFetch('ipfs://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const html = await resp.text()
       expect(html).to.be.ok()
@@ -35,7 +40,10 @@ describe('@helia/verified-fetch - websites', () => {
     })
 
     it('loads helia-identify.on.fleek.co index.html directly ', async () => {
-      const resp = await verifiedFetch('ipfs://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv/index.html')
+      const resp = await verifiedFetch('ipfs://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv/index.html', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const html = await resp.text()
       expect(html).to.be.ok()
@@ -64,7 +72,9 @@ describe('@helia/verified-fetch - websites', () => {
       await loadFixtureDataCar(controller, 'QmeiDMLtPUS3RT2xAcUwsNyZz169wPke2q7im9vZpVLSYw-fake-blog.libp2p.io.car')
       verifiedFetch = await createVerifiedFetch({
         gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
-        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`]
+        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
+        allowInsecure: true,
+        allowLocal: true
       })
     })
 
@@ -74,7 +84,10 @@ describe('@helia/verified-fetch - websites', () => {
     })
 
     it('loads index.html when passed fake-blog.libp2p.io root CID', async () => {
-      const resp = await verifiedFetch('ipfs://QmeiDMLtPUS3RT2xAcUwsNyZz169wPke2q7im9vZpVLSYw')
+      const resp = await verifiedFetch('ipfs://QmeiDMLtPUS3RT2xAcUwsNyZz169wPke2q7im9vZpVLSYw', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const html = await resp.text()
       expect(html).to.be.ok()

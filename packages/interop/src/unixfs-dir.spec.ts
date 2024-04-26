@@ -17,7 +17,9 @@ describe('@helia/verified-fetch - unixfs directory', () => {
 
     verifiedFetch = await createVerifiedFetch({
       gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
-      routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`]
+      routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
+      allowInsecure: true,
+      allowLocal: true
     })
   })
 
@@ -37,7 +39,11 @@ describe('@helia/verified-fetch - unixfs directory', () => {
       'http://example.com/ipfs/bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q'
     ].forEach((url: string) => {
       it(`request to unixfs directory with ${url} should return a 301 with a trailing slash`, async () => {
-        const response = await verifiedFetch(url, { redirect: 'manual' })
+        const response = await verifiedFetch(url, {
+          redirect: 'manual',
+          allowLocal: true,
+          allowInsecure: true
+        })
         expect(response).to.be.ok()
         expect(response.status).to.equal(301)
         expect(response.headers.get('location')).to.equal(`${url}/`)
@@ -53,20 +59,29 @@ describe('@helia/verified-fetch - unixfs directory', () => {
 
     it('fails to load when passed the root', async () => {
       // The spec says we should generate HTML with directory listings, but we don't do that yet, so expect a failure
-      const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR')
+      const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(501) // TODO: we should do a directory listing instead
     })
 
     it('can return a string for unixfs pathed data', async () => {
-      const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR/1 - Barrel - Part 1 - alt.txt')
+      const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR/1 - Barrel - Part 1 - alt.txt', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const text = await resp.text()
       expect(text).to.equal('Don\'t we all.')
     })
 
     it('can return an image for unixfs pathed data', async () => {
-      const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR/1 - Barrel - Part 1.png')
+      const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR/1 - Barrel - Part 1.png', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const imgData = await resp.blob()
       expect(imgData).to.be.ok()
@@ -79,7 +94,9 @@ describe('@helia/verified-fetch - unixfs directory', () => {
       await verifiedFetch.stop()
       verifiedFetch = await createVerifiedFetch({
         gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
-        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`]
+        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
+        allowInsecure: true,
+        allowLocal: true
       }, {
         contentTypeParser: (bytes) => {
           return filetypemime(bytes)?.[0]
@@ -88,7 +105,10 @@ describe('@helia/verified-fetch - unixfs directory', () => {
     })
 
     it('can return an image content-type for unixfs pathed data', async () => {
-      const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR/1 - Barrel - Part 1.png')
+      const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR/1 - Barrel - Part 1.png', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       // tediously this is actually a jpeg file with a .png extension
       expect(resp.headers.get('content-type')).to.equal('image/jpeg')
     })
@@ -101,7 +121,10 @@ describe('@helia/verified-fetch - unixfs directory', () => {
     })
 
     it('loads path /ipfs/bafybeidbclfqleg2uojchspzd4bob56dqetqjsj27gy2cq3klkkgxtpn4i/685.txt', async () => {
-      const resp = await verifiedFetch('ipfs://bafybeidbclfqleg2uojchspzd4bob56dqetqjsj27gy2cq3klkkgxtpn4i/685.txt')
+      const resp = await verifiedFetch('ipfs://bafybeidbclfqleg2uojchspzd4bob56dqetqjsj27gy2cq3klkkgxtpn4i/685.txt', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const text = await resp.text()
       // npx kubo@0.25.0 cat '/ipfs/bafybeidbclfqleg2uojchspzd4bob56dqetqjsj27gy2cq3klkkgxtpn4i/685.txt'

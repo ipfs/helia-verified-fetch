@@ -21,7 +21,9 @@ describe('@helia/verified-fetch - json', () => {
       await loadFixtureDataCar(controller, 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr-tokens.uniswap.org-2024-01-18.car')
       verifiedFetch = await createVerifiedFetch({
         gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
-        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`]
+        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
+        allowInsecure: true,
+        allowLocal: true
       })
     })
 
@@ -31,7 +33,10 @@ describe('@helia/verified-fetch - json', () => {
     })
 
     it('handles UnixFS-chunked JSON file', async () => {
-      const resp = await verifiedFetch(CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'))
+      const resp = await verifiedFetch(CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'), {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const jsonObj = await resp.json()
       expect(jsonObj).to.be.ok()

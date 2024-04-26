@@ -591,7 +591,7 @@
 
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
-import { delegatedHTTPRouting } from '@helia/routers'
+import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
 import { dns } from '@multiformats/dns'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia } from '@helia/interface'
@@ -645,6 +645,31 @@ export interface CreateVerifiedFetchInit {
    * @default [dnsJsonOverHttps('https://cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
    */
   dnsResolvers?: DNSResolver[] | DNSResolvers
+
+  /**
+   * By default we will not connect to any HTTP Gateways providers over local or
+   * loopback addresses, this is because they are typically running on remote
+   * peers that have published private addresses by mistate.
+   *
+   * Pass `true` here to connect to local Gateways as well, this may be useful
+   * in testing environments.
+   *
+   * @default false
+   */
+  allowLocal?: boolean
+
+  /**
+   * By default we will not connect to any gateways over HTTP addresses,
+   * requring HTTPS connections instead. This is because it will cause
+   * "mixed-content" errors to appear in the console when running in secure
+   * browser contexts.
+   *
+   * Pass `true` here to connect to insecure Gateways as well, this may be
+   * useful in testing environments.
+   *
+   * @default false
+   */
+  allowInsecure?: boolean
 }
 
 export interface CreateVerifiedFetchOptions {
@@ -727,6 +752,31 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
    * @default true
    */
   session?: boolean
+
+  /**
+   * By default we will not connect to any HTTP Gateways providers over local or
+   * loopback addresses, this is because they are typically running on remote
+   * peers that have published private addresses by mistate.
+   *
+   * Pass `true` here to connect to local Gateways as well, this may be useful
+   * in testing environments.
+   *
+   * @default false
+   */
+  allowLocal?: boolean
+
+  /**
+   * By default we will not connect to any gateways over HTTP addresses,
+   * requring HTTPS connections instead. This is because it will cause
+   * "mixed-content" errors to appear in the console when running in secure
+   * browser contexts.
+   *
+   * Pass `true` here to connect to insecure Gateways as well, this may be
+   * useful in testing environments.
+   *
+   * @default false
+   */
+  allowInsecure?: boolean
 }
 
 /**
@@ -737,10 +787,16 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
     init = await createHeliaHTTP({
       blockBrokers: [
         trustlessGateway({
-          gateways: init?.gateways
+          allowInsecure: init?.allowInsecure,
+          allowLocal: init?.allowLocal
         })
       ],
-      routers: (init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
+      routers: [
+        ...(init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
+        httpGatewayRouting({
+          gateways: init?.gateways ?? []
+        })
+      ],
       dns: createDns(init?.dnsResolvers)
     })
   }
