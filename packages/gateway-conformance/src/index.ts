@@ -3,12 +3,6 @@
  *
  * Runs Gateway Conformance tests against @helia/verified-fetch using Kubo as a backing trustless-gateway.
  *
- * @example Debugging a test run
- *
- * ```console
- * $ DEBUG="-mocha*,*,*:trace" npm run test
- * ```
- *
  * @example Testing a new @helia/verified-fetch release
  *
  * ```console
@@ -21,6 +15,20 @@
  * ```console
  * $ npm i @helia/verified-fetch-gateway-conformance
  * $ KUBO_BINARY=/path/to/kubo verified-fetch-gateway-conformance
+ * ```
+ *
+ * @example Debugging a test run
+ *
+ * ```console
+ * $ DEBUG="-mocha*,*,*:trace" npm run test
+ * ```
+ *
+ * @example querying the gateway-conformance server directly
+ *
+ * ```console
+ * $ npm run build
+ * $ node dist/src/demo-server.js # in terminal 1
+ * $ curl -v GET http://localhost:3442/ipfs/bafkqabtimvwgy3yk/  # in terminal 2
  * ```
  */
 

@@ -1,7 +1,6 @@
 // @ts-check
 import getPort from 'aegir/get-port'
-// import { createServer } from 'ipfsd-ctl'
-// import * as kuboRpcClient from 'kubo-rpc-client'
+
 /** @type {import('aegir').PartialOptions} */
 export default {
   test: {
@@ -10,7 +9,6 @@ export default {
       if (options.runner !== 'node') {
         throw new Error('Only node runner is supported')
       }
-      // const { loadKuboFixtures, startKuboDaemon } = await import('./dist/src/fixtures/kubo-mgmt.js')
       const { loadKuboFixtures, kuboRepoDir } = await import('./dist/src/fixtures/kubo-mgmt.js')
       await loadKuboFixtures()
 
@@ -35,13 +33,18 @@ export default {
         proxyPort: PROXY_PORT
       })
 
-      // const daemon = await startKuboDaemon()
+      /**
+       * If we're on mac, automatically set CONFORMANCE_HOST to 'host.docker.internal'
+       * You can disable this by setting DONT_FIX_DOCKER env var to any value
+       */
+      const CONFORMANCE_HOST = process.platform === 'darwin' && process.env.DONT_FIX_DOCKER == null ? 'host.docker.internal' : 'localhost'
 
       return {
         controller,
         stopReverseProxy,
         stopBasicServer,
         env: {
+          CONFORMANCE_HOST,
           KUBO_PORT: `${KUBO_PORT}`,
           PROXY_PORT: `${PROXY_PORT}`,
           SERVER_PORT: `${SERVER_PORT}`,
@@ -57,11 +60,6 @@ export default {
       await beforeResult.stopBasicServer()
       // @ts-expect-error - broken aegir types
       await beforeResult.controller.stop()
-      // const { stopReverseProxy } = await import('./dist/src/fixtures/reverse-proxy.js')
-      // await stopReverseProxy()
-      // await beforeResult.daemon.kill('SIGTERM', {
-		  //   forceKillAfterTimeout: 2000
-      // })
     }
   }
 }

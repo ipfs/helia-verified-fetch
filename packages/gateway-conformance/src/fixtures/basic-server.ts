@@ -1,6 +1,6 @@
 import { createServer } from 'node:http'
 import { logger } from '@libp2p/logger'
-import { filetypemime } from 'magic-bytes.js'
+import { contentTypeParser } from './content-type-parser.js'
 import { createVerifiedFetch } from './create-verified-fetch.js'
 
 const log = logger('basic-server')
@@ -25,14 +25,11 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
     gateways: [kuboGateway],
     routers: [kuboGateway]
   }, {
-    contentTypeParser: (bytes) => {
-      return filetypemime(bytes)?.[0]
-    }
+    contentTypeParser
   })
 
   const server = createServer((req, res) => {
     if (req.method === 'OPTIONS') {
-      // setCommonHeaders(res)
       res.writeHead(200)
       res.end()
       return
@@ -53,12 +50,16 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
     log('fetching %s', fullUrlHref)
 
     void verifiedFetch(fullUrlHref, { redirect: 'manual' }).then(async (resp) => {
-    // setCommonHeaders(res)
       // loop over headers and set them on the response
       const headers: Record<string, string> = {}
       for (const [key, value] of resp.headers.entries()) {
         headers[key] = value
       }
+
+      // TODO: Figure out if we want to set these automatically on @helia/verified-fetch...
+      headers['Access-Control-Allow-Origin'] = '*'
+      headers['Access-Control-Allow-Headers'] = 'Content-Type,Range,User-Agent,X-Requested-With'
+      headers['Access-Control-Allow-Methods'] = 'GET,HEAD,OPTIONS'
       res.writeHead(resp.status, headers)
       if (resp.body == null) {
         res.write(await resp.arrayBuffer())

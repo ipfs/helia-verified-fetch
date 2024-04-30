@@ -16,6 +16,9 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     if (process.env.SERVER_PORT == null) {
       throw new Error('SERVER_PORT env var is required')
     }
+    if (process.env.CONFORMANCE_HOST == null) {
+      throw new Error('CONFORMANCE_HOST env var is required')
+    }
     // trying https://stackoverflow.com/questions/71074255/use-custom-dns-resolver-for-any-request-in-nodejs
     // EVERY undici/fetch request host resolves to local IP. Node.js does not resolve reverse-proxy requests properly
     const staticDnsAgent = new Agent({
@@ -43,13 +46,14 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     })
   })
 
+  // -skip '^.*(DirectoryListing|TestGatewayCache|TestSubdomainGatewayDNSLinkInlining|proxy|TestGatewaySubdomainAndIPNS|TestGatewaySubdomains|Trustless|TestGatewayIPNSRecord|RedirectsFile|TestGatewayUnixFSFileRanges|TestGatewayJSONCborAndIPNS|TestTar|Symlink|TestPathGatewayMiscellaneous|TestGatewayBlock|TestRedirectCanonicalIPNS|TestGatewayIPNSPath|TestNativeDag|TestPathing|TestPlainCodec|TestDagPbConversion|TestGatewayJsonCbor|TestCors).*$'
   describe('gateway conformance', () => {
     const textDecoder = new TextDecoder()
     it('path-unixfs-gateway', async () => {
       // wait 30 seconds for debugging
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000))
+      // await new Promise((resolve) => setTimeout(resolve, 60 * 1000))
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const subProcess = $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://localhost:${process.env.PROXY_PORT!} --subdomain-url=http://localhost:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs path-unixfs-gateway -- -timeout 30m`
+      const subProcess = $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs path-unixfs-gateway -- -timeout 30m`
       subProcess.stderr?.on('data', (data) => {
         // convert Uint8Array to string
         const text = textDecoder.decode(data)
@@ -72,7 +76,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     })
     it('path-gateway', async () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const { stdout } = await $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://localhost:${process.env.PROXY_PORT!} --subdomain-url=http://localhost:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs path-gateway -- -timeout 30m`
+      const { stdout } = await $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs path-gateway -- -timeout 30m`
       expect(stdout).to.be.ok()
       // expect(stderr).to.be.empty()
       expect(stdout).to.contain('--- PASS: TestMetadata')
@@ -81,7 +85,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
     it('subdomain-ipfs-gateway', async () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const { stdout } = await $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://localhost:${process.env.PROXY_PORT!} --subdomain-url=http://localhost:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs subdomain-ipfs-gateway -- -timeout 30m`
+      const { stdout } = await $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs subdomain-ipfs-gateway -- -timeout 30m`
       expect(stdout).to.be.ok()
       // expect(stderr).to.be.empty()
       expect(stdout).to.contain('--- PASS: TestMetadata')

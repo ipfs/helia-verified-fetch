@@ -1,16 +1,8 @@
-/* eslint-disable no-console */
 import { request, createServer, type RequestOptions, type IncomingMessage, type ServerResponse } from 'node:http'
 import { logger } from '@libp2p/logger'
 
 const log = logger('reverse-proxy')
 
-// const TARGET_HOST = process.env.TARGET_HOST ?? 'localhost'
-// const backendPort = Number(process.env.BACKEND_PORT ?? 3000)
-// const proxyPort = Number(process.env.PROXY_PORT ?? 3333)
-// const subdomain = process.env.SUBDOMAIN
-// const prefixPath = process.env.PREFIX_PATH
-// const disableTryFiles = process.env.DISABLE_TRY_FILES === 'true'
-// const X_FORWARDED_HOST = process.env.X_FORWARDED_HOST
 let TARGET_HOST: string
 let backendPort: number
 let proxyPort: number
@@ -18,12 +10,6 @@ let subdomain: undefined | string
 let prefixPath: undefined | string
 let disableTryFiles: boolean
 let X_FORWARDED_HOST: undefined | string
-
-const setCommonHeaders = (res: ServerResponse): void => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range, User-Agent, X-Requested-With')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
-}
 
 const makeRequest = (options: RequestOptions, req: IncomingMessage, res: ServerResponse & { req: IncomingMessage }, attemptRootFallback = false): void => {
   options.headers = options.headers ?? {}
@@ -59,7 +45,7 @@ const makeRequest = (options: RequestOptions, req: IncomingMessage, res: ServerR
         makeRequest({ ...options, path: '/index.html' }, req, res)
       }
     } else {
-      setCommonHeaders(res)
+      // setCommonHeaders(res)
       if (proxyRes.statusCode == null) {
         log.error('No status code received from proxy')
         res.writeHead(500)
@@ -75,7 +61,6 @@ const makeRequest = (options: RequestOptions, req: IncomingMessage, res: ServerR
 
   proxyReq.on('error', (e) => {
     log.error(`Problem with request: ${e.message}`)
-    setCommonHeaders(res)
     res.writeHead(500)
     res.end(`Internal Server Error: ${e.message}`)
   })
@@ -101,7 +86,6 @@ export async function startReverseProxy (options?: ReverseProxyOptions): Promise
 
   const proxyServer = createServer((req, res) => {
     if (req.method === 'OPTIONS') {
-      setCommonHeaders(res)
       res.writeHead(200)
       res.end()
       return
