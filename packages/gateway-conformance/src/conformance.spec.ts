@@ -47,7 +47,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     const textDecoder = new TextDecoder()
     it('path-unixfs-gateway', async () => {
       // wait 30 seconds for debugging
-      await new Promise((resolve) => setTimeout(resolve, 30 * 1000))
+      await new Promise((resolve) => setTimeout(resolve, 60 * 1000))
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const subProcess = $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://localhost:${process.env.PROXY_PORT!} --subdomain-url=http://localhost:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs path-unixfs-gateway -- -timeout 30m`
       subProcess.stderr?.on('data', (data) => {
