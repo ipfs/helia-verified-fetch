@@ -19,7 +19,7 @@ import { path } from 'kubo'
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const log = logger('kubo-init')
+const log = logger('kubo-mgmt')
 
 const kuboBinary = process.env.KUBO_BINARY ?? path()
 

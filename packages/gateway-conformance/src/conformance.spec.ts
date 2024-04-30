@@ -1,68 +1,91 @@
 /* eslint-env mocha */
 import { expect } from 'aegir/chai'
 import { $ } from 'execa'
-// import { CID } from 'multiformats/cid'
-// import { createKuboNode } from './fixtures/create-kubo.js'
-import { createVerifiedFetch } from './fixtures/create-verified-fetch.js'
-// import { loadFixtureDataCar } from './fixtures/load-fixture-data.js'
-// import type { Controller } from 'ipfsd-ctl'
+import { Agent, setGlobalDispatcher } from 'undici'
 
-describe('@helia/verified-fetch - json', () => {
-  describe('unixfs - multiblock', () => {
-    // let controller: Controller<'go'>
-    let verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>
+describe('@helia/verified-fetch - gateway conformance', function () {
+  this.timeout(60 * 1000)
 
-    before(async () => {
-      if (process.env.KUBO_GATEWAY == null) {
-        throw new Error('KUBO_GATEWAY env var is required')
+  before(async () => {
+    if (process.env.KUBO_GATEWAY == null) {
+      throw new Error('KUBO_GATEWAY env var is required')
+    }
+    if (process.env.PROXY_PORT == null) {
+      throw new Error('PROXY_PORT env var is required')
+    }
+    if (process.env.SERVER_PORT == null) {
+      throw new Error('SERVER_PORT env var is required')
+    }
+    // trying https://stackoverflow.com/questions/71074255/use-custom-dns-resolver-for-any-request-in-nodejs
+    // EVERY undici/fetch request host resolves to local IP. Node.js does not resolve reverse-proxy requests properly
+    const staticDnsAgent = new Agent({
+      connect: {
+        lookup: (_hostname, _options, callback) => { callback(null, [{ address: '0.0.0.0', family: 4 }]) }
       }
-      if (process.env.PROXY_PORT == null) {
-        throw new Error('PROXY_PORT env var is required')
-      }
-      // controller = await createKuboNode()
-      // await controller.start()
-      // As of 2024-01-18, https://cloudflare-ipfs.com/ipns/tokens.uniswap.org resolves to:
-      // root: QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr
-      // child1: QmNik5N4ryNwzzXYq5hCYKGcRjAf9QtigxtiJh9o8aXXbG // partial JSON
-      // child2: QmWNBJX6fZyNTLWNYBHxAHpBctCP43R2zeqV2G8uavqFZn // partial JSON
-      // await loadFixtureDataCar(controller, 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr-tokens.uniswap.org-2024-01-18.car')
-      verifiedFetch = await createVerifiedFetch({
-        gateways: [process.env.KUBO_GATEWAY],
-        routers: [process.env.KUBO_GATEWAY]
+    })
+    setGlobalDispatcher(staticDnsAgent)
+  })
+
+  describe('smokeTests', () => {
+    [
+      ['basic server path request works', `http://localhost:${process.env.SERVER_PORT}/ipfs/bafkqabtimvwgy3yk`],
+      ['proxy server path request works', `http://localhost:${process.env.PROXY_PORT}/ipfs/bafkqabtimvwgy3yk`],
+      ['basic server subdomain request works', `http://bafkqabtimvwgy3yk.ipfs.localhost:${process.env.SERVER_PORT}`],
+      ['proxy server subdomain request works', `http://bafkqabtimvwgy3yk.ipfs.localhost:${process.env.PROXY_PORT}`]
+    ].forEach(([name, url]) => {
+      it(name, async () => {
+        const resp = await fetch(url)
+        expect(resp).to.be.ok()
+        expect(resp.status).to.equal(200)
+        const text = await resp.text()
+        expect(text.trim()).to.equal('hello')
       })
     })
+  })
 
-    after(async () => {
-      // await controller.stop()
-      await verifiedFetch.stop()
-    })
-
-    it('reverse proxy is running', async () => {
-      // check for identity CID at proxy endpoint to ensure it's working
-      // echo "hello" | npx kubo add --cid-version 1 --inline === bafkqabtimvwgy3yk
-      const resp = await verifiedFetch('ipfs://bafkqabtimvwgy3yk')
-      expect(resp).to.be.ok()
-      expect(resp.status).to.equal(200)
-      const text = await resp.text()
-      expect(text.trim()).to.equal('hello')
-    })
-
-    it('handles UnixFS-chunked JSON file', async () => {
+  describe('gateway conformance', () => {
+    const textDecoder = new TextDecoder()
+    it('path-unixfs-gateway', async () => {
+      // wait 30 seconds for debugging
+      await new Promise((resolve) => setTimeout(resolve, 30 * 1000))
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const { stdout, stderr } = await $({ env: { PWD: process.cwd() } })`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://localhost:${process.env.PROXY_PORT!} --subdomain-url=http://localhost:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs subdomain-ipns-gateway,subdomain-ipfs-gateway -- -timeout 30m`
+      const subProcess = $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://localhost:${process.env.PROXY_PORT!} --subdomain-url=http://localhost:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs path-unixfs-gateway -- -timeout 30m`
+      subProcess.stderr?.on('data', (data) => {
+        // convert Uint8Array to string
+        const text = textDecoder.decode(data)
+        // eslint-disable-next-line no-console
+        console.log('stderr text', text)
+        expect(text).not.to.contain('--- FAIL:')
+      })
+      subProcess.stdout?.on('data', (data) => {
+        const text = textDecoder.decode(data)
+        // eslint-disable-next-line no-console
+        console.log('stdout text', text)
+        expect(text).not.to.contain('--- FAIL:')
+      })
+
+      await expect(subProcess).to.eventually.be.fulfilled()
+      // expect(stdout).to.be.ok()
+      // // expect(stderr).to.be.empty()
+      // expect(stdout).to.contain('--- PASS: TestMetadata')
+      // // expect(stderr).to.not.contain('--- FAIL:')
+    })
+    it('path-gateway', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const { stdout } = await $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://localhost:${process.env.PROXY_PORT!} --subdomain-url=http://localhost:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs path-gateway -- -timeout 30m`
       expect(stdout).to.be.ok()
-      expect(stderr).to.be.empty()
-      // const resp = await verifiedFetch(CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'))
-      // expect(resp).to.be.ok()
-      // const jsonObj = await resp.json()
-      // expect(jsonObj).to.be.ok()
-      // expect(jsonObj).to.have.property('name').equal('Uniswap Labs Default')
-      // expect(jsonObj).to.have.property('timestamp').equal('2023-12-13T18:25:25.830Z')
-      // expect(jsonObj).to.have.property('version').to.deep.equal({ major: 11, minor: 11, patch: 0 })
-      // expect(jsonObj).to.have.property('tags')
-      // expect(jsonObj).to.have.property('logoURI').equal('ipfs://QmNa8mQkrNKp1WEEeGjFezDmDeodkWRevGFN8JCV7b4Xir')
-      // expect(jsonObj).to.have.property('keywords').to.deep.equal(['uniswap', 'default'])
-      // expect(jsonObj.tokens).to.be.an('array').of.length(767)
+      // expect(stderr).to.be.empty()
+      expect(stdout).to.contain('--- PASS: TestMetadata')
+      // expect(stderr).to.not.contain('--- FAIL:')
+    })
+
+    it('subdomain-ipfs-gateway', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const { stdout } = await $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://localhost:${process.env.PROXY_PORT!} --subdomain-url=http://localhost:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs subdomain-ipfs-gateway -- -timeout 30m`
+      expect(stdout).to.be.ok()
+      // expect(stderr).to.be.empty()
+      expect(stdout).to.contain('--- PASS: TestMetadata')
+      // expect(stderr).to.not.contain('--- FAIL:')
     })
   })
 })

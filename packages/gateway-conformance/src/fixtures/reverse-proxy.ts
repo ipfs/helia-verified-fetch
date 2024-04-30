@@ -29,7 +29,7 @@ const makeRequest = (options: RequestOptions, req: IncomingMessage, res: ServerR
   options.headers = options.headers ?? {}
   options.headers.Host = TARGET_HOST
   const clientIp = req.socket.remoteAddress
-  options.headers['X-Forwarded-For'] = clientIp
+  options.headers['X-Forwarded-For'] = req.headers.host ?? clientIp
 
   // override path to include prefixPath if set
   if (prefixPath != null) {
@@ -106,8 +106,9 @@ export async function startReverseProxy (options?: ReverseProxyOptions): Promise
       res.end()
       return
     }
+    log('req.headers: %O', req.headers)
 
-    const options = {
+    const options: RequestOptions = {
       hostname: TARGET_HOST,
       port: backendPort,
       path: req.url,

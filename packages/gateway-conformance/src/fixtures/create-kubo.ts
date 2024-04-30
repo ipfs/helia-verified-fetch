@@ -3,7 +3,7 @@ import { createController, type Controller } from 'ipfsd-ctl'
 import { path as kuboPath } from 'kubo'
 import * as kuboRpcClient from 'kubo-rpc-client'
 
-export async function createKuboNode (): Promise<Controller> {
+export async function createKuboNode (listenPort?: number): Promise<Controller> {
   return createController({
     kuboRpcModule: kuboRpcClient,
     ipfsBin: kuboPath(),
@@ -16,7 +16,7 @@ export async function createKuboNode (): Promise<Controller> {
             '/ip4/0.0.0.0/tcp/0',
             '/ip4/0.0.0.0/tcp/0/ws'
           ],
-          Gateway: '/ip4/127.0.0.1/tcp/0'
+          Gateway: `/ip4/127.0.0.1/tcp/${listenPort ?? 0}`
         },
         Gateway: {
           NoFetch: true,
