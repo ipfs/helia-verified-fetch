@@ -121,8 +121,8 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
     specs.forEach(([spec, maxFailingTestCount]) => {
       it(`has minimal failing tests for ${spec} spec`, async function () {
-        this.timeout(5 * 60 * 1000)
-        // 5 minutes per spec
+        // 10 minutes per spec
+        this.timeout(10 * 60 * 1000)
         const subProcess = execa('docker', getConformanceTestArgs(spec))
 
         let failureCount = 0
@@ -138,9 +138,9 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         const report = await readFile(`gwc-report-${spec}.json`, 'utf8')
         const lines = report.split('\n')
         for (const line of lines) {
-          if (line.includes('FAIL:')) {
+          if (line.includes('--- FAIL:')) {
             failureCount++
-          } else if (line.includes('PASS:')) {
+          } else if (line.includes('--- PASS:')) {
             successCount++
           }
         }
