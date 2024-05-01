@@ -44,7 +44,7 @@
     }
   },
   "scripts": {
-    "clean": "aegir clean",
+    "clean": "aegir clean dist gwc-report-*.json",
     "lint": "aegir lint",
     "dep-check": "aegir dep-check",
     "doc-check": "aegir doc-check",

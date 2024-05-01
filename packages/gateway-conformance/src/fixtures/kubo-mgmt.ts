@@ -15,6 +15,7 @@ import { logger } from '@libp2p/logger'
 import { $, type ExecaChildProcess } from 'execa'
 import { glob } from 'glob'
 import { path } from 'kubo'
+import { GWC_IMAGE } from '../constants.js'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -135,7 +136,7 @@ async function downloadFixtures (force = false): Promise<void> {
 
   log('Downloading fixtures')
   try {
-    await $`docker run -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 extract-fixtures --directory ${relative('.', GWC_FIXTURES_PATH)} --merged false`
+    await $`docker run --name gateway-conformance -v ${process.cwd()}:/workspace -w /workspace ${GWC_IMAGE} extract-fixtures --directory ${relative('.', GWC_FIXTURES_PATH)} --merged false`
   } catch (e) {
     log.error('Error downloading fixtures, assuming current or previous success', e)
   }

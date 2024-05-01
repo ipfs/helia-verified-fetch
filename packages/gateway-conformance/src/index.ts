@@ -17,6 +17,12 @@
  * $ KUBO_BINARY=/path/to/kubo verified-fetch-gateway-conformance
  * ```
  *
+ * @example using a different gateway-conformance image
+ *
+ * ```console
+ * $ GWC_IMAGE=ghcr.io/ipfs/gateway-conformance:v0.5.1 verified-fetch-gateway-conformance
+ * ```
+ *
  * @example Debugging a test run
  *
  * ```console

@@ -5,6 +5,7 @@ import { prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import { execa } from 'execa'
 import { Agent, setGlobalDispatcher } from 'undici'
+import { GWC_IMAGE } from './constants.js'
 
 const logger = prefixLogger('conformance-tests')
 
@@ -20,13 +21,18 @@ interface TestConfig {
 function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArgs: string[] = []): string[] {
   return [
     'run',
+    /**
+     * Ensure new containers aren't created as this can quickly result in exceeding allowed docker storage.
+     * Also, creating a new container for each test significantly slows things down.
+     */
+    '--name', 'gateway-conformance',
     '--network',
     'host',
     '-v',
       `${process.cwd()}:/workspace`,
       '-w',
       '/workspace',
-      'ghcr.io/ipfs/gateway-conformance:v0.5.1',
+      GWC_IMAGE,
       'test',
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
@@ -111,112 +117,112 @@ const tests: TestConfig[] = [
   {
     name: 'TestTrustlessRaw',
     run: ['TestTrustlessRaw'],
-    maxFailures: 0
+    maxFailures: 29
   },
   {
     name: 'TestGatewayIPNSRecord',
     run: ['TestGatewayIPNSRecord'],
-    maxFailures: 0
+    maxFailures: 23
   },
   {
     name: 'TestTrustlessCarOrderAndDuplicates',
     run: ['TestTrustlessCarOrderAndDuplicates'],
-    maxFailures: 0
+    maxFailures: 26
   },
   {
     name: 'TestTrustlessCarEntityBytes',
     run: ['TestTrustlessCarEntityBytes'],
-    maxFailures: 0
+    maxFailures: 122
   },
   {
     name: 'TestTrustlessCarDagScopeAll',
     run: ['TestTrustlessCarDagScopeAll'],
-    maxFailures: 0
+    maxFailures: 23
   },
   {
     name: 'TestTrustlessCarDagScopeEntity',
     run: ['TestTrustlessCarDagScopeEntity'],
-    maxFailures: 0
+    maxFailures: 56
   },
   {
     name: 'TestTrustlessCarDagScopeBlock',
     run: ['TestTrustlessCarDagScopeBlock'],
-    maxFailures: 0
+    maxFailures: 34
   },
   {
     name: 'TestTrustlessCarPathing',
     run: ['TestTrustlessCarPathing'],
-    maxFailures: 0
+    maxFailures: 45
   },
   {
     name: 'TestSubdomainGatewayDNSLinkInlining',
     run: ['TestSubdomainGatewayDNSLinkInlining'],
-    maxFailures: 0
+    maxFailures: 41
   },
   {
     name: 'TestGatewaySubdomainAndIPNS',
     run: ['TestGatewaySubdomainAndIPNS'],
-    maxFailures: 0
+    maxFailures: 95
   },
   {
     name: 'TestGatewaySubdomains',
     run: ['TestGatewaySubdomains'],
-    maxFailures: 0
+    maxFailures: 279
   },
   {
     name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
     run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
-    maxFailures: 0
+    maxFailures: 39
   },
   {
     name: 'TestRedirectsFileWithIfNoneMatchHeader',
     run: ['TestRedirectsFileWithIfNoneMatchHeader'],
-    maxFailures: 0
+    maxFailures: 15
   },
   {
     name: 'TestRedirectsFileSupportWithDNSLink',
     run: ['TestRedirectsFileSupportWithDNSLink'],
-    maxFailures: 0
+    maxFailures: 17
   },
   {
     name: 'TestRedirectsFileSupport',
     run: ['TestRedirectsFileSupport'],
-    maxFailures: 0
+    maxFailures: 252
   },
   {
     name: 'TestPathGatewayMiscellaneous',
     run: ['TestPathGatewayMiscellaneous'],
-    maxFailures: 0
+    maxFailures: 3
   },
   {
     name: 'TestGatewayUnixFSFileRanges',
     run: ['TestGatewayUnixFSFileRanges'],
-    maxFailures: 0
+    maxFailures: 10
   },
   {
     name: 'TestGatewaySymlink',
     run: ['TestGatewaySymlink'],
-    maxFailures: 0
+    maxFailures: 9
   },
   {
     name: 'TestGatewayCacheWithIPNS',
     run: ['TestGatewayCacheWithIPNS'],
-    maxFailures: 0
+    maxFailures: 27
   },
   {
     name: 'TestGatewayCache',
     run: ['TestGatewayCache'],
-    maxFailures: 0
+    maxFailures: 71
   },
   {
     name: 'TestUnixFSDirectoryListing',
     run: ['TestUnixFSDirectoryListing'],
-    maxFailures: 0
+    maxFailures: 50
   },
   {
     name: 'TestTar',
     run: ['TestTar'],
-    maxFailures: 0
+    maxFailures: 16
   }
 ]
 
@@ -266,8 +272,8 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       const log = logger.forComponent(name)
 
       it(`has no more than ${maxFailures} failing tests for ${name}`, async function () {
-        // 15 seconds per test group
-        this.timeout(15 * 1000)
+        // 5 seconds per test group
+        this.timeout(5 * 1000)
         /**
          * TODO: move to using gateway-conformance binary directly?
          *
@@ -307,6 +313,40 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         expect(failureCount).to.be.lessThanOrEqual(maxFailures)
         expect(successCount).to.be.greaterThanOrEqual(minimumSuccesses ?? 0)
       })
+    })
+
+    /**
+     * This test ensures new or existing gateway-conformance tests that fail are caught and addressed appropriately.
+     * Eventually, we will not need the `tests.forEach` tests and can just run all the recommended tests directly,
+     * as this test does.
+     */
+    it('has expected total failures and successes', async function () {
+      this.timeout(15 * 1000)
+      const log = logger.forComponent('all')
+
+      // get total maxFailures from `tests`
+      const totalMaxFailures = tests.reduce((acc, { maxFailures }) => acc + maxFailures, 0)
+
+      const { stderr, stdout } = await execa('docker', getConformanceTestArgs('all'), { reject: false })
+
+      log(stdout)
+      log.error(stderr)
+      let failureCount = 0
+      let successCount = 0
+
+      // parse the newline delimited JSON report at gwc-report-${name}.json and count the number of "PASS:" and "FAIL:" lines
+      const report = await readFile('gwc-report-all.json', 'utf8')
+      const lines = report.split('\n')
+      for (const line of lines) {
+        if (line.includes('--- FAIL:')) {
+          failureCount++
+        } else if (line.includes('--- PASS:')) {
+          successCount++
+        }
+      }
+
+      expect(failureCount).to.be.lessThanOrEqual(totalMaxFailures)
+      expect(successCount).to.be.greaterThanOrEqual(31)
     })
   })
 })

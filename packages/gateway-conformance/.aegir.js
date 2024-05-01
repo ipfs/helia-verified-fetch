@@ -9,6 +9,8 @@ export default {
       if (options.runner !== 'node') {
         throw new Error('Only node runner is supported')
       }
+
+      const { GWC_IMAGE } = await import('./dist/src/constants.js')
       const { loadKuboFixtures, kuboRepoDir } = await import('./dist/src/fixtures/kubo-mgmt.js')
       await loadKuboFixtures()
 
@@ -44,6 +46,7 @@ export default {
         stopReverseProxy,
         stopBasicServer,
         env: {
+          GWC_IMAGE,
           CONFORMANCE_HOST,
           KUBO_PORT: `${KUBO_PORT}`,
           PROXY_PORT: `${PROXY_PORT}`,
