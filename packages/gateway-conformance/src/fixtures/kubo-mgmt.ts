@@ -136,9 +136,13 @@ async function downloadFixtures (force = false): Promise<void> {
 
   log('Downloading fixtures')
   try {
-    await $`docker run --name gateway-conformance -v ${process.cwd()}:/workspace -w /workspace ${GWC_IMAGE} extract-fixtures --directory ${relative('.', GWC_FIXTURES_PATH)} --merged false`
+    await $`docker run --name gateway-conformance-fixture-loader -v ${process.cwd()}:/workspace -w /workspace ${GWC_IMAGE} extract-fixtures --directory ${relative('.', GWC_FIXTURES_PATH)} --merged false`
   } catch (e) {
     log.error('Error downloading fixtures, assuming current or previous success', e)
+  } finally {
+    // ensure the docker container is stopped and removed otherwise it will fail on subsequent runs
+    await $`docker stop gateway-conformance-fixture-loader`
+    await $`docker rm gateway-conformance-fixture-loader`
   }
 }
 

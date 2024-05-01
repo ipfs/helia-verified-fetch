@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-env mocha */
 import { readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import { execa } from 'execa'
 import { Agent, setGlobalDispatcher } from 'undici'
-import { GWC_IMAGE } from './constants.js'
 
 const logger = prefixLogger('conformance-tests')
 
@@ -18,32 +19,24 @@ interface TestConfig {
   minimumSuccesses?: number
 }
 
+function getGatewayConformanceBinaryPath (): string {
+  const goPath = process.env.GOPATH ?? join(homedir(), 'go', 'bin')
+  return join(goPath, 'gateway-conformance')
+}
+
 function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArgs: string[] = []): string[] {
   return [
-    'run',
-    /**
-     * Ensure new containers aren't created as this can quickly result in exceeding allowed docker storage.
-     * Also, creating a new container for each test significantly slows things down.
-     */
-    '--name', 'gateway-conformance',
-    '--network',
-    'host',
-    '-v',
-      `${process.cwd()}:/workspace`,
-      '-w',
-      '/workspace',
-      GWC_IMAGE,
-      'test',
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
-      '--verbose',
-      '--json', `gwc-report-${name}.json`,
-      ...gwcArgs,
-      '--',
-      '-timeout', '5m',
-      ...goTestArgs
+    'test',
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
+    '--verbose',
+    '--json', `gwc-report-${name}.json`,
+    ...gwcArgs,
+    '--',
+    '-timeout', '5m',
+    ...goTestArgs
   ]
 }
 
@@ -268,22 +261,29 @@ describe('@helia/verified-fetch - gateway conformance', function () {
   })
 
   describe('conformance testing', () => {
+    const binaryPath = getGatewayConformanceBinaryPath()
+    before(async () => {
+      const log = logger.forComponent('before')
+      const { stdout, stderr } = await execa('go', ['install', 'github.com/ipfs/gateway-conformance/cmd/gateway-conformance@latest'], { reject: true })
+      log(stdout)
+      log.error(stderr)
+    })
+
+    after(async () => {
+      const log = logger.forComponent('after')
+      try {
+        await execa('rm', [binaryPath])
+        log('gateway-conformance binary successfully uninstalled.')
+      } catch (error) {
+        log.error(`Error removing "${binaryPath}"`, error)
+      }
+    })
+
     tests.forEach(({ name, spec, skip, run, maxFailures, minimumSuccesses }) => {
       const log = logger.forComponent(name)
 
       it(`has no more than ${maxFailures} failing tests for ${name}`, async function () {
-        // 5 seconds per test group
-        this.timeout(5 * 1000)
-        /**
-         * TODO: move to using gateway-conformance binary directly?
-         *
-         * Install with:
-         * go install github.com/ipfs/gateway-conformance/cmd/gateway-conformance@latest
-         *
-         * And then run with:
-         */
-        // $HOME/go/bin/gateway-conformance test --gateway-url=http://localhost:3441 --subdomain-url=http://localhost:3442 --verbose --json gwc-report-direct.json -- -skip '.*/.*TODO.*|TestDagPbConversion.*|TestPlainCodec.*|TestPathing.*|TestDNSLinkGatewayUnixFSDirectoryListing|TestCors|TestGatewayJsonCbor|TestNativeDag|TestGatewayJSONCborAndIPNS|TestGatewayIPNSPath|TestRedirectCanonicalIPNS|TestGatewayBlock|TestTrustlessRawRanges|TestTrustlessRaw|TestGatewayIPNSRecord|TestTrustlessCarOrderAndDuplicates|TestTrustlessCarEntityBytes|TestTrustlessCarDagScopeAll|TestTrustlessCarDagScopeEntity|TestTrustlessCarDagScopeBlock|TestTrustlessCarPathing|TestSubdomainGatewayDNSLinkInlining|TestGatewaySubdomainAndIPNS|TestGatewaySubdomains|TestUnixFSDirectoryListingOnSubdomainGateway|TestRedirectsFileWithIfNoneMatchHeader|TestRedirectsFileSupportWithDNSLink|TestRedirectsFileSupport|TestPathGatewayMiscellaneous|TestGatewayUnixFSFileRanges|TestGatewaySymlink|TestGatewayCacheWithIPNS|TestGatewayCache|TestUnixFSDirectoryListing|TestTar'
-        const { stderr, stdout } = await execa('docker', getConformanceTestArgs(name,
+        const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs(name,
           [
             ...(spec != null ? ['--specs', spec] : [])
           ],
@@ -321,13 +321,12 @@ describe('@helia/verified-fetch - gateway conformance', function () {
      * as this test does.
      */
     it('has expected total failures and successes', async function () {
-      this.timeout(15 * 1000)
       const log = logger.forComponent('all')
 
       // get total maxFailures from `tests`
       const totalMaxFailures = tests.reduce((acc, { maxFailures }) => acc + maxFailures, 0)
 
-      const { stderr, stdout } = await execa('docker', getConformanceTestArgs('all'), { reject: false })
+      const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all'), { reject: false })
 
       log(stdout)
       log.error(stderr)
