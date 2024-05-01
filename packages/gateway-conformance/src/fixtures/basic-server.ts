@@ -64,7 +64,7 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
       if (resp.body == null) {
         res.write(await resp.arrayBuffer())
       } else {
-      // read the body of the response and write it to the response from the server
+        // read the body of the response and write it to the response from the server
         const reader = resp.body.getReader()
         while (true) {
           const { done, value } = await reader.read()
@@ -75,6 +75,10 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
         }
       }
       res.end()
+    }).catch((e) => {
+      log.error('Problem with request: %s', e.message)
+      // res.writeHead(500)
+      res.end(`Internal Server Error: ${e.message}`)
     })
   })
 

@@ -1,7 +1,36 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-env mocha */
 import { expect } from 'aegir/chai'
-import { $ } from 'execa'
+import { execa } from 'execa'
 import { Agent, setGlobalDispatcher } from 'undici'
+
+// TODO: skipping tests is a PITA. Need gateway-conformance changes before we can actually iterate on this reasonably.
+// See https://github.com/ipfs/gateway-conformance/issues/201 for more information.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
+// @ts-ignore - May be unused while debugging
+const testsToSkip: string[] = [
+  'TestPlainCodec',
+  'TestGatewayJsonCbor.*Header_Content-Type',
+  'TestGatewayJsonCbor/.*/Body',
+  'TestDNSLinkGatewayUnixFSDirectoryListing.*Body',
+  '.*TODO.*'
+  // 'TestPlainCodec.*/Check_0',
+  // 'TestPlainCodec/.*/Check_0',
+  // 'TestPlainCodec.*/Check_0/Header_Content-Disposition',
+  // '.*Header_Content-Disposition.*'
+]
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
+// @ts-ignore - May be unused while debugging
+const testsToRun: string[] = [
+  // 'TestDagPbConversion',
+  'TestMetadata' // since we're only running 'TestMetadata', nothing else is currently being ran.
+  // 'TestGatewayJsonCbor',
+  // 'TestGatewayJsonCbor.*Status_code',
+  // 'TestDagPbConversion/.*/Header_Content-Type#01',
+  // 'TestPlainCodec.*/Check_1'
+  // 'TestPlainCodec'
+]
 
 describe('@helia/verified-fetch - gateway conformance', function () {
   this.timeout(60 * 1000)
@@ -19,7 +48,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     if (process.env.CONFORMANCE_HOST == null) {
       throw new Error('CONFORMANCE_HOST env var is required')
     }
-    // trying https://stackoverflow.com/questions/71074255/use-custom-dns-resolver-for-any-request-in-nodejs
+    // see https://stackoverflow.com/questions/71074255/use-custom-dns-resolver-for-any-request-in-nodejs
     // EVERY undici/fetch request host resolves to local IP. Node.js does not resolve reverse-proxy requests properly
     const staticDnsAgent = new Agent({
       connect: {
@@ -46,50 +75,44 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     })
   })
 
-  // -skip '^.*(DirectoryListing|TestGatewayCache|TestSubdomainGatewayDNSLinkInlining|proxy|TestGatewaySubdomainAndIPNS|TestGatewaySubdomains|Trustless|TestGatewayIPNSRecord|RedirectsFile|TestGatewayUnixFSFileRanges|TestGatewayJSONCborAndIPNS|TestTar|Symlink|TestPathGatewayMiscellaneous|TestGatewayBlock|TestRedirectCanonicalIPNS|TestGatewayIPNSPath|TestNativeDag|TestPathing|TestPlainCodec|TestDagPbConversion|TestGatewayJsonCbor|TestCors).*$'
-  describe('gateway conformance', () => {
+  it('gateway conformance', async () => {
     const textDecoder = new TextDecoder()
-    it('path-unixfs-gateway', async () => {
-      // wait 30 seconds for debugging
-      // await new Promise((resolve) => setTimeout(resolve, 60 * 1000))
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const subProcess = $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs path-unixfs-gateway -- -timeout 30m`
-      subProcess.stderr?.on('data', (data) => {
-        // convert Uint8Array to string
-        const text = textDecoder.decode(data)
-        // eslint-disable-next-line no-console
-        console.log('stderr text', text)
-        expect(text).not.to.contain('--- FAIL:')
-      })
-      subProcess.stdout?.on('data', (data) => {
-        const text = textDecoder.decode(data)
-        // eslint-disable-next-line no-console
-        console.log('stdout text', text)
-        expect(text).not.to.contain('--- FAIL:')
-      })
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const subProcess = execa('docker', [
+      'run',
+      '--network',
+      'host',
+      '-v',
+      `${process.cwd()}:/workspace`,
+      '-w',
+      '/workspace',
+      'ghcr.io/ipfs/gateway-conformance:v0.5.1',
+      'test',
+      `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
+      `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
+      '--verbose',
+      '--json', 'gwc-report.json',
+      '--',
+      '-timeout', '30m',
+      // `-run=(${testsToRun.join('|')})`,
+      '-skip', `"(${testsToSkip.join('|')})"`
+    ])
 
-      await expect(subProcess).to.eventually.be.fulfilled()
-      // expect(stdout).to.be.ok()
-      // // expect(stderr).to.be.empty()
-      // expect(stdout).to.contain('--- PASS: TestMetadata')
-      // // expect(stderr).to.not.contain('--- FAIL:')
+    subProcess.stderr?.on('data', (data) => {
+      // convert Uint8Array to string
+      const text = textDecoder.decode(data)
+      // eslint-disable-next-line no-console
+      console.log('stderr text', text)
+      expect(text).not.to.contain('--- FAIL:')
     })
-    it('path-gateway', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const { stdout } = await $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs path-gateway -- -timeout 30m`
-      expect(stdout).to.be.ok()
-      // expect(stderr).to.be.empty()
-      expect(stdout).to.contain('--- PASS: TestMetadata')
-      // expect(stderr).to.not.contain('--- FAIL:')
+    subProcess.stdout?.on('data', (data) => {
+      const text = textDecoder.decode(data)
+      // eslint-disable-next-line no-console
+      console.log('stdout text', text)
+      expect(text).not.to.contain('--- FAIL:')
+      // expect(test).not.to.contain('no tests to run')
     })
 
-    it('subdomain-ipfs-gateway', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const { stdout } = await $`docker run --network host -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!} --verbose --json gwc-report.json --specs subdomain-ipfs-gateway -- -timeout 30m`
-      expect(stdout).to.be.ok()
-      // expect(stderr).to.be.empty()
-      expect(stdout).to.contain('--- PASS: TestMetadata')
-      // expect(stderr).to.not.contain('--- FAIL:')
-    })
+    await expect(subProcess).to.eventually.be.fulfilled()
   })
 })
