@@ -1,36 +1,223 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-env mocha */
 import { readFile } from 'node:fs/promises'
+import { prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import { execa } from 'execa'
 import { Agent, setGlobalDispatcher } from 'undici'
 
-// TODO: skipping tests is a PITA. Need gateway-conformance changes before we can actually iterate on this reasonably.
-// See https://github.com/ipfs/gateway-conformance/issues/201 for more information.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
-// @ts-ignore - May be unused while debugging
-const testsToSkip: string[] = [
-  'TestPlainCodec',
-  'TestGatewayJsonCbor.*Header_Content-Type',
-  'TestGatewayJsonCbor/.*/Body',
-  'TestDNSLinkGatewayUnixFSDirectoryListing.*Body',
-  '.*TODO.*'
-  // 'TestPlainCodec.*/Check_0',
-  // 'TestPlainCodec/.*/Check_0',
-  // 'TestPlainCodec.*/Check_0/Header_Content-Disposition',
-  // '.*Header_Content-Disposition.*'
-]
+const logger = prefixLogger('conformance-tests')
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
-// @ts-ignore - May be unused while debugging
-const testsToRun: string[] = [
-  // 'TestDagPbConversion',
-  'TestMetadata' // since we're only running 'TestMetadata', nothing else is currently being ran.
-  // 'TestGatewayJsonCbor',
-  // 'TestGatewayJsonCbor.*Status_code',
-  // 'TestDagPbConversion/.*/Header_Content-Type#01',
-  // 'TestPlainCodec.*/Check_1'
-  // 'TestPlainCodec'
+interface TestConfig {
+  name: string
+  spec?: string
+  skip?: string[]
+  run?: string[]
+  maxFailures: number
+  minimumSuccesses?: number
+}
+
+function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArgs: string[] = []): string[] {
+  return [
+    'run',
+    '--network',
+    'host',
+    '-v',
+      `${process.cwd()}:/workspace`,
+      '-w',
+      '/workspace',
+      'ghcr.io/ipfs/gateway-conformance:v0.5.1',
+      'test',
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
+      '--verbose',
+      '--json', `gwc-report-${name}.json`,
+      ...gwcArgs,
+      '--',
+      '-timeout', '5m',
+      ...goTestArgs
+  ]
+}
+
+const tests: TestConfig[] = [
+  {
+    // passing tests should be added here.
+    name: 'TestMetadata',
+    run: ['TestMetadata'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestDagPbConversion',
+    run: ['TestDagPbConversion'],
+    maxFailures: 51
+  },
+  {
+    name: 'TestPlainCodec',
+    run: ['TestPlainCodec'],
+    maxFailures: 44
+  },
+  {
+    name: 'TestPathing',
+    run: ['TestPathing'],
+    maxFailures: 5
+  },
+  {
+    name: 'TestDNSLinkGatewayUnixFSDirectoryListing',
+    run: ['TestDNSLinkGatewayUnixFSDirectoryListing'],
+    maxFailures: 20
+  },
+  {
+    name: 'TestCors',
+    run: ['TestCors'],
+    maxFailures: 10
+  },
+  {
+    name: 'TestGatewayJsonCbor',
+    run: ['TestGatewayJsonCbor'],
+    maxFailures: 9
+  },
+  {
+    name: 'TestNativeDag',
+    run: ['TestNativeDag'],
+    maxFailures: 2
+  },
+  {
+    name: 'TestGatewayJSONCborAndIPNS',
+    run: ['TestGatewayJSONCborAndIPNS'],
+    maxFailures: 25
+  },
+  {
+    name: 'TestGatewayIPNSPath',
+    run: ['TestGatewayIPNSPath'],
+    maxFailures: 8
+  },
+  {
+    name: 'TestRedirectCanonicalIPNS',
+    run: ['TestRedirectCanonicalIPNS'],
+    maxFailures: 7
+  },
+  {
+    name: 'TestGatewayBlock',
+    run: ['TestGatewayBlock'],
+    maxFailures: 25
+  },
+  {
+    name: 'TestTrustlessRawRanges',
+    run: ['TestTrustlessRawRanges'],
+    maxFailures: 5
+  },
+  {
+    name: 'TestTrustlessRaw',
+    run: ['TestTrustlessRaw'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestGatewayIPNSRecord',
+    run: ['TestGatewayIPNSRecord'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestTrustlessCarOrderAndDuplicates',
+    run: ['TestTrustlessCarOrderAndDuplicates'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestTrustlessCarEntityBytes',
+    run: ['TestTrustlessCarEntityBytes'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestTrustlessCarDagScopeAll',
+    run: ['TestTrustlessCarDagScopeAll'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestTrustlessCarDagScopeEntity',
+    run: ['TestTrustlessCarDagScopeEntity'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestTrustlessCarDagScopeBlock',
+    run: ['TestTrustlessCarDagScopeBlock'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestTrustlessCarPathing',
+    run: ['TestTrustlessCarPathing'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestSubdomainGatewayDNSLinkInlining',
+    run: ['TestSubdomainGatewayDNSLinkInlining'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestGatewaySubdomainAndIPNS',
+    run: ['TestGatewaySubdomainAndIPNS'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestGatewaySubdomains',
+    run: ['TestGatewaySubdomains'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
+    run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestRedirectsFileWithIfNoneMatchHeader',
+    run: ['TestRedirectsFileWithIfNoneMatchHeader'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestRedirectsFileSupportWithDNSLink',
+    run: ['TestRedirectsFileSupportWithDNSLink'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestRedirectsFileSupport',
+    run: ['TestRedirectsFileSupport'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestPathGatewayMiscellaneous',
+    run: ['TestPathGatewayMiscellaneous'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestGatewayUnixFSFileRanges',
+    run: ['TestGatewayUnixFSFileRanges'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestGatewaySymlink',
+    run: ['TestGatewaySymlink'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestGatewayCacheWithIPNS',
+    run: ['TestGatewayCacheWithIPNS'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestGatewayCache',
+    run: ['TestGatewayCache'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestUnixFSDirectoryListing',
+    run: ['TestUnixFSDirectoryListing'],
+    maxFailures: 0
+  },
+  {
+    name: 'TestTar',
+    run: ['TestTar'],
+    maxFailures: 0
+  }
 ]
 
 describe('@helia/verified-fetch - gateway conformance', function () {
@@ -74,68 +261,40 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     })
   })
 
-  function getConformanceTestArgs (specToTest: string, additionalArgs: string[] = []): string[] {
-    return [
-      'run',
-      '--network',
-      'host',
-      '-v',
-      `${process.cwd()}:/workspace`,
-      '-w',
-      '/workspace',
-      'ghcr.io/ipfs/gateway-conformance:v0.5.1',
-      'test',
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
-      '--verbose',
-      '--json', `gwc-report-${specToTest}.json`,
-      '-specs', specToTest,
-      '--',
-      '-timeout', '30m',
-      // `-run=(${testsToRun.join('|')})`,
-      // '-skip', `"(${testsToSkip.join('|')})"`
-      ...additionalArgs
-    ]
-  }
-
   describe('conformance testing', () => {
-    const specs: Array<[string, number]> = [
-      ['trustless-block-gateway', 1],
-      ['trustless-car-gateway', 1],
-      ['trustless-car-gateway-optional', 1],
-      ['trustless-ipns-gateway', 1],
-      ['trustless-gateway', 1],
-      ['path-unixfs-gateway', 1],
-      ['path-tar-gateway', 1],
-      ['path-dag-gateway', 1],
-      ['path-raw-gateway', 1],
-      ['path-gateway', 1],
-      ['subdomain-ipfs-gateway', 1],
-      ['subdomain-ipns-gateway', 1],
-      ['subdomain-gateway', 1],
-      ['dnslink-gateway', 1],
-      ['redirects-file', 1]
-    ]
+    tests.forEach(({ name, spec, skip, run, maxFailures, minimumSuccesses }) => {
+      const log = logger.forComponent(name)
 
-    specs.forEach(([spec, maxFailingTestCount]) => {
-      it(`has minimal failing tests for ${spec} spec`, async function () {
-        // 10 minutes per spec
-        this.timeout(10 * 60 * 1000)
-        const subProcess = execa('docker', getConformanceTestArgs(spec))
+      it(`has no more than ${maxFailures} failing tests for ${name}`, async function () {
+        // 15 seconds per test group
+        this.timeout(15 * 1000)
+        /**
+         * TODO: move to using gateway-conformance binary directly?
+         *
+         * Install with:
+         * go install github.com/ipfs/gateway-conformance/cmd/gateway-conformance@latest
+         *
+         * And then run with:
+         */
+        // $HOME/go/bin/gateway-conformance test --gateway-url=http://localhost:3441 --subdomain-url=http://localhost:3442 --verbose --json gwc-report-direct.json -- -skip '.*/.*TODO.*|TestDagPbConversion.*|TestPlainCodec.*|TestPathing.*|TestDNSLinkGatewayUnixFSDirectoryListing|TestCors|TestGatewayJsonCbor|TestNativeDag|TestGatewayJSONCborAndIPNS|TestGatewayIPNSPath|TestRedirectCanonicalIPNS|TestGatewayBlock|TestTrustlessRawRanges|TestTrustlessRaw|TestGatewayIPNSRecord|TestTrustlessCarOrderAndDuplicates|TestTrustlessCarEntityBytes|TestTrustlessCarDagScopeAll|TestTrustlessCarDagScopeEntity|TestTrustlessCarDagScopeBlock|TestTrustlessCarPathing|TestSubdomainGatewayDNSLinkInlining|TestGatewaySubdomainAndIPNS|TestGatewaySubdomains|TestUnixFSDirectoryListingOnSubdomainGateway|TestRedirectsFileWithIfNoneMatchHeader|TestRedirectsFileSupportWithDNSLink|TestRedirectsFileSupport|TestPathGatewayMiscellaneous|TestGatewayUnixFSFileRanges|TestGatewaySymlink|TestGatewayCacheWithIPNS|TestGatewayCache|TestUnixFSDirectoryListing|TestTar'
+        const { stderr, stdout } = await execa('docker', getConformanceTestArgs(name,
+          [
+            ...(spec != null ? ['--specs', spec] : [])
+          ],
+          [
+            ...((skip != null) ? ['-skip', `${skip.join('|')}`] : []),
+            ...((run != null) ? ['-run', `${run.join('|')}`] : [])
+          ]
+        ), { reject: false })
+
+        log(stdout)
+        log.error(stderr)
 
         let failureCount = 0
         let successCount = 0
 
-        await (new Promise<void>((resolve, reject) => {
-          void subProcess.on('close', () => {
-            resolve()
-          })
-        }))
-
-        // parse the newline delimited JSON report at gwc-report.json and count the number of "PASS:" and "FAIL:" lines
-        const report = await readFile(`gwc-report-${spec}.json`, 'utf8')
+        // parse the newline delimited JSON report at gwc-report-${name}.json and count the number of "PASS:" and "FAIL:" lines
+        const report = await readFile(`gwc-report-${name}.json`, 'utf8')
         const lines = report.split('\n')
         for (const line of lines) {
           if (line.includes('--- FAIL:')) {
@@ -145,7 +304,8 @@ describe('@helia/verified-fetch - gateway conformance', function () {
           }
         }
 
-        expect(failureCount).to.be.lessThanOrEqual(maxFailingTestCount)
+        expect(failureCount).to.be.lessThanOrEqual(maxFailures)
+        expect(successCount).to.be.greaterThanOrEqual(minimumSuccesses ?? 0)
       })
     })
   })

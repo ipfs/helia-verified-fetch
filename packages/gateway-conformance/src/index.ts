@@ -20,7 +20,8 @@
  * @example Debugging a test run
  *
  * ```console
- * $ DEBUG="-mocha*,*,*:trace" npm run test
+ * $ DEBUG="-mocha*,*,*:trace" npm run test # very verbose output
+ * $ DEBUG="conformance-tests*,conformance-tests*:trace" npm run test # only gateway-conformance test output
  * ```
  *
  * @example querying the gateway-conformance server directly

@@ -49,7 +49,14 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
     const fullUrlHref = req.headers.referer ?? `http://${host}${req.url}`
     log('fetching %s', fullUrlHref)
 
-    void verifiedFetch(fullUrlHref, { redirect: 'manual' }).then(async (resp) => {
+    const requestController = new AbortController()
+    // we need to abort the request if the client disconnects
+    req.on('close', () => {
+      log('client disconnected, aborting request')
+      requestController.abort()
+    })
+
+    void verifiedFetch(fullUrlHref, { redirect: 'manual', signal: requestController.signal }).then(async (resp) => {
       // loop over headers and set them on the response
       const headers: Record<string, string> = {}
       for (const [key, value] of resp.headers.entries()) {
@@ -77,8 +84,12 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
       res.end()
     }).catch((e) => {
       log.error('Problem with request: %s', e.message)
-      // res.writeHead(500)
+      if (!res.headersSent) {
+        res.writeHead(500)
+      }
       res.end(`Internal Server Error: ${e.message}`)
+    }).finally(() => {
+      requestController.abort()
     })
   })
 
