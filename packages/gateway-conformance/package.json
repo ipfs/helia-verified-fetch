@@ -50,7 +50,6 @@
     "doc-check": "aegir doc-check",
     "build": "aegir build",
     "test": "aegir test -t node",
-    "test:node": "aegir test -t node"
   },
   "dependencies": {
     "@helia/verified-fetch": "1.3.13",
