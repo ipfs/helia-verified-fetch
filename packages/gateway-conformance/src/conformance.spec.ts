@@ -42,180 +42,214 @@ function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArg
 
 const tests: TestConfig[] = [
   {
-    // passing tests should be added here.
     name: 'TestMetadata',
     run: ['TestMetadata'],
-    maxFailures: 0
+    maxFailures: 0,
+    minimumSuccesses: 1
   },
   {
     name: 'TestDagPbConversion',
     run: ['TestDagPbConversion'],
-    maxFailures: 51
+    maxFailures: 51,
+    minimumSuccesses: 14
   },
   {
     name: 'TestPlainCodec',
     run: ['TestPlainCodec'],
-    maxFailures: 44
+    maxFailures: 44,
+    minimumSuccesses: 15
   },
   {
     name: 'TestPathing',
     run: ['TestPathing'],
-    maxFailures: 5
+    maxFailures: 5,
+    minimumSuccesses: 0
   },
   {
     name: 'TestDNSLinkGatewayUnixFSDirectoryListing',
     run: ['TestDNSLinkGatewayUnixFSDirectoryListing'],
-    maxFailures: 20
+    maxFailures: 20,
+    minimumSuccesses: 0
   },
   {
     name: 'TestCors',
     run: ['TestCors'],
-    maxFailures: 10
+    maxFailures: 10,
+    minimumSuccesses: 1
   },
   {
     name: 'TestGatewayJsonCbor',
     run: ['TestGatewayJsonCbor'],
-    maxFailures: 9
+    maxFailures: 9,
+    minimumSuccesses: 0
   },
   {
     name: 'TestNativeDag',
     run: ['TestNativeDag'],
-    maxFailures: 2
+    maxFailures: 2,
+    minimumSuccesses: 0
   },
   {
     name: 'TestGatewayJSONCborAndIPNS',
     run: ['TestGatewayJSONCborAndIPNS'],
-    maxFailures: 25
+    maxFailures: 25,
+    minimumSuccesses: 8
   },
   {
     name: 'TestGatewayIPNSPath',
     run: ['TestGatewayIPNSPath'],
-    maxFailures: 8
+    maxFailures: 8,
+    minimumSuccesses: 3
   },
   {
     name: 'TestRedirectCanonicalIPNS',
     run: ['TestRedirectCanonicalIPNS'],
-    maxFailures: 7
+    maxFailures: 7,
+    minimumSuccesses: 0
   },
   {
     name: 'TestGatewayBlock',
     run: ['TestGatewayBlock'],
-    maxFailures: 25
+    maxFailures: 25,
+    minimumSuccesses: 4
   },
   {
     name: 'TestTrustlessRawRanges',
     run: ['TestTrustlessRawRanges'],
-    maxFailures: 5
+    maxFailures: 5,
+    minimumSuccesses: 7
   },
   {
     name: 'TestTrustlessRaw',
     run: ['TestTrustlessRaw'],
-    maxFailures: 29
+    maxFailures: 29,
+    minimumSuccesses: 7
   },
   {
     name: 'TestGatewayIPNSRecord',
     run: ['TestGatewayIPNSRecord'],
-    maxFailures: 23
+    maxFailures: 23,
+    minimumSuccesses: 0
   },
   {
     name: 'TestTrustlessCarOrderAndDuplicates',
     run: ['TestTrustlessCarOrderAndDuplicates'],
-    maxFailures: 26
+    maxFailures: 26,
+    minimumSuccesses: 3
   },
   {
     name: 'TestTrustlessCarEntityBytes',
     run: ['TestTrustlessCarEntityBytes'],
-    maxFailures: 122
+    maxFailures: 122,
+    minimumSuccesses: 55
   },
   {
     name: 'TestTrustlessCarDagScopeAll',
     run: ['TestTrustlessCarDagScopeAll'],
-    maxFailures: 23
+    maxFailures: 23,
+    minimumSuccesses: 10
   },
   {
     name: 'TestTrustlessCarDagScopeEntity',
     run: ['TestTrustlessCarDagScopeEntity'],
-    maxFailures: 56
+    maxFailures: 56,
+    minimumSuccesses: 25
   },
   {
     name: 'TestTrustlessCarDagScopeBlock',
     run: ['TestTrustlessCarDagScopeBlock'],
-    maxFailures: 34
+    maxFailures: 34,
+    minimumSuccesses: 15
   },
   {
     name: 'TestTrustlessCarPathing',
     run: ['TestTrustlessCarPathing'],
-    maxFailures: 45
+    maxFailures: 45,
+    minimumSuccesses: 20
   },
   {
     name: 'TestSubdomainGatewayDNSLinkInlining',
     run: ['TestSubdomainGatewayDNSLinkInlining'],
-    maxFailures: 41
+    maxFailures: 41,
+    minimumSuccesses: 0
   },
   {
     name: 'TestGatewaySubdomainAndIPNS',
     run: ['TestGatewaySubdomainAndIPNS'],
-    maxFailures: 95
+    maxFailures: 95,
+    minimumSuccesses: 0
   },
   {
     name: 'TestGatewaySubdomains',
     run: ['TestGatewaySubdomains'],
-    maxFailures: 279
+    maxFailures: 279,
+    minimumSuccesses: 0
   },
   {
     name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
     run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
-    maxFailures: 39
+    maxFailures: 39,
+    minimumSuccesses: 0
   },
   {
     name: 'TestRedirectsFileWithIfNoneMatchHeader',
     run: ['TestRedirectsFileWithIfNoneMatchHeader'],
-    maxFailures: 15
+    maxFailures: 15,
+    minimumSuccesses: 0
   },
   {
     name: 'TestRedirectsFileSupportWithDNSLink',
     run: ['TestRedirectsFileSupportWithDNSLink'],
-    maxFailures: 17
+    maxFailures: 17,
+    minimumSuccesses: 6
   },
   {
     name: 'TestRedirectsFileSupport',
     run: ['TestRedirectsFileSupport'],
-    maxFailures: 252
+    maxFailures: 252,
+    minimumSuccesses: 6
   },
   {
     name: 'TestPathGatewayMiscellaneous',
     run: ['TestPathGatewayMiscellaneous'],
-    maxFailures: 3
+    maxFailures: 3,
+    minimumSuccesses: 0
   },
   {
     name: 'TestGatewayUnixFSFileRanges',
     run: ['TestGatewayUnixFSFileRanges'],
-    maxFailures: 10
+    maxFailures: 10,
+    minimumSuccesses: 5
   },
   {
     name: 'TestGatewaySymlink',
     run: ['TestGatewaySymlink'],
-    maxFailures: 9
+    maxFailures: 9,
+    minimumSuccesses: 0
   },
   {
     name: 'TestGatewayCacheWithIPNS',
     run: ['TestGatewayCacheWithIPNS'],
-    maxFailures: 27
+    maxFailures: 27,
+    minimumSuccesses: 15
   },
   {
     name: 'TestGatewayCache',
     run: ['TestGatewayCache'],
-    maxFailures: 71
+    maxFailures: 71,
+    minimumSuccesses: 23
   },
   {
     name: 'TestUnixFSDirectoryListing',
     run: ['TestUnixFSDirectoryListing'],
-    maxFailures: 50
+    maxFailures: 50,
+    minimumSuccesses: 0
   },
   {
     name: 'TestTar',
     run: ['TestTar'],
-    maxFailures: 16
+    maxFailures: 16,
+    minimumSuccesses: 8
   }
 ]
 
