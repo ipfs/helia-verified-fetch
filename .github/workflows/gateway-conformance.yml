@@ -49,12 +49,14 @@ jobs:
       # the 'gwc-report-all.json' file is created by the 'has expected total failures and successes' test
       # TODO: remove this when we're passing enough tests to use the 'ipfs/gateway-conformance/.github/actions/test' action
       - name: Create the XML
+        working-directory: ./packages/gateway-conformance
         if: failure() || success()
         uses: pl-strflt/gotest-json-to-junit-xml@v1
         with:
           input: gwc-report-all.json
           output: gwc-report-all.xml
       - name: Create the HTML
+        working-directory: ./packages/gateway-conformance
         if: failure() || success()
         uses: pl-strflt/junit-xml-to-html@v1
         with:
@@ -62,6 +64,7 @@ jobs:
           input: gwc-report-all.xml
           output: gwc-report-all.html
       - name: Create the Markdown
+        working-directory: ./packages/gateway-conformance
         if: failure() || success()
         uses: pl-strflt/junit-xml-to-html@v1
         with:
@@ -71,15 +74,18 @@ jobs:
 
       # 6. Upload the reports
       - name: Upload MD summary
+        working-directory: ./packages/gateway-conformance
         if: failure() || success()
         run: cat gwc-report-all.md >> $GITHUB_STEP_SUMMARY
       - name: Upload HTML report
+        working-directory: ./packages/gateway-conformance
         if: failure() || success()
         uses: actions/upload-artifact@v3
         with:
           name: gateway-conformance.html
           path: gwc-report-all.html
       - name: Upload JSON report
+        working-directory: ./packages/gateway-conformance
         if: failure() || success()
         uses: actions/upload-artifact@v3
         with:
