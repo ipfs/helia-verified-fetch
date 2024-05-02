@@ -11,18 +11,13 @@ jobs:
   gateway-conformance:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
       # 1, Setup Node, install npm dependencies, and build all packages/*
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      # see https://github.com/ipdxco/unified-github-workflows/blob/3a1a7870ce5967163d8f5c8210b8ad50b2e659aa/.github/workflows/js-test-and-release.yml#L28-L34
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Install dependencies
-        run: npm i
-      - name: Build
-        run: npm run build
+          node-version: lts/*
+      - uses: ipfs/aegir/actions/cache-node-modules@master
 
       # 2. Set up 'go' so we can install the gateway-conformance binary
       - name: Setup Go
