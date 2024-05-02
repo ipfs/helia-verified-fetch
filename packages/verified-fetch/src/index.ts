@@ -90,22 +90,25 @@
  *
  * The [helia](https://www.npmjs.com/package/helia) module is configured with a libp2p node that is suited for decentralized applications, alternatively [@helia/http](https://www.npmjs.com/package/@helia/http) is available which uses HTTP gateways for all network operations.
  *
- * See variations of [Helia and js-libp2p configuration options](https://helia.io/interfaces/helia.HeliaInit.html)
+ * You can see variations of Helia and js-libp2p configuration options at <https://helia.io/interfaces/helia.index.HeliaInit.html>.
  *
  * ```typescript
  * import { trustlessGateway } from '@helia/block-brokers'
  * import { createHeliaHTTP } from '@helia/http'
- * import { delegatedHTTPRouting } from '@helia/routers'
+ * import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
  * import { createVerifiedFetch } from '@helia/verified-fetch'
  *
  * const fetch = await createVerifiedFetch(
  *   await createHeliaHTTP({
  *     blockBrokers: [
- *       trustlessGateway({
+ *       trustlessGateway()
+ *     ],
+ *     routers: [
+ *       ...['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl)),
+ *       httpGatewayRouting({
  *         gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
  *       })
- *     ],
- *     routers: ['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl))
+ *     ]
  *   })
  * )
  *
@@ -588,7 +591,7 @@
  * 1. `TypeError` - If the resource argument is not a string, CID, or CID string.
  * 2. `TypeError` - If the options argument is passed and not an object.
  * 3. `TypeError` - If the options argument is passed and is malformed.
- * 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal.
+ * 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal. Note that this is a `AbortError` from `@libp2p/interface` and not the standard `AbortError` from the Fetch API.
  */
 
 import { trustlessGateway } from '@helia/block-brokers'
