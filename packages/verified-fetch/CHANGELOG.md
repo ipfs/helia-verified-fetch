@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.3.14](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.13...@helia/verified-fetch-1.3.14) (2024-05-02)
+
+
+### Documentation
+
+* add link to blog post and ready-to-run example ([#63](https://github.com/ipfs/helia-verified-fetch/issues/63)) ([696ed57](https://github.com/ipfs/helia-verified-fetch/commit/696ed5735b99262e27710fa382d0905a42b6a386))
+
 ## @helia/verified-fetch [1.3.13](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.12...@helia/verified-fetch-1.3.13) (2024-04-20)
 
 
