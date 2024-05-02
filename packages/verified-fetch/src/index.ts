@@ -11,6 +11,8 @@
  *
  * Browser-cache-friendly [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response) objects are returned which should be instantly familiar to web developers.
  *
+ * Learn more in the [announcement blog post](https://blog.ipfs.tech/verified-fetch/) and check out the [ready-to-run example](https://github.com/ipfs-examples/helia-examples/tree/main/examples/helia-browser-verified-fetch).
+ *
  * You may use any supported resource argument to fetch content:
  *
  * - [CID](https://multiformats.github.io/js-multiformats/classes/cid.CID.html) instance
