@@ -25,13 +25,10 @@ const log = logger('kubo-mgmt')
 const kuboBinary = process.env.KUBO_BINARY ?? path()
 
 // This needs to match the `repo` property provided to `ipfsd-ctl` in `createKuboNode` so our kubo instance in tests use the same repo
-export const kuboRepoDir = process.env.KUBO_REPO ?? resolve(__dirname, 'data/test-repo')
-export const GWC_FIXTURES_PATH = resolve(__dirname, 'data/gateway-conformance-fixtures')
+export const kuboRepoDir = process.env.KUBO_REPO ?? resolve(__dirname, 'test-repo')
+export const GWC_FIXTURES_PATH = resolve(__dirname, 'gateway-conformance-fixtures')
 
 export async function loadKuboFixtures (): Promise<void> {
-  await $`mkdir -p ${kuboRepoDir}`
-  await $`mkdir -p ${GWC_FIXTURES_PATH}`
-
   await attemptKuboInit()
 
   await downloadFixtures()
