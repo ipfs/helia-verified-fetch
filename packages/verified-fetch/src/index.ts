@@ -593,7 +593,7 @@
 
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
-import { delegatedHTTPRouting } from '@helia/routers'
+import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
 import { dns } from '@multiformats/dns'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia } from '@helia/interface'
@@ -707,11 +707,14 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
   if (!isHelia(init)) {
     init = await createHeliaHTTP({
       blockBrokers: [
-        trustlessGateway({
+        trustlessGateway()
+      ],
+      routers: [
+        ...(init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
+        httpGatewayRouting({
           gateways: init?.gateways
         })
       ],
-      routers: (init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
       dns: createDns(init?.dnsResolvers)
     })
   }
