@@ -5,9 +5,6 @@ const IPFS_PATH = resolve(tmpdir(), 'verified-fetch-interop-ipfs-repo')
 
 /** @type {import('aegir').PartialOptions} */
 export default {
-  dependencyCheck: {
-    productionIgnorePatterns: ['.aegir.js']
-  },
   test: {
     files: './dist/src/*.spec.js',
     before: async () => {

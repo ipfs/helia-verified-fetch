@@ -8,7 +8,6 @@ describe('@helia/verified-fetch - websites', () => {
 
     before(async () => {
       // 2024-01-22 CID for _dnslink.helia-identify.on.fleek.co
-      // await loadFixtureDataCar(controller, 'QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv-helia-identify-website.car')
       verifiedFetch = await createVerifiedFetch({
         gateways: ['http://127.0.0.1:8180'],
         routers: ['http://127.0.0.1:8180']

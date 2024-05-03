@@ -12,7 +12,6 @@ describe('@helia/verified-fetch - json', () => {
       // root: QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr
       // child1: QmNik5N4ryNwzzXYq5hCYKGcRjAf9QtigxtiJh9o8aXXbG // partial JSON
       // child2: QmWNBJX6fZyNTLWNYBHxAHpBctCP43R2zeqV2G8uavqFZn // partial JSON
-      // await loadFixtureDataCar(controller, 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr-tokens.uniswap.org-2024-01-18.car')
       verifiedFetch = await createVerifiedFetch({
         gateways: ['http://127.0.0.1:8180'],
         routers: ['http://127.0.0.1:8180']
