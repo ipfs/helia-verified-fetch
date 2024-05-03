@@ -14,7 +14,7 @@ describe('@helia/verified-fetch - json', () => {
       // child2: QmWNBJX6fZyNTLWNYBHxAHpBctCP43R2zeqV2G8uavqFZn // partial JSON
       verifiedFetch = await createVerifiedFetch({
         gateways: ['http://127.0.0.1:8180'],
-        routers: ['http://127.0.0.1:8180']
+        routers: []
       })
     })
 

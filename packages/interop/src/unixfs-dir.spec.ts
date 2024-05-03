@@ -10,7 +10,7 @@ describe('@helia/verified-fetch - unixfs directory', () => {
   before(async () => {
     verifiedFetch = await createVerifiedFetch({
       gateways: ['http://127.0.0.1:8180'],
-      routers: ['http://127.0.0.1:8180']
+      routers: []
     })
     verifiedFetch = await createVerifiedFetch()
   })
@@ -64,7 +64,7 @@ describe('@helia/verified-fetch - unixfs directory', () => {
       await verifiedFetch.stop()
       verifiedFetch = await createVerifiedFetch({
         gateways: ['http://127.0.0.1:8180'],
-        routers: ['http://127.0.0.1:8180']
+        routers: []
       }, {
         contentTypeParser: (bytes) => {
           return filetypemime(bytes)?.[0]

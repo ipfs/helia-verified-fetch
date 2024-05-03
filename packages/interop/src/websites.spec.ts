@@ -10,7 +10,7 @@ describe('@helia/verified-fetch - websites', () => {
       // 2024-01-22 CID for _dnslink.helia-identify.on.fleek.co
       verifiedFetch = await createVerifiedFetch({
         gateways: ['http://127.0.0.1:8180'],
-        routers: ['http://127.0.0.1:8180']
+        routers: []
       })
     })
 
@@ -52,7 +52,7 @@ describe('@helia/verified-fetch - websites', () => {
     before(async () => {
       verifiedFetch = await createVerifiedFetch({
         gateways: ['http://127.0.0.1:8180'],
-        routers: ['http://127.0.0.1:8180']
+        routers: []
       })
     })
 
