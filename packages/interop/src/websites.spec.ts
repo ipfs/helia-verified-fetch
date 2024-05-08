@@ -6,6 +6,11 @@ import { loadFixtureDataCar } from './fixtures/load-fixture-data.js'
 import type { Controller } from 'ipfsd-ctl'
 
 describe('@helia/verified-fetch - websites', () => {
+  before(function () {
+    if (process.env.TMP_SKIP === 'true') {
+      this.skip()
+    }
+  })
   describe('helia-identify.on.fleek.co', () => {
     let controller: Controller<'go'>
     let verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>

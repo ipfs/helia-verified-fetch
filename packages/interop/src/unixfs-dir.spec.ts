@@ -11,7 +11,10 @@ describe('@helia/verified-fetch - unixfs directory', () => {
   let controller: Controller
   let verifiedFetch: VerifiedFetch
 
-  before(async () => {
+  before(async function () {
+    if (process.env.TMP_SKIP === 'true') {
+      this.skip()
+    }
     controller = await createKuboNode()
     await controller.start()
 
