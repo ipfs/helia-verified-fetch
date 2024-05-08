@@ -7,11 +7,6 @@ import { loadFixtureDataCar } from './fixtures/load-fixture-data.js'
 import type { Controller } from 'ipfsd-ctl'
 
 describe('@helia/verified-fetch - json', () => {
-  before(function () {
-    if (process.env.TMP_SKIP === 'true') {
-      this.skip()
-    }
-  })
   describe('unixfs - multiblock', () => {
     let controller: Controller<'go'>
     let verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>

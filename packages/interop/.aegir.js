@@ -1,7 +1,6 @@
 import getPort from 'aegir/get-port'
 import { createServer } from 'ipfsd-ctl'
 import * as kuboRpcClient from 'kubo-rpc-client'
-import { platform } from 'node:os'
 
 /** @type {import('aegir').PartialOptions} */
 export default {
@@ -36,11 +35,7 @@ export default {
         }
       }
 
-      return {
-        env: {
-          TMP_SKIP: platform() === 'win32' ? 'true': undefined
-        }
-      }
+      return {}
     },
     after: async (options, beforeResult) => {
       if (options.runner !== 'node') {
