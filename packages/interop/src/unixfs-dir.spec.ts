@@ -2,24 +2,35 @@
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
 import { filetypemime } from 'magic-bytes.js'
+import { createKuboNode } from './fixtures/create-kubo.js'
+import { loadFixtureDataCar } from './fixtures/load-fixture-data.js'
 import type { VerifiedFetch } from '@helia/verified-fetch'
+import type { Controller } from 'ipfsd-ctl'
 
 describe('@helia/verified-fetch - unixfs directory', () => {
+  let controller: Controller
   let verifiedFetch: VerifiedFetch
 
   before(async () => {
+    controller = await createKuboNode()
+    await controller.start()
+
     verifiedFetch = await createVerifiedFetch({
-      gateways: ['http://127.0.0.1:8180'],
-      routers: []
+      gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
+      routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`]
     })
-    verifiedFetch = await createVerifiedFetch()
   })
 
   after(async () => {
+    await controller.stop()
     await verifiedFetch.stop()
   })
 
   describe('unixfs-dir-redirect', () => {
+    before(async () => {
+      await loadFixtureDataCar(controller, 'gateway-conformance-fixtures.car')
+    });
+
     [
       'https://example.com/ipfs/bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q',
       'ipfs://bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q',
@@ -34,8 +45,12 @@ describe('@helia/verified-fetch - unixfs directory', () => {
     })
   })
 
-  // This tests the content of https://explore.ipld.io/#/explore/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1%20-%20Barrel%20-%20Part%201
   describe('XKCD Barrel Part 1', () => {
+    before(async () => {
+      // This is the content of https://explore.ipld.io/#/explore/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1%20-%20Barrel%20-%20Part%201
+      await loadFixtureDataCar(controller, 'QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR-xkcd-Barrel-part-1.car')
+    })
+
     it('fails to load when passed the root', async () => {
       // The spec says we should generate HTML with directory listings, but we don't do that yet, so expect a failure
       const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR')
@@ -63,8 +78,8 @@ describe('@helia/verified-fetch - unixfs directory', () => {
     before(async () => {
       await verifiedFetch.stop()
       verifiedFetch = await createVerifiedFetch({
-        gateways: ['http://127.0.0.1:8180'],
-        routers: []
+        gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
+        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`]
       }, {
         contentTypeParser: (bytes) => {
           return filetypemime(bytes)?.[0]
@@ -79,8 +94,12 @@ describe('@helia/verified-fetch - unixfs directory', () => {
     })
   })
 
-  // from https://github.com/ipfs/gateway-conformance/blob/193833b91f2e9b17daf45c84afaeeae61d9d7c7e/fixtures/trustless_gateway_car/single-layer-hamt-with-multi-block-files.car
   describe('HAMT-sharded directory', () => {
+    before(async () => {
+      // from https://github.com/ipfs/gateway-conformance/blob/193833b91f2e9b17daf45c84afaeeae61d9d7c7e/fixtures/trustless_gateway_car/single-layer-hamt-with-multi-block-files.car
+      await loadFixtureDataCar(controller, 'bafybeidbclfqleg2uojchspzd4bob56dqetqjsj27gy2cq3klkkgxtpn4i-single-layer-hamt-with-multi-block-files.car')
+    })
+
     it('loads path /ipfs/bafybeidbclfqleg2uojchspzd4bob56dqetqjsj27gy2cq3klkkgxtpn4i/685.txt', async () => {
       const resp = await verifiedFetch('ipfs://bafybeidbclfqleg2uojchspzd4bob56dqetqjsj27gy2cq3klkkgxtpn4i/685.txt')
       expect(resp).to.be.ok()

@@ -1,4 +1,5 @@
 #! /usr/bin/env node
+/* eslint-disable no-console */
 
 import { spawn } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
