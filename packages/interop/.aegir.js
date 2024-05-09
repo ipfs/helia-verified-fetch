@@ -24,7 +24,6 @@ export default {
       }
     },
     after: async (_options, beforeResult) => {
-      await beforeResult.kuboNode.cleanup()
       await beforeResult.kuboNode.stop()
     }
   }
