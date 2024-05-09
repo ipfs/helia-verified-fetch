@@ -2,36 +2,33 @@
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
-import { createKuboNode } from './fixtures/create-kubo.js'
-import { loadFixtureDataCar } from './fixtures/load-fixture-data.js'
-import type { Controller } from 'ipfsd-ctl'
 
 describe('@helia/verified-fetch - json', () => {
   describe('unixfs - multiblock', () => {
-    let controller: Controller<'go'>
     let verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>
 
     before(async () => {
-      controller = await createKuboNode()
-      await controller.start()
       // As of 2024-01-18, https://cloudflare-ipfs.com/ipns/tokens.uniswap.org resolves to:
       // root: QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr
       // child1: QmNik5N4ryNwzzXYq5hCYKGcRjAf9QtigxtiJh9o8aXXbG // partial JSON
       // child2: QmWNBJX6fZyNTLWNYBHxAHpBctCP43R2zeqV2G8uavqFZn // partial JSON
-      await loadFixtureDataCar(controller, 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr-tokens.uniswap.org-2024-01-18.car')
       verifiedFetch = await createVerifiedFetch({
-        gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
-        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`]
+        gateways: ['http://127.0.0.1:8180'],
+        routers: ['http://127.0.0.1:8180'],
+        allowInsecure: true,
+        allowLocal: true
       })
     })
 
     after(async () => {
-      await controller.stop()
       await verifiedFetch.stop()
     })
 
     it('handles UnixFS-chunked JSON file', async () => {
-      const resp = await verifiedFetch(CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'))
+      const resp = await verifiedFetch(CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'), {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const jsonObj = await resp.json()
       expect(jsonObj).to.be.ok()

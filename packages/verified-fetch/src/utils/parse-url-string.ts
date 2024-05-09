@@ -28,6 +28,16 @@ interface ParsedUrlStringResultsBase extends ResolveResult {
   query: ParsedUrlQuery
 
   /**
+   * The value for the IPFS gateway spec compliant header `X-Ipfs-Path` on the
+   * response.
+   * The value of this header should be the original requested content path,
+   * prior to any path resolution or traversal.
+   *
+   * @see https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-path-response-header
+   */
+  ipfsPath: string
+
+  /**
    * seconds as a number
    */
   ttl?: number
@@ -61,7 +71,7 @@ function matchUrlGroupsGuard (groups?: null | { [key in string]: string; } | Mat
     (queryString == null || typeof queryString === 'string')
 }
 
-function matchURLString (urlString: string): MatchUrlGroups {
+export function matchURLString (urlString: string): MatchUrlGroups {
   for (const pattern of [URL_REGEX, PATH_REGEX, PATH_GATEWAY_REGEX, SUBDOMAIN_GATEWAY_REGEX]) {
     const match = urlString.match(pattern)
 
@@ -248,7 +258,8 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
     cid,
     path: joinPaths(resolvedPath, urlPath ?? ''),
     query,
-    ttl
+    ttl,
+    ipfsPath: `/${protocol}/${cidOrPeerIdOrDnsLink}${urlPath != null && urlPath !== '' ? `/${urlPath}` : ''}`
   } satisfies ParsedUrlStringResults
 }
 

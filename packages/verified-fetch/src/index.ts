@@ -11,6 +11,8 @@
  *
  * Browser-cache-friendly [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response) objects are returned which should be instantly familiar to web developers.
  *
+ * Learn more in the [announcement blog post](https://blog.ipfs.tech/verified-fetch/) and check out the [ready-to-run example](https://github.com/ipfs-examples/helia-examples/tree/main/examples/helia-browser-verified-fetch).
+ *
  * You may use any supported resource argument to fetch content:
  *
  * - [CID](https://multiformats.github.io/js-multiformats/classes/cid.CID.html) instance
@@ -88,22 +90,25 @@
  *
  * The [helia](https://www.npmjs.com/package/helia) module is configured with a libp2p node that is suited for decentralized applications, alternatively [@helia/http](https://www.npmjs.com/package/@helia/http) is available which uses HTTP gateways for all network operations.
  *
- * See variations of [Helia and js-libp2p configuration options](https://helia.io/interfaces/helia.HeliaInit.html)
+ * You can see variations of Helia and js-libp2p configuration options at <https://helia.io/interfaces/helia.index.HeliaInit.html>.
  *
  * ```typescript
  * import { trustlessGateway } from '@helia/block-brokers'
  * import { createHeliaHTTP } from '@helia/http'
- * import { delegatedHTTPRouting } from '@helia/routers'
+ * import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
  * import { createVerifiedFetch } from '@helia/verified-fetch'
  *
  * const fetch = await createVerifiedFetch(
  *   await createHeliaHTTP({
  *     blockBrokers: [
- *       trustlessGateway({
+ *       trustlessGateway()
+ *     ],
+ *     routers: [
+ *       delegatedHTTPRouting('http://delegated-ipfs.dev'),
+ *       httpGatewayRouting({
  *         gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
  *       })
- *     ],
- *     routers: ['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl))
+ *     ]
  *   })
  * )
  *
@@ -586,12 +591,12 @@
  * 1. `TypeError` - If the resource argument is not a string, CID, or CID string.
  * 2. `TypeError` - If the options argument is passed and not an object.
  * 3. `TypeError` - If the options argument is passed and is malformed.
- * 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal.
+ * 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal. Note that this is a `AbortError` from `@libp2p/interface` and not the standard `AbortError` from the Fetch API.
  */
 
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
-import { delegatedHTTPRouting } from '@helia/routers'
+import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
 import { dns } from '@multiformats/dns'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia } from '@helia/interface'
@@ -645,6 +650,31 @@ export interface CreateVerifiedFetchInit {
    * @default [dnsJsonOverHttps('https://cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
    */
   dnsResolvers?: DNSResolver[] | DNSResolvers
+
+  /**
+   * By default we will not connect to any HTTP Gateways providers over local or
+   * loopback addresses, this is because they are typically running on remote
+   * peers that have published private addresses by mistate.
+   *
+   * Pass `true` here to connect to local Gateways as well, this may be useful
+   * in testing environments.
+   *
+   * @default false
+   */
+  allowLocal?: boolean
+
+  /**
+   * By default we will not connect to any gateways over HTTP addresses,
+   * requring HTTPS connections instead. This is because it will cause
+   * "mixed-content" errors to appear in the console when running in secure
+   * browser contexts.
+   *
+   * Pass `true` here to connect to insecure Gateways as well, this may be
+   * useful in testing environments.
+   *
+   * @default false
+   */
+  allowInsecure?: boolean
 }
 
 export interface CreateVerifiedFetchOptions {
@@ -657,6 +687,22 @@ export interface CreateVerifiedFetchOptions {
    * @default undefined
    */
   contentTypeParser?: ContentTypeParser
+
+  /**
+   * Blockstore sessions are cached for reuse with requests with the same
+   * base URL or CID. This parameter controls how many to cache. Once this limit
+   * is reached older/less used sessions will be evicted from the cache.
+   *
+   * @default 100
+   */
+  sessionCacheSize?: number
+
+  /**
+   * How long each blockstore session should stay in the cache for.
+   *
+   * @default 60000
+   */
+  sessionTTLms?: number
 }
 
 /**
@@ -696,6 +742,46 @@ export type VerifiedFetchProgressEvents =
  * progress events.
  */
 export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledProgressEvents | VerifiedFetchProgressEvents> {
+  /**
+   * If true, try to create a blockstore session - this can reduce overall
+   * network traffic by first querying for a set of peers that have the data we
+   * wish to retrieve. Subsequent requests for data using the session will only
+   * be sent to those peers, unless they don't have the data, in which case
+   * further peers will be added to the session.
+   *
+   * Sessions are cached based on the CID/IPNS name they attempt to access. That
+   * is, requests for `https://qmfoo.ipfs.localhost/bar.txt` and
+   * `https://qmfoo.ipfs.localhost/baz.txt` would use the same session, if this
+   * argument is true for both fetch requests.
+   *
+   * @default true
+   */
+  session?: boolean
+
+  /**
+   * By default we will not connect to any HTTP Gateways providers over local or
+   * loopback addresses, this is because they are typically running on remote
+   * peers that have published private addresses by mistate.
+   *
+   * Pass `true` here to connect to local Gateways as well, this may be useful
+   * in testing environments.
+   *
+   * @default false
+   */
+  allowLocal?: boolean
+
+  /**
+   * By default we will not connect to any gateways over HTTP addresses,
+   * requring HTTPS connections instead. This is because it will cause
+   * "mixed-content" errors to appear in the console when running in secure
+   * browser contexts.
+   *
+   * Pass `true` here to connect to insecure Gateways as well, this may be
+   * useful in testing environments.
+   *
+   * @default false
+   */
+  allowInsecure?: boolean
 }
 
 /**
@@ -706,10 +792,16 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
     init = await createHeliaHTTP({
       blockBrokers: [
         trustlessGateway({
-          gateways: init?.gateways
+          allowInsecure: init?.allowInsecure,
+          allowLocal: init?.allowLocal
         })
       ],
-      routers: (init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
+      routers: [
+        ...(init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
+        httpGatewayRouting({
+          gateways: init?.gateways ?? []
+        })
+      ],
       dns: createDns(init?.dnsResolvers)
     })
   }

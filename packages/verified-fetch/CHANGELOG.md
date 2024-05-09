@@ -1,3 +1,32 @@
+## @helia/verified-fetch [1.4.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.4.0...@helia/verified-fetch-1.4.1) (2024-05-09)
+
+
+### Documentation
+
+* generate readme ([#70](https://github.com/ipfs/helia-verified-fetch/issues/70)) ([a75567a](https://github.com/ipfs/helia-verified-fetch/commit/a75567a0e90f361d177a60cf8faf9c09fb43234c)), closes [#68](https://github.com/ipfs/helia-verified-fetch/issues/68) [#72](https://github.com/ipfs/helia-verified-fetch/issues/72) [#72](https://github.com/ipfs/helia-verified-fetch/issues/72)
+
+## @helia/verified-fetch [1.4.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.14...@helia/verified-fetch-1.4.0) (2024-05-09)
+
+
+### Features
+
+* use blockstore sessions ([#50](https://github.com/ipfs/helia-verified-fetch/issues/50)) ([541dd64](https://github.com/ipfs/helia-verified-fetch/commit/541dd646b0e83b9c69ed32d7a29e964144ad03cf))
+
+## @helia/verified-fetch [1.3.14](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.13...@helia/verified-fetch-1.3.14) (2024-05-02)
+
+
+### Documentation
+
+* add link to blog post and ready-to-run example ([#63](https://github.com/ipfs/helia-verified-fetch/issues/63)) ([696ed57](https://github.com/ipfs/helia-verified-fetch/commit/696ed5735b99262e27710fa382d0905a42b6a386))
+
+## @helia/verified-fetch [1.3.13](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.12...@helia/verified-fetch-1.3.13) (2024-04-20)
+
+
+### Bug Fixes
+
+* missing paths returns 404 instead of 502 ([#59](https://github.com/ipfs/helia-verified-fetch/issues/59)) ([291a054](https://github.com/ipfs/helia-verified-fetch/commit/291a05476b6cdf274d095f6d35c64302d83eeb37)), closes [#53](https://github.com/ipfs/helia-verified-fetch/issues/53)
+* X-Ipfs-Path is set correctly ([#46](https://github.com/ipfs/helia-verified-fetch/issues/46)) ([5bb6685](https://github.com/ipfs/helia-verified-fetch/commit/5bb6685ce64aec0557be7dd13d19658992dc6e61))
+
 ## @helia/verified-fetch [1.3.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.11...@helia/verified-fetch-1.3.12) (2024-04-15)
 
 

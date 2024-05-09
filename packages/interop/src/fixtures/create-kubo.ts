@@ -1,14 +1,15 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment,@typescript-eslint/prefer-ts-expect-error */
-import { createController, type Controller } from 'ipfsd-ctl'
+import { createNode, type KuboNode } from 'ipfsd-ctl'
 import { path as kuboPath } from 'kubo'
-import * as kuboRpcClient from 'kubo-rpc-client'
+import { create } from 'kubo-rpc-client'
 
-export async function createKuboNode (): Promise<Controller> {
-  return createController({
-    kuboRpcModule: kuboRpcClient,
-    ipfsBin: kuboPath(),
+export async function createKuboNode (repoPath = undefined): Promise<KuboNode> {
+  return createNode({
+    type: 'kubo',
+    rpc: create,
+    bin: kuboPath(),
     test: true,
-    ipfsOptions: {
+    repo: repoPath,
+    init: {
       config: {
         Addresses: {
           Swarm: [
