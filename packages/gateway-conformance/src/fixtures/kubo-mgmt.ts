@@ -5,11 +5,10 @@
  *
  * external command dependencies:
  * - `docker`
- * - `npx`
  */
 
 import { readFile } from 'node:fs/promises'
-import { dirname, relative, resolve } from 'node:path'
+import { dirname, relative, resolve, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { logger } from '@libp2p/logger'
 import { $, type ExecaChildProcess } from 'execa'
@@ -28,12 +27,12 @@ const kuboBinary = process.env.KUBO_BINARY ?? path()
 export const kuboRepoDir = process.env.KUBO_REPO ?? resolve(__dirname, 'test-repo')
 export const GWC_FIXTURES_PATH = resolve(__dirname, 'gateway-conformance-fixtures')
 
-export async function loadKuboFixtures (): Promise<void> {
+export async function loadKuboFixtures (): Promise<string> {
   await attemptKuboInit()
 
   await downloadFixtures()
 
-  await loadFixtures()
+  return loadFixtures()
 }
 
 export async function startKuboDaemon (): Promise<ExecaChildProcess> {
@@ -152,14 +151,13 @@ async function loadFixtures (): Promise<string> {
     stdout.split('\n').forEach(log)
   }
 
-  // TODO: re-enable this when we resolve CI issue: see https://github.com/ipfs-shipyard/service-worker-gateway/actions/runs/8442583023/job/23124336180?pr=159#step:6:13
-  // for (const ipnsRecord of await glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
-  //   const key = basename(ipnsRecord, '.ipns-record')
-  //   const relativePath = relative(GWC_FIXTURES_PATH, ipnsRecord)
-  //   log('Loading *.ipns-record fixture %s', relativePath)
-  //   const { stdout } = await $(({ ...execaOptions }))`cd ${GWC_FIXTURES_PATH} && ${kuboBinary} routing put --allow-offline "/ipns/${key}" "${relativePath}"`
-  //   stdout.split('\n').forEach(log)
-  // }
+  for (const ipnsRecord of await glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
+    const key = basename(ipnsRecord, '.ipns-record')
+    const relativePath = relative(GWC_FIXTURES_PATH, ipnsRecord)
+    log('Loading *.ipns-record fixture %s', relativePath)
+    const { stdout } = await $(({ ...execaOptions }))`cd ${GWC_FIXTURES_PATH} && ${kuboBinary} routing put --allow-offline "/ipns/${key}" "${relativePath}"`
+    stdout.split('\n').forEach(log)
+  }
 
   const json = await readFile(`${GWC_FIXTURES_PATH}/dnslinks.json`, 'utf-8')
   const { subdomains, domains } = JSON.parse(json)
