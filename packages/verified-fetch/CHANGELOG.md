@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.4.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.4.0...@helia/verified-fetch-1.4.1) (2024-05-09)
+
+
+### Documentation
+
+* generate readme ([#70](https://github.com/ipfs/helia-verified-fetch/issues/70)) ([a75567a](https://github.com/ipfs/helia-verified-fetch/commit/a75567a0e90f361d177a60cf8faf9c09fb43234c)), closes [#68](https://github.com/ipfs/helia-verified-fetch/issues/68) [#72](https://github.com/ipfs/helia-verified-fetch/issues/72) [#72](https://github.com/ipfs/helia-verified-fetch/issues/72)
+
 ## @helia/verified-fetch [1.4.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.14...@helia/verified-fetch-1.4.0) (2024-05-09)
 
 
