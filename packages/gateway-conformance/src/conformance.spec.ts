@@ -357,9 +357,6 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     it('has expected total failures and successes', async function () {
       const log = logger.forComponent('all')
 
-      // get total maxFailures from `tests`
-      const totalMaxFailures = tests.reduce((acc, { maxFailures }) => acc + maxFailures, 0)
-
       const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all'), { reject: false })
 
       log(stdout)
@@ -378,7 +375,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         }
       }
 
-      expect(failureCount).to.be.lessThanOrEqual(totalMaxFailures)
+      expect(failureCount).to.be.lessThanOrEqual(134)
       expect(successCount).to.be.greaterThanOrEqual(31)
     })
   })
