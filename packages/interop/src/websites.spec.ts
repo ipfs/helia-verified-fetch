@@ -1,30 +1,22 @@
 /* eslint-env mocha */
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
-import { createKuboNode } from './fixtures/create-kubo.js'
-import { loadFixtureDataCar } from './fixtures/load-fixture-data.js'
-import type { Controller } from 'ipfsd-ctl'
 
 describe('@helia/verified-fetch - websites', () => {
   describe('helia-identify.on.fleek.co', () => {
-    let controller: Controller<'go'>
     let verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>
 
     before(async () => {
-      controller = await createKuboNode()
-      await controller.start()
       // 2024-01-22 CID for _dnslink.helia-identify.on.fleek.co
-      await loadFixtureDataCar(controller, 'QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv-helia-identify-website.car')
       verifiedFetch = await createVerifiedFetch({
-        gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
-        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
+        gateways: ['http://127.0.0.1:8180'],
+        routers: ['http://127.0.0.1:8180'],
         allowInsecure: true,
         allowLocal: true
       })
     })
 
     after(async () => {
-      await controller.stop()
       await verifiedFetch.stop()
     })
 
@@ -63,23 +55,18 @@ describe('@helia/verified-fetch - websites', () => {
    * ```
    */
   describe('fake blog.libp2p.io', () => {
-    let controller: Controller<'go'>
     let verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>
 
     before(async () => {
-      controller = await createKuboNode()
-      await controller.start()
-      await loadFixtureDataCar(controller, 'QmeiDMLtPUS3RT2xAcUwsNyZz169wPke2q7im9vZpVLSYw-fake-blog.libp2p.io.car')
       verifiedFetch = await createVerifiedFetch({
-        gateways: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
-        routers: [`http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`],
+        gateways: ['http://127.0.0.1:8180'],
+        routers: ['http://127.0.0.1:8180'],
         allowInsecure: true,
         allowLocal: true
       })
     })
 
     after(async () => {
-      await controller.stop()
       await verifiedFetch.stop()
     })
 

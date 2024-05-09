@@ -1,46 +1,31 @@
-import getPort from 'aegir/get-port'
-import { createServer } from 'ipfsd-ctl'
-import * as kuboRpcClient from 'kubo-rpc-client'
+import { resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+
+const IPFS_PATH = resolve(tmpdir(), 'verified-fetch-interop-ipfs-repo')
 
 /** @type {import('aegir').PartialOptions} */
 export default {
   test: {
     files: './dist/src/*.spec.js',
-    before: async (options) => {
-      if (options.runner !== 'node') {
-        const ipfsdPort = await getPort()
-        const ipfsdServer = await createServer({
-          host: '127.0.0.1',
-          port: ipfsdPort
-        }, {
-          ipfsBin: (await import('kubo')).default.path(),
-          kuboRpcModule: kuboRpcClient,
-          ipfsOptions: {
-            config: {
-              Addresses: {
-                Swarm: [
-                  "/ip4/0.0.0.0/tcp/0",
-                  "/ip4/0.0.0.0/tcp/0/ws"
-                ]
-              }
-            }
-          }
-        }).start()
+    before: async () => {
 
-        return {
-          env: {
-            IPFSD_SERVER: `http://127.0.0.1:${ipfsdPort}`
-          },
-          ipfsdServer
-        }
+      const { createKuboNode } = await import('./dist/src/fixtures/create-kubo.js')
+      const kuboNode = await createKuboNode(IPFS_PATH)
+
+      await kuboNode.start()
+
+      // requires aegir build to be run first, which it will by default.
+      const { loadFixtures } = await import('./dist/src/fixtures/load-fixtures.js')
+
+      await loadFixtures(IPFS_PATH)
+
+      return {
+        kuboNode
       }
-
-      return {}
     },
-    after: async (options, beforeResult) => {
-      if (options.runner !== 'node') {
-        await beforeResult.ipfsdServer.stop()
-      }
+    after: async (_options, beforeResult) => {
+      await beforeResult.kuboNode.cleanup()
+      await beforeResult.kuboNode.stop()
     }
   }
 }

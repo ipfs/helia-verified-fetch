@@ -1,3 +1,18 @@
+## @helia/verified-fetch-interop [1.21.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.21.0...@helia/verified-fetch-interop-1.21.1) (2024-05-08)
+
+
+### Bug Fixes
+
+* prevent interop timeouts with fast fixture loading ([#73](https://github.com/ipfs/helia-verified-fetch/issues/73)) ([a43d994](https://github.com/ipfs/helia-verified-fetch/commit/a43d9940cf56d36e4d348246730b144a59e2cc8a))
+
+## @helia/verified-fetch-interop [1.21.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.20.0...@helia/verified-fetch-interop-1.21.0) (2024-05-02)
+
+
+
+### Dependencies
+
+* **@helia/verified-fetch:** upgraded to 1.3.14
+
 ## @helia/verified-fetch-interop [1.20.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.19.0...@helia/verified-fetch-interop-1.20.0) (2024-04-20)
 
 
