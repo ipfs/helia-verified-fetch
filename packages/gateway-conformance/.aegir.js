@@ -35,12 +35,6 @@ export default {
         proxyPort: PROXY_PORT
       })
 
-      /**
-       * If we're on mac, automatically set CONFORMANCE_HOST to 'host.docker.internal'
-       * You can disable this by setting DONT_FIX_DOCKER env var to any value
-       */
-      // const CONFORMANCE_HOST = process.platform === 'darwin' && process.env.DONT_FIX_DOCKER == null ? 'host.docker.internal' : 'localhost'
-      // We don't need the above if we're executing tests with the gateway-conformance binary directly, and not executing tests in docker
       const CONFORMANCE_HOST = 'localhost'
 
       return {
