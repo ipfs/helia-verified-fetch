@@ -14,7 +14,9 @@ describe('@helia/verified-fetch - json', () => {
       // child2: QmWNBJX6fZyNTLWNYBHxAHpBctCP43R2zeqV2G8uavqFZn // partial JSON
       verifiedFetch = await createVerifiedFetch({
         gateways: ['http://127.0.0.1:8180'],
-        routers: []
+        routers: ['http://127.0.0.1:8180'],
+        allowInsecure: true,
+        allowLocal: true
       })
     })
 
@@ -23,7 +25,10 @@ describe('@helia/verified-fetch - json', () => {
     })
 
     it('handles UnixFS-chunked JSON file', async () => {
-      const resp = await verifiedFetch(CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'))
+      const resp = await verifiedFetch(CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'), {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const jsonObj = await resp.json()
       expect(jsonObj).to.be.ok()

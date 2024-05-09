@@ -104,7 +104,7 @@
  *       trustlessGateway()
  *     ],
  *     routers: [
- *       ...['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl)),
+ *       delegatedHTTPRouting('http://delegated-ipfs.dev'),
  *       httpGatewayRouting({
  *         gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
  *       })
@@ -650,6 +650,31 @@ export interface CreateVerifiedFetchInit {
    * @default [dnsJsonOverHttps('https://cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
    */
   dnsResolvers?: DNSResolver[] | DNSResolvers
+
+  /**
+   * By default we will not connect to any HTTP Gateways providers over local or
+   * loopback addresses, this is because they are typically running on remote
+   * peers that have published private addresses by mistate.
+   *
+   * Pass `true` here to connect to local Gateways as well, this may be useful
+   * in testing environments.
+   *
+   * @default false
+   */
+  allowLocal?: boolean
+
+  /**
+   * By default we will not connect to any gateways over HTTP addresses,
+   * requring HTTPS connections instead. This is because it will cause
+   * "mixed-content" errors to appear in the console when running in secure
+   * browser contexts.
+   *
+   * Pass `true` here to connect to insecure Gateways as well, this may be
+   * useful in testing environments.
+   *
+   * @default false
+   */
+  allowInsecure?: boolean
 }
 
 export interface CreateVerifiedFetchOptions {
@@ -662,6 +687,22 @@ export interface CreateVerifiedFetchOptions {
    * @default undefined
    */
   contentTypeParser?: ContentTypeParser
+
+  /**
+   * Blockstore sessions are cached for reuse with requests with the same
+   * base URL or CID. This parameter controls how many to cache. Once this limit
+   * is reached older/less used sessions will be evicted from the cache.
+   *
+   * @default 100
+   */
+  sessionCacheSize?: number
+
+  /**
+   * How long each blockstore session should stay in the cache for.
+   *
+   * @default 60000
+   */
+  sessionTTLms?: number
 }
 
 /**
@@ -701,6 +742,46 @@ export type VerifiedFetchProgressEvents =
  * progress events.
  */
 export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledProgressEvents | VerifiedFetchProgressEvents> {
+  /**
+   * If true, try to create a blockstore session - this can reduce overall
+   * network traffic by first querying for a set of peers that have the data we
+   * wish to retrieve. Subsequent requests for data using the session will only
+   * be sent to those peers, unless they don't have the data, in which case
+   * further peers will be added to the session.
+   *
+   * Sessions are cached based on the CID/IPNS name they attempt to access. That
+   * is, requests for `https://qmfoo.ipfs.localhost/bar.txt` and
+   * `https://qmfoo.ipfs.localhost/baz.txt` would use the same session, if this
+   * argument is true for both fetch requests.
+   *
+   * @default true
+   */
+  session?: boolean
+
+  /**
+   * By default we will not connect to any HTTP Gateways providers over local or
+   * loopback addresses, this is because they are typically running on remote
+   * peers that have published private addresses by mistate.
+   *
+   * Pass `true` here to connect to local Gateways as well, this may be useful
+   * in testing environments.
+   *
+   * @default false
+   */
+  allowLocal?: boolean
+
+  /**
+   * By default we will not connect to any gateways over HTTP addresses,
+   * requring HTTPS connections instead. This is because it will cause
+   * "mixed-content" errors to appear in the console when running in secure
+   * browser contexts.
+   *
+   * Pass `true` here to connect to insecure Gateways as well, this may be
+   * useful in testing environments.
+   *
+   * @default false
+   */
+  allowInsecure?: boolean
 }
 
 /**
@@ -710,12 +791,15 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
   if (!isHelia(init)) {
     init = await createHeliaHTTP({
       blockBrokers: [
-        trustlessGateway()
+        trustlessGateway({
+          allowInsecure: init?.allowInsecure,
+          allowLocal: init?.allowLocal
+        })
       ],
       routers: [
         ...(init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
         httpGatewayRouting({
-          gateways: init?.gateways
+          gateways: init?.gateways ?? []
         })
       ],
       dns: createDns(init?.dnsResolvers)

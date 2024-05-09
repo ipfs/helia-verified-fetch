@@ -10,7 +10,9 @@ describe('@helia/verified-fetch - websites', () => {
       // 2024-01-22 CID for _dnslink.helia-identify.on.fleek.co
       verifiedFetch = await createVerifiedFetch({
         gateways: ['http://127.0.0.1:8180'],
-        routers: []
+        routers: ['http://127.0.0.1:8180'],
+        allowInsecure: true,
+        allowLocal: true
       })
     })
 
@@ -19,7 +21,10 @@ describe('@helia/verified-fetch - websites', () => {
     })
 
     it('loads index.html when passed helia-identify.on.fleek.co root CID', async () => {
-      const resp = await verifiedFetch('ipfs://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv')
+      const resp = await verifiedFetch('ipfs://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const html = await resp.text()
       expect(html).to.be.ok()
@@ -27,7 +32,10 @@ describe('@helia/verified-fetch - websites', () => {
     })
 
     it('loads helia-identify.on.fleek.co index.html directly ', async () => {
-      const resp = await verifiedFetch('ipfs://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv/index.html')
+      const resp = await verifiedFetch('ipfs://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv/index.html', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const html = await resp.text()
       expect(html).to.be.ok()
@@ -52,7 +60,9 @@ describe('@helia/verified-fetch - websites', () => {
     before(async () => {
       verifiedFetch = await createVerifiedFetch({
         gateways: ['http://127.0.0.1:8180'],
-        routers: []
+        routers: ['http://127.0.0.1:8180'],
+        allowInsecure: true,
+        allowLocal: true
       })
     })
 
@@ -61,7 +71,10 @@ describe('@helia/verified-fetch - websites', () => {
     })
 
     it('loads index.html when passed fake-blog.libp2p.io root CID', async () => {
-      const resp = await verifiedFetch('ipfs://QmeiDMLtPUS3RT2xAcUwsNyZz169wPke2q7im9vZpVLSYw')
+      const resp = await verifiedFetch('ipfs://QmeiDMLtPUS3RT2xAcUwsNyZz169wPke2q7im9vZpVLSYw', {
+        allowLocal: true,
+        allowInsecure: true
+      })
       expect(resp).to.be.ok()
       const html = await resp.text()
       expect(html).to.be.ok()
