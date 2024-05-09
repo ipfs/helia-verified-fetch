@@ -85,7 +85,6 @@
     "uint8arrays": "^5.0.3"
   },
   "devDependencies": {
-    "@helia/car": "^3.1.5",
     "@helia/dag-cbor": "^3.0.4",
     "@helia/dag-json": "^3.0.4",
     "@helia/json": "^3.0.4",
