@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.4.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.14...@helia/verified-fetch-1.4.0) (2024-05-09)
+
+
+### Features
+
+* use blockstore sessions ([#50](https://github.com/ipfs/helia-verified-fetch/issues/50)) ([541dd64](https://github.com/ipfs/helia-verified-fetch/commit/541dd646b0e83b9c69ed32d7a29e964144ad03cf))
+
 ## @helia/verified-fetch [1.3.14](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.3.13...@helia/verified-fetch-1.3.14) (2024-05-02)
 
 
