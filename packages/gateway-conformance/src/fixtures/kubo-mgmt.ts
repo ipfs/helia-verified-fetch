@@ -11,7 +11,7 @@ import { readFile } from 'node:fs/promises'
 import { dirname, relative, resolve, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { logger } from '@libp2p/logger'
-import { $, type ExecaChildProcess } from 'execa'
+import { $ } from 'execa'
 import { glob } from 'glob'
 import { path } from 'kubo'
 import { GWC_IMAGE } from '../constants.js'
@@ -33,41 +33,6 @@ export async function loadKuboFixtures (): Promise<string> {
   await downloadFixtures()
 
   return loadFixtures()
-}
-
-export async function startKuboDaemon (): Promise<ExecaChildProcess> {
-  const ipfsNsMap = await loadFixtures()
-
-  const execaOptions = getExecaOptions({ ipfsNsMap })
-  log('Starting Kubo daemon...')
-  const daemon = $(execaOptions)`${kuboBinary} daemon --offline`
-
-  if (daemon == null || (daemon.stdout == null || daemon.stderr == null)) {
-    throw new Error('failed to start kubo daemon')
-  }
-  daemon.stdout.on('data', (data) => {
-    log(data.toString())
-  })
-  daemon.stderr.on('data', (data) => {
-    log.trace(data.toString())
-  })
-
-  // wait for "daemon is ready" message
-  await new Promise((resolve, reject) => {
-    daemon.stdout?.on('data', (data: string) => {
-      if (data.includes('Daemon is ready')) {
-      // @ts-expect-error - nothing needed here.
-        resolve()
-        log('Kubo daemon is ready')
-      }
-    })
-    const timeout = setTimeout(() => {
-      reject(new Error('kubo daemon failed to start'))
-      clearTimeout(timeout)
-    }, 5000)
-  })
-
-  return daemon
 }
 
 function getExecaOptions ({ cwd, ipfsNsMap }: { cwd?: string, ipfsNsMap?: string } = {}): { cwd: string, env: Record<string, string | undefined> } {
@@ -165,6 +130,5 @@ async function loadFixtures (): Promise<string> {
   const domainDnsLinks = Object.entries(domains).map(([key, value]) => `${key}:${value}`).join(',')
   const ipfsNsMap = `${domainDnsLinks},${subdomainDnsLinks}`
 
-  // TODO: provide this to kubo instance in tests
   return ipfsNsMap
 }

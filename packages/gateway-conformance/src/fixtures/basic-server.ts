@@ -63,10 +63,6 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
         headers[key] = value
       }
 
-      // TODO: Figure out if we want to set these automatically on @helia/verified-fetch...
-      headers['Access-Control-Allow-Origin'] = '*'
-      headers['Access-Control-Allow-Headers'] = 'Content-Type,Range,User-Agent,X-Requested-With'
-      headers['Access-Control-Allow-Methods'] = 'GET,HEAD,OPTIONS'
       res.writeHead(resp.status, headers)
       if (resp.body == null) {
         res.write(await resp.arrayBuffer())

@@ -3,7 +3,6 @@
  */
 import getPort from 'aegir/get-port'
 
-// const { loadKuboFixtures, startKuboDaemon } = await import('./dist/src/fixtures/kubo-mgmt.js')
 const { loadKuboFixtures } = await import('./fixtures/kubo-mgmt.js')
 await loadKuboFixtures()
 
