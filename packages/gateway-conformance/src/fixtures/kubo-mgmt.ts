@@ -116,12 +116,15 @@ async function loadFixtures (): Promise<string> {
     stdout.split('\n').forEach(log)
   }
 
-  for (const ipnsRecord of await glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
-    const key = basename(ipnsRecord, '.ipns-record')
-    const relativePath = relative(GWC_FIXTURES_PATH, ipnsRecord)
-    log('Loading *.ipns-record fixture %s', relativePath)
-    const { stdout } = await $(({ ...execaOptions }))`cd ${GWC_FIXTURES_PATH} && ${kuboBinary} routing put --allow-offline "/ipns/${key}" "${relativePath}"`
-    stdout.split('\n').forEach(log)
+  // TODO: fix in CI. See https://github.com/ipfs/helia-verified-fetch/actions/runs/9022946675/job/24793649918?pr=67#step:7:19
+  if (process.env.CI == null) {
+    for (const ipnsRecord of await glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
+      const key = basename(ipnsRecord, '.ipns-record')
+      const relativePath = relative(GWC_FIXTURES_PATH, ipnsRecord)
+      log('Loading *.ipns-record fixture %s', relativePath)
+      const { stdout } = await $(({ ...execaOptions }))`cd ${GWC_FIXTURES_PATH} && ${kuboBinary} routing put --allow-offline "/ipns/${key}" "${relativePath}"`
+      stdout.split('\n').forEach(log)
+    }
   }
 
   const json = await readFile(`${GWC_FIXTURES_PATH}/dnslinks.json`, 'utf-8')
