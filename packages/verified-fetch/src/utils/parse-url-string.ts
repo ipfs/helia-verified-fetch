@@ -71,7 +71,7 @@ function matchUrlGroupsGuard (groups?: null | { [key in string]: string; } | Mat
     (queryString == null || typeof queryString === 'string')
 }
 
-function matchURLString (urlString: string): MatchUrlGroups {
+export function matchURLString (urlString: string): MatchUrlGroups {
   for (const pattern of [URL_REGEX, PATH_REGEX, PATH_GATEWAY_REGEX, SUBDOMAIN_GATEWAY_REGEX]) {
     const match = urlString.match(pattern)
 
