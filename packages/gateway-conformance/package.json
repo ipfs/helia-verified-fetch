@@ -1,0 +1,70 @@
+{
+  "name": "@helia/verified-fetch-gateway-conformance",
+  "version": "1.20.0",
+  "description": "Gateway conformance tests for @helia/verified-fetch",
+  "license": "Apache-2.0 OR MIT",
+  "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/gateway-conformance#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ipfs/helia-verified-fetch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ipfs/helia-verified-fetch/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "keywords": [
+    "IPFS"
+  ],
+  "bin": {
+    "demo-server": "./dist/src/demo-server.js",
+    "verified-fetch-gateway-conformance": "./dist/src/bin.js"
+  },
+  "type": "module",
+  "types": "./dist/src/index.d.ts",
+  "files": [
+    "src",
+    "dist",
+    "!dist/test",
+    "!**/*.tsbuildinfo"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "eslintConfig": {
+    "extends": "ipfs",
+    "parserOptions": {
+      "project": true,
+      "sourceType": "module"
+    }
+  },
+  "scripts": {
+    "clean": "aegir clean dist gwc-report-*.json",
+    "lint": "aegir lint",
+    "dep-check": "aegir dep-check",
+    "doc-check": "aegir doc-check",
+    "build": "aegir build",
+    "test": "aegir test -t node"
+  },
+  "dependencies": {
+    "@helia/verified-fetch": "1.3.13",
+    "@libp2p/logger": "^4.0.11",
+    "@sgtpooki/file-type": "^1.0.1",
+    "aegir": "^42.2.5",
+    "execa": "^8.0.1",
+    "glob": "^10.3.12",
+    "ipfsd-ctl": "^13.0.0",
+    "kubo": "^0.27.0",
+    "kubo-rpc-client": "^3.0.4",
+    "undici": "^6.15.0"
+  },
+  "browser": {
+    "./dist/src/fixtures/create-kubo.js": "./dist/src/fixtures/create-kubo.browser.js",
+    "kubo": false
+  }
+}

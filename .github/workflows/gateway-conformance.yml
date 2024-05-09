@@ -1,0 +1,82 @@
+name: Gateway Conformance
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gateway-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      # 1, Setup Node, install npm dependencies, and build all packages/*
+      # see https://github.com/ipdxco/unified-github-workflows/blob/3a1a7870ce5967163d8f5c8210b8ad50b2e659aa/.github/workflows/js-test-and-release.yml#L28-L34
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - uses: ipfs/aegir/actions/cache-node-modules@master
+
+      # 2. Set up 'go' so we can install the gateway-conformance binary
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.x
+
+      # 3. Download the gateway-conformance fixtures using ipfs/gateway-conformance action
+      # This will prevent us from needing to install `docker` on the github runner
+      - name: Download gateway-conformance fixtures
+        uses: ipfs/gateway-conformance/.github/actions/extract-fixtures@v0.5.1
+        # working-directory: ./packages/gateway-conformance
+        with:
+          output: ./packages/gateway-conformance/dist/src/fixtures/data/gateway-conformance-fixtures
+
+
+      # 4. Run the tests
+      - name: Run gateway-conformance tests
+        run: |
+          npm run test
+        working-directory: ./packages/gateway-conformance
+
+      # 5. Convert json output to reports similar to how it's done at https://github.com/ipfs/gateway-conformance/blob/main/.github/actions/test/action.yml
+      # the 'gwc-report-all.json' file is created by the 'has expected total failures and successes' test
+      # TODO: remove this when we're passing enough tests to use the 'ipfs/gateway-conformance/.github/actions/test' action
+      - name: Create the XML
+        if: failure() || success()
+        uses: pl-strflt/gotest-json-to-junit-xml@v1
+        with:
+          input: ./packages/gateway-conformance/gwc-report-all.json
+          output: ./packages/gateway-conformance/gwc-report-all.xml
+      - name: Create the HTML
+        if: failure() || success()
+        uses: pl-strflt/junit-xml-to-html@v1
+        with:
+          mode: no-frames
+          input: ./packages/gateway-conformance/gwc-report-all.xml
+          output: ./packages/gateway-conformance/gwc-report-all.html
+      - name: Create the Markdown
+        if: failure() || success()
+        uses: pl-strflt/junit-xml-to-html@v1
+        with:
+          mode: summary
+          input: ./packages/gateway-conformance/gwc-report-all.xml
+          output: ./packages/gateway-conformance/gwc-report-all.md
+
+      # 6. Upload the reports
+      - name: Upload MD summary
+        if: failure() || success()
+        run: cat ./packages/gateway-conformance/gwc-report-all.md >> $GITHUB_STEP_SUMMARY
+      - name: Upload HTML report
+        if: failure() || success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gateway-conformance.html
+          path: ./packages/gateway-conformance/gwc-report-all.html
+      - name: Upload JSON report
+        if: failure() || success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gateway-conformance.json
+          path: ./packages/gateway-conformance/gwc-report-all.json
