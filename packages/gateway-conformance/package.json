@@ -56,7 +56,7 @@
     "@libp2p/logger": "^4.0.11",
     "@sgtpooki/file-type": "^1.0.1",
     "aegir": "^42.2.5",
-    "execa": "^8.0.1",
+    "execa": "^9.0.2",
     "glob": "^10.3.12",
     "ipfsd-ctl": "^13.0.0",
     "kubo": "^0.27.0",
