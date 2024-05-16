@@ -46,7 +46,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestMetadata',
     run: ['TestMetadata'],
-    successRate: 100,
+    successRate: 100
   },
   {
     name: 'TestDagPbConversion',
@@ -226,7 +226,6 @@ const tests: TestConfig[] = [
 ]
 
 async function getReportDetails (path: string) {
-
   let failureCount = 0
   let successCount = 0
 
@@ -331,7 +330,8 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         log.error(stderr)
 
         const { successRate } = await getReportDetails(`gwc-report-${name}.json`)
-        expect(successRate).to.be.greaterThanOrEqual(minSuccessRate)
+        const expectedSuccessRate = process.env.SUCCESS_RATE ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
+        expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate)
       })
     })
 
@@ -357,7 +357,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       log(stdout)
       log.error(stderr)
 
-      const { failureCount, successCount, successRate } = await getReportDetails(`gwc-report-all.json`)
+      const { failureCount, successCount, successRate } = await getReportDetails('gwc-report-all.json')
 
       expect(failureCount).to.be.lessThanOrEqual(1134)
       expect(successCount).to.be.greaterThanOrEqual(262)
