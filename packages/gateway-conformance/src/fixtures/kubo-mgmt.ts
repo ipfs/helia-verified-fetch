@@ -75,7 +75,6 @@ export async function loadFixtures (kuboRepoDir: string): Promise<string> {
   let loadedSomeCarFiles = false
 
   for (const carFile of await fg.glob(carPath)) {
-  // for (const carFile of await glob([`${resolve(__dirname, 'data')}/**/*.car`])) {
     log('Loading *.car fixture %s', carFile)
     const { stdout } = await $(execaOptions)`${kuboBinary} dag import --pin-roots=false --offline ${carFile}`
     stdout.split('\n').forEach(log)
