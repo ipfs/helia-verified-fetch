@@ -20,6 +20,9 @@ interface TestConfig {
 }
 
 function getGatewayConformanceBinaryPath (): string {
+  if (process.env.GATEWAY_CONFORMANCE_BINARY != null) {
+    return process.env.GATEWAY_CONFORMANCE_BINARY
+  }
   const goPath = process.env.GOPATH ?? join(homedir(), 'go', 'bin')
   return join(goPath, 'gateway-conformance')
 }
@@ -303,6 +306,10 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     const binaryPath = getGatewayConformanceBinaryPath()
     before(async () => {
       const log = logger.forComponent('before')
+      if (process.env.GATEWAY_CONFORMANCE_BINARY != null) {
+        log('Using custom gateway-conformance binary at %s', binaryPath)
+        return
+      }
       const { stdout, stderr } = await execa('go', ['install', 'github.com/ipfs/gateway-conformance/cmd/gateway-conformance@latest'], { reject: true })
       log(stdout)
       log.error(stderr)
@@ -358,13 +365,20 @@ describe('@helia/verified-fetch - gateway conformance', function () {
      * This test ensures new or existing gateway-conformance tests that fail are caught and addressed appropriately.
      * Eventually, we will not need the `tests.forEach` tests and can just run all the recommended tests directly,
      * as this test does.
-     *
-     * TODO: unskip when verified-fetch is no longer infinitely looping on requests.
      */
-    it.skip('has expected total failures and successes', async function () {
+    it('has expected total failures and successes', async function () {
       const log = logger.forComponent('all')
 
-      const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all'), { reject: false })
+      // TODO: unskip when verified-fetch is no longer infinitely looping on requests.
+      const toSkip = [
+        'TestNativeDag',
+        'TestTrustlessCarEntityBytes',
+        'TestUnixFSDirectoryListingOnSubdomainGateway',
+        'TestGatewayCache',
+        'TestUnixFSDirectoryListing'
+      ]
+
+      const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all', [], ['-skip', toSkip.join('|')]), { reject: false })
 
       log(stdout)
       log.error(stderr)
@@ -382,8 +396,8 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         }
       }
 
-      expect(failureCount).to.be.lessThanOrEqual(135)
-      expect(successCount).to.be.greaterThanOrEqual(30)
+      expect(failureCount).to.be.lessThanOrEqual(1129)
+      expect(successCount).to.be.greaterThanOrEqual(267)
     })
   })
 })
