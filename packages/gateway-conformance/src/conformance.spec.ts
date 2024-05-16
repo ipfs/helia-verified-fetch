@@ -232,7 +232,7 @@ const tests: TestConfig[] = [
   }
 ]
 
-async function getReportDetails (path: string) {
+async function getReportDetails (path: string): Promise<{ failureCount: number, successCount: number, successRate: number }> {
   let failureCount = 0
   let successCount = 0
 
@@ -321,7 +321,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
     tests.forEach(({ name, spec, skip, run, successRate: minSuccessRate }) => {
       const log = logger.forComponent(name)
-      const expectedSuccessRate = process.env.SUCCESS_RATE ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
+      const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
 
       it(`${name} has a success rate of at least ${expectedSuccessRate}%`, async function () {
         const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs(name,
