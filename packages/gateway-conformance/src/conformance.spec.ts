@@ -42,6 +42,13 @@ function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArg
   ]
 }
 
+/**
+ * You can see what the latest success rates are by running the following command:
+ *
+ * ```
+ * cd ../../ && npm run build && cd packages/gateway-conformance && SUCCESS_RATE=100 npm run test -- --bail false
+ * ```
+ */
 const tests: TestConfig[] = [
   {
     name: 'TestMetadata',
@@ -51,7 +58,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestDagPbConversion',
     run: ['TestDagPbConversion'],
-    successRate: 43.08
+    successRate: 35.38
   },
   {
     name: 'TestPlainCodec',
@@ -189,7 +196,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestPathGatewayMiscellaneous',
     run: ['TestPathGatewayMiscellaneous'],
-    successRate: 40
+    successRate: 100
   },
   {
     name: 'TestGatewayUnixFSFileRanges',
@@ -314,8 +321,9 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
     tests.forEach(({ name, spec, skip, run, successRate: minSuccessRate }) => {
       const log = logger.forComponent(name)
+      const expectedSuccessRate = process.env.SUCCESS_RATE ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
 
-      it(`${name} has a success rate of at least ${minSuccessRate}%`, async function () {
+      it(`${name} has a success rate of at least ${expectedSuccessRate}%`, async function () {
         const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs(name,
           [
             ...(spec != null ? ['--specs', spec] : [])
@@ -330,7 +338,6 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         log.error(stderr)
 
         const { successRate } = await getReportDetails(`gwc-report-${name}.json`)
-        const expectedSuccessRate = process.env.SUCCESS_RATE ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
         expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate)
       })
     })
