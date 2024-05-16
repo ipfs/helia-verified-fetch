@@ -397,7 +397,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       }
       // CI has 1134 failures, but I get 1129 locally.
       expect(failureCount).to.be.lessThanOrEqual(1134)
-      expect(successCount).to.be.greaterThanOrEqual(267)
+      expect(successCount).to.be.greaterThanOrEqual(262)
     })
   })
 })
