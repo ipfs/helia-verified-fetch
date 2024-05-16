@@ -10,14 +10,13 @@ export default {
         throw new Error('Only node runner is supported')
       }
 
-      const { GWC_IMAGE } = await import('./dist/src/constants.js')
-      const { loadKuboFixtures, kuboRepoDir } = await import('./dist/src/fixtures/kubo-mgmt.js')
-      const IPFS_NS_MAP = await loadKuboFixtures()
-
       const { createKuboNode } = await import('./dist/src/fixtures/create-kubo.js')
-      const controller = await createKuboNode(await getPort(3440))
+      const KUBO_PORT = await getPort(3440)
+      const { node: controller, gatewayUrl, repoPath } = await createKuboNode(KUBO_PORT)
       await controller.start()
-      const kuboGateway = `http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`
+      const { loadKuboFixtures } = await import('./dist/src/fixtures/kubo-mgmt.js')
+      const IPFS_NS_MAP = await loadKuboFixtures(repoPath)
+      const kuboGateway = gatewayUrl
 
       const { startBasicServer } = await import('./dist/src/fixtures/basic-server.js')
       const SERVER_PORT = await getPort(3441)
@@ -28,7 +27,6 @@ export default {
 
       const { startReverseProxy } = await import('./dist/src/fixtures/reverse-proxy.js')
       const PROXY_PORT = await getPort(3442)
-      const KUBO_PORT = controller.api.gatewayPort
       const stopReverseProxy = await startReverseProxy({
         backendPort: SERVER_PORT,
         targetHost: 'localhost',
@@ -43,13 +41,11 @@ export default {
         stopBasicServer,
         env: {
           IPFS_NS_MAP,
-          GWC_IMAGE,
           CONFORMANCE_HOST,
           KUBO_PORT: `${KUBO_PORT}`,
           PROXY_PORT: `${PROXY_PORT}`,
           SERVER_PORT: `${SERVER_PORT}`,
-          KUBO_GATEWAY: kuboGateway,
-          KUBO_REPO: process.env.KUBO_REPO || kuboRepoDir
+          KUBO_GATEWAY: kuboGateway
         }
       }
     },

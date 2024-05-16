@@ -1,8 +1,12 @@
+import { logger } from '@libp2p/logger'
 import { fileTypeFromBuffer } from '@sgtpooki/file-type'
+
+const log = logger('content-type-parser')
 
 // default from verified-fetch is application/octect-stream, which forces a download. This is not what we want for MANY file types.
 const defaultMimeType = 'text/html; charset=utf-8'
 function checkForSvg (bytes: Uint8Array): string {
+  log('checking for svg')
   return /^(<\?xml[^>]+>)?[^<^\w]+<svg/ig.test(
     new TextDecoder().decode(bytes.slice(0, 64)))
     ? 'image/svg+xml'
@@ -10,10 +14,13 @@ function checkForSvg (bytes: Uint8Array): string {
 }
 
 export async function contentTypeParser (bytes: Uint8Array, fileName?: string): Promise<string> {
+  log('contentTypeParser called for fileName: %s', fileName)
   const detectedType = (await fileTypeFromBuffer(bytes))?.mime
   if (detectedType != null) {
+    log('detectedType: %s', detectedType)
     return detectedType
   }
+  log('no detectedType')
 
   if (fileName == null) {
     // no other way to determine file-type.

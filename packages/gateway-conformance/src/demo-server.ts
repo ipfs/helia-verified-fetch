@@ -1,29 +1,39 @@
 /**
  * Basically copies what .aegir.js does, but without all the env vars and setup.. just so you can run `node src/demo-server.ts` and test queries manually.
  */
+import { logger } from '@libp2p/logger'
 import getPort from 'aegir/get-port'
+import { startBasicServer } from './fixtures/basic-server.js'
+import { createKuboNode } from './fixtures/create-kubo.js'
+import { loadKuboFixtures } from './fixtures/kubo-mgmt.js'
+import { startReverseProxy } from './fixtures/reverse-proxy.js'
 
-const { loadKuboFixtures } = await import('./fixtures/kubo-mgmt.js')
-await loadKuboFixtures()
+const log = logger('demo-server')
 
-const { createKuboNode } = await import('./fixtures/create-kubo.js')
-const controller = await createKuboNode(await getPort(3440))
+const { node: controller, gatewayUrl, repoPath } = await createKuboNode(await getPort(3440))
+
+const kuboGateway = gatewayUrl
 await controller.start()
-const kuboGateway = `http://${controller.api.gatewayHost}:${controller.api.gatewayPort}`
+await loadKuboFixtures(repoPath)
 
-const { startBasicServer } = await import('./fixtures/basic-server.js')
 const SERVER_PORT = await getPort(3441)
 await startBasicServer({
   serverPort: SERVER_PORT,
   kuboGateway
 })
 
-const { startReverseProxy } = await import('./fixtures/reverse-proxy.js')
 const PROXY_PORT = await getPort(3442)
 await startReverseProxy({
   backendPort: SERVER_PORT,
   targetHost: 'localhost',
   proxyPort: PROXY_PORT
+})
+
+process.on('exit', () => {
+  controller.stop().catch((err) => {
+    log.error('Failed to stop controller', err)
+    process.exit(1)
+  })
 })
 
 export {}

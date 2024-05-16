@@ -17,13 +17,18 @@ export interface BasicServerOptions {
 
 export async function startBasicServer ({ kuboGateway, serverPort }: BasicServerOptions): Promise<() => Promise<void>> {
   kuboGateway = kuboGateway ?? process.env.KUBO_GATEWAY
+  const useSessions = process.env.USE_SESSIONS !== 'false'
+
+  log('Starting basic server wrapper for verified-fetch %s', useSessions ? 'with sessions' : 'without sessions')
+
   if (kuboGateway == null) {
     throw new Error('options.kuboGateway or KUBO_GATEWAY env var is required')
   }
-
   const verifiedFetch = await createVerifiedFetch({
     gateways: [kuboGateway],
-    routers: [kuboGateway]
+    routers: [],
+    allowInsecure: true,
+    allowLocal: true
   }, {
     contentTypeParser
   })
@@ -42,7 +47,7 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
       return
     }
 
-    log('req.headers: %O', req.headers)
+    log.trace('req.headers: %O', req.headers)
     const hostname = req.headers.host?.split(':')[0]
     const host = req.headers['x-forwarded-for'] ?? `${hostname}:${serverPort}`
 
@@ -56,7 +61,7 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
       requestController.abort()
     })
 
-    void verifiedFetch(fullUrlHref, { redirect: 'manual', signal: requestController.signal }).then(async (resp) => {
+    void verifiedFetch(fullUrlHref, { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true }).then(async (resp) => {
       // loop over headers and set them on the response
       const headers: Record<string, string> = {}
       for (const [key, value] of resp.headers.entries()) {
@@ -65,7 +70,8 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
 
       res.writeHead(resp.status, headers)
       if (resp.body == null) {
-        res.write(await resp.arrayBuffer())
+        // need to convert ArrayBuffer to Buffer or Uint8Array
+        res.write(Buffer.from(await resp.arrayBuffer()))
       } else {
         // read the body of the response and write it to the response from the server
         const reader = resp.body.getReader()
@@ -74,12 +80,14 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
           if (done) {
             break
           }
+          log('typeof value: %s', typeof value)
+
           res.write(Buffer.from(value))
         }
       }
       res.end()
     }).catch((e) => {
-      log.error('Problem with request: %s', e.message)
+      log.error('Problem with request: %s', e.message, e)
       if (!res.headersSent) {
         res.writeHead(500)
       }
