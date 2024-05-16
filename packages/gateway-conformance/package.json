@@ -52,15 +52,16 @@
     "test": "aegir test -t node"
   },
   "dependencies": {
+    "@helia/interface": "^4.3.0",
     "@helia/verified-fetch": "1.4.1",
     "@libp2p/logger": "^4.0.11",
     "@sgtpooki/file-type": "^1.0.1",
     "aegir": "^42.2.5",
     "execa": "^8.0.1",
-    "glob": "^10.3.12",
-    "ipfsd-ctl": "^13.0.0",
+    "fast-glob": "^3.3.2",
+    "ipfsd-ctl": "^14.1.0",
     "kubo": "^0.27.0",
-    "kubo-rpc-client": "^3.0.4",
+    "kubo-rpc-client": "^4.1.1",
     "undici": "^6.15.0"
   },
   "browser": {

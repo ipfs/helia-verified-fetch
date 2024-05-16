@@ -1,15 +1,21 @@
-import { createController, type Controller } from 'ipfsd-ctl'
+import { createNode, type KuboNode } from 'ipfsd-ctl'
 import { path as kuboPath } from 'kubo'
-import * as kuboRpcClient from 'kubo-rpc-client'
+import { create } from 'kubo-rpc-client'
 
-export async function createKuboNode (listenPort?: number): Promise<Controller> {
-  return createController({
-    kuboRpcModule: kuboRpcClient,
-    ipfsBin: kuboPath(),
+export interface KuboNodeDetails {
+  node: KuboNode
+  gatewayUrl: string
+  repoPath: string
+}
+
+export async function createKuboNode (listenPort?: number): Promise<KuboNodeDetails> {
+  const controller = await createNode({
+    type: 'kubo',
+    rpc: create,
     test: true,
-    ipfsOptions: {
+    bin: kuboPath(),
+    init: {
       config: {
-        repo: process.env.KUBO_REPO ?? '',
         Addresses: {
           Swarm: [
             '/ip4/0.0.0.0/tcp/0',
@@ -26,6 +32,14 @@ export async function createKuboNode (listenPort?: number): Promise<Controller> 
           }
         }
       }
-    }
+    },
+    args: ['--enable-pubsub-experiment', '--enable-namesys-pubsub']
   })
+  const info = await controller.info()
+
+  return {
+    node: controller,
+    gatewayUrl: `http://127.0.0.1:${listenPort ?? 0}`,
+    repoPath: info.repo
+  }
 }
