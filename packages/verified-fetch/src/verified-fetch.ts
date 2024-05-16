@@ -26,16 +26,16 @@ import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterab
 import { tarStream } from './utils/get-tar-stream.js'
 import { parseResource } from './utils/parse-resource.js'
 import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
-import { setCacheControlHeader } from './utils/response-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
+import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
-import { isObjectNode, walkPath } from './utils/walk-path.js'
+import { handlePathWalking, isObjectNode } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
-import type { RequestFormatShorthand } from './types.js'
+import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
 import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
-import type { ObjectNode, UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { ObjectNode } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
 const SESSION_CACHE_MAX_SIZE = 100
@@ -44,36 +44,6 @@ const SESSION_CACHE_TTL_MS = 60 * 1000
 interface VerifiedFetchComponents {
   helia: Helia
   ipns?: IPNS
-}
-
-interface FetchHandlerFunctionArg {
-  cid: CID
-  path: string
-
-  /**
-   * A key for use with the blockstore session cache
-   */
-  cacheKey: string
-
-  /**
-   * Whether to use a session during fetch operations
-   *
-   * @default true
-   */
-  session: boolean
-
-  options?: Omit<VerifiedFetchOptions, 'signal'> & AbortOptions
-
-  /**
-   * If present, the user has sent an accept header with this value - if the
-   * content cannot be represented in this format a 406 should be returned
-   */
-  accept?: string
-
-  /**
-   * The originally requested resource
-   */
-  resource: string
 }
 
 interface FetchHandlerFunction {
@@ -156,7 +126,8 @@ export class VerifiedFetch {
     this.log.trace('created VerifiedFetch instance')
   }
 
-  private getBlockstore (root: CID, key: string, useSession: boolean, options?: AbortOptions): Blockstore {
+  private getBlockstore (root: CID, resource: string | CID, useSession: boolean, options?: AbortOptions): Blockstore {
+    const key = resourceToSessionCacheKey(resource)
     if (!useSession) {
       return this.helia.blockstore
     }
@@ -211,8 +182,8 @@ export class VerifiedFetch {
    * Accepts a `CID` and returns a `Response` with a body stream that is a CAR
    * of the `DAG` referenced by the `CID`.
    */
-  private async handleCar ({ resource, cid, session, cacheKey, options }: FetchHandlerFunctionArg): Promise<Response> {
-    const blockstore = this.getBlockstore(cid, cacheKey, session, options)
+  private async handleCar ({ resource, cid, session, options }: FetchHandlerFunctionArg): Promise<Response> {
+    const blockstore = this.getBlockstore(cid, resource, session, options)
     const c = car({ blockstore, dagWalkers: this.helia.dagWalkers })
     const stream = toBrowserReadableStream(c.stream(cid, options))
 
@@ -226,12 +197,12 @@ export class VerifiedFetch {
    * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
    * directory structure referenced by the `CID`.
    */
-  private async handleTar ({ resource, cid, path, session, cacheKey, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleTar ({ resource, cid, path, session, options }: FetchHandlerFunctionArg): Promise<Response> {
     if (cid.code !== dagPbCode && cid.code !== rawCode) {
       return notAcceptableResponse('only UnixFS data can be returned in a TAR file')
     }
 
-    const blockstore = this.getBlockstore(cid, cacheKey, session, options)
+    const blockstore = this.getBlockstore(cid, resource, session, options)
     const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${cid}/${path}`, blockstore, options))
 
     const response = okResponse(resource, stream)
@@ -240,9 +211,9 @@ export class VerifiedFetch {
     return response
   }
 
-  private async handleJson ({ resource, cid, path, accept, session, cacheKey, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleJson ({ resource, cid, path, accept, session, options }: FetchHandlerFunctionArg): Promise<Response> {
     this.log.trace('fetching %c/%s', cid, path)
-    const blockstore = this.getBlockstore(cid, cacheKey, session, options)
+    const blockstore = this.getBlockstore(cid, resource, session, options)
     const block = await blockstore.get(cid, options)
     let body: string | Uint8Array
 
@@ -267,33 +238,26 @@ export class VerifiedFetch {
     return response
   }
 
-  private async handleDagCbor ({ resource, cid, path, accept, session, cacheKey, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleDagCbor ({ resource, cid, path, accept, session, options }: FetchHandlerFunctionArg): Promise<Response> {
     this.log.trace('fetching %c/%s', cid, path)
-    let terminalElement: ObjectNode | undefined
-    let ipfsRoots: CID[] | undefined
-    const blockstore = this.getBlockstore(cid, cacheKey, session, options)
+    let terminalElement: ObjectNode
+    const blockstore = this.getBlockstore(cid, resource, session, options)
 
     // need to walk path, if it exists, to get the terminal element
-    try {
-      const pathDetails = await walkPath(blockstore, `${cid.toString()}/${path}`, options)
-      ipfsRoots = pathDetails.ipfsRoots
-      const potentialTerminalElement = pathDetails.terminalElement
-      if (potentialTerminalElement == null) {
-        return notFoundResponse(resource)
-      }
-      if (isObjectNode(potentialTerminalElement)) {
-        terminalElement = potentialTerminalElement
-      }
-    } catch (err: any) {
-      options?.signal?.throwIfAborted()
-      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT'].includes(err.code)) {
-        return notFoundResponse(resource)
-      }
-
-      this.log.error('error walking path %s', path, err)
-      return badGatewayResponse(resource, 'Error walking path')
+    const pathDetails = await handlePathWalking({ cid, path, resource, options, blockstore, log: this.log })
+    if (pathDetails instanceof Response) {
+      return pathDetails
     }
-    const block = terminalElement?.node ?? await blockstore.get(cid, options)
+    const ipfsRoots = pathDetails.ipfsRoots
+    if (isObjectNode(pathDetails.terminalElement)) {
+      terminalElement = pathDetails.terminalElement
+    } else {
+      // this should never happen, but if it does, we should log it and return notSupportedResponse
+      this.log.error('terminal element is not a dag-cbor node')
+      return notSupportedResponse(resource, 'Terminal element is not a dag-cbor node')
+    }
+
+    const block = terminalElement.node
 
     let body: string | Uint8Array
 
@@ -333,36 +297,23 @@ export class VerifiedFetch {
     }
 
     response.headers.set('content-type', accept)
-
-    if (ipfsRoots != null) {
-      response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
-    }
+    setIpfsRoots(response, ipfsRoots)
 
     return response
   }
 
-  private async handleDagPb ({ cid, path, resource, cacheKey, session, options }: FetchHandlerFunctionArg): Promise<Response> {
-    let terminalElement: UnixFSEntry | undefined
-    let ipfsRoots: CID[] | undefined
+  private async handleDagPb ({ cid, path, resource, session, options }: FetchHandlerFunctionArg): Promise<Response> {
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
-    const blockstore = this.getBlockstore(cid, cacheKey, session, options)
-
-    try {
-      const pathDetails = await walkPath(blockstore, `${cid.toString()}/${path}`, options)
-      ipfsRoots = pathDetails.ipfsRoots
-      terminalElement = pathDetails.terminalElement
-    } catch (err: any) {
-      options?.signal?.throwIfAborted()
-      if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT', 'ERR_NOT_FOUND'].includes(err.code)) {
-        return notFoundResponse(resource.toString())
-      }
-      this.log.error('error walking path %s', path, err)
-
-      return badGatewayResponse(resource.toString(), 'Error walking path')
+    const blockstore = this.getBlockstore(cid, resource, session, options)
+    const pathDetails = await handlePathWalking({ cid, path, resource, options, blockstore, log: this.log })
+    if (pathDetails instanceof Response) {
+      return pathDetails
     }
+    const ipfsRoots = pathDetails.ipfsRoots
+    const terminalElement = pathDetails.terminalElement
+    let resolvedCID = terminalElement.cid
 
-    let resolvedCID = terminalElement?.cid ?? cid
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
       const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
@@ -438,10 +389,8 @@ export class VerifiedFetch {
       })
 
       await this.setContentType(firstChunk, path, response)
+      setIpfsRoots(response, ipfsRoots)
 
-      if (ipfsRoots != null) {
-        response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(',')) // https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
-      }
       return response
     } catch (err: any) {
       options?.signal?.throwIfAborted()
@@ -453,9 +402,9 @@ export class VerifiedFetch {
     }
   }
 
-  private async handleRaw ({ resource, cid, path, session, cacheKey, options, accept }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleRaw ({ resource, cid, path, session, options, accept }: FetchHandlerFunctionArg): Promise<Response> {
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
-    const blockstore = this.getBlockstore(cid, cacheKey, session, options)
+    const blockstore = this.getBlockstore(cid, resource, session, options)
     const result = await blockstore.get(cid, options)
     byteRangeContext.setBody(result)
     const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
@@ -559,8 +508,7 @@ export class VerifiedFetch {
     let response: Response
     let reqFormat: RequestFormatShorthand | undefined
 
-    const cacheKey = resourceToSessionCacheKey(resource)
-    const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, cacheKey, session: options?.session ?? true, options }
+    const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options }
 
     if (accept === 'application/vnd.ipfs.ipns-record') {
       // the user requested a raw IPNS record
