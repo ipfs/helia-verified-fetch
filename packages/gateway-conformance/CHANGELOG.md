@@ -1,3 +1,10 @@
+## @helia/verified-fetch-gateway-conformance [1.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.0.0...@helia/verified-fetch-gateway-conformance-1.0.1) (2024-05-16)
+
+
+### Bug Fixes
+
+* gateway conformance tests ([#81](https://github.com/ipfs/helia-verified-fetch/issues/81)) ([d0a3b6b](https://github.com/ipfs/helia-verified-fetch/commit/d0a3b6b5c6a7955fe18a0feadff9fda9a46dee71))
+
 ## @helia/verified-fetch-gateway-conformance 1.0.0 (2024-05-09)
 
 
