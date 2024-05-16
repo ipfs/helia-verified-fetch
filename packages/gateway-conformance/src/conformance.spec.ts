@@ -15,8 +15,7 @@ interface TestConfig {
   spec?: string
   skip?: string[]
   run?: string[]
-  maxFailures: number
-  minimumSuccesses?: number
+  successRate: number
 }
 
 function getGatewayConformanceBinaryPath (): string {
@@ -43,223 +42,218 @@ function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArg
   ]
 }
 
+/**
+ * You can see what the latest success rates are by running the following command:
+ *
+ * ```
+ * cd ../../ && npm run build && cd packages/gateway-conformance && SUCCESS_RATE=100 npm run test -- --bail false
+ * ```
+ */
 const tests: TestConfig[] = [
   {
     name: 'TestMetadata',
     run: ['TestMetadata'],
-    maxFailures: 0,
-    minimumSuccesses: 1
+    successRate: 100
   },
   {
     name: 'TestDagPbConversion',
     run: ['TestDagPbConversion'],
-    maxFailures: 51,
-    minimumSuccesses: 14
+    successRate: 35.38
   },
   {
     name: 'TestPlainCodec',
     run: ['TestPlainCodec'],
-    maxFailures: 83,
-    minimumSuccesses: 15
+    successRate: 39.86
   },
   {
     name: 'TestPathing',
     run: ['TestPathing'],
-    maxFailures: 13,
-    minimumSuccesses: 0
+    successRate: 23.53
   },
   {
     name: 'TestDNSLinkGatewayUnixFSDirectoryListing',
     run: ['TestDNSLinkGatewayUnixFSDirectoryListing'],
-    maxFailures: 20,
-    minimumSuccesses: 0
+    successRate: 0
   },
   {
     name: 'TestCors',
     run: ['TestCors'],
-    maxFailures: 11,
-    minimumSuccesses: 0
+    successRate: 0
   },
   {
     name: 'TestGatewayJsonCbor',
     run: ['TestGatewayJsonCbor'],
-    maxFailures: 9,
-    minimumSuccesses: 0
+    successRate: 44.44
   },
   // currently results in an infinite loop without verified-fetch stopping the request whether sessions are enabled or not.
   // {
   //   name: 'TestNativeDag',
   //   run: ['TestNativeDag'],
-  //   maxFailures: 2,
-  //   minimumSuccesses: 0
+  //   successRate: 100
   // },
   {
     name: 'TestGatewayJSONCborAndIPNS',
     run: ['TestGatewayJSONCborAndIPNS'],
-    maxFailures: 25,
-    minimumSuccesses: 8
+    successRate: 24.24
   },
   {
     name: 'TestGatewayIPNSPath',
     run: ['TestGatewayIPNSPath'],
-    maxFailures: 8,
-    minimumSuccesses: 3
+    successRate: 27.27
   },
   {
     name: 'TestRedirectCanonicalIPNS',
     run: ['TestRedirectCanonicalIPNS'],
-    maxFailures: 7,
-    minimumSuccesses: 0
+    successRate: 0
   },
   {
     name: 'TestGatewayBlock',
     run: ['TestGatewayBlock'],
-    maxFailures: 25,
-    minimumSuccesses: 4
+    successRate: 37.93
   },
   {
     name: 'TestTrustlessRawRanges',
     run: ['TestTrustlessRawRanges'],
-    maxFailures: 5,
-    minimumSuccesses: 7
+    successRate: 75
   },
   {
     name: 'TestTrustlessRaw',
     run: ['TestTrustlessRaw'],
-    maxFailures: 29,
-    minimumSuccesses: 7
+    successRate: 55.56
   },
   {
     name: 'TestGatewayIPNSRecord',
     run: ['TestGatewayIPNSRecord'],
-    maxFailures: 23,
-    minimumSuccesses: 0
+    successRate: 0
   },
   {
     name: 'TestTrustlessCarOrderAndDuplicates',
     run: ['TestTrustlessCarOrderAndDuplicates'],
-    maxFailures: 26,
-    minimumSuccesses: 3
+    successRate: 13.79
   },
   // times out
   // {
   //   name: 'TestTrustlessCarEntityBytes',
   //   run: ['TestTrustlessCarEntityBytes'],
-  //   maxFailures: 122,
-  //   minimumSuccesses: 55
+  //   successRate: 100
   // },
   {
     name: 'TestTrustlessCarDagScopeAll',
     run: ['TestTrustlessCarDagScopeAll'],
-    maxFailures: 23,
-    minimumSuccesses: 10
+    successRate: 36.36
   },
   {
     name: 'TestTrustlessCarDagScopeEntity',
     run: ['TestTrustlessCarDagScopeEntity'],
-    maxFailures: 56,
-    minimumSuccesses: 25
+    successRate: 34.57
   },
   {
     name: 'TestTrustlessCarDagScopeBlock',
     run: ['TestTrustlessCarDagScopeBlock'],
-    maxFailures: 34,
-    minimumSuccesses: 15
+    successRate: 34.69
   },
   {
     name: 'TestTrustlessCarPathing',
     run: ['TestTrustlessCarPathing'],
-    maxFailures: 45,
-    minimumSuccesses: 20
+    successRate: 33.85
   },
   {
     name: 'TestSubdomainGatewayDNSLinkInlining',
     run: ['TestSubdomainGatewayDNSLinkInlining'],
-    maxFailures: 41,
-    minimumSuccesses: 0
+    successRate: 0
   },
   {
     name: 'TestGatewaySubdomainAndIPNS',
     run: ['TestGatewaySubdomainAndIPNS'],
-    maxFailures: 95,
-    minimumSuccesses: 0
+    successRate: 0
   },
   {
     name: 'TestGatewaySubdomains',
     run: ['TestGatewaySubdomains'],
-    maxFailures: 279,
-    minimumSuccesses: 0
+    successRate: 7.17
   },
   // times out
   // {
   //   name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
   //   run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
-  //   maxFailures: 39,
-  //   minimumSuccesses: 0
+  //   successRate: 100
   // },
   {
     name: 'TestRedirectsFileWithIfNoneMatchHeader',
     run: ['TestRedirectsFileWithIfNoneMatchHeader'],
-    maxFailures: 15,
-    minimumSuccesses: 0
+    successRate: 0
   },
   {
     name: 'TestRedirectsFileSupportWithDNSLink',
     run: ['TestRedirectsFileSupportWithDNSLink'],
-    maxFailures: 17,
-    minimumSuccesses: 6
+    successRate: 26.09
   },
   {
     name: 'TestRedirectsFileSupport',
     run: ['TestRedirectsFileSupport'],
-    maxFailures: 252,
-    minimumSuccesses: 6
+    successRate: 2.33
   },
   {
     name: 'TestPathGatewayMiscellaneous',
     run: ['TestPathGatewayMiscellaneous'],
-    maxFailures: 3,
-    minimumSuccesses: 0
+    successRate: 100
   },
   {
     name: 'TestGatewayUnixFSFileRanges',
     run: ['TestGatewayUnixFSFileRanges'],
-    maxFailures: 10,
-    minimumSuccesses: 5
+    successRate: 40
   },
   {
     name: 'TestGatewaySymlink',
     run: ['TestGatewaySymlink'],
-    maxFailures: 9,
-    minimumSuccesses: 0
+    successRate: 33.33
   },
   {
     name: 'TestGatewayCacheWithIPNS',
     run: ['TestGatewayCacheWithIPNS'],
-    maxFailures: 27,
-    minimumSuccesses: 15
+    successRate: 35.71
   },
   // times out
   // {
   //   name: 'TestGatewayCache',
   //   run: ['TestGatewayCache'],
-  //   maxFailures: 71,
-  //   minimumSuccesses: 23
+  //   successRate: 100
   // },
   // times out
   // {
   //   name: 'TestUnixFSDirectoryListing',
   //   run: ['TestUnixFSDirectoryListing'],
-  //   maxFailures: 50,
-  //   minimumSuccesses: 0
+  //   successRate: 100
   // },
   {
     name: 'TestTar',
     run: ['TestTar'],
-    maxFailures: 16,
-    minimumSuccesses: 8
+    successRate: 50
   }
 ]
+
+async function getReportDetails (path: string): Promise<{ failureCount: number, successCount: number, successRate: number }> {
+  let failureCount = 0
+  let successCount = 0
+
+  // parse the newline delimited JSON report at gwc-report-${name}.json and count the number of "PASS:" and "FAIL:" lines
+  const report = await readFile(path, 'utf8')
+  const lines = report.split('\n')
+  for (const line of lines) {
+    if (line.includes('--- FAIL:')) {
+      failureCount++
+    } else if (line.includes('--- PASS:')) {
+      successCount++
+    }
+  }
+  const successRate = Number.parseFloat(((successCount / (successCount + failureCount)) * 100).toFixed(2))
+
+  return {
+    failureCount,
+    successCount,
+    successRate
+  }
+}
 
 describe('@helia/verified-fetch - gateway conformance', function () {
   before(async () => {
@@ -325,10 +319,11 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       }
     })
 
-    tests.forEach(({ name, spec, skip, run, maxFailures, minimumSuccesses }) => {
+    tests.forEach(({ name, spec, skip, run, successRate: minSuccessRate }) => {
       const log = logger.forComponent(name)
+      const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
 
-      it(`has no more than ${maxFailures} failing tests for ${name}`, async function () {
+      it(`${name} has a success rate of at least ${expectedSuccessRate}%`, async function () {
         const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs(name,
           [
             ...(spec != null ? ['--specs', spec] : [])
@@ -342,22 +337,8 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         log(stdout)
         log.error(stderr)
 
-        let failureCount = 0
-        let successCount = 0
-
-        // parse the newline delimited JSON report at gwc-report-${name}.json and count the number of "PASS:" and "FAIL:" lines
-        const report = await readFile(`gwc-report-${name}.json`, 'utf8')
-        const lines = report.split('\n')
-        for (const line of lines) {
-          if (line.includes('--- FAIL:')) {
-            failureCount++
-          } else if (line.includes('--- PASS:')) {
-            successCount++
-          }
-        }
-
-        expect(failureCount).to.be.lessThanOrEqual(maxFailures)
-        expect(successCount).to.be.greaterThanOrEqual(minimumSuccesses ?? 0)
+        const { successRate } = await getReportDetails(`gwc-report-${name}.json`)
+        expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate)
       })
     })
 
@@ -382,22 +363,12 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
       log(stdout)
       log.error(stderr)
-      let failureCount = 0
-      let successCount = 0
 
-      // parse the newline delimited JSON report at gwc-report-${name}.json and count the number of "PASS:" and "FAIL:" lines
-      const report = await readFile('gwc-report-all.json', 'utf8')
-      const lines = report.split('\n')
-      for (const line of lines) {
-        if (line.includes('--- FAIL:')) {
-          failureCount++
-        } else if (line.includes('--- PASS:')) {
-          successCount++
-        }
-      }
-      // CI has 1134 failures, but I get 1129 locally.
+      const { failureCount, successCount, successRate } = await getReportDetails('gwc-report-all.json')
+
       expect(failureCount).to.be.lessThanOrEqual(1134)
       expect(successCount).to.be.greaterThanOrEqual(262)
+      expect(successRate).to.be.greaterThanOrEqual(18.77)
     })
   })
 })
