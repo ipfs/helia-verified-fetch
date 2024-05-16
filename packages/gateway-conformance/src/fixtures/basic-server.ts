@@ -20,10 +20,11 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
   if (kuboGateway == null) {
     throw new Error('options.kuboGateway or KUBO_GATEWAY env var is required')
   }
-
   const verifiedFetch = await createVerifiedFetch({
     gateways: [kuboGateway],
-    routers: [kuboGateway]
+    routers: [],
+    allowInsecure: true,
+    allowLocal: true
   }, {
     contentTypeParser
   })
@@ -56,7 +57,7 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
       requestController.abort()
     })
 
-    void verifiedFetch(fullUrlHref, { redirect: 'manual', signal: requestController.signal }).then(async (resp) => {
+    void verifiedFetch(fullUrlHref, { redirect: 'manual', signal: requestController.signal, allowInsecure: true, allowLocal: true }).then(async (resp) => {
       // loop over headers and set them on the response
       const headers: Record<string, string> = {}
       for (const [key, value] of resp.headers.entries()) {
@@ -79,7 +80,7 @@ export async function startBasicServer ({ kuboGateway, serverPort }: BasicServer
       }
       res.end()
     }).catch((e) => {
-      log.error('Problem with request: %s', e.message)
+      log.error('Problem with request: %s', e.message, e)
       if (!res.headersSent) {
         res.writeHead(500)
       }

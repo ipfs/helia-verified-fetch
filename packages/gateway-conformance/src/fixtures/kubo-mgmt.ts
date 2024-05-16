@@ -8,11 +8,11 @@
  */
 
 import { readFile } from 'node:fs/promises'
-import { dirname, relative, resolve, basename } from 'node:path'
+import { dirname, relative, posix, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { logger } from '@libp2p/logger'
 import { $ } from 'execa'
-import { glob } from 'glob'
+import fg from 'fast-glob'
 import { path } from 'kubo'
 import { GWC_IMAGE } from '../constants.js'
 
@@ -23,19 +23,18 @@ const log = logger('kubo-mgmt')
 
 const kuboBinary = process.env.KUBO_BINARY ?? path()
 
-// This needs to match the `repo` property provided to `ipfsd-ctl` in `createKuboNode` so our kubo instance in tests use the same repo
-export const kuboRepoDir = process.env.KUBO_REPO ?? resolve(__dirname, 'test-repo')
-export const GWC_FIXTURES_PATH = resolve(__dirname, 'gateway-conformance-fixtures')
+export const GWC_FIXTURES_PATH = posix.resolve(__dirname, 'gateway-conformance-fixtures')
 
-export async function loadKuboFixtures (): Promise<string> {
-  await attemptKuboInit()
-
+/**
+ * use `createKuboNode' to start a kubo node prior to loading fixtures.
+ */
+export async function loadKuboFixtures (kuboRepoDir: string): Promise<string> {
   await downloadFixtures()
 
-  return loadFixtures()
+  return loadFixtures(kuboRepoDir)
 }
 
-function getExecaOptions ({ cwd, ipfsNsMap }: { cwd?: string, ipfsNsMap?: string } = {}): { cwd: string, env: Record<string, string | undefined> } {
+function getExecaOptions ({ cwd, ipfsNsMap, kuboRepoDir }: { cwd?: string, ipfsNsMap?: string, kuboRepoDir?: string } = {}): { cwd: string, env: Record<string, string | undefined> } {
   return {
     cwd: cwd ?? __dirname,
     env: {
@@ -45,50 +44,10 @@ function getExecaOptions ({ cwd, ipfsNsMap }: { cwd?: string, ipfsNsMap?: string
   }
 }
 
-async function attemptKuboInit (): Promise<void> {
-  const execaOptions = getExecaOptions()
-  try {
-    await $(execaOptions)`${kuboBinary} init`
-    log('Kubo initialized at %s', kuboRepoDir)
-
-    await configureKubo()
-  } catch (e: any) {
-    if (e.stderr?.includes('ipfs daemon is running') === true) {
-      log('Kubo is already running')
-      return
-    }
-    if (e.stderr?.includes('already exists!') === true) {
-      log('Kubo was already initialized at %s', kuboRepoDir)
-      return
-    }
-
-    throw e
-  }
-}
-
-async function configureKubo (): Promise<void> {
-  const execaOptions = getExecaOptions()
-  try {
-    // some of the same things as https://github.com/ipfs/kubo/blob/62eb1439157ea8de385671cb513e8ece10e43baf/config/profile.go#L73
-    await $(execaOptions)`${kuboBinary} config Addresses.Gateway /ip4/127.0.0.1/tcp/0`
-    await $(execaOptions)`${kuboBinary} config Addresses.API /ip4/127.0.0.1/tcp/0`
-    await $(execaOptions)`${kuboBinary} config --json Bootstrap '[]'`
-    await $(execaOptions)`${kuboBinary} config --json Swarm.DisableNatPortMap true`
-    await $(execaOptions)`${kuboBinary} config --json Discovery.MDNS.Enabled false`
-    await $(execaOptions)`${kuboBinary} config --json Gateway.NoFetch true`
-    await $(execaOptions)`${kuboBinary} config --json Gateway.ExposeRoutingAPI true`
-    await $(execaOptions)`${kuboBinary} config --json Gateway.HTTPHeaders.Access-Control-Allow-Origin '["*"]'`
-    await $(execaOptions)`${kuboBinary} config --json Gateway.HTTPHeaders.Access-Control-Allow-Methods '["GET", "POST", "PUT", "OPTIONS"]'`
-    log('Kubo configured')
-  } catch (e) {
-    log.error('Failed to configure Kubo', e)
-  }
-}
-
 async function downloadFixtures (force = false): Promise<void> {
   if (!force) {
     // if the fixtures are already downloaded, we don't need to download them again
-    const allFixtures = await glob([`${GWC_FIXTURES_PATH}/**/*.car`, `${GWC_FIXTURES_PATH}/**/*.ipns-record`, `${GWC_FIXTURES_PATH}/dnslinks.json`])
+    const allFixtures = await fg.glob([`${GWC_FIXTURES_PATH}/**/*.car`, `${GWC_FIXTURES_PATH}/**/*.ipns-record`, `${GWC_FIXTURES_PATH}/dnslinks.json`])
     if (allFixtures.length > 0) {
       log('Fixtures already downloaded')
       return
@@ -107,18 +66,29 @@ async function downloadFixtures (force = false): Promise<void> {
   }
 }
 
-async function loadFixtures (): Promise<string> {
-  const execaOptions = getExecaOptions()
+export async function loadFixtures (kuboRepoDir: string): Promise<string> {
+  const execaOptions = getExecaOptions({ kuboRepoDir })
 
-  for (const carFile of await glob([`${resolve(__dirname, 'data')}/**/*.car`])) {
+  const carPath = `${GWC_FIXTURES_PATH}/**/*.car`
+  log('Loading fixtures from %s', carPath)
+
+  let loadedSomeCarFiles = false
+
+  for (const carFile of await fg.glob(carPath)) {
+  // for (const carFile of await glob([`${resolve(__dirname, 'data')}/**/*.car`])) {
     log('Loading *.car fixture %s', carFile)
     const { stdout } = await $(execaOptions)`${kuboBinary} dag import --pin-roots=false --offline ${carFile}`
     stdout.split('\n').forEach(log)
+    loadedSomeCarFiles = true
+  }
+  if (!loadedSomeCarFiles) {
+    log.error('No *.car fixtures found')
+    throw new Error('No *.car fixtures found')
   }
 
   // TODO: fix in CI. See https://github.com/ipfs/helia-verified-fetch/actions/runs/9022946675/job/24793649918?pr=67#step:7:19
   if (process.env.CI == null) {
-    for (const ipnsRecord of await glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
+    for (const ipnsRecord of await fg.glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
       const key = basename(ipnsRecord, '.ipns-record')
       const relativePath = relative(GWC_FIXTURES_PATH, ipnsRecord)
       log('Loading *.ipns-record fixture %s', relativePath)
