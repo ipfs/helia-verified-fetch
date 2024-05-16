@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.4.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.4.1...@helia/verified-fetch-1.4.2) (2024-05-16)
+
+
+### Bug Fixes
+
+* reduce dagPb and dagCbor handler complexity ([#45](https://github.com/ipfs/helia-verified-fetch/issues/45)) ([3b41752](https://github.com/ipfs/helia-verified-fetch/commit/3b41752e120025d67017eb34c40cab3c71346676))
+
 ## @helia/verified-fetch [1.4.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.4.0...@helia/verified-fetch-1.4.1) (2024-05-09)
 
 
