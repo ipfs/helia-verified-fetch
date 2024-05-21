@@ -27,6 +27,7 @@ export async function getRedirectResponse ({ resource, options, logger, cid }: G
     const urlParts = matchURLString(resource)
     const reqUrl = new URL(resource)
     const forwardedHost = headers.get('x-forwarded-host')
+    const headerHost = headers.get('host')
     const actualHost = forwardedHost ?? reqUrl.host
     // const subdomainUrl = new URL(reqUrl, `${reqUrl.protocol}//${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}.${actualHost}`)
     const subdomainUrl = new URL(reqUrl)
@@ -36,10 +37,14 @@ export async function getRedirectResponse ({ resource, options, logger, cid }: G
       subdomainUrl.host = `${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}.${actualHost}`
     }
 
+    if (headerHost?.includes(urlParts.protocol) === true && subdomainUrl.host.includes(headerHost)) {
+      log.trace('request was for a subdomain already, not setting location header')
+      return null
+    }
+
     log.trace('headers.get(\'host\')=%s', headers.get('host'))
     log.trace('headers.get(\'x-forwarded-host\')=%s', headers.get('x-forwarded-host'))
     log.trace('headers.get(\'x-forwarded-for\')=%s', headers.get('x-forwarded-for'))
-    const headerHost = headers.get('host')
 
     if (headerHost != null && !subdomainUrl.host.includes(headerHost)) {
       log.trace('host header is not the same as the subdomain url host, not setting location header')

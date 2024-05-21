@@ -180,7 +180,8 @@ const tests: TestConfig[] = [
     run: [
       'TestGatewaySubdomains'
       // 100%
-      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv0%7D_redirects_to_CIDv1_representation_in_subdomain_%28direct_HTTP%29/Header_Location'
+      // 'TestGatewaySubdomains/request_for_%7BCID%7D.ipfs.example.com_should_return_expected_payload_%28direct_HTTP%29/Status_code',
+      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv0%7D_redirects_to_CIDv1_representation_in_subdomain_%28direct_HTTP%29/Header_Location',
       // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv1%7D_redirects_to_subdomain_%28direct_HTTP%29/Status_code'
     ],
     skip: [
