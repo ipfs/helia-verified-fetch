@@ -319,11 +319,15 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       }
     })
 
-    tests.forEach(({ name, spec, skip, run, successRate: minSuccessRate }) => {
+    tests.forEach(({ name, spec, skip, run, timeout, successRate: minSuccessRate }) => {
       const log = logger.forComponent(name)
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
 
       it(`${name} has a success rate of at least ${expectedSuccessRate}%`, async function () {
+        if (timeout != null) {
+          this.timeout(timeout)
+        }
+
         const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs(name,
           [
             ...(spec != null ? ['--specs', spec] : [])
@@ -368,7 +372,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
       expect(failureCount).to.be.lessThanOrEqual(1134)
       expect(successCount).to.be.greaterThanOrEqual(262)
-      expect(successRate).to.be.greaterThanOrEqual(18.77)
+      expect(successRate).to.be.greaterThanOrEqual(18.79)
     })
   })
 })

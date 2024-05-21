@@ -14,12 +14,13 @@ const { node: controller, gatewayUrl, repoPath } = await createKuboNode(await ge
 
 const kuboGateway = gatewayUrl
 await controller.start()
-await loadKuboFixtures(repoPath)
+const IPFS_NS_MAP = await loadKuboFixtures(repoPath)
 
 const SERVER_PORT = await getPort(3441)
 await startBasicServer({
   serverPort: SERVER_PORT,
-  kuboGateway
+  kuboGateway,
+  IPFS_NS_MAP
 })
 
 const PROXY_PORT = await getPort(3442)

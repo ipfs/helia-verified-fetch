@@ -22,7 +22,8 @@ export default {
       const SERVER_PORT = await getPort(3441)
       const stopBasicServer = await startBasicServer({
         serverPort: SERVER_PORT,
-        kuboGateway
+        kuboGateway,
+        IPFS_NS_MAP
       })
 
       const { startReverseProxy } = await import('./dist/src/fixtures/reverse-proxy.js')
