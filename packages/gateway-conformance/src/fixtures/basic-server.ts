@@ -1,8 +1,17 @@
-import { createServer } from 'node:http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { trustlessGateway } from '@helia/block-brokers'
+import { createHeliaHTTP } from '@helia/http'
+import { httpGatewayRouting } from '@helia/routers'
 import { logger } from '@libp2p/logger'
-import { type DNSResolver } from '@multiformats/dns/resolvers'
+import { dns } from '@multiformats/dns'
+import { MemoryBlockstore } from 'blockstore-core'
 import { contentTypeParser } from './content-type-parser.js'
 import { createVerifiedFetch } from './create-verified-fetch.js'
+import { getLocalDnsResolver } from './get-local-dns-resolver.js'
+import { getIpnsRecordDatastore } from './ipns-record-datastore.js'
+import type { DNSResolver } from '@multiformats/dns/resolvers'
+import type { Blockstore } from 'interface-blockstore'
+import type { Datastore } from 'interface-datastore'
 
 const log = logger('basic-server')
 /**
@@ -21,45 +30,133 @@ export interface BasicServerOptions {
   IPFS_NS_MAP: string
 }
 
-const getLocalDnsResolver = (ipfsNsMap: string): DNSResolver => {
-  const log = logger('basic-server:dns')
-  const nsMap = new Map<string, string>()
-  const keyVals = ipfsNsMap.split(',')
-  for (const keyVal of keyVals) {
-    const [key, val] = keyVal.split(':')
-    log('Setting entry: %s="%s"', key, val)
-    nsMap.set(key, val)
-  }
-  return async (domain, options) => {
-    log.trace('Querying "%s" for types %O', domain, options?.types)
-    const actualDomainKey = domain.replace('_dnslink.', '')
-    const nsValue = nsMap.get(actualDomainKey)
-    if (nsValue == null) {
-      log.error('No IPFS_NS_MAP entry for domain "%s"', actualDomainKey)
-      throw new Error(`No IPFS_NS_MAP entry for domain "${actualDomainKey}"`)
-    }
-    const data = `dnslink=${nsValue}`
-    log.trace('Returning DNS response for %s: %s', domain, data)
+type Response = ServerResponse<IncomingMessage> & {
+  req: IncomingMessage
+}
 
-    return {
-      Status: 0,
-      TC: false,
-      RD: false,
-      RA: false,
-      AD: true,
-      CD: true,
-      Question: [{
-        name: domain,
-        type: 16
-      }],
-      Answer: [{
-        name: domain,
-        type: 16,
-        TTL: 180,
-        data
-        // data: 'dnslink=/ipfs/bafkqac3imvwgy3zao5xxe3de'
-      }]
+interface CreateHeliaOptions {
+  gateways: string[]
+  dnsResolvers: DNSResolver[]
+  blockstore: Blockstore
+  datastore: Datastore
+}
+
+/**
+ * We need to create helia manually so we can stub some of the things...
+ */
+async function createHelia (init: CreateHeliaOptions): Promise<ReturnType<typeof createHeliaHTTP>> {
+  return createHeliaHTTP({
+    blockBrokers: [
+      trustlessGateway({
+        allowInsecure: true,
+        allowLocal: true
+      })
+    ],
+    routers: [
+      httpGatewayRouting({
+        gateways: init.gateways
+      })
+    ],
+    dns: dns({
+      resolvers: {
+        '.': init.dnsResolvers
+      }
+    })
+  })
+}
+
+async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, { serverPort, useSessions, verifiedFetch, kuboGateway, localDnsResolver }: any): Promise<void> {
+  const log = logger('basic-server:request')
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200)
+    res.end()
+    return
+  }
+
+  if (req.url == null) {
+    // this should never happen
+    log.error('No URL provided, returning 400 Bad Request')
+    res.writeHead(400)
+    res.end('Bad Request')
+    return
+  }
+
+  const hostname = req.headers.host?.split(':')[0]
+  const host = req.headers['x-forwarded-for'] ?? `${hostname}:${serverPort}`
+
+  const fullUrlHref = req.headers.referer ?? `http://${host}${req.url}`
+  const urlLog = logger(`basic-server:request:${host}${req.url}`)
+  urlLog('configuring request')
+  urlLog.trace('req.headers: %O', req.headers)
+  let requestController: AbortController | null = new AbortController()
+  // we need to abort the request if the client disconnects
+  const onReqEnd = (): void => {
+    urlLog('client disconnected, aborting request')
+    requestController?.abort()
+  }
+  req.on('end', onReqEnd)
+
+  const reqTimeout = setTimeout(() => {
+    /**
+     * Abort the request because it's taking too long.
+     * This is only needed for when @helia/verified-fetch is not correctly
+     * handling a request and should not be needed once we have 100% gateway
+     * conformance coverage.
+     */
+    urlLog.error('timing out request')
+    requestController?.abort()
+  }, 2000)
+  reqTimeout.unref() // don't keep the process alive just for this timeout
+
+  const onResFinish = (): void => {
+    urlLog.trace('response finished, aborting signal')
+    requestController?.abort()
+  }
+  res.on('finish', onResFinish)
+
+  try {
+    urlLog.trace('calling verified-fetch')
+    const resp = await verifiedFetch(fullUrlHref, { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true })
+    urlLog.trace('verified-fetch response status: %d', resp.status)
+
+    // loop over headers and set them on the response
+    const headers: Record<string, string> = {}
+    for (const [key, value] of resp.headers.entries()) {
+      headers[key] = value
     }
+
+    res.writeHead(resp.status, headers)
+    if (resp.body == null) {
+      // need to convert ArrayBuffer to Buffer or Uint8Array
+      res.write(Buffer.from(await resp.arrayBuffer()))
+      urlLog.trace('wrote response')
+    } else {
+      // read the body of the response and write it to the response from the server
+      const reader = resp.body.getReader()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) {
+          urlLog.trace('response stream finished')
+          break
+        }
+
+        res.write(Buffer.from(value))
+      }
+    }
+    res.end()
+  } catch (e: any) {
+    urlLog.error('Problem with request: %s', e.message, e)
+    if (!res.headersSent) {
+      res.writeHead(500)
+    }
+    res.end(`Internal Server Error: ${e.message}`)
+  } finally {
+    urlLog.trace('Cleaning up request')
+    clearTimeout(reqTimeout)
+    requestController.abort()
+    requestController = null
+    req.off('end', onReqEnd)
+    res.off('finish', onResFinish)
   }
 }
 
@@ -73,79 +170,34 @@ export async function startBasicServer ({ kuboGateway, serverPort, IPFS_NS_MAP }
     throw new Error('options.kuboGateway or KUBO_GATEWAY env var is required')
   }
 
-  const localDnsResolver = getLocalDnsResolver(IPFS_NS_MAP)
-  const verifiedFetch = await createVerifiedFetch({
-    gateways: [kuboGateway],
-    routers: [],
-    allowInsecure: true,
-    allowLocal: true,
-    dnsResolvers: [localDnsResolver]
-  }, {
+  const blockstore = new MemoryBlockstore()
+  const datastore = getIpnsRecordDatastore()
+  const localDnsResolver = getLocalDnsResolver(IPFS_NS_MAP, kuboGateway)
+
+  const helia = await createHelia({ gateways: [kuboGateway], dnsResolvers: [localDnsResolver], blockstore, datastore })
+
+  const verifiedFetch = await createVerifiedFetch(helia, {
     contentTypeParser
   })
 
   const server = createServer((req, res) => {
-    if (req.method === 'OPTIONS') {
-      res.writeHead(200)
-      res.end()
-      return
-    }
+    try {
+      void createAndCallVerifiedFetch(req, res, { serverPort, useSessions, kuboGateway, localDnsResolver, verifiedFetch }).catch((err) => {
+        log.error('Error in createAndCallVerifiedFetch', err)
 
-    if (req.url == null) {
-      // this should never happen
-      res.writeHead(400)
-      res.end('Bad Request')
-      return
-    }
-
-    log.trace('req.headers: %O', req.headers)
-    const hostname = req.headers.host?.split(':')[0]
-    const host = req.headers['x-forwarded-for'] ?? `${hostname}:${serverPort}`
-
-    const fullUrlHref = req.headers.referer ?? `http://${host}${req.url}`
-    log('fetching %s', fullUrlHref)
-
-    const requestController = new AbortController()
-    // we need to abort the request if the client disconnects
-    req.on('close', () => {
-      log('client disconnected, aborting request')
-      requestController.abort()
-    })
-
-    void verifiedFetch(fullUrlHref, { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true }).then(async (resp) => {
-      // loop over headers and set them on the response
-      const headers: Record<string, string> = {}
-      for (const [key, value] of resp.headers.entries()) {
-        headers[key] = value
-      }
-
-      res.writeHead(resp.status, headers)
-      if (resp.body == null) {
-        // need to convert ArrayBuffer to Buffer or Uint8Array
-        res.write(Buffer.from(await resp.arrayBuffer()))
-      } else {
-        // read the body of the response and write it to the response from the server
-        const reader = resp.body.getReader()
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) {
-            break
-          }
-          log('typeof value: %s', typeof value)
-
-          res.write(Buffer.from(value))
+        if (!res.headersSent) {
+          res.writeHead(500)
         }
-      }
-      res.end()
-    }).catch((e) => {
-      log.error('Problem with request: %s', e.message, e)
+        res.end('Internal Server Error')
+      })
+    } catch (err) {
+      log.error('Error in createServer', err)
+
       if (!res.headersSent) {
         res.writeHead(500)
       }
-      res.end(`Internal Server Error: ${e.message}`)
-    }).finally(() => {
-      requestController.abort()
-    })
+      res.end('Internal Server Error')
+    }
   })
 
   server.listen(serverPort, () => {
@@ -153,7 +205,11 @@ export async function startBasicServer ({ kuboGateway, serverPort, IPFS_NS_MAP }
   })
 
   return async () => {
+    log('Stopping...')
     await new Promise<void>((resolve, reject) => {
+      // no matter what happens, we need to kill the server
+      server.closeAllConnections()
+      log('Closed all connections')
       server.close((err: any) => {
         if (err != null) {
           reject(err)

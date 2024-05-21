@@ -10,20 +10,21 @@ import { startReverseProxy } from './fixtures/reverse-proxy.js'
 
 const log = logger('demo-server')
 
-const { node: controller, gatewayUrl, repoPath } = await createKuboNode(await getPort(3440))
+const KUBO_GATEWAY_PORT = await getPort(3440)
+const SERVER_PORT = await getPort(3441)
+const PROXY_PORT = await getPort(3442)
+const { node: controller, gatewayUrl, repoPath } = await createKuboNode(KUBO_GATEWAY_PORT)
 
 const kuboGateway = gatewayUrl
 await controller.start()
-const IPFS_NS_MAP = await loadKuboFixtures(repoPath)
+const IPFS_NS_MAP = await loadKuboFixtures(repoPath, PROXY_PORT)
 
-const SERVER_PORT = await getPort(3441)
 await startBasicServer({
   serverPort: SERVER_PORT,
   kuboGateway,
   IPFS_NS_MAP
 })
 
-const PROXY_PORT = await getPort(3442)
 await startReverseProxy({
   backendPort: SERVER_PORT,
   targetHost: 'localhost',

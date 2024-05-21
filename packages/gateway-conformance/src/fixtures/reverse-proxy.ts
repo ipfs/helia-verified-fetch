@@ -64,6 +64,11 @@ const makeRequest = (options: RequestOptions, req: IncomingMessage, res: ServerR
     res.writeHead(500)
     res.end(`Internal Server Error: ${e.message}`)
   })
+
+  proxyReq.on('close', () => {
+    log.trace('Proxy request closed; ending response')
+    res.end()
+  })
 }
 
 export interface ReverseProxyOptions {
@@ -108,6 +113,18 @@ export async function startReverseProxy (options?: ReverseProxyOptions): Promise
   })
 
   return async function stopReverseProxy (): Promise<void> {
-    proxyServer?.close()
+    log('Stopping...')
+    await new Promise<void>((resolve, reject) => {
+      // no matter what happens, we need to kill the server
+      proxyServer.closeAllConnections()
+      log('Closed all connections')
+      proxyServer.close((err: any) => {
+        if (err != null) {
+          reject(err)
+        } else {
+          resolve()
+        }
+      })
+    })
   }
 }
