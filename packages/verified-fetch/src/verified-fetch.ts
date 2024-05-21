@@ -324,8 +324,11 @@ export class VerifiedFetch {
           this.log('could not redirect to %s/ as redirect option was set to "error"', resource)
           throw new TypeError('Failed to fetch')
         } else if (options?.redirect === 'manual') {
-          this.log('returning 301 permanent redirect to %s/', resource)
-          return movedPermanentlyResponse(resource, `${resource}/`)
+          const url = new URL(resource)
+          const redirectPath = `${url.pathname}/`
+          this.log('returning 301 permanent redirect to %s', redirectPath)
+
+          return movedPermanentlyResponse(resource, url.pathname)
         }
 
         // fall-through simulates following the redirect?
