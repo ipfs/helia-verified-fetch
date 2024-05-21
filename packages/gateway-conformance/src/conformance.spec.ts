@@ -30,10 +30,12 @@ function getGatewayConformanceBinaryPath (): string {
 function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArgs: string[] = []): string[] {
   return [
     'test',
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
+    // `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    '--gateway-url=http://127.0.0.1:3441', // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    // `--gateway-url=http://${process.env.CONFORMANCE_HOST!}`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    // `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:3441`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    // `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
     '--verbose',
     '--json', `gwc-report-${name}.json`,
     ...gwcArgs,
@@ -175,7 +177,15 @@ const tests: TestConfig[] = [
   },
   {
     name: 'TestGatewaySubdomains',
-    run: ['TestGatewaySubdomains'],
+    run: [
+      'TestGatewaySubdomains'
+      // 100%
+      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv0%7D_redirects_to_CIDv1_representation_in_subdomain_%28direct_HTTP%29/Header_Location'
+      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv1%7D_redirects_to_subdomain_%28direct_HTTP%29/Status_code'
+    ],
+    skip: [
+      'TestGatewaySubdomains/.*HTTP_proxy_tunneling_via_CONNECT' // verified fetch should not be doing HTTP proxy tunneling.
+    ],
     successRate: 7.17
   },
   // times out

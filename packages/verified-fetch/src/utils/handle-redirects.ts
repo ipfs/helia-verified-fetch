@@ -2,16 +2,19 @@ import { type AbortOptions, type ComponentLogger } from '@libp2p/interface'
 import { type VerifiedFetchInit, type Resource } from '../index.js'
 import { matchURLString } from './parse-url-string.js'
 import { movedPermanentlyResponse } from './responses.js'
+import type { CID } from 'multiformats/cid'
 
 interface GetRedirectResponse {
+  cid: CID
   resource: Resource
   options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
   logger: ComponentLogger
 
 }
 
-export async function getRedirectResponse ({ resource, options, logger }: GetRedirectResponse): Promise<null | Response> {
+export async function getRedirectResponse ({ resource, options, logger, cid }: GetRedirectResponse): Promise<null | Response> {
   const log = logger.forComponent('helia:verified-fetch:get-redirect-response')
+  const headers = new Headers(options?.headers)
   if (typeof resource !== 'string' || options == null) {
     return null
   }
@@ -20,24 +23,34 @@ export async function getRedirectResponse ({ resource, options, logger }: GetRed
   // so that the browser can redirect to the correct subdomain
   try {
     // TODO: handle checking if subdomains are enabled and set location to subdomain host instead.
-    const headers = new Headers(options?.headers)
     // if (headers.get('x-forwarded-host') != null) {
     const urlParts = matchURLString(resource)
     const reqUrl = new URL(resource)
-    const actualHost = headers.get('x-forwarded-host') ?? reqUrl.host
+    const forwardedHost = headers.get('x-forwarded-host')
+    const actualHost = forwardedHost ?? reqUrl.host
     // const subdomainUrl = new URL(reqUrl, `${reqUrl.protocol}//${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}.${actualHost}`)
     const subdomainUrl = new URL(reqUrl)
-    subdomainUrl.host = `${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}.${actualHost}`
+    if (urlParts.protocol === 'ipfs' && cid.version === 0) {
+      subdomainUrl.host = `${cid.toV1()}.ipfs.${actualHost}`
+    } else {
+      subdomainUrl.host = `${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}.${actualHost}`
+    }
 
     log.trace('headers.get(\'host\')=%s', headers.get('host'))
     log.trace('headers.get(\'x-forwarded-host\')=%s', headers.get('x-forwarded-host'))
     log.trace('headers.get(\'x-forwarded-for\')=%s', headers.get('x-forwarded-for'))
-    if (headers.get('host') != null && headers.get('host') === reqUrl.host) {
+    const headerHost = headers.get('host')
+
+    if (headerHost != null && !subdomainUrl.host.includes(headerHost)) {
+      log.trace('host header is not the same as the subdomain url host, not setting location header')
+      return null
+    }
+    if (reqUrl.host === subdomainUrl.host) {
       // log.trace('host header is the same as the request url host, not setting location header')
-      log.trace('host header is the same as the request url host')
-      // return null
+      log.trace('req url is the same as the subdomain url, not setting location header')
+      return null
     } else {
-      log.trace('host header is different from the request url host')
+      log.trace('req url is different from the subdomain url, attempting to set the location header')
     }
 
     subdomainUrl.pathname = reqUrl.pathname.replace(`/${urlParts.cidOrPeerIdOrDnsLink}`, '').replace(`/${urlParts.protocol}`, '')

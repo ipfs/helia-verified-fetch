@@ -1,4 +1,5 @@
 import { request, createServer, type RequestOptions, type IncomingMessage, type ServerResponse } from 'node:http'
+import { connect } from 'node:net'
 import { logger } from '@libp2p/logger'
 
 const log = logger('reverse-proxy')

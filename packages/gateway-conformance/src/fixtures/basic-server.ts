@@ -5,6 +5,7 @@ import { httpGatewayRouting } from '@helia/routers'
 import { logger } from '@libp2p/logger'
 import { dns } from '@multiformats/dns'
 import { MemoryBlockstore } from 'blockstore-core'
+import { Agent, setGlobalDispatcher } from 'undici'
 import { contentTypeParser } from './content-type-parser.js'
 import { createVerifiedFetch } from './create-verified-fetch.js'
 import { getLocalDnsResolver } from './get-local-dns-resolver.js'
@@ -72,6 +73,11 @@ async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, 
     res.end()
     return
   }
+  if (req.method === 'HEAD') {
+    res.writeHead(200)
+    res.end()
+    return
+  }
 
   if (req.url == null) {
     // this should never happen
@@ -80,12 +86,16 @@ async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, 
     res.end('Bad Request')
     return
   }
+  // const url = new URL(kuboGateway)
+  // const host = url.host
 
-  const hostname = req.headers.host?.split(':')[0]
-  const host = req.headers['x-forwarded-for'] ?? `${hostname}:${serverPort}`
+  // const hostname = req.headers.host?.split(':')[0]
+  // const host = req.headers['x-forwarded-host'] ?? `localhost:${serverPort}` // `${hostname}:${serverPort}`
+  const fullUrlHref = new URL(req.url, `http://${req.headers.host}`)
+  // req.headers['x-forwarded-host'] = `localhost:${serverPort}`
 
-  const fullUrlHref = req.headers.referer ?? `http://${host}${req.url}`
-  const urlLog = logger(`basic-server:request:${host}${req.url}`)
+  // const fullUrlHref = req.headers.referer ?? `http://${host}${req.url}`
+  const urlLog = logger(`basic-server:request:${fullUrlHref}`)
   urlLog('configuring request')
   urlLog.trace('req.headers: %O', req.headers)
   let requestController: AbortController | null = new AbortController()
@@ -116,7 +126,8 @@ async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, 
 
   try {
     urlLog.trace('calling verified-fetch')
-    const resp = await verifiedFetch(fullUrlHref, { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true })
+    const resp = await verifiedFetch(fullUrlHref.toString(), { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: req.headers })
+    // const resp = await verifiedFetch(fullUrlHref.toString(), { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: req.headers })
     urlLog.trace('verified-fetch response status: %d', resp.status)
 
     // loop over headers and set them on the response
@@ -161,6 +172,12 @@ async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, 
 }
 
 export async function startBasicServer ({ kuboGateway, serverPort, IPFS_NS_MAP }: BasicServerOptions): Promise<() => Promise<void>> {
+  const staticDnsAgent = new Agent({
+    connect: {
+      lookup: (_hostname, _options, callback) => { callback(null, [{ address: '0.0.0.0', family: 4 }]) }
+    }
+  })
+  setGlobalDispatcher(staticDnsAgent)
   kuboGateway = kuboGateway ?? process.env.KUBO_GATEWAY
   const useSessions = process.env.USE_SESSIONS !== 'false'
 

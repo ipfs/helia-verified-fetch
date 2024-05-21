@@ -512,7 +512,7 @@ export class VerifiedFetch {
     let response: Response
     let reqFormat: RequestFormatShorthand | undefined
 
-    const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger })
+    const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid })
     if (redirectResponse != null) {
       return redirectResponse
     }
