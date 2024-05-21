@@ -24,7 +24,9 @@ import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
+import { getRedirectResponse } from './utils/handle-redirects.js'
 import { parseResource } from './utils/parse-resource.js'
+import { type ParsedUrlStringResults } from './utils/parse-url-string.js'
 import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
 import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
@@ -32,7 +34,6 @@ import { selectOutputType } from './utils/select-output-type.js'
 import { handlePathWalking, isObjectNode } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
-import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
@@ -510,6 +511,11 @@ export class VerifiedFetch {
 
     let response: Response
     let reqFormat: RequestFormatShorthand | undefined
+
+    const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger })
+    if (redirectResponse != null) {
+      return redirectResponse
+    }
 
     const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options }
 
