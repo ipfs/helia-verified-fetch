@@ -58,11 +58,11 @@
   },
   "dependencies": {
     "@helia/verified-fetch": "1.4.2",
-    "aegir": "^42.2.5",
-    "execa": "^8.0.1",
+    "aegir": "^42.2.11",
+    "execa": "^9.1.0",
     "fast-glob": "^3.3.2",
     "ipfsd-ctl": "^14.1.0",
-    "kubo": "^0.27.0",
+    "kubo": "^0.28.0",
     "kubo-rpc-client": "^4.1.1",
     "magic-bytes.js": "^1.10.0",
     "multiformats": "^13.1.0"
