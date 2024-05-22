@@ -9,6 +9,7 @@ import { Agent, setGlobalDispatcher } from 'undici'
 import { contentTypeParser } from './content-type-parser.js'
 import { createVerifiedFetch } from './create-verified-fetch.js'
 import { getLocalDnsResolver } from './get-local-dns-resolver.js'
+import { convertNodeJsHeadersToFetchHeaders } from './header-utils.js'
 import { getIpnsRecordDatastore } from './ipns-record-datastore.js'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { Blockstore } from 'interface-blockstore'
@@ -68,7 +69,13 @@ async function createHelia (init: CreateHeliaOptions): Promise<ReturnType<typeof
   })
 }
 
-async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, { serverPort, useSessions, verifiedFetch, kuboGateway, localDnsResolver }: any): Promise<void> {
+interface CallVerifiedFetchOptions {
+  serverPort: number
+  useSessions: boolean
+  verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>
+}
+
+async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverPort, useSessions, verifiedFetch }: CallVerifiedFetchOptions): Promise<void> {
   const log = logger('basic-server:request')
   if (req.method === 'OPTIONS') {
     res.writeHead(200)
@@ -130,7 +137,7 @@ async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, 
 
   try {
     urlLog.trace('calling verified-fetch')
-    const resp = await verifiedFetch(fullUrlHref.toString(), { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: req.headers })
+    const resp = await verifiedFetch(fullUrlHref.toString(), { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: convertNodeJsHeadersToFetchHeaders(req.headers) })
     urlLog.trace('verified-fetch response status: %d', resp.status)
 
     // loop over headers and set them on the response
@@ -138,7 +145,7 @@ async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, 
     for (const [key, value] of resp.headers.entries()) {
       if (fixingGwcAnnoyance) {
         urlLog.trace('need to fix GWC annoyance.')
-        if (value.includes(`localhost:${serverPort}`) === true) {
+        if (value.includes(`localhost:${serverPort}`)) {
           const newValue = value.replace(`localhost:${serverPort}`, 'localhost')
           urlLog.trace('fixing GWC annoyance. Replacing Header[%s] value of "%s" with "%s"', key, value, newValue)
           // we need to fix any Location, or other headers that have localhost without port in them.
@@ -215,8 +222,8 @@ export async function startBasicServer ({ kuboGateway, serverPort, IPFS_NS_MAP }
 
   const server = createServer((req, res) => {
     try {
-      void createAndCallVerifiedFetch(req, res, { serverPort, useSessions, kuboGateway, localDnsResolver, verifiedFetch }).catch((err) => {
-        log.error('Error in createAndCallVerifiedFetch', err)
+      void callVerifiedFetch(req, res, { serverPort, useSessions, verifiedFetch }).catch((err) => {
+        log.error('Error in callVerifiedFetch', err)
 
         if (!res.headersSent) {
           res.writeHead(500)
