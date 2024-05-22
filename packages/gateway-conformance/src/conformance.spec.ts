@@ -189,6 +189,10 @@ const tests: TestConfig[] = [
     ],
     skip: [
       'TestGatewaySubdomains/.*HTTP_proxy_tunneling_via_CONNECT' // verified fetch should not be doing HTTP proxy tunneling.
+      // TODO: add directory listing support to verified-fetch
+      // 'TestGatewaySubdomains/.*directory_listing_at_%7Bcid%7D.ipfs.example.com%2Fsub%2Fdir_%28direct_HTTP%29',
+      // 'TestGatewaySubdomains/valid_file_and_subdirectory_paths_in_directory_listing_at_%7Bcid%7D.ipfs.example.com_%28direct_HTTP%29/Status_code',
+      // 'TestGatewaySubdomains/valid_file_and_subdirectory_paths_in_directory_listing_at_%7Bcid%7D.ipfs.example.com_%28direct_HTTP%29/Body'
     ],
     successRate: 41.35
   },
