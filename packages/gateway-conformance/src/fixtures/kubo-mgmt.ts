@@ -108,7 +108,7 @@ export async function loadFixtures (kuboRepoDir: string, proxyPort: number): Pro
 
   const json = await readFile(`${GWC_FIXTURES_PATH}/dnslinks.json`, 'utf-8')
   const { subdomains, domains } = JSON.parse(json)
-  const subdomainDnsLinks = Object.entries(subdomains).map(([key, value]) => `${key}.localhost:${value}`).join(',')
+  const subdomainDnsLinks = Object.entries(subdomains).map(([key, value]) => `${key}.localhost%3A${3441}:${value}`).join(',')
   const domainDnsLinks = Object.entries(domains).map(([key, value]) => `${key}:${value}`).join(',')
   const ipfsNsMap = `${domainDnsLinks},${subdomainDnsLinks}`
 

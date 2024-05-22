@@ -180,6 +180,9 @@ const tests: TestConfig[] = [
     run: [
       'TestGatewaySubdomains'
       // 100%
+      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv1%7D%2F%7Bfilename_with_percent_encoding%7D_redirects_to_subdomain_%28direct_HTTP%29'
+      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv1%7D%2F%7Bfilename_with_percent_encoding%7D_redirects_to_subdomain_%28direct_HTTP%29/Status_code'
+      // 'TestGatewaySubdomains/request_for_%7BCID%7D.ipfs.example.com%2Fipfs%2F%7BCID%7D_should_return_HTTP_404_%28direct_HTTP%29/Status_code'
       // 'TestGatewaySubdomains/request_for_%7BCID%7D.ipfs.example.com_should_return_expected_payload_%28direct_HTTP%29/Status_code',
       // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv0%7D_redirects_to_CIDv1_representation_in_subdomain_%28direct_HTTP%29/Header_Location',
       // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv1%7D_redirects_to_subdomain_%28direct_HTTP%29/Status_code'
@@ -187,7 +190,7 @@ const tests: TestConfig[] = [
     skip: [
       'TestGatewaySubdomains/.*HTTP_proxy_tunneling_via_CONNECT' // verified fetch should not be doing HTTP proxy tunneling.
     ],
-    successRate: 7.17
+    successRate: 41.35
   },
   // times out
   // {

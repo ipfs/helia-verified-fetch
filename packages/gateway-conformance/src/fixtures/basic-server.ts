@@ -86,15 +86,17 @@ async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, 
     res.end('Bad Request')
     return
   }
-  // const url = new URL(kuboGateway)
-  // const host = url.host
 
-  // const hostname = req.headers.host?.split(':')[0]
-  // const host = req.headers['x-forwarded-host'] ?? `localhost:${serverPort}` // `${hostname}:${serverPort}`
+  // @see https://github.com/ipfs/gateway-conformance/issues/185#issuecomment-2123708150
+  let fixingGwcAnnoyance = false
+  if (req.headers.host != null && (req.headers.host === 'localhost' || req.headers.Host === 'localhost')) {
+    log.trace('set fixingGwcAnnoyance to true')
+    fixingGwcAnnoyance = true
+    req.headers.host = `localhost:${serverPort}`
+  }
+
   const fullUrlHref = new URL(req.url, `http://${req.headers.host}`)
-  // req.headers['x-forwarded-host'] = `localhost:${serverPort}`
 
-  // const fullUrlHref = req.headers.referer ?? `http://${host}${req.url}`
   const urlLog = logger(`basic-server:request:${fullUrlHref}`)
   urlLog('configuring request')
   urlLog.trace('req.headers: %O', req.headers)
@@ -127,13 +129,25 @@ async function createAndCallVerifiedFetch (req: IncomingMessage, res: Response, 
   try {
     urlLog.trace('calling verified-fetch')
     const resp = await verifiedFetch(fullUrlHref.toString(), { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: req.headers })
-    // const resp = await verifiedFetch(fullUrlHref.toString(), { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: req.headers })
     urlLog.trace('verified-fetch response status: %d', resp.status)
 
     // loop over headers and set them on the response
     const headers: Record<string, string> = {}
     for (const [key, value] of resp.headers.entries()) {
-      headers[key] = value
+      if (fixingGwcAnnoyance) {
+        urlLog.trace('need to fix GWC annoyance.')
+        if (value.includes(`localhost:${serverPort}`) === true) {
+          const newValue = value.replace(`localhost:${serverPort}`, 'localhost')
+          urlLog.trace('fixing GWC annoyance. Replacing Header[%s] value of "%s" with "%s"', key, value, newValue)
+          // we need to fix any Location, or other headers that have localhost without port in them.
+          headers[key] = newValue
+        } else {
+          urlLog.trace('NOT fixing GWC annoyance. Setting Header[%s] value of "%s"', key, value)
+          headers[key] = value
+        }
+      } else {
+        headers[key] = value
+      }
     }
 
     res.writeHead(resp.status, headers)

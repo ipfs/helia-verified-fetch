@@ -12,12 +12,21 @@ interface GetRedirectResponse {
 
 }
 
+function maybeAddTraillingSlash (path: string): string {
+  // if it has an extension-like ending, don't add a trailing slash
+  if (path.match(/\.[a-zA-Z0-9]{1,4}$/) != null) {
+    return path
+  }
+  return path.endsWith('/') ? path : `${path}/`
+}
+
 export async function getRedirectResponse ({ resource, options, logger, cid }: GetRedirectResponse): Promise<null | Response> {
   const log = logger.forComponent('helia:verified-fetch:get-redirect-response')
 
   if (typeof resource !== 'string' || options == null || ['ipfs://', 'ipns://'].some((prefix) => resource.startsWith(prefix))) {
     return null
   }
+
   const headers = new Headers(options?.headers)
   const forwardedHost = headers.get('x-forwarded-host')
   const headerHost = headers.get('host')
@@ -65,11 +74,11 @@ export async function getRedirectResponse ({ resource, options, logger, cid }: G
       log.trace('req url is different from the subdomain url, attempting to set the location header')
     }
 
-    subdomainUrl.pathname = reqUrl.pathname.replace(`/${urlParts.cidOrPeerIdOrDnsLink}`, '').replace(`/${urlParts.protocol}`, '') + '/'
+    subdomainUrl.pathname = maybeAddTraillingSlash(reqUrl.pathname.replace(`/${urlParts.cidOrPeerIdOrDnsLink}`, '').replace(`/${urlParts.protocol}`, ''))
     // log.trace('subdomain url %s, given input: %s', subdomainUrl.href, `${reqUrl.protocol}//${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}.${actualHost}`)
     log.trace('subdomain url %s', subdomainUrl.href)
     const pathUrl = new URL(reqUrl, `${reqUrl.protocol}//${actualHost}`)
-    pathUrl.pathname = reqUrl.pathname + '/'
+    pathUrl.pathname = maybeAddTraillingSlash(reqUrl.pathname)
     log.trace('path url %s', pathUrl.href)
     // const url = new URL(reqUrl, `${reqUrl.protocol}//${actualHost}`)
     // try to query subdomain with HEAD request to see if it's supported
@@ -78,6 +87,9 @@ export async function getRedirectResponse ({ resource, options, logger, cid }: G
       if (subdomainTest.ok) {
         log('subdomain supported, redirecting to subdomain')
         return movedPermanentlyResponse(resource.toString(), subdomainUrl.href)
+      } else {
+        log('subdomain not supported, subdomain failed with status %s %s', subdomainTest.status, subdomainTest.statusText)
+        throw new Error('subdomain not supported')
       }
     } catch (err: any) {
       log('subdomain not supported, redirecting to path', err)
