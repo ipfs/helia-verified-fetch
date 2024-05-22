@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-env mocha */
 import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
@@ -30,12 +29,8 @@ function getGatewayConformanceBinaryPath (): string {
 function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArgs: string[] = []): string[] {
   return [
     'test',
-    // `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    '--gateway-url=http://127.0.0.1:3441', // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    // `--gateway-url=http://${process.env.CONFORMANCE_HOST!}`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    // `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:3441`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    // `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}`, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    `--gateway-url=http://127.0.0.1:${process.env.SERVER_PORT}`,
+    `--subdomain-url=http://${process.env.CONFORMANCE_HOST}:${process.env.SERVER_PORT}`,
     '--verbose',
     '--json', `gwc-report-${name}.json`,
     ...gwcArgs,
@@ -293,9 +288,6 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     if (process.env.KUBO_GATEWAY == null) {
       throw new Error('KUBO_GATEWAY env var is required')
     }
-    if (process.env.PROXY_PORT == null) {
-      throw new Error('PROXY_PORT env var is required')
-    }
     if (process.env.SERVER_PORT == null) {
       throw new Error('SERVER_PORT env var is required')
     }
@@ -303,7 +295,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       throw new Error('CONFORMANCE_HOST env var is required')
     }
     // see https://stackoverflow.com/questions/71074255/use-custom-dns-resolver-for-any-request-in-nodejs
-    // EVERY undici/fetch request host resolves to local IP. Node.js does not resolve reverse-proxy requests properly
+    // EVERY undici/fetch request host resolves to local IP. Without this, Node.js does not resolve subdomain requests properly
     const staticDnsAgent = new Agent({
       connect: {
         lookup: (_hostname, _options, callback) => { callback(null, [{ address: '0.0.0.0', family: 4 }]) }
@@ -388,25 +380,17 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       this.timeout(200000)
       const log = logger.forComponent('all')
 
-      // TODO: unskip when verified-fetch is no longer infinitely looping on requests.
-      const toSkip = [
-        'TestNativeDag',
-        'TestTrustlessCarEntityBytes',
-        'TestUnixFSDirectoryListingOnSubdomainGateway',
-        'TestGatewayCache',
-        'TestUnixFSDirectoryListing',
-        '.*/.*TODO:_cleanup_Kubo-specifics'
-      ]
-      const skip = ['-skip', toSkip.join('|')]
-
-      const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all', [], skip), { reject: false, signal: AbortSignal.timeout(200000) })
+      const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all', [], []), { reject: false, signal: AbortSignal.timeout(200000) })
 
       log(stdout)
       log.error(stderr)
 
       const { successRate } = await getReportDetails('gwc-report-all.json')
+      const knownSuccessRate = 39.19
+      // check latest success rate with `SUCCESS_RATE=100 npm run test -- -g 'total'`
+      const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : knownSuccessRate
 
-      expect(successRate).to.be.greaterThanOrEqual(22.61)
+      expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate)
     })
   })
 })

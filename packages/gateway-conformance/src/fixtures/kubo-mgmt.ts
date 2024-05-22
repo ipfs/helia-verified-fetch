@@ -34,10 +34,10 @@ export const GWC_FIXTURES_PATH = posix.resolve(__dirname, 'gateway-conformance-f
 /**
  * use `createKuboNode' to start a kubo node prior to loading fixtures.
  */
-export async function loadKuboFixtures (kuboRepoDir: string, proxyPort: number): Promise<string> {
+export async function loadKuboFixtures (kuboRepoDir: string): Promise<string> {
   await downloadFixtures()
 
-  return loadFixtures(kuboRepoDir, proxyPort)
+  return loadFixtures(kuboRepoDir)
 }
 
 function getExecaOptions ({ cwd, ipfsNsMap, kuboRepoDir }: { cwd?: string, ipfsNsMap?: string, kuboRepoDir?: string } = {}): { cwd: string, env: Record<string, string | undefined> } {
@@ -72,7 +72,7 @@ async function downloadFixtures (force = false): Promise<void> {
   }
 }
 
-export async function loadFixtures (kuboRepoDir: string, proxyPort: number): Promise<string> {
+export async function loadFixtures (kuboRepoDir: string): Promise<string> {
   const execaOptions = getExecaOptions({ kuboRepoDir })
 
   const carPath = `${GWC_FIXTURES_PATH}/**/*.car`
