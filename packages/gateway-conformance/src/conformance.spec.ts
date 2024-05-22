@@ -96,12 +96,12 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayJSONCborAndIPNS',
     run: ['TestGatewayJSONCborAndIPNS'],
-    successRate: 24.24
+    successRate: 51.52
   },
   {
     name: 'TestGatewayIPNSPath',
     run: ['TestGatewayIPNSPath'],
-    successRate: 27.27
+    successRate: 100
   },
   {
     name: 'TestRedirectCanonicalIPNS',
@@ -127,7 +127,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayIPNSRecord',
     run: ['TestGatewayIPNSRecord'],
-    successRate: 0
+    successRate: 17.39
   },
   {
     name: 'TestTrustlessCarOrderAndDuplicates',
@@ -170,7 +170,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewaySubdomainAndIPNS',
     run: ['TestGatewaySubdomainAndIPNS'],
-    successRate: 0
+    successRate: 31.58
   },
   {
     name: 'TestGatewaySubdomains',
@@ -233,7 +233,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayCacheWithIPNS',
     run: ['TestGatewayCacheWithIPNS'],
-    successRate: 35.71
+    successRate: 66.67
   },
   // {
   //   // passes at the set successRate, but takes incredibly long (consistently ~2m).. disabling for now.
@@ -307,9 +307,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
   describe('smokeTests', () => {
     [
       ['basic server path request works', `http://localhost:${process.env.SERVER_PORT}/ipfs/bafkqabtimvwgy3yk`],
-      // ['proxy server path request works', `http://localhost:${process.env.PROXY_PORT}/ipfs/bafkqabtimvwgy3yk`],
       ['basic server subdomain request works', `http://bafkqabtimvwgy3yk.ipfs.localhost:${process.env.SERVER_PORT}`]
-      // ['proxy server subdomain request works', `http://bafkqabtimvwgy3yk.ipfs.localhost:${process.env.PROXY_PORT}`]
     ].forEach(([name, url]) => {
       it(name, async () => {
         const resp = await fetch(url)
@@ -386,7 +384,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       log.error(stderr)
 
       const { successRate } = await getReportDetails('gwc-report-all.json')
-      const knownSuccessRate = 39.19
+      const knownSuccessRate = 42.47
       // check latest success rate with `SUCCESS_RATE=100 npm run test -- -g 'total'`
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : knownSuccessRate
 

@@ -47,6 +47,8 @@ interface CreateHeliaOptions {
  */
 async function createHelia (init: CreateHeliaOptions): Promise<ReturnType<typeof createHeliaHTTP>> {
   return createHeliaHTTP({
+    blockstore: init.blockstore,
+    datastore: init.datastore,
     blockBrokers: [
       trustlessGateway({
         allowInsecure: true,
