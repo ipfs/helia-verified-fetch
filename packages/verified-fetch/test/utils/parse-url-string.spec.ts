@@ -931,4 +931,18 @@ describe('parseUrlString', () => {
       })
     })
   })
+
+  describe('subdomainURLs with paths', () => {
+    it('should correctly parse a subdomain that also has /ipfs in the path', async () => {
+      // straight from gateway-conformance test: http://bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am.ipfs.localhost:3441/ipfs/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am
+      await assertMatchUrl(
+        'http://bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am.ipfs.localhost:3441/ipfs/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am', {
+          protocol: 'ipfs',
+          cid: 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am',
+          path: 'ipfs/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am',
+          query: {}
+        }
+      )
+    })
+  })
 })
