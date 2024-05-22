@@ -1,3 +1,10 @@
+## @helia/verified-fetch-gateway-conformance [1.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.1.0...@helia/verified-fetch-gateway-conformance-1.1.1) (2024-05-16)
+
+
+### Tests
+
+* use successRate for gateway conformance tests ([#83](https://github.com/ipfs/helia-verified-fetch/issues/83)) ([5f71a33](https://github.com/ipfs/helia-verified-fetch/commit/5f71a334cdaa30bca559796fe54e37629cde0e4f))
+
 ## @helia/verified-fetch-gateway-conformance [1.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.0.1...@helia/verified-fetch-gateway-conformance-1.1.0) (2024-05-16)
 
 
