@@ -84,10 +84,14 @@ describe('content-type-parser', () => {
 
   it('is passed a filename from a deep traversal if it is available', async () => {
     const fs = unixfs(helia)
-    const deepDirCid = await fs.addFile({
-      path: 'foo/bar/a-file.html',
-      content: uint8ArrayFromString('<html><body>Hello world</body></html>')
-    })
+
+    let barDir = await fs.addDirectory({ path: './bar' })
+    const aFileHtml = await fs.addFile({ path: './bar/a-file.html', content: uint8ArrayFromString('<html><body>Hello world</body></html>') })
+    barDir = await fs.cp(aFileHtml, barDir, 'a-file.html')
+    let fooDir = await fs.addDirectory({ path: './foo' })
+    fooDir = await fs.cp(barDir, fooDir, 'bar')
+    let deepDirCid = await fs.addDirectory()
+    deepDirCid = await fs.cp(fooDir, deepDirCid, 'foo')
 
     verifiedFetch = new VerifiedFetch({
       helia
@@ -95,6 +99,7 @@ describe('content-type-parser', () => {
       contentTypeParser: async (data, fileName) => fileName
     })
     const resp = await verifiedFetch.fetch(`ipfs://${deepDirCid}/foo/bar/a-file.html`)
+    expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('a-file.html')
   })
 
