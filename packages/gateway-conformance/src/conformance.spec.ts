@@ -401,7 +401,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
       const { successRate } = await getReportDetails('gwc-report-all.json')
 
-      expect(successRate).to.be.greaterThanOrEqual(15.7)
+      expect(successRate).to.be.greaterThanOrEqual(22.61)
     })
   })
 })
