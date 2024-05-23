@@ -7,7 +7,7 @@ import { expect } from 'aegir/chai'
 import { execa } from 'execa'
 import { Agent, setGlobalDispatcher } from 'undici'
 
-const logger = prefixLogger('conformance-tests')
+const logger = prefixLogger('gateway-conformance')
 
 interface TestConfig {
   name: string
@@ -334,16 +334,21 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
     after(async () => {
       const log = logger.forComponent('after')
-      try {
-        await execa('rm', [binaryPath])
-        log('gateway-conformance binary successfully uninstalled.')
-      } catch (error) {
-        log.error(`Error removing "${binaryPath}"`, error)
+
+      if (process.env.GATEWAY_CONFORMANCE_BINARY == null) {
+        try {
+          await execa('rm', [binaryPath])
+          log('gateway-conformance binary successfully uninstalled.')
+        } catch (error) {
+          log.error(`Error removing "${binaryPath}"`, error)
+        }
+      } else {
+        log('Not removing custom gateway-conformance binary at %s', binaryPath)
       }
     })
 
     tests.forEach(({ name, spec, skip, run, timeout, successRate: minSuccessRate }) => {
-      const log = logger.forComponent(name)
+      const log = logger.forComponent(`output:${name}`)
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
 
       it(`${name} has a success rate of at least ${expectedSuccessRate}%`, async function () {
@@ -376,7 +381,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
      */
     it('has expected total failures and successes', async function () {
       this.timeout(200000)
-      const log = logger.forComponent('all')
+      const log = logger.forComponent('output:all')
 
       const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all', [], []), { reject: false, cancelSignal: AbortSignal.timeout(200000) })
 

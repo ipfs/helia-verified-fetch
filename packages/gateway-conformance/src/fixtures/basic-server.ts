@@ -98,8 +98,8 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
 
   // @see https://github.com/ipfs/gateway-conformance/issues/185#issuecomment-2123708150
   let fixingGwcAnnoyance = false
-  if (req.headers.host != null && (req.headers.host === 'localhost' || req.headers.Host === 'localhost')) {
-    log.trace('set fixingGwcAnnoyance to true for %s', req.url)
+  if (req.headers.host != null && req.headers.host === 'localhost') {
+    log.trace('set fixingGwcAnnoyance to true for %s', new URL(req.url, `http://${req.headers.host}`).href)
     fixingGwcAnnoyance = true
     req.headers.host = `localhost:${serverPort}`
   }
