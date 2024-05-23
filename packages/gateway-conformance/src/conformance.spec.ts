@@ -86,13 +86,11 @@ const tests: TestConfig[] = [
     run: ['TestGatewayJsonCbor'],
     successRate: 22.22
   },
-  // currently results in an infinite loop without verified-fetch stopping the request whether sessions are enabled or not.
-  // {
-  //   name: 'TestNativeDag',
-  //   run: ['TestNativeDag'],
-  //   successRate: 100,
-  //   timeout: 120000
-  // },
+  {
+    name: 'TestNativeDag',
+    run: ['TestNativeDag'],
+    successRate: 60.71
+  },
   {
     name: 'TestGatewayJSONCborAndIPNS',
     run: ['TestGatewayJSONCborAndIPNS'],
@@ -134,8 +132,8 @@ const tests: TestConfig[] = [
     run: ['TestTrustlessCarOrderAndDuplicates'],
     successRate: 44.83
   },
-  // times out
   // {
+  //   // currently timing out
   //   name: 'TestTrustlessCarEntityBytes',
   //   run: ['TestTrustlessCarEntityBytes'],
   //   successRate: 100
@@ -146,11 +144,13 @@ const tests: TestConfig[] = [
     successRate: 54.55
   },
   // {
+  //   // currently timing out
   //   name: 'TestTrustlessCarDagScopeEntity',
   //   run: ['TestTrustlessCarDagScopeEntity'],
   //   successRate: 34.57
   // },
   // {
+  //   // currently timing out
   //   name: 'TestTrustlessCarDagScopeBlock',
   //   run: ['TestTrustlessCarDagScopeBlock'],
   //   successRate: 34.69
@@ -163,9 +163,10 @@ const tests: TestConfig[] = [
   //   timeout: 130000
   // },
   // {
+  //   // currently timing out
   //   name: 'TestSubdomainGatewayDNSLinkInlining',
   //   run: ['TestSubdomainGatewayDNSLinkInlining'],
-  //   successRate: 0
+  //   successRate: 100
   // },
   {
     name: 'TestGatewaySubdomainAndIPNS',
@@ -173,32 +174,21 @@ const tests: TestConfig[] = [
     successRate: 31.58
   },
   {
+    // TODO: add directory listing support to verified-fetch
     name: 'TestGatewaySubdomains',
     run: [
       'TestGatewaySubdomains'
-      // 100%
-      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv1%7D%2F%7Bfilename_with_percent_encoding%7D_redirects_to_subdomain_%28direct_HTTP%29'
-      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv1%7D%2F%7Bfilename_with_percent_encoding%7D_redirects_to_subdomain_%28direct_HTTP%29/Status_code'
-      // 'TestGatewaySubdomains/request_for_%7BCID%7D.ipfs.example.com%2Fipfs%2F%7BCID%7D_should_return_HTTP_404_%28direct_HTTP%29/Status_code'
-      // 'TestGatewaySubdomains/request_for_%7BCID%7D.ipfs.example.com_should_return_expected_payload_%28direct_HTTP%29/Status_code',
-      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv0%7D_redirects_to_CIDv1_representation_in_subdomain_%28direct_HTTP%29/Header_Location',
-      // 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv1%7D_redirects_to_subdomain_%28direct_HTTP%29/Status_code'
     ],
     skip: [
       'TestGatewaySubdomains/.*HTTP_proxy_tunneling_via_CONNECT' // verified fetch should not be doing HTTP proxy tunneling.
-      // TODO: add directory listing support to verified-fetch
-      // 'TestGatewaySubdomains/.*directory_listing_at_%7Bcid%7D.ipfs.example.com%2Fsub%2Fdir_%28direct_HTTP%29',
-      // 'TestGatewaySubdomains/valid_file_and_subdirectory_paths_in_directory_listing_at_%7Bcid%7D.ipfs.example.com_%28direct_HTTP%29/Status_code',
-      // 'TestGatewaySubdomains/valid_file_and_subdirectory_paths_in_directory_listing_at_%7Bcid%7D.ipfs.example.com_%28direct_HTTP%29/Body'
     ],
     successRate: 41.35
   },
-  // times out
-  // {
-  //   name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
-  //   run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
-  //   successRate: 100
-  // },
+  {
+    name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
+    run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
+    successRate: 10.26
+  },
   {
     name: 'TestRedirectsFileWithIfNoneMatchHeader',
     run: ['TestRedirectsFileWithIfNoneMatchHeader'],
