@@ -240,7 +240,7 @@ const tests: TestConfig[] = [
       'TestUnixFSDirectoryListingOnSubdomainGateway',
       'TestUnixFSDirectoryListing/.*TODO:_cleanup_Kubo-specifics'
     ],
-    successRate: 50,
+    successRate: 50
   },
   {
     name: 'TestTar',

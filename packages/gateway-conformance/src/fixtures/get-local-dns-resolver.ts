@@ -12,7 +12,6 @@ export function getLocalDnsResolver (ipfsNsMap: string, kuboGateway: string): DN
     nsMap.set(key, val)
   }
 
-
   return async (domain, options) => {
     const questions: Question[] = []
     const answers: Answer[] = []
