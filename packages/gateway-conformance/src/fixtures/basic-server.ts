@@ -9,7 +9,7 @@ import { Agent, setGlobalDispatcher } from 'undici'
 import { contentTypeParser } from './content-type-parser.js'
 import { createVerifiedFetch } from './create-verified-fetch.js'
 import { getLocalDnsResolver } from './get-local-dns-resolver.js'
-import { convertNodeJsHeadersToFetchHeaders } from './header-utils.js'
+import { convertFetchHeadersToNodeJsHeaders, convertNodeJsHeadersToFetchHeaders } from './header-utils.js'
 import { getIpnsRecordDatastore } from './ipns-record-datastore.js'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { Blockstore } from 'interface-blockstore'
@@ -140,24 +140,7 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
     const resp = await verifiedFetch(fullUrlHref.toString(), { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: convertNodeJsHeadersToFetchHeaders(req.headers) })
     urlLog.trace('verified-fetch response status: %d', resp.status)
 
-    // loop over headers and set them on the response
-    const headers: Record<string, string> = {}
-    for (const [key, value] of resp.headers.entries()) {
-      if (fixingGwcAnnoyance) {
-        urlLog.trace('need to fix GWC annoyance.')
-        if (value.includes(`localhost:${serverPort}`)) {
-          const newValue = value.replace(`localhost:${serverPort}`, 'localhost')
-          urlLog.trace('fixing GWC annoyance. Replacing Header[%s] value of "%s" with "%s"', key, value, newValue)
-          // we need to fix any Location, or other headers that have localhost without port in them.
-          headers[key] = newValue
-        } else {
-          urlLog.trace('NOT fixing GWC annoyance. Setting Header[%s] value of "%s"', key, value)
-          headers[key] = value
-        }
-      } else {
-        headers[key] = value
-      }
-    }
+    const headers = convertFetchHeadersToNodeJsHeaders({ resp, log: urlLog, fixingGwcAnnoyance, serverPort })
 
     res.writeHead(resp.status, headers)
     if (resp.body == null) {
