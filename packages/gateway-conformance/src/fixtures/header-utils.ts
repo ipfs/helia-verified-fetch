@@ -19,7 +19,6 @@ export function convertNodeJsHeadersToFetchHeaders (headers: IncomingHttpHeaders
 }
 
 export interface ConvertFetchHeadersToNodeJsHeadersOptions {
-  // headers: Headers
   resp: Response
   log: Logger
   fixingGwcAnnoyance: boolean

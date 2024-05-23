@@ -325,12 +325,6 @@ export class VerifiedFetch {
           this.log('could not redirect to %s/ as redirect option was set to "error"', resource)
           throw new TypeError('Failed to fetch')
         } else if (options?.redirect === 'manual') {
-          // const url = new URL(resource)
-          // const redirectPath = `${url.pathname}/`
-          // this.log('returning 301 permanent redirect to %s', redirectPath)
-
-          // return movedPermanentlyResponse(resource, url.pathname)
-
           this.log('returning 301 permanent redirect to %s/', resource)
           return movedPermanentlyResponse(resource, `${resource}/`)
         }

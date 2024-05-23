@@ -45,7 +45,6 @@ export default {
       }
     },
     after: async (options, beforeResult) => {
-      log('aegir test after hook')
       // @ts-expect-error - broken aegir types
       await beforeResult.controller.stop()
       log('controller stopped')

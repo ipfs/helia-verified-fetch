@@ -241,7 +241,6 @@ const tests: TestConfig[] = [
       'TestUnixFSDirectoryListing/.*TODO:_cleanup_Kubo-specifics'
     ],
     successRate: 50,
-    timeout: 1200000
   },
   {
     name: 'TestTar',
