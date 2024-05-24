@@ -1,10 +1,11 @@
 #! /usr/bin/env node
+/* eslint-disable no-console */
 
 import { spawn } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// aegir should be run from `node_modules/@helia/interop`
+// aegir should be run from `node_modules/@helia/verified-fetch-gateway-conformance`
 const cwd = resolve(dirname(fileURLToPath(import.meta.url)), '../../')
 
 const test = spawn('npx', ['aegir', 'test'], {

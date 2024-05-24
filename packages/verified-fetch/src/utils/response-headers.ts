@@ -1,3 +1,5 @@
+import type { CID } from 'multiformats/cid'
+
 interface CacheControlHeaderOptions {
   /**
    * This should be seconds as a number.
@@ -75,4 +77,15 @@ export function getContentRangeHeader ({ byteStart, byteEnd, byteSize }: { byteS
   }
 
   return `bytes ${byteStart}-${byteEnd}/${total}`
+}
+
+/**
+ * Sets the `X-Ipfs-Roots` header on the response if it exists.
+ *
+ * @see https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
+ */
+export function setIpfsRoots (response: Response, ipfsRoots?: CID[]): void {
+  if (ipfsRoots != null) {
+    response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(','))
+  }
 }

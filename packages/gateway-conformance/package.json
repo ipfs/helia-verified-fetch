@@ -1,9 +1,9 @@
 {
-  "name": "@helia/verified-fetch-interop",
-  "version": "1.24.0",
-  "description": "Interop tests for @helia/verified-fetch",
+  "name": "@helia/verified-fetch-gateway-conformance",
+  "version": "1.1.1",
+  "description": "Gateway conformance tests for @helia/verified-fetch",
   "license": "Apache-2.0 OR MIT",
-  "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/interop#readme",
+  "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/gateway-conformance#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ipfs/helia-verified-fetch.git"
@@ -19,7 +19,8 @@
     "IPFS"
   ],
   "bin": {
-    "helia-verified-fetch-interop": "./dist/src/bin.js"
+    "demo-server": "./dist/src/demo-server.js",
+    "verified-fetch-gateway-conformance": "./dist/src/bin.js"
   },
   "type": "module",
   "types": "./dist/src/index.d.ts",
@@ -43,29 +44,37 @@
     }
   },
   "scripts": {
-    "clean": "aegir clean",
+    "clean": "aegir clean dist gwc-report-*.json",
     "lint": "aegir lint",
     "dep-check": "aegir dep-check",
     "doc-check": "aegir doc-check",
     "build": "aegir build",
-    "test": "aegir test",
-    "test:chrome": "aegir test -t browser --cov",
-    "test:chrome-webworker": "aegir test -t webworker",
-    "test:firefox": "aegir test -t browser -- --browser firefox",
-    "test:firefox-webworker": "aegir test -t webworker -- --browser firefox",
-    "test:node": "aegir test -t node --cov",
-    "test:electron-main": "aegir test -t electron-main"
+    "test": "aegir test -t node"
   },
   "dependencies": {
+    "@helia/block-brokers": "^3.0.1",
+    "@helia/http": "^1.0.8",
+    "@helia/interface": "^4.3.0",
+    "@helia/routers": "^1.1.0",
     "@helia/verified-fetch": "1.4.2",
+    "@libp2p/kad-dht": "^12.0.17",
+    "@libp2p/logger": "^4.0.13",
+    "@libp2p/peer-id": "^4.1.2",
+    "@multiformats/dns": "^1.0.6",
+    "@sgtpooki/file-type": "^1.0.1",
     "aegir": "^42.2.11",
+    "blockstore-core": "^4.4.1",
+    "datastore-core": "^9.2.9",
     "execa": "^9.1.0",
     "fast-glob": "^3.3.2",
+    "interface-blockstore": "^5.2.10",
+    "interface-datastore": "^8.2.11",
     "ipfsd-ctl": "^14.1.0",
+    "ipns": "^9.1.0",
     "kubo": "^0.28.0",
     "kubo-rpc-client": "^4.1.1",
-    "magic-bytes.js": "^1.10.0",
-    "multiformats": "^13.1.0"
+    "uint8arrays": "^5.1.0",
+    "undici": "^6.18.1"
   },
   "browser": {
     "./dist/src/fixtures/create-kubo.js": "./dist/src/fixtures/create-kubo.browser.js",

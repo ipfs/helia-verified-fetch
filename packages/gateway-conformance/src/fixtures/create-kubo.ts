@@ -2,21 +2,26 @@ import { createNode, type KuboNode } from 'ipfsd-ctl'
 import { path as kuboPath } from 'kubo'
 import { create } from 'kubo-rpc-client'
 
-export async function createKuboNode (repoPath = undefined): Promise<KuboNode> {
-  return createNode({
+export interface KuboNodeDetails {
+  node: KuboNode
+  gatewayUrl: string
+  repoPath: string
+}
+
+export async function createKuboNode (listenPort?: number): Promise<KuboNodeDetails> {
+  const controller = await createNode({
     type: 'kubo',
     rpc: create,
-    bin: kuboPath(),
     test: true,
-    repo: repoPath,
+    bin: kuboPath(),
     init: {
       config: {
         Addresses: {
           Swarm: [
-            '/ip4/0.0.0.0/tcp/4001',
-            '/ip4/0.0.0.0/tcp/4002/ws'
+            '/ip4/0.0.0.0/tcp/0',
+            '/ip4/0.0.0.0/tcp/0/ws'
           ],
-          Gateway: '/ip4/127.0.0.1/tcp/8180'
+          Gateway: `/ip4/127.0.0.1/tcp/${listenPort ?? 0}`
         },
         Gateway: {
           NoFetch: true,
@@ -30,4 +35,11 @@ export async function createKuboNode (repoPath = undefined): Promise<KuboNode> {
     },
     args: ['--enable-pubsub-experiment', '--enable-namesys-pubsub']
   })
+  const info = await controller.info()
+
+  return {
+    node: controller,
+    gatewayUrl: `http://127.0.0.1:${listenPort ?? 0}`,
+    repoPath: info.repo
+  }
 }

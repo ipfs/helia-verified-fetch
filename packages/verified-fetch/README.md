@@ -40,6 +40,8 @@ A `verifiedFetch` function is exported to get up and running quickly, and a `cre
 
 Browser-cache-friendly [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response) objects are returned which should be instantly familiar to web developers.
 
+Learn more in the [announcement blog post](https://blog.ipfs.tech/verified-fetch/) and check out the [ready-to-run example](https://github.com/ipfs-examples/helia-examples/tree/main/examples/helia-browser-verified-fetch).
+
 You may use any supported resource argument to fetch content:
 
 - [CID](https://multiformats.github.io/js-multiformats/classes/cid.CID.html) instance
@@ -122,17 +124,20 @@ You can see variations of Helia and js-libp2p configuration options at <https://
 ```typescript
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
-import { delegatedHTTPRouting } from '@helia/routers'
+import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
 import { createVerifiedFetch } from '@helia/verified-fetch'
 
 const fetch = await createVerifiedFetch(
   await createHeliaHTTP({
     blockBrokers: [
-      trustlessGateway({
+      trustlessGateway()
+    ],
+    routers: [
+      delegatedHTTPRouting('http://delegated-ipfs.dev'),
+      httpGatewayRouting({
         gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
       })
-    ],
-    routers: ['http://delegated-ipfs.dev'].map((routerUrl) => delegatedHTTPRouting(routerUrl))
+    ]
   })
 )
 
