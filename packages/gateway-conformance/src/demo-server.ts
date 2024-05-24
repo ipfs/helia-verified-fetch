@@ -3,7 +3,7 @@
  */
 import { logger } from '@libp2p/logger'
 import getPort from 'aegir/get-port'
-import { startBasicServer } from './fixtures/basic-server.js'
+import { startVerifiedFetchGateway } from './fixtures/basic-server.js'
 import { createKuboNode } from './fixtures/create-kubo.js'
 import { loadKuboFixtures } from './fixtures/kubo-mgmt.js'
 
@@ -17,7 +17,7 @@ const kuboGateway = gatewayUrl
 await controller.start()
 const IPFS_NS_MAP = await loadKuboFixtures(repoPath)
 
-const stopServer = await startBasicServer({
+const stopServer = await startVerifiedFetchGateway({
   serverPort: SERVER_PORT,
   kuboGateway,
   IPFS_NS_MAP

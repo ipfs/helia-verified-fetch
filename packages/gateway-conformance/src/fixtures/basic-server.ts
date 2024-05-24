@@ -150,7 +150,6 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
     } else {
       // read the body of the response and write it to the response from the server
       const reader = resp.body.getReader()
-      reader.pipeTo(res)
       while (true) {
         const { done, value } = await reader.read()
         if (done) {

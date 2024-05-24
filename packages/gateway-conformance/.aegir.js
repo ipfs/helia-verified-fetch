@@ -22,7 +22,7 @@ export default {
       const IPFS_NS_MAP = await loadKuboFixtures(repoPath)
       const kuboGateway = gatewayUrl
 
-      const { startBasicServer } = await import('./dist/src/fixtures/basic-server.js')
+      const { startVerifiedFetchGateway } = await import('./dist/src/fixtures/basic-server.js')
       const stopBasicServer = await startVerifiedFetchGateway({
         serverPort: SERVER_PORT,
         kuboGateway,
