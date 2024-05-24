@@ -15,6 +15,7 @@ export default {
       const { createKuboNode } = await import('./dist/src/fixtures/create-kubo.js')
       const KUBO_PORT = await getPort(3440)
       const SERVER_PORT = await getPort(3441)
+      // The Kubo gateway will be passed to the VerifiedFetch config
       const { node: controller, gatewayUrl, repoPath } = await createKuboNode(KUBO_PORT)
       await controller.start()
       const { loadKuboFixtures } = await import('./dist/src/fixtures/kubo-mgmt.js')
@@ -22,7 +23,7 @@ export default {
       const kuboGateway = gatewayUrl
 
       const { startBasicServer } = await import('./dist/src/fixtures/basic-server.js')
-      const stopBasicServer = await startBasicServer({
+      const stopBasicServer = await startVerifiedFetchGateway({
         serverPort: SERVER_PORT,
         kuboGateway,
         IPFS_NS_MAP

@@ -20,6 +20,7 @@ function maybeAddTraillingSlash (path: string): string {
   return path.endsWith('/') ? path : `${path}/`
 }
 
+// See https://specs.ipfs.tech/http-gateways/path-gateway/#location-response-header
 export async function getRedirectResponse ({ resource, options, logger, cid }: GetRedirectResponse): Promise<null | Response> {
   const log = logger.forComponent('helia:verified-fetch:get-redirect-response')
 
