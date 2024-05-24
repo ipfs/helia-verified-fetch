@@ -1,3 +1,21 @@
+## @helia/verified-fetch-interop [1.24.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.24.0...@helia/verified-fetch-interop-1.24.1) (2024-05-24)
+
+
+### Bug Fixes
+
+* gateway conformance improvements ([#85](https://github.com/ipfs/helia-verified-fetch/issues/85)) ([7281078](https://github.com/ipfs/helia-verified-fetch/commit/72810786d7d49f6cc0fbf308717d70cf0740cd4c))
+
+
+### Dependencies
+
+* bump kubo from 0.27.0 to 0.28.0 ([#54](https://github.com/ipfs/helia-verified-fetch/issues/54)) ([3579844](https://github.com/ipfs/helia-verified-fetch/commit/3579844eeb90361ebdf9f97c10cbdc9c73c7c25f))
+
+
+
+### Dependencies
+
+* **@helia/verified-fetch:** upgraded to 1.4.3
+
 ## @helia/verified-fetch-interop [1.24.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.23.0...@helia/verified-fetch-interop-1.24.0) (2024-05-16)
 
 
