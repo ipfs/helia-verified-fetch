@@ -10,11 +10,17 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, relative, posix, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { Record as DhtRecord } from '@libp2p/kad-dht'
 import { logger } from '@libp2p/logger'
+import { peerIdFromString } from '@libp2p/peer-id'
 import { $ } from 'execa'
 import fg from 'fast-glob'
+import { Key } from 'interface-datastore'
+import { peerIdToRoutingKey } from 'ipns'
 import { path } from 'kubo'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { GWC_IMAGE } from '../constants.js'
+import { getIpnsRecordDatastore } from './ipns-record-datastore.js'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -85,20 +91,24 @@ export async function loadFixtures (kuboRepoDir: string): Promise<string> {
     throw new Error('No *.car fixtures found')
   }
 
-  // TODO: fix in CI. See https://github.com/ipfs/helia-verified-fetch/actions/runs/9022946675/job/24793649918?pr=67#step:7:19
-  if (process.env.CI == null) {
-    for (const ipnsRecord of await fg.glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
-      const key = basename(ipnsRecord, '.ipns-record')
-      const relativePath = relative(GWC_FIXTURES_PATH, ipnsRecord)
-      log('Loading *.ipns-record fixture %s', relativePath)
-      const { stdout } = await $(({ ...execaOptions }))`cd ${GWC_FIXTURES_PATH} && ${kuboBinary} routing put --allow-offline "/ipns/${key}" "${relativePath}"`
-      stdout.split('\n').forEach(log)
-    }
+  const datastore = getIpnsRecordDatastore()
+
+  for (const fsIpnsRecord of await fg.glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
+    const peerIdString = basename(fsIpnsRecord, '.ipns-record').split('_')[0]
+    const relativePath = relative(GWC_FIXTURES_PATH, fsIpnsRecord)
+    log('Loading *.ipns-record fixture %s', relativePath)
+    const key = peerIdFromString(peerIdString)
+    const customRoutingKey = peerIdToRoutingKey(key)
+    const dhtKey = new Key('/dht/record/' + uint8ArrayToString(customRoutingKey, 'base32'), false)
+
+    const dhtRecord = new DhtRecord(customRoutingKey, await readFile(fsIpnsRecord, null), new Date(Date.now() + 9999999))
+
+    await datastore.put(dhtKey, dhtRecord.serialize())
   }
 
   const json = await readFile(`${GWC_FIXTURES_PATH}/dnslinks.json`, 'utf-8')
   const { subdomains, domains } = JSON.parse(json)
-  const subdomainDnsLinks = Object.entries(subdomains).map(([key, value]) => `${key}.example.com:${value}`).join(',')
+  const subdomainDnsLinks = Object.entries(subdomains).map(([key, value]) => `${key}.localhost%3A${3441}:${value}`).join(',')
   const domainDnsLinks = Object.entries(domains).map(([key, value]) => `${key}:${value}`).join(',')
   const ipfsNsMap = `${domainDnsLinks},${subdomainDnsLinks}`
 

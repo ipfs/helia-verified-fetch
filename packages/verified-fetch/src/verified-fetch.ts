@@ -24,15 +24,16 @@ import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
+import { getRedirectResponse } from './utils/handle-redirects.js'
 import { parseResource } from './utils/parse-resource.js'
+import { type ParsedUrlStringResults } from './utils/parse-url-string.js'
 import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
 import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
 import { handlePathWalking, isObjectNode } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
-import type { ParsedUrlStringResults } from './utils/parse-url-string'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
@@ -403,6 +404,16 @@ export class VerifiedFetch {
   }
 
   private async handleRaw ({ resource, cid, path, session, options, accept }: FetchHandlerFunctionArg): Promise<Response> {
+    /**
+     * if we have a path, we can't walk it, so we need to return a 404.
+     *
+     * @see https://github.com/ipfs/gateway-conformance/blob/26994cfb056b717a23bf694ce4e94386728748dd/tests/subdomain_gateway_ipfs_test.go#L198-L204
+     */
+    if (path !== '') {
+      this.log.trace('404-ing raw codec request for %c/%s', cid, path)
+      return notFoundResponse(resource, 'Raw codec does not support paths')
+    }
+
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const blockstore = this.getBlockstore(cid, resource, session, options)
     const result = await blockstore.get(cid, options)
@@ -507,6 +518,11 @@ export class VerifiedFetch {
 
     let response: Response
     let reqFormat: RequestFormatShorthand | undefined
+
+    const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid })
+    if (redirectResponse != null) {
+      return redirectResponse
+    }
 
     const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options }
 

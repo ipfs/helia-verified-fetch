@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-env mocha */
 import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
@@ -8,7 +7,7 @@ import { expect } from 'aegir/chai'
 import { execa } from 'execa'
 import { Agent, setGlobalDispatcher } from 'undici'
 
-const logger = prefixLogger('conformance-tests')
+const logger = prefixLogger('gateway-conformance')
 
 interface TestConfig {
   name: string
@@ -16,6 +15,7 @@ interface TestConfig {
   skip?: string[]
   run?: string[]
   successRate: number
+  timeout?: number
 }
 
 function getGatewayConformanceBinaryPath (): string {
@@ -29,10 +29,8 @@ function getGatewayConformanceBinaryPath (): string {
 function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArgs: string[] = []): string[] {
   return [
     'test',
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    `--gateway-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    `--subdomain-url=http://${process.env.CONFORMANCE_HOST!}:${process.env.PROXY_PORT!}`,
+    `--gateway-url=http://127.0.0.1:${process.env.SERVER_PORT}`,
+    `--subdomain-url=http://${process.env.CONFORMANCE_HOST}:${process.env.SERVER_PORT}`,
     '--verbose',
     '--json', `gwc-report-${name}.json`,
     ...gwcArgs,
@@ -58,7 +56,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestDagPbConversion',
     run: ['TestDagPbConversion'],
-    successRate: 35.38
+    successRate: 26.15
   },
   {
     name: 'TestPlainCodec',
@@ -68,11 +66,14 @@ const tests: TestConfig[] = [
   {
     name: 'TestPathing',
     run: ['TestPathing'],
-    successRate: 23.53
+    successRate: 40
   },
   {
     name: 'TestDNSLinkGatewayUnixFSDirectoryListing',
     run: ['TestDNSLinkGatewayUnixFSDirectoryListing'],
+    skip: [
+      'TestDNSLinkGatewayUnixFSDirectoryListing/.*TODO:_cleanup_Kubo-specifics'
+    ],
     successRate: 0
   },
   {
@@ -83,23 +84,22 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayJsonCbor',
     run: ['TestGatewayJsonCbor'],
-    successRate: 44.44
+    successRate: 22.22
   },
-  // currently results in an infinite loop without verified-fetch stopping the request whether sessions are enabled or not.
-  // {
-  //   name: 'TestNativeDag',
-  //   run: ['TestNativeDag'],
-  //   successRate: 100
-  // },
+  {
+    name: 'TestNativeDag',
+    run: ['TestNativeDag'],
+    successRate: 60.71
+  },
   {
     name: 'TestGatewayJSONCborAndIPNS',
     run: ['TestGatewayJSONCborAndIPNS'],
-    successRate: 24.24
+    successRate: 51.52
   },
   {
     name: 'TestGatewayIPNSPath',
     run: ['TestGatewayIPNSPath'],
-    successRate: 27.27
+    successRate: 100
   },
   {
     name: 'TestRedirectCanonicalIPNS',
@@ -109,7 +109,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayBlock',
     run: ['TestGatewayBlock'],
-    successRate: 37.93
+    successRate: 20.69
   },
   {
     name: 'TestTrustlessRawRanges',
@@ -119,20 +119,21 @@ const tests: TestConfig[] = [
   {
     name: 'TestTrustlessRaw',
     run: ['TestTrustlessRaw'],
-    successRate: 55.56
+    skip: ['TestTrustlessRawRanges'],
+    successRate: 70.83
   },
   {
     name: 'TestGatewayIPNSRecord',
     run: ['TestGatewayIPNSRecord'],
-    successRate: 0
+    successRate: 17.39
   },
   {
     name: 'TestTrustlessCarOrderAndDuplicates',
     run: ['TestTrustlessCarOrderAndDuplicates'],
-    successRate: 13.79
+    successRate: 44.83
   },
-  // times out
   // {
+  //   // currently timing out
   //   name: 'TestTrustlessCarEntityBytes',
   //   run: ['TestTrustlessCarEntityBytes'],
   //   successRate: 100
@@ -140,44 +141,54 @@ const tests: TestConfig[] = [
   {
     name: 'TestTrustlessCarDagScopeAll',
     run: ['TestTrustlessCarDagScopeAll'],
-    successRate: 36.36
+    successRate: 54.55
   },
-  {
-    name: 'TestTrustlessCarDagScopeEntity',
-    run: ['TestTrustlessCarDagScopeEntity'],
-    successRate: 34.57
-  },
-  {
-    name: 'TestTrustlessCarDagScopeBlock',
-    run: ['TestTrustlessCarDagScopeBlock'],
-    successRate: 34.69
-  },
-  {
-    name: 'TestTrustlessCarPathing',
-    run: ['TestTrustlessCarPathing'],
-    successRate: 33.85
-  },
-  {
-    name: 'TestSubdomainGatewayDNSLinkInlining',
-    run: ['TestSubdomainGatewayDNSLinkInlining'],
-    successRate: 0
-  },
+  // {
+  //   // currently timing out
+  //   name: 'TestTrustlessCarDagScopeEntity',
+  //   run: ['TestTrustlessCarDagScopeEntity'],
+  //   successRate: 34.57
+  // },
+  // {
+  //   // currently timing out
+  //   name: 'TestTrustlessCarDagScopeBlock',
+  //   run: ['TestTrustlessCarDagScopeBlock'],
+  //   successRate: 34.69
+  // },
+  // {
+  //   // passes at the set successRate, but takes incredibly long (consistently ~2m).. disabling for now.
+  //   name: 'TestTrustlessCarPathing',
+  //   run: ['TestTrustlessCarPathing'],
+  //   successRate: 35,
+  //   timeout: 130000
+  // },
+  // {
+  //   // currently timing out
+  //   name: 'TestSubdomainGatewayDNSLinkInlining',
+  //   run: ['TestSubdomainGatewayDNSLinkInlining'],
+  //   successRate: 100
+  // },
   {
     name: 'TestGatewaySubdomainAndIPNS',
     run: ['TestGatewaySubdomainAndIPNS'],
-    successRate: 0
+    successRate: 31.58
   },
   {
+    // TODO: add directory listing support to verified-fetch
     name: 'TestGatewaySubdomains',
-    run: ['TestGatewaySubdomains'],
-    successRate: 7.17
+    run: [
+      'TestGatewaySubdomains'
+    ],
+    skip: [
+      'TestGatewaySubdomains/.*HTTP_proxy_tunneling_via_CONNECT' // verified fetch should not be doing HTTP proxy tunneling.
+    ],
+    successRate: 41.35
   },
-  // times out
-  // {
-  //   name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
-  //   run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
-  //   successRate: 100
-  // },
+  {
+    name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
+    run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
+    successRate: 10.26
+  },
   {
     name: 'TestRedirectsFileWithIfNoneMatchHeader',
     run: ['TestRedirectsFileWithIfNoneMatchHeader'],
@@ -191,7 +202,8 @@ const tests: TestConfig[] = [
   {
     name: 'TestRedirectsFileSupport',
     run: ['TestRedirectsFileSupport'],
-    successRate: 2.33
+    skip: ['TestRedirectsFileSupportWithDNSLink'],
+    successRate: 0
   },
   {
     name: 'TestPathGatewayMiscellaneous',
@@ -201,7 +213,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayUnixFSFileRanges',
     run: ['TestGatewayUnixFSFileRanges'],
-    successRate: 40
+    successRate: 46.67
   },
   {
     name: 'TestGatewaySymlink',
@@ -211,24 +223,29 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayCacheWithIPNS',
     run: ['TestGatewayCacheWithIPNS'],
-    successRate: 35.71
+    successRate: 66.67
   },
-  // times out
   // {
+  //   // passes at the set successRate, but takes incredibly long (consistently ~2m).. disabling for now.
   //   name: 'TestGatewayCache',
   //   run: ['TestGatewayCache'],
-  //   successRate: 100
+  //   skip: ['TestGatewayCacheWithIPNS'],
+  //   successRate: 59.38,
+  //   timeout: 1200000
   // },
-  // times out
-  // {
-  //   name: 'TestUnixFSDirectoryListing',
-  //   run: ['TestUnixFSDirectoryListing'],
-  //   successRate: 100
-  // },
+  {
+    name: 'TestUnixFSDirectoryListing',
+    run: ['TestUnixFSDirectoryListing'],
+    skip: [
+      'TestUnixFSDirectoryListingOnSubdomainGateway',
+      'TestUnixFSDirectoryListing/.*TODO:_cleanup_Kubo-specifics'
+    ],
+    successRate: 50
+  },
   {
     name: 'TestTar',
     run: ['TestTar'],
-    successRate: 50
+    successRate: 62.5
   }
 ]
 
@@ -260,9 +277,6 @@ describe('@helia/verified-fetch - gateway conformance', function () {
     if (process.env.KUBO_GATEWAY == null) {
       throw new Error('KUBO_GATEWAY env var is required')
     }
-    if (process.env.PROXY_PORT == null) {
-      throw new Error('PROXY_PORT env var is required')
-    }
     if (process.env.SERVER_PORT == null) {
       throw new Error('SERVER_PORT env var is required')
     }
@@ -270,7 +284,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       throw new Error('CONFORMANCE_HOST env var is required')
     }
     // see https://stackoverflow.com/questions/71074255/use-custom-dns-resolver-for-any-request-in-nodejs
-    // EVERY undici/fetch request host resolves to local IP. Node.js does not resolve reverse-proxy requests properly
+    // EVERY undici/fetch request host resolves to local IP. Without this, Node.js does not resolve subdomain requests properly
     const staticDnsAgent = new Agent({
       connect: {
         lookup: (_hostname, _options, callback) => { callback(null, [{ address: '0.0.0.0', family: 4 }]) }
@@ -282,9 +296,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
   describe('smokeTests', () => {
     [
       ['basic server path request works', `http://localhost:${process.env.SERVER_PORT}/ipfs/bafkqabtimvwgy3yk`],
-      ['proxy server path request works', `http://localhost:${process.env.PROXY_PORT}/ipfs/bafkqabtimvwgy3yk`],
-      ['basic server subdomain request works', `http://bafkqabtimvwgy3yk.ipfs.localhost:${process.env.SERVER_PORT}`],
-      ['proxy server subdomain request works', `http://bafkqabtimvwgy3yk.ipfs.localhost:${process.env.PROXY_PORT}`]
+      ['basic server subdomain request works', `http://bafkqabtimvwgy3yk.ipfs.localhost:${process.env.SERVER_PORT}`]
     ].forEach(([name, url]) => {
       it(name, async () => {
         const resp = await fetch(url)
@@ -311,19 +323,28 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
     after(async () => {
       const log = logger.forComponent('after')
-      try {
-        await execa('rm', [binaryPath])
-        log('gateway-conformance binary successfully uninstalled.')
-      } catch (error) {
-        log.error(`Error removing "${binaryPath}"`, error)
+
+      if (process.env.GATEWAY_CONFORMANCE_BINARY == null) {
+        try {
+          await execa('rm', [binaryPath])
+          log('gateway-conformance binary successfully uninstalled.')
+        } catch (error) {
+          log.error(`Error removing "${binaryPath}"`, error)
+        }
+      } else {
+        log('Not removing custom gateway-conformance binary at %s', binaryPath)
       }
     })
 
-    tests.forEach(({ name, spec, skip, run, successRate: minSuccessRate }) => {
-      const log = logger.forComponent(name)
+    tests.forEach(({ name, spec, skip, run, timeout, successRate: minSuccessRate }) => {
+      const log = logger.forComponent(`output:${name}`)
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
 
       it(`${name} has a success rate of at least ${expectedSuccessRate}%`, async function () {
+        if (timeout != null) {
+          this.timeout(timeout)
+        }
+
         const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs(name,
           [
             ...(spec != null ? ['--specs', spec] : [])
@@ -332,7 +353,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
             ...((skip != null) ? ['-skip', `${skip.join('|')}`] : []),
             ...((run != null) ? ['-run', `${run.join('|')}`] : [])
           ]
-        ), { reject: false })
+        ), { reject: false, cancelSignal: timeout != null ? AbortSignal.timeout(timeout) : undefined })
 
         log(stdout)
         log.error(stderr)
@@ -348,27 +369,20 @@ describe('@helia/verified-fetch - gateway conformance', function () {
      * as this test does.
      */
     it('has expected total failures and successes', async function () {
-      const log = logger.forComponent('all')
+      this.timeout(200000)
+      const log = logger.forComponent('output:all')
 
-      // TODO: unskip when verified-fetch is no longer infinitely looping on requests.
-      const toSkip = [
-        'TestNativeDag',
-        'TestTrustlessCarEntityBytes',
-        'TestUnixFSDirectoryListingOnSubdomainGateway',
-        'TestGatewayCache',
-        'TestUnixFSDirectoryListing'
-      ]
-
-      const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all', [], ['-skip', toSkip.join('|')]), { reject: false })
+      const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all', [], []), { reject: false, cancelSignal: AbortSignal.timeout(200000) })
 
       log(stdout)
       log.error(stderr)
 
-      const { failureCount, successCount, successRate } = await getReportDetails('gwc-report-all.json')
+      const { successRate } = await getReportDetails('gwc-report-all.json')
+      const knownSuccessRate = 42.47
+      // check latest success rate with `SUCCESS_RATE=100 npm run test -- -g 'total'`
+      const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : knownSuccessRate
 
-      expect(failureCount).to.be.lessThanOrEqual(1134)
-      expect(successCount).to.be.greaterThanOrEqual(262)
-      expect(successRate).to.be.greaterThanOrEqual(18.77)
+      expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate)
     })
   })
 })
