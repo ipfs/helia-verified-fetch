@@ -10,6 +10,10 @@ interface GetRedirectResponse {
   options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
   logger: ComponentLogger
 
+  /**
+   * Only used in testing.
+   */
+  fetch?: typeof globalThis.fetch
 }
 
 function maybeAddTraillingSlash (path: string): string {
@@ -21,7 +25,7 @@ function maybeAddTraillingSlash (path: string): string {
 }
 
 // See https://specs.ipfs.tech/http-gateways/path-gateway/#location-response-header
-export async function getRedirectResponse ({ resource, options, logger, cid }: GetRedirectResponse): Promise<null | Response> {
+export async function getRedirectResponse ({ resource, options, logger, cid, fetch = globalThis.fetch }: GetRedirectResponse): Promise<null | Response> {
   const log = logger.forComponent('helia:verified-fetch:get-redirect-response')
 
   if (typeof resource !== 'string' || options == null || ['ipfs://', 'ipns://'].some((prefix) => resource.startsWith(prefix))) {
@@ -81,7 +85,12 @@ export async function getRedirectResponse ({ resource, options, logger, cid }: G
         throw new Error('subdomain not supported')
       }
     } catch (err: any) {
-      log('subdomain not supported, redirecting to path', err)
+      log('subdomain not supported', err)
+      if (pathUrl.href === reqUrl.href) {
+        log('path url is the same as the request url, not setting location header')
+        return null
+      }
+      // pathUrl is different from request URL (maybe even with just a trailing slash)
       return movedPermanentlyResponse(resource.toString(), pathUrl.href)
     }
   } catch (e) {
