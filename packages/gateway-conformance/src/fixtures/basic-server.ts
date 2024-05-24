@@ -150,6 +150,7 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
     } else {
       // read the body of the response and write it to the response from the server
       const reader = resp.body.getReader()
+      reader.pipeTo(res)
       while (true) {
         const { done, value } = await reader.read()
         if (done) {
@@ -177,7 +178,7 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
   }
 }
 
-export async function startBasicServer ({ kuboGateway, serverPort, IPFS_NS_MAP }: BasicServerOptions): Promise<() => Promise<void>> {
+export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS_NS_MAP }: BasicServerOptions): Promise<() => Promise<void>> {
   const staticDnsAgent = new Agent({
     connect: {
       lookup: (_hostname, _options, callback) => { callback(null, [{ address: '0.0.0.0', family: 4 }]) }
