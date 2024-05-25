@@ -24,7 +24,7 @@ import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
-import { getRedirectResponse } from './utils/handle-redirects.js'
+import { getSpecCompliantPath, getRedirectUrl } from './utils/handle-redirects.js'
 import { parseResource } from './utils/parse-resource.js'
 import { type ParsedUrlStringResults } from './utils/parse-url-string.js'
 import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
@@ -325,8 +325,10 @@ export class VerifiedFetch {
           this.log('could not redirect to %s/ as redirect option was set to "error"', resource)
           throw new TypeError('Failed to fetch')
         } else if (options?.redirect === 'manual') {
-          this.log('returning 301 permanent redirect to %s/', resource)
-          return movedPermanentlyResponse(resource, `${resource}/`)
+          const properPath = getSpecCompliantPath(resource)
+          const redirectUrl = await getRedirectUrl({ resource: properPath, cid, options, logger: this.helia.logger })
+          this.log('returning 301 permanent redirect to %s', redirectUrl)
+          return movedPermanentlyResponse(resource, redirectUrl)
         }
 
         // fall-through simulates following the redirect?
@@ -519,9 +521,19 @@ export class VerifiedFetch {
     let response: Response
     let reqFormat: RequestFormatShorthand | undefined
 
-    const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid })
-    if (redirectResponse != null) {
-      return redirectResponse
+    // subdomain redirects don't make sense for `fetch(cid)`, only for `fetch(path)` or `fetch(url)`
+    // if a specific format is requested, that should be handled by the `accept === '...'` checks
+    // subdomain redirects for unixFS is handled in handleDagPb
+    if (typeof resource === 'string' && query.format == null && cid.code !== dagPbCode) {
+      try {
+        const redirectUrl = await getRedirectUrl({ resource, cid, options, logger: this.helia.logger })
+        if (redirectUrl !== resource) {
+          this.log.trace('returning 301 permanent redirect to %s', redirectUrl)
+          return movedPermanentlyResponse(resource.toString(), redirectUrl)
+        }
+      } catch {
+        // ignore
+      }
     }
 
     const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options }

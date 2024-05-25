@@ -1,10 +1,9 @@
 import { type AbortOptions, type ComponentLogger } from '@libp2p/interface'
 import { type VerifiedFetchInit, type Resource } from '../index.js'
 import { matchURLString } from './parse-url-string.js'
-import { movedPermanentlyResponse } from './responses.js'
 import type { CID } from 'multiformats/cid'
 
-interface GetRedirectResponse {
+interface GetRedirectResponseOptions {
   cid: CID
   resource: Resource
   options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
@@ -16,86 +15,102 @@ interface GetRedirectResponse {
   fetch?: typeof globalThis.fetch
 }
 
-function maybeAddTraillingSlash (path: string): string {
-  // if it has an extension-like ending, don't add a trailing slash
-  if (path.match(/\.[a-zA-Z0-9]{1,4}$/) != null) {
-    return path
-  }
-  return path.endsWith('/') ? path : `${path}/`
+interface GetSubdomainRedirectOptions extends GetRedirectResponseOptions {
+  resource: string
 }
 
-// See https://specs.ipfs.tech/http-gateways/path-gateway/#location-response-header
-export async function getRedirectResponse ({ resource, options, logger, cid, fetch = globalThis.fetch }: GetRedirectResponse): Promise<null | Response> {
-  const log = logger.forComponent('helia:verified-fetch:get-redirect-response')
+/**
+ * If given only a path, i.e. /ipfs/QmHash, this function will return the path only, with a trailing slash if the path part doesn't have an extension-like ending.
+ * If given a full URL, it will return that same URL, with a trailing slash on the path if the path part doesn't have an extension-like ending.
+ *
+ * This is only used for directory normalization with UnixFS directory requests.
+ */
+export function getSpecCompliantPath (resource: string): string {
+  let url: URL
+  let isInvalidURL = false
+  try {
+    url = new URL(resource)
+  } catch {
+    isInvalidURL = true
+    url = new URL(resource, 'http://example.com')
+  }
+  const { pathname } = url
 
-  if (typeof resource !== 'string' || options == null || ['ipfs://', 'ipns://'].some((prefix) => resource.startsWith(prefix))) {
-    return null
+  let specCompliantPath = pathname
+
+  if (pathname.match(/\.[a-zA-Z0-9]{1,4}$/) == null && !pathname.endsWith('/')) {
+    // no extension-like ending, add a trailing slash
+    specCompliantPath = `${pathname}/`
   }
 
+  if (isInvalidURL) {
+    return specCompliantPath
+  }
+
+  // the below is needed to get around a bug with some environments removing the trailing slash when calling url.href or url.toString()
+  if (specCompliantPath.startsWith('//')) {
+    // likely ipfs:// or ipns:// url
+    return `${url.protocol}${specCompliantPath}${url.search}${url.hash}`
+  }
+  return `${url.protocol}//${url.host}${specCompliantPath}${url.search}${url.hash}`
+}
+
+/**
+ * Handles determining if a redirect to subdomain is needed.
+ */
+export async function getRedirectUrl ({ resource, options, logger, cid, fetch = globalThis.fetch }: GetSubdomainRedirectOptions): Promise<string> {
+  const log = logger.forComponent('helia:verified-fetch:get-subdomain-redirect')
   const headers = new Headers(options?.headers)
   const forwardedHost = headers.get('x-forwarded-host')
   const headerHost = headers.get('host')
   const forwardedFor = headers.get('x-forwarded-for')
+
   if (forwardedFor == null && forwardedHost == null && headerHost == null) {
     log.trace('no redirect info found in headers')
-    return null
+    return resource
   }
 
-  log.trace('checking for redirect info')
-  // if x-forwarded-host is passed, we need to set the location header to the subdomain
-  // so that the browser can redirect to the correct subdomain
   try {
     const urlParts = matchURLString(resource)
     const reqUrl = new URL(resource)
     const actualHost = forwardedHost ?? reqUrl.host
-    const subdomainUrl = new URL(reqUrl)
+    const subdomain = `${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}`
+    if (actualHost.includes(subdomain)) {
+      log.trace('request was for a subdomain already. Returning requested resource.')
+      return resource
+    }
+
+    let subdomainHost = `${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}.${actualHost}`
+
     if (urlParts.protocol === 'ipfs' && cid.version === 0) {
-      subdomainUrl.host = `${cid.toV1()}.ipfs.${actualHost}`
-    } else {
-      subdomainUrl.host = `${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}.${actualHost}`
+      subdomainHost = `${cid.toV1()}.ipfs.${actualHost}`
     }
+    const subdomainUrl = new URL(reqUrl)
+    subdomainUrl.host = subdomainHost
+    subdomainUrl.pathname = reqUrl.pathname.replace(`/${urlParts.cidOrPeerIdOrDnsLink}`, '').replace(`/${urlParts.protocol}`, '')
 
-    if (headerHost?.includes(urlParts.protocol) === true && subdomainUrl.host.includes(headerHost)) {
-      log.trace('request was for a subdomain already, not setting location header')
-      return null
+    if (headerHost != null && headerHost === subdomainUrl.host) {
+      log.trace('request was for a subdomain already. Returning requested resource.')
+      return resource
     }
-
-    if (headerHost != null && !subdomainUrl.host.includes(headerHost)) {
-      log.trace('host header is not the same as the subdomain url host, not setting location header')
-      return null
-    }
-    if (reqUrl.host === subdomainUrl.host) {
-      log.trace('req url is the same as the subdomain url, not setting location header')
-      return null
-    }
-
-    subdomainUrl.pathname = maybeAddTraillingSlash(reqUrl.pathname.replace(`/${urlParts.cidOrPeerIdOrDnsLink}`, '').replace(`/${urlParts.protocol}`, ''))
-    log.trace('subdomain url %s', subdomainUrl.href)
-    const pathUrl = new URL(reqUrl, `${reqUrl.protocol}//${actualHost}`)
-    pathUrl.pathname = maybeAddTraillingSlash(reqUrl.pathname)
-    log.trace('path url %s', pathUrl.href)
     // try to query subdomain with HEAD request to see if it's supported
     try {
       const subdomainTest = await fetch(subdomainUrl, { method: 'HEAD' })
       if (subdomainTest.ok) {
         log('subdomain supported, redirecting to subdomain')
-        return movedPermanentlyResponse(resource.toString(), subdomainUrl.href)
+        return subdomainUrl.toString()
       } else {
         log('subdomain not supported, subdomain failed with status %s %s', subdomainTest.status, subdomainTest.statusText)
         throw new Error('subdomain not supported')
       }
     } catch (err: any) {
       log('subdomain not supported', err)
-      if (pathUrl.href === reqUrl.href) {
-        log('path url is the same as the request url, not setting location header')
-        return null
-      }
-      // pathUrl is different from request URL (maybe even with just a trailing slash)
-      return movedPermanentlyResponse(resource.toString(), pathUrl.href)
+
+      return resource
     }
-  } catch (e) {
-    // if it's not a full URL, we have nothing left to do.
-    log.error('error setting location header for x-forwarded-host', e)
+  } catch (err) {
+    log.error('error while checking for subdomain support', err)
   }
-  return null
+
+  return resource
 }
