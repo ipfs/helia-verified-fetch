@@ -1,4 +1,4 @@
-import { type AbortOptions, type ComponentLogger } from '@libp2p/interface'
+import { CodeError, type AbortOptions, type ComponentLogger } from '@libp2p/interface'
 import { type VerifiedFetchInit, type Resource } from '../index.js'
 import { matchURLString } from './parse-url-string.js'
 import type { CID } from 'multiformats/cid'
@@ -8,11 +8,6 @@ interface GetRedirectResponseOptions {
   resource: Resource
   options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
   logger: ComponentLogger
-
-  /**
-   * Only used in testing.
-   */
-  fetch?: typeof globalThis.fetch
 }
 
 interface GetSubdomainRedirectOptions extends GetRedirectResponseOptions {
@@ -58,21 +53,28 @@ export function getSpecCompliantPath (resource: string): string {
 /**
  * Handles determining if a redirect to subdomain is needed.
  */
-export async function getRedirectUrl ({ resource, options, logger, cid, fetch = globalThis.fetch }: GetSubdomainRedirectOptions): Promise<string> {
+export async function getRedirectUrl ({ resource, options, logger, cid }: GetSubdomainRedirectOptions): Promise<string> {
   const log = logger.forComponent('helia:verified-fetch:get-subdomain-redirect')
   const headers = new Headers(options?.headers)
   const forwardedHost = headers.get('x-forwarded-host')
   const headerHost = headers.get('host')
-  const forwardedFor = headers.get('x-forwarded-for')
-
-  if (forwardedFor == null && forwardedHost == null && headerHost == null) {
-    log.trace('no redirect info found in headers')
-    return resource
-  }
+  const forwardedProto = headers.get('x-forwarded-proto')
 
   try {
     const urlParts = matchURLString(resource)
+    if (urlParts.cidOrPeerIdOrDnsLink.length > 63) {
+      if (urlParts.protocol === 'ipfs') {
+        throw new CodeError('CID incompatible with DNS label length limit of 63', 'DNS_LABEL_INCOMPATIBLE_CID_SUBDOMAIN')
+      }
+      throw new CodeError('PeerId or DNSLink incompatible with DNS label length limit of 63', 'DNS_LABEL_INCOMPATIBLE_SUBDOMAIN')
+    }
+
+    if (forwardedHost == null && forwardedProto == null) {
+      log.trace('no redirect info found in headers')
+      throw new CodeError('No redirect info found in headers', 'NO_REDIRECT_INFO_FOUND')
+    }
     const reqUrl = new URL(resource)
+    reqUrl.protocol = forwardedProto ?? reqUrl.protocol
     const actualHost = forwardedHost ?? reqUrl.host
     const subdomain = `${urlParts.cidOrPeerIdOrDnsLink}.${urlParts.protocol}`
     if (actualHost.includes(subdomain)) {
@@ -93,23 +95,13 @@ export async function getRedirectUrl ({ resource, options, logger, cid, fetch = 
       log.trace('request was for a subdomain already. Returning requested resource.')
       return resource
     }
-    // try to query subdomain with HEAD request to see if it's supported
-    try {
-      const subdomainTest = await fetch(subdomainUrl, { method: 'HEAD' })
-      if (subdomainTest.ok) {
-        log('subdomain supported, redirecting to subdomain')
-        return subdomainUrl.toString()
-      } else {
-        log('subdomain not supported, subdomain failed with status %s %s', subdomainTest.status, subdomainTest.statusText)
-        throw new Error('subdomain not supported')
-      }
-    } catch (err: any) {
-      log('subdomain not supported', err)
 
-      return resource
-    }
-  } catch (err) {
+    return subdomainUrl.toString()
+  } catch (err: any) {
     log.error('error while checking for subdomain support', err)
+    if (err.code != null) {
+      throw err
+    }
   }
 
   return resource

@@ -1,16 +1,12 @@
 import { prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
-import Sinon from 'sinon'
 import { getRedirectUrl, getSpecCompliantPath } from '../../src/utils/handle-redirects.js'
 
 const logger = prefixLogger('test:handle-redirects')
 
 describe('handle-redirects', () => {
-  const sandbox = Sinon.createSandbox()
   const cid = CID.parse('bafkqabtimvwgy3yk')
-
-  let fetchStub: Sinon.SinonStub
 
   describe('getSpecCompliantPath', () => {
     // the below are all assuming the above identity CID is a unixFS directory CID
@@ -36,40 +32,44 @@ describe('handle-redirects', () => {
   })
 
   describe('getRedirectUrl', () => {
-    beforeEach(() => {
-      fetchStub = sandbox.stub(globalThis, 'fetch')
-    })
-
-    afterEach(() => {
-      sandbox.restore()
-    })
-    it('returns path gateway url if HEAD fetch fails', async () => {
+    it('returns path gateway url if headers is empty', async () => {
       const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk'
-      const options = { headers: new Headers({ host: 'ipfs.io' }) }
-      fetchStub.returns(Promise.resolve(new Response(null, { status: 404 })))
+      const options = { headers: new Headers() }
 
-      const url = await getRedirectUrl({ resource, options, logger, cid, fetch: fetchStub })
-      expect(fetchStub.calledOnce).to.be.true()
+      const url = await getRedirectUrl({ resource, options, logger, cid })
       expect(url).to.equal('http://ipfs.io/ipfs/bafkqabtimvwgy3yk')
     })
-    it('returns subdomain gateway url if HEAD fetch is successful', async () => {
+
+    it('returns subdomain gateway url if host is passed', async () => {
       const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk'
       const options = { headers: new Headers({ host: 'ipfs.io' }) }
-      fetchStub.returns(Promise.resolve(new Response(null, { status: 200 })))
 
-      const url = await getRedirectUrl({ resource, options, logger, cid, fetch: fetchStub })
-      expect(fetchStub.calledOnce).to.be.true()
+      const url = await getRedirectUrl({ resource, options, logger, cid })
       expect(url).to.equal('http://bafkqabtimvwgy3yk.ipfs.ipfs.io/')
     })
 
-    it('returns the given subdomain gateway url given a subdomain gateway url', async () => {
-      const resource = 'http://bafkqabtimvwgy3yk.ipfs.inbrowser.dev'
-      const options = { headers: new Headers({ host: 'bafkqabtimvwgy3yk.ipfs.inbrowser.dev' }) }
-      fetchStub.returns(Promise.resolve(new Response(null, { status: 200 })))
+    it('returns subdomain gateway url if x-forwarded-host is passed', async () => {
+      const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk'
+      const options = { headers: new Headers({ 'x-forwarded-host': 'dweb.link' }) }
 
-      const url = await getRedirectUrl({ resource, options, logger, cid, fetch: fetchStub })
-      expect(fetchStub.calledOnce).to.be.false()
-      expect(url).to.equal('http://bafkqabtimvwgy3yk.ipfs.inbrowser.dev')
+      const url = await getRedirectUrl({ resource, options, logger, cid })
+      expect(url).to.equal('http://bafkqabtimvwgy3yk.ipfs.dweb.link/')
+    })
+
+    it('returns https subdomain gateway url if proto & host are passed', async () => {
+      const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk'
+      const options = { headers: new Headers({ host: 'ipfs.io', 'x-forwarded-proto': 'https' }) }
+
+      const url = await getRedirectUrl({ resource, options, logger, cid })
+      expect(url).to.equal('https://bafkqabtimvwgy3yk.ipfs.ipfs.io/')
+    })
+
+    it('returns the given subdomain gateway url given a subdomain gateway url', async () => {
+      const resource = 'https://bafkqabtimvwgy3yk.ipfs.inbrowser.dev'
+      const options = { headers: new Headers({ host: 'bafkqabtimvwgy3yk.ipfs.inbrowser.dev' }) }
+
+      const url = await getRedirectUrl({ resource, options, logger, cid })
+      expect(url).to.equal('https://bafkqabtimvwgy3yk.ipfs.inbrowser.dev')
     })
   })
 })

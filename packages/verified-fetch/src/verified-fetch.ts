@@ -478,6 +478,7 @@ export class VerifiedFetch {
    * TODO: move operations called by fetch to a queue of operations where we can
    * always exit early (and cleanly) if a given signal is aborted
    */
+  // eslint-disable-next-line complexity
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s', resource)
 
@@ -531,7 +532,10 @@ export class VerifiedFetch {
           this.log.trace('returning 301 permanent redirect to %s', redirectUrl)
           return movedPermanentlyResponse(resource.toString(), redirectUrl)
         }
-      } catch {
+      } catch (err: any) {
+        if (err.code.startsWith('DNS_LABEL_INCOMPATIBLE') === true) {
+          return badRequestResponse(resource, err)
+        }
         // ignore
       }
     }

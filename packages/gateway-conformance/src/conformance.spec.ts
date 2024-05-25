@@ -182,7 +182,7 @@ const tests: TestConfig[] = [
     skip: [
       'TestGatewaySubdomains/.*HTTP_proxy_tunneling_via_CONNECT' // verified fetch should not be doing HTTP proxy tunneling.
     ],
-    successRate: 35.44
+    successRate: 47.26
   },
   {
     name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
