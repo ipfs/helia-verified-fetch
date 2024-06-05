@@ -20,6 +20,8 @@ This monorepo contains the `@helia/verified-fetch` package and its corresponding
 
 See the [**`@helia/verified-fetch`**](./packages/verified-fetch#readme) package for how to get started with the package including usage examples.
 
+Learn more in the [announcement blog post](https://blog.ipfs.tech/verified-fetch/) and check out the [ready-to-run example](https://github.com/ipfs-examples/helia-examples/tree/main/examples/helia-browser-verified-fetch).
+
 # Packages
 
 - [`@helia/verified-fetch`](./packages/verified-fetch) A fetch-like API for obtaining verified & trustless IPFS content on the web
