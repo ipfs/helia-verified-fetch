@@ -53,7 +53,7 @@ function getExecaOptions ({ cwd, ipfsNsMap, kuboRepoDir }: { cwd?: string, ipfsN
 async function downloadFixtures (force = false): Promise<void> {
   if (!force) {
     // if the fixtures are already downloaded, we don't need to download them again
-    const allFixtures = await fg.glob([`${GWC_FIXTURES_PATH}/**/*.car`, `${GWC_FIXTURES_PATH}/**/*.ipns-record`, `${GWC_FIXTURES_PATH}/dnslinks.json`])
+    const allFixtures = await fg.glob([`${GWC_FIXTURES_PATH}/**/*.car`, `${GWC_FIXTURES_PATH}/**/*.ipns-record`, `${GWC_FIXTURES_PATH}/dnslinks.IPFS_NS_MAP`])
     if (allFixtures.length > 0) {
       log('Fixtures already downloaded')
       return
@@ -106,11 +106,7 @@ export async function loadFixtures (kuboRepoDir: string): Promise<string> {
     await datastore.put(dhtKey, dhtRecord.serialize())
   }
 
-  const json = await readFile(`${GWC_FIXTURES_PATH}/dnslinks.json`, 'utf-8')
-  const { subdomains, domains } = JSON.parse(json)
-  const subdomainDnsLinks = Object.entries(subdomains).map(([key, value]) => `${key}.localhost%3A${3441}:${value}`).join(',')
-  const domainDnsLinks = Object.entries(domains).map(([key, value]) => `${key}:${value}`).join(',')
-  const ipfsNsMap = `${domainDnsLinks},${subdomainDnsLinks}`
+  const ipfsNsMap = await readFile(`${GWC_FIXTURES_PATH}/dnslinks.IPFS_NS_MAP`, 'utf-8')
 
   return ipfsNsMap
 }

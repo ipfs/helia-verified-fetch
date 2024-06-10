@@ -6,6 +6,7 @@ import { prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import { execa } from 'execa'
 import { Agent, setGlobalDispatcher } from 'undici'
+import { GWC_IMAGE } from './constants.js'
 
 const logger = prefixLogger('gateway-conformance')
 
@@ -316,7 +317,8 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         log('Using custom gateway-conformance binary at %s', binaryPath)
         return
       }
-      const { stdout, stderr } = await execa('go', ['install', 'github.com/ipfs/gateway-conformance/cmd/gateway-conformance@latest'], { reject: true })
+      const gwcVersion = GWC_IMAGE.split(':').pop()
+      const { stdout, stderr } = await execa('go', ['install', `github.com/ipfs/gateway-conformance/cmd/gateway-conformance@${gwcVersion}`], { reject: true })
       log(stdout)
       log.error(stderr)
     })
