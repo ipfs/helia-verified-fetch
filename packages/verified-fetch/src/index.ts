@@ -799,7 +799,7 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
       routers: [
         ...(init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
         httpGatewayRouting({
-          gateways: init?.gateways ?? []
+          gateways: init?.gateways ?? ['https://trustless-gateway.link']
         })
       ],
       dns: createDns(init?.dnsResolvers)
