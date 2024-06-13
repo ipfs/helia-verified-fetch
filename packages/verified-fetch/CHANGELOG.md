@@ -1,3 +1,10 @@
+## @helia/verified-fetch [1.5.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.4.3...@helia/verified-fetch-1.5.0) (2024-06-13)
+
+
+### Features
+
+* use the waterworks trustless gateway by default ([#94](https://github.com/ipfs/helia-verified-fetch/issues/94)) ([2db8d1e](https://github.com/ipfs/helia-verified-fetch/commit/2db8d1eb724cfd7ad55179b8123c0d0e8a205b4c))
+
 ## @helia/verified-fetch [1.4.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.4.2...@helia/verified-fetch-1.4.3) (2024-05-24)
 
 
