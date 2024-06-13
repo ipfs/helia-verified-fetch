@@ -1,6 +1,6 @@
 {
   "name": "@helia/verified-fetch-interop",
-  "version": "1.24.1",
+  "version": "1.25.0",
   "description": "Interop tests for @helia/verified-fetch",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/interop#readme",
@@ -57,7 +57,7 @@
     "test:electron-main": "aegir test -t electron-main"
   },
   "dependencies": {
-    "@helia/verified-fetch": "1.4.3",
+    "@helia/verified-fetch": "1.5.0",
     "aegir": "^42.2.11",
     "execa": "^9.1.0",
     "fast-glob": "^3.3.2",
