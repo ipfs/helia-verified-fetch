@@ -1,84 +1,75 @@
 import { prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
-import Sinon from 'sinon'
-import { getRedirectResponse } from '../../src/utils/handle-redirects.js'
+import { getRedirectUrl, getSpecCompliantPath } from '../../src/utils/handle-redirects.js'
 
 const logger = prefixLogger('test:handle-redirects')
+
 describe('handle-redirects', () => {
-  describe('getRedirectResponse', () => {
-    const sandbox = Sinon.createSandbox()
-    const cid = CID.parse('bafkqabtimvwgy3yk')
+  const cid = CID.parse('bafkqabtimvwgy3yk')
 
-    let fetchStub: Sinon.SinonStub
-
-    beforeEach(() => {
-      fetchStub = sandbox.stub(globalThis, 'fetch')
+  describe('getSpecCompliantPath', () => {
+    // the below are all assuming the above identity CID is a unixFS directory CID
+    it('should handle ipfs:// urls', () => {
+      expect(getSpecCompliantPath(`ipfs://${cid}`)).to.equal(`ipfs://${cid}/`)
+      expect(getSpecCompliantPath(`ipfs://${cid}/file.txt`)).to.equal(`ipfs://${cid}/file.txt`)
     })
 
-    afterEach(() => {
-      sandbox.restore()
+    it('should handle ipns:// urls', () => {
+      expect(getSpecCompliantPath(`ipns://${cid}`)).to.equal(`ipns://${cid}/`)
+      expect(getSpecCompliantPath(`ipns://${cid}/file.txt`)).to.equal(`ipns://${cid}/file.txt`)
     })
 
-    const nullResponses = [
-      { resource: cid, options: {}, logger, cid, testTitle: 'should return null if resource is not a string' },
-      { resource: 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk', options: undefined, logger, cid, testTitle: 'should return null if options is undefined' },
-      { resource: 'ipfs://', options: {}, logger, cid, testTitle: 'should return null for ipfs:// protocol urls' },
-      { resource: 'ipns://', options: {}, logger, cid, testTitle: 'should return null for ipns:// protocol urls' }
-    ]
-
-    nullResponses.forEach(({ resource, options, logger, cid, testTitle }) => {
-      it(testTitle, async () => {
-        const response = await getRedirectResponse({ resource, options, logger, cid })
-        expect(response).to.be.null()
-      })
+    it('should handle http:// path urls', () => {
+      expect(getSpecCompliantPath(`http://ipfs.io/ipfs/${cid}`)).to.equal(`http://ipfs.io/ipfs/${cid}/`)
+      expect(getSpecCompliantPath(`http://ipfs.io/ipfs/${cid}/file.txt`)).to.equal(`http://ipfs.io/ipfs/${cid}/file.txt`)
     })
 
-    it('should attempt to get the current host from the headers', async () => {
+    it('should handle http:// subdomain urls', () => {
+      expect(getSpecCompliantPath(`http://ipfs.io/ipfs/${cid}`)).to.equal(`http://ipfs.io/ipfs/${cid}/`)
+      expect(getSpecCompliantPath(`http://ipfs.io/ipfs/${cid}/file.txt`)).to.equal(`http://ipfs.io/ipfs/${cid}/file.txt`)
+    })
+  })
+
+  describe('getRedirectUrl', () => {
+    it('returns path gateway url if headers is empty', async () => {
       const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk'
-      const options = { headers: new Headers({ 'x-forwarded-host': 'localhost:3931' }) }
-      fetchStub.returns(Promise.resolve(new Response(null, { status: 200 })))
+      const options = { headers: new Headers() }
 
-      const response = await getRedirectResponse({ resource, options, logger, cid, fetch: fetchStub })
-      expect(fetchStub.calledOnce).to.be.true()
-      expect(response).to.not.be.null()
-      expect(response).to.have.property('status', 301)
-      const location = response?.headers.get('location')
-      expect(location).to.equal('http://bafkqabtimvwgy3yk.ipfs.localhost:3931/')
+      const url = await getRedirectUrl({ resource, options, logger, cid })
+      expect(url).to.equal('http://ipfs.io/ipfs/bafkqabtimvwgy3yk')
     })
 
-    it('should return redirect response to requested host with trailing slash when HEAD fetch fails', async () => {
+    it('returns subdomain gateway url if host is passed', async () => {
       const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk'
-      const options = { headers: new Headers({ 'x-forwarded-host': 'localhost:3931' }) }
-      fetchStub.returns(Promise.reject(new Response(null, { status: 404 })))
+      const options = { headers: new Headers({ host: 'ipfs.io' }) }
 
-      const response = await getRedirectResponse({ resource, options, logger, cid, fetch: fetchStub })
-      expect(fetchStub.calledOnce).to.be.true()
-      expect(response).to.not.be.null()
-      expect(response).to.have.property('status', 301)
-      const location = response?.headers.get('location')
-      // note that the URL returned in location header has trailing slash.
-      expect(location).to.equal('http://ipfs.io/ipfs/bafkqabtimvwgy3yk/')
+      const url = await getRedirectUrl({ resource, options, logger, cid })
+      expect(url).to.equal('http://bafkqabtimvwgy3yk.ipfs.ipfs.io/')
     })
 
-    it('should not return redirect response to x-forwarded-host if HEAD fetch fails', async () => {
-      const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk/file.txt'
-      const options = { headers: new Headers({ 'x-forwarded-host': 'localhost:3931' }) }
-      fetchStub.returns(Promise.reject(new Response(null, { status: 404 })))
+    it('returns subdomain gateway url if x-forwarded-host is passed', async () => {
+      const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk'
+      const options = { headers: new Headers({ 'x-forwarded-host': 'dweb.link' }) }
 
-      const response = await getRedirectResponse({ resource, options, logger, cid, fetch: fetchStub })
-      expect(fetchStub.calledOnce).to.be.true()
-      expect(response).to.be.null()
+      const url = await getRedirectUrl({ resource, options, logger, cid })
+      expect(url).to.equal('http://bafkqabtimvwgy3yk.ipfs.dweb.link/')
     })
 
-    it('should not return redirect response to x-forwarded-host when HEAD fetch fails and trailing slash already exists', async () => {
-      const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk/'
-      const options = { headers: new Headers({ 'x-forwarded-host': 'localhost:3931' }) }
-      fetchStub.returns(Promise.reject(new Response(null, { status: 404 })))
+    it('returns https subdomain gateway url if proto & host are passed', async () => {
+      const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk'
+      const options = { headers: new Headers({ host: 'ipfs.io', 'x-forwarded-proto': 'https' }) }
 
-      const response = await getRedirectResponse({ resource, options, logger, cid, fetch: fetchStub })
-      expect(fetchStub.calledOnce).to.be.true()
-      expect(response).to.be.null()
+      const url = await getRedirectUrl({ resource, options, logger, cid })
+      expect(url).to.equal('https://bafkqabtimvwgy3yk.ipfs.ipfs.io/')
+    })
+
+    it('returns the given subdomain gateway url given a subdomain gateway url', async () => {
+      const resource = 'https://bafkqabtimvwgy3yk.ipfs.inbrowser.dev'
+      const options = { headers: new Headers({ host: 'bafkqabtimvwgy3yk.ipfs.inbrowser.dev' }) }
+
+      const url = await getRedirectUrl({ resource, options, logger, cid })
+      expect(url).to.equal('https://bafkqabtimvwgy3yk.ipfs.inbrowser.dev')
     })
   })
 })
