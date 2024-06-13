@@ -1,5 +1,6 @@
 import { car } from '@helia/car'
 import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
+import { unixfs } from '@helia/unixfs'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
@@ -19,6 +20,7 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { ByteRangeContext } from './utils/byte-range-context.js'
 import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
+import { dirIndexHtml } from './utils/dir-index-html.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
@@ -36,7 +38,7 @@ import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource
 import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
-import type { ObjectNode } from 'ipfs-unixfs-exporter'
+import type { ObjectNode, UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
 const SESSION_CACHE_MAX_SIZE = 100
@@ -348,8 +350,30 @@ export class VerifiedFetch {
         resolvedCID = entry.cid
       } catch (err: any) {
         options?.signal?.throwIfAborted()
+        const log = this.helia.logger.forComponent('helia:verified-fetch:dir-index-html')
+        log('loading dir-index-html for %O', { resource, dirCid: dirCid.toString(), path })
+        log.trace('tmp listing dir contents')
+        const fs = unixfs({ ...this.helia, blockstore })
+        // temporarily LS and log the directory contents
+        try {
+          const items: UnixFSEntry[] = []
+          for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress })) {
+            // log('dir item %O', dirItem)
+            items.push(dirItem)
+          }
+          // gatewayURL is the URL of the server currently hosting the code running verified-fetch
+          const gatewayURL = resource
+          const htmlResponse = dirIndexHtml(terminalElement, items, { gatewayURL, log })
+          const response = okResponse(resource, htmlResponse)
+          response.headers.set('content-type', 'text/html')
+          return response
+        } catch (e) {
+          log.error('error listing directory %c', dirCid, e)
+        }
+
         this.log('error loading path %c/%s', dirCid, rootFilePath, err)
-        return notSupportedResponse('Unable to find index.html for directory at given path. Support for directories with implicit root is not implemented')
+
+        return notSupportedResponse(`Unable to find index.html for directory at given path, and could not list directory contents: ${err.message}`)
       } finally {
         options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid: dirCid, path: rootFilePath }))
       }
