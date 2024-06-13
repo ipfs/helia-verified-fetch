@@ -1,3 +1,11 @@
+## @helia/verified-fetch-gateway-conformance [1.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.1.2...@helia/verified-fetch-gateway-conformance-1.2.0) (2024-06-13)
+
+
+
+### Dependencies
+
+* **@helia/verified-fetch:** upgraded to 1.5.0
+
 ## @helia/verified-fetch-gateway-conformance [1.1.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.1.1...@helia/verified-fetch-gateway-conformance-1.1.2) (2024-05-24)
 
 

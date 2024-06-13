@@ -1,6 +1,6 @@
 {
   "name": "@helia/verified-fetch-gateway-conformance",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Gateway conformance tests for @helia/verified-fetch",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/gateway-conformance#readme",
@@ -56,7 +56,7 @@
     "@helia/http": "^1.0.8",
     "@helia/interface": "^4.3.0",
     "@helia/routers": "^1.1.0",
-    "@helia/verified-fetch": "1.4.3",
+    "@helia/verified-fetch": "1.5.0",
     "@libp2p/kad-dht": "^12.0.17",
     "@libp2p/logger": "^4.0.13",
     "@libp2p/peer-id": "^4.1.2",
