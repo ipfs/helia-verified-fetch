@@ -64,7 +64,7 @@
     "@sgtpooki/file-type": "^1.0.1",
     "aegir": "^42.2.11",
     "blockstore-core": "^4.4.1",
-    "datastore-core": "^9.2.9",
+    "datastore-core": "^10.0.0",
     "execa": "^9.1.0",
     "fast-glob": "^3.3.2",
     "interface-blockstore": "^5.2.10",

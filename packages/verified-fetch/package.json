@@ -99,7 +99,7 @@
     "aegir": "^42.2.11",
     "blockstore-core": "^4.4.1",
     "browser-readablestream-to-it": "^2.0.7",
-    "datastore-core": "^9.2.9",
+    "datastore-core": "^10.0.0",
     "helia": "^4.2.2",
     "ipfs-unixfs-importer": "^15.2.5",
     "ipns": "^9.1.0",
