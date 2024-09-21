@@ -493,7 +493,7 @@
  *
  * This library supports the following methods of fetching web3 content from IPFS:
  *
- * 1. IPFS protocol: `ipfs://<cidv0>` & `ipfs://<cidv0>`
+ * 1. IPFS protocol: `ipfs://<cidv0>` & `ipfs://<cidv1>`
  * 2. IPNS protocol: `ipns://<peerId>` & `ipns://<publicKey>` & `ipns://<hostUri_Supporting_DnsLink_TxtRecords>`
  * 3. CID instances: An actual CID instance `CID.parse('bafy...')`
  *
