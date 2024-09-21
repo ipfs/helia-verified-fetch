@@ -96,7 +96,7 @@
     "@libp2p/peer-id-factory": "^4.1.2",
     "@sgtpooki/file-type": "^1.0.1",
     "@types/sinon": "^17.0.3",
-    "aegir": "^42.2.11",
+    "aegir": "^44.1.1",
     "blockstore-core": "^4.4.1",
     "browser-readablestream-to-it": "^2.0.7",
     "datastore-core": "^9.2.9",
