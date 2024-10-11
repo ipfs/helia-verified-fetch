@@ -1,4 +1,3 @@
-import { CodeError } from '@libp2p/interface'
 import { exporter, recursive, type UnixFSEntry } from 'ipfs-unixfs-exporter'
 import map from 'it-map'
 import { pipe } from 'it-pipe'
@@ -28,7 +27,7 @@ function toHeader (file: UnixFSEntry): Partial<TarEntryHeader> & { name: string 
 
 function toTarImportCandidate (entry: UnixFSEntry): TarImportCandidate {
   if (!EXPORTABLE.includes(entry.type)) {
-    throw new CodeError('Not a UnixFS node', 'ERR_NOT_UNIXFS')
+    throw new Error('Not a UnixFS node')
   }
 
   const candidate: TarImportCandidate = {
@@ -64,5 +63,5 @@ export async function * tarStream (ipfsPath: string, blockstore: Blockstore, opt
     return
   }
 
-  throw new CodeError('Not a UnixFS node', 'ERR_NOT_UNIXFS')
+  throw new Error('Not a UnixFS node')
 }

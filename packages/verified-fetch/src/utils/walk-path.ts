@@ -1,4 +1,4 @@
-import { CodeError, type Logger } from '@libp2p/interface'
+import { type Logger } from '@libp2p/interface'
 import { type Blockstore } from 'interface-blockstore'
 import { walkPath as exporterWalk, type ExporterOptions, type ReadableStorage, type ObjectNode, type UnixFSEntry } from 'ipfs-unixfs-exporter'
 import { type FetchHandlerFunctionArg } from '../types.js'
@@ -28,7 +28,7 @@ export async function walkPath (blockstore: ReadableStorage, path: string, optio
   }
 
   if (terminalElement == null) {
-    throw new CodeError('No terminal element found', 'ERR_NO_TERMINAL_ELEMENT')
+    throw new Error('No terminal element found')
   }
 
   return {
