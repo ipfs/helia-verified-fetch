@@ -1,4 +1,5 @@
 import { type AbortOptions, type ComponentLogger } from '@libp2p/interface'
+import { SubdomainNotSupportedError } from '../errors.js'
 import { type VerifiedFetchInit, type Resource } from '../index.js'
 import { matchURLString } from './parse-url-string.js'
 import { movedPermanentlyResponse } from './responses.js'
@@ -82,7 +83,7 @@ export async function getRedirectResponse ({ resource, options, logger, cid, fet
         return movedPermanentlyResponse(resource.toString(), subdomainUrl.href)
       } else {
         log('subdomain not supported, subdomain failed with status %s %s', subdomainTest.status, subdomainTest.statusText)
-        throw new Error('subdomain not supported')
+        throw new SubdomainNotSupportedError('subdomain not supported')
       }
     } catch (err: any) {
       log('subdomain not supported', err)

@@ -1,5 +1,6 @@
 import { AbortError, type ComponentLogger } from '@libp2p/interface'
 import { CustomProgressEvent } from 'progress-events'
+import { NoContentError } from '../errors.js'
 import type { VerifiedFetchInit } from '../index.js'
 
 /**
@@ -12,7 +13,7 @@ export async function getStreamFromAsyncIterable (iterator: AsyncIterable<Uint8A
 
   if (done === true) {
     log.error('no content found for path', path)
-    throw new Error('No content found')
+    throw new NoContentError()
   }
 
   const stream = new ReadableStream({
