@@ -1,3 +1,4 @@
+import { DoesNotExistError } from '@helia/unixfs/errors'
 import { type Logger } from '@libp2p/interface'
 import { type Blockstore } from 'interface-blockstore'
 import { walkPath as exporterWalk, type ExporterOptions, type ReadableStorage, type ObjectNode, type UnixFSEntry } from 'ipfs-unixfs-exporter'
@@ -28,7 +29,7 @@ export async function walkPath (blockstore: ReadableStorage, path: string, optio
   }
 
   if (terminalElement == null) {
-    throw new Error('No terminal element found')
+    throw new DoesNotExistError('No terminal element found')
   }
 
   return {

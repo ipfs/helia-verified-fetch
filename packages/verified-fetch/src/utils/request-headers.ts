@@ -1,3 +1,5 @@
+import { InvalidRangeError } from '../errors.js'
+
 export function getHeader (headers: HeadersInit | undefined, header: string): string | undefined {
   if (headers == null) {
     return undefined
@@ -26,16 +28,16 @@ export function getHeader (headers: HeadersInit | undefined, header: string): st
 // eslint-disable-next-line complexity
 export function calculateByteRangeIndexes (start: number | undefined, end: number | undefined, fileSize?: number): { byteSize?: number, start?: number, end?: number } {
   if ((start ?? 0) > (end ?? Infinity)) {
-    throw new Error('Invalid range: Range-start index is greater than range-end index.')
+    throw new InvalidRangeError('Invalid range: Range-start index is greater than range-end index.')
   }
   if (start != null && (end ?? 0) >= (fileSize ?? Infinity)) {
-    throw new Error('Invalid range: Range-end index is greater than or equal to the size of the file.')
+    throw new InvalidRangeError('Invalid range: Range-end index is greater than or equal to the size of the file.')
   }
   if (start == null && (end ?? 0) > (fileSize ?? Infinity)) {
-    throw new Error('Invalid range: Range-end index is greater than the size of the file.')
+    throw new InvalidRangeError('Invalid range: Range-end index is greater than the size of the file.')
   }
   if (start != null && start < 0) {
-    throw new Error('Invalid range: Range-start index cannot be negative.')
+    throw new InvalidRangeError('Invalid range: Range-start index cannot be negative.')
   }
 
   if (start != null && end != null) {

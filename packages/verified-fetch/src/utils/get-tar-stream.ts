@@ -1,3 +1,4 @@
+import { NotUnixFSError } from '@helia/unixfs/errors'
 import { exporter, recursive, type UnixFSEntry } from 'ipfs-unixfs-exporter'
 import map from 'it-map'
 import { pipe } from 'it-pipe'
@@ -27,7 +28,7 @@ function toHeader (file: UnixFSEntry): Partial<TarEntryHeader> & { name: string 
 
 function toTarImportCandidate (entry: UnixFSEntry): TarImportCandidate {
   if (!EXPORTABLE.includes(entry.type)) {
-    throw new Error('Not a UnixFS node')
+    throw new NotUnixFSError(`${entry.type} is not a UnixFS node`)
   }
 
   const candidate: TarImportCandidate = {
@@ -63,5 +64,5 @@ export async function * tarStream (ipfsPath: string, blockstore: Blockstore, opt
     return
   }
 
-  throw new Error('Not a UnixFS node')
+  throw new NotUnixFSError('Not a UnixFS node')
 }

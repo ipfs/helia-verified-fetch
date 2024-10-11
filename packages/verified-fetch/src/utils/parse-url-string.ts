@@ -179,7 +179,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         // try resolving as an IPNS name
         peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
         if (peerId.publicKey == null) {
-          throw new Error('cidOrPeerIdOrDnsLink contains no public key')
+          throw new TypeError('cidOrPeerIdOrDnsLink contains no public key')
         }
         resolveResult = await ipns.resolve(peerId.publicKey, options)
         cid = resolveResult?.cid
