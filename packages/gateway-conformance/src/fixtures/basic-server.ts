@@ -235,7 +235,7 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
       log('Closed all connections')
       server.close((err: any) => {
         if (err != null) {
-          reject(err)
+          reject(err instanceof Error ? err : new Error(err))
         } else {
           resolve()
         }

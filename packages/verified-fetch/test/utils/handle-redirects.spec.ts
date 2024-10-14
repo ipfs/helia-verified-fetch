@@ -50,7 +50,7 @@ describe('handle-redirects', () => {
     it('should return redirect response to requested host with trailing slash when HEAD fetch fails', async () => {
       const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk'
       const options = { headers: new Headers({ 'x-forwarded-host': 'localhost:3931' }) }
-      fetchStub.returns(Promise.reject(new Response(null, { status: 404 })))
+      fetchStub.returns(new Response(null, { status: 404 }))
 
       const response = await getRedirectResponse({ resource, options, logger, cid, fetch: fetchStub })
       expect(fetchStub.calledOnce).to.be.true()
@@ -64,7 +64,7 @@ describe('handle-redirects', () => {
     it('should not return redirect response to x-forwarded-host if HEAD fetch fails', async () => {
       const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk/file.txt'
       const options = { headers: new Headers({ 'x-forwarded-host': 'localhost:3931' }) }
-      fetchStub.returns(Promise.reject(new Response(null, { status: 404 })))
+      fetchStub.returns(new Response(null, { status: 404 }))
 
       const response = await getRedirectResponse({ resource, options, logger, cid, fetch: fetchStub })
       expect(fetchStub.calledOnce).to.be.true()
@@ -74,7 +74,7 @@ describe('handle-redirects', () => {
     it('should not return redirect response to x-forwarded-host when HEAD fetch fails and trailing slash already exists', async () => {
       const resource = 'http://ipfs.io/ipfs/bafkqabtimvwgy3yk/'
       const options = { headers: new Headers({ 'x-forwarded-host': 'localhost:3931' }) }
-      fetchStub.returns(Promise.reject(new Response(null, { status: 404 })))
+      fetchStub.returns(new Response(null, { status: 404 }))
 
       const response = await getRedirectResponse({ resource, options, logger, cid, fetch: fetchStub })
       expect(fetchStub.calledOnce).to.be.true()
