@@ -72,7 +72,7 @@
     "ipfsd-ctl": "^14.1.0",
     "ipns": "^9.1.0",
     "kubo": "^0.28.0",
-    "kubo-rpc-client": "^4.1.1",
+    "kubo-rpc-client": "^5.0.1",
     "uint8arrays": "^5.1.0",
     "undici": "^6.18.1"
   },
