@@ -1,3 +1,25 @@
+## [@helia/verified-fetch-v2.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.5.0...@helia/verified-fetch-2.0.0) (2024-10-14)
+
+### ⚠ BREAKING CHANGES
+
+* upgrade to helia v5 (#107)
+
+### Features
+
+* upgrade to helia v5 ([#107](https://github.com/ipfs/helia-verified-fetch/issues/107)) ([91a6473](https://github.com/ipfs/helia-verified-fetch/commit/91a64735f2e463b723d2cba7a14093a968241f61))
+
+### Bug Fixes
+
+* move release config to package ([#115](https://github.com/ipfs/helia-verified-fetch/issues/115)) ([4078358](https://github.com/ipfs/helia-verified-fetch/commit/4078358de8844eba2358e491e87da6ae94b7a1cd))
+
+### Documentation
+
+* change cidv0 to cidv1 in the readme ([#105](https://github.com/ipfs/helia-verified-fetch/issues/105)) ([060e726](https://github.com/ipfs/helia-verified-fetch/commit/060e7265d7ab3d86cf6d1760e9e5d2789f85eb3d))
+
+### Dependencies
+
+* bump aegir from 42.2.11 to 44.1.4 ([#108](https://github.com/ipfs/helia-verified-fetch/issues/108)) ([e36fbff](https://github.com/ipfs/helia-verified-fetch/commit/e36fbffebee6af272b8fbf5cdcbbe1a46ea6b5c5))
+
 ## @helia/verified-fetch [1.5.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.4.3...@helia/verified-fetch-1.5.0) (2024-06-13)
 
 
