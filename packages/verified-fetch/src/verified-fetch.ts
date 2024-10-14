@@ -32,7 +32,7 @@ import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
 import { handlePathWalking, isObjectNode } from './utils/walk-path.js'
-import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
+import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
@@ -167,7 +167,7 @@ export class VerifiedFetch {
     // just read it out..
     const routingKey = uint8ArrayConcat([
       uint8ArrayFromString('/ipns/'),
-      peerId.toBytes()
+      peerId.toMultihash().bytes
     ])
     const datastoreKey = new Key('/dht/record/' + uint8ArrayToString(routingKey, 'base32'), false)
     const buf = await this.helia.datastore.get(datastoreKey, options)
@@ -185,7 +185,7 @@ export class VerifiedFetch {
    */
   private async handleCar ({ resource, cid, session, options }: FetchHandlerFunctionArg): Promise<Response> {
     const blockstore = this.getBlockstore(cid, resource, session, options)
-    const c = car({ blockstore, dagWalkers: this.helia.dagWalkers })
+    const c = car({ blockstore, getCodec: this.helia.getCodec })
     const stream = toBrowserReadableStream(c.stream(cid, options))
 
     const response = okResponse(resource, stream)
@@ -481,8 +481,7 @@ export class VerifiedFetch {
 
     const options = convertOptions(opts)
 
-    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:start', { resource }))
-
+    options?.onProgress?.(new CustomProgressEvent<ResourceDetail>('verified-fetch:request:start', { resource }))
     // resolve the CID/path from the requested resource
     let cid: ParsedUrlStringResults['cid']
     let path: ParsedUrlStringResults['path']

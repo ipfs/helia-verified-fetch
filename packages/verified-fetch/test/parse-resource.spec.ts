@@ -1,5 +1,6 @@
+import { generateKeyPair } from '@libp2p/crypto/keys'
 import { defaultLogger } from '@libp2p/logger'
-import { createEd25519PeerId } from '@libp2p/peer-id-factory'
+import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
 import sinon from 'sinon'
@@ -8,7 +9,8 @@ import { parseResource } from '../src/utils/parse-resource.js'
 import type { IPNS } from '@helia/ipns'
 
 const testCID = CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
-const peerId = await createEd25519PeerId()
+const key = await generateKeyPair('Ed25519')
+const peerId = peerIdFromPrivateKey(key)
 
 describe('parseResource', () => {
   it('does not call @helia/ipns for CID', async () => {

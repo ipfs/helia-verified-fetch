@@ -1,6 +1,7 @@
+import { generateKeyPair } from '@libp2p/crypto/keys'
 import { matchPeerId } from '@libp2p/interface-compliance-tests/matchers'
 import { defaultLogger } from '@libp2p/logger'
-import { createEd25519PeerId } from '@libp2p/peer-id-factory'
+import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { type Answer } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
@@ -75,7 +76,7 @@ describe('parseUrlString', () => {
           ipns,
           logger
         })
-      ).to.eventually.be.rejected.with.property('message', 'Could not parse PeerId in ipns url "mydomain.com", Non-base64 character')
+      ).to.eventually.be.rejected.with.property('message', 'Could not parse PeerId in ipns url "mydomain.com", Please pass a multibase decoder for strings that do not start with "1" or "Q"')
     })
   })
 
@@ -160,7 +161,7 @@ describe('parseUrlString', () => {
 
       await expect(parseUrlString({ urlString: 'ipns://mydomain.com', ipns, logger })).to.eventually.be.rejected
         .with.property('errors').that.deep.equals([
-          new TypeError('Could not parse PeerId in ipns url "mydomain.com", Non-base64 character'),
+          new TypeError('Could not parse PeerId in ipns url "mydomain.com", Please pass a multibase decoder for strings that do not start with "1" or "Q"'),
           new Error('Unexpected failure from ipns dns query')
         ])
     })
@@ -278,7 +279,8 @@ describe('parseUrlString', () => {
     })
 
     it('should return the correct TTL from the IPNS answer', async () => {
-      const testPeerId = await createEd25519PeerId()
+      const key = await generateKeyPair('Ed25519')
+      const testPeerId = peerIdFromPrivateKey(key)
 
       ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
@@ -459,7 +461,8 @@ describe('parseUrlString', () => {
     let testPeerId: PeerId
 
     beforeEach(async () => {
-      testPeerId = await createEd25519PeerId()
+      const key = await generateKeyPair('Ed25519')
+      testPeerId = peerIdFromPrivateKey(key)
     })
 
     it('handles invalid PeerIds', async () => {
@@ -575,7 +578,8 @@ describe('parseUrlString', () => {
 
     it('should parse an ipns:// url with a path that resolves to a CID with a path', async () => {
       const cid = CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
-      const peerId = await createEd25519PeerId()
+      const key = await generateKeyPair('Ed25519')
+      const peerId = peerIdFromPrivateKey(key)
       const recordPath = 'foo'
       const requestPath = 'bar/baz.txt'
 
@@ -597,7 +601,8 @@ describe('parseUrlString', () => {
 
     it('should parse an ipns:// url with a path that resolves to a CID with a path with a trailing slash', async () => {
       const cid = CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
-      const peerId = await createEd25519PeerId()
+      const key = await generateKeyPair('Ed25519')
+      const peerId = peerIdFromPrivateKey(key)
       const recordPath = 'foo/'
       const requestPath = 'bar/baz.txt'
 
@@ -619,7 +624,8 @@ describe('parseUrlString', () => {
 
     it('should parse an ipns:// url with a path that resolves to a CID with a path with a trailing slash', async () => {
       const cid = CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
-      const peerId = await createEd25519PeerId()
+      const key = await generateKeyPair('Ed25519')
+      const peerId = peerIdFromPrivateKey(key)
       const recordPath = '/foo/////bar//'
       const requestPath = '///baz///qux.txt'
 
@@ -645,7 +651,8 @@ describe('parseUrlString', () => {
     let cid: CID
 
     beforeEach(async () => {
-      peerId = await createEd25519PeerId()
+      const key = await generateKeyPair('Ed25519')
+      peerId = peerIdFromPrivateKey(key)
       cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
       ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
         cid,
@@ -733,7 +740,8 @@ describe('parseUrlString', () => {
       let cid: CID
 
       beforeEach(async () => {
-        peerId = await createEd25519PeerId()
+        const key = await generateKeyPair('Ed25519')
+        peerId = peerIdFromPrivateKey(key)
         cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
         ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
           cid,
@@ -819,7 +827,10 @@ describe('parseUrlString', () => {
   const IPNS_TYPES = [
     ['dnslink-encoded', (i: number) => `${i}-example-com`],
     ['dnslink-decoded', (i: number) => `${i}.example.com`],
-    ['peerid', async () => createEd25519PeerId()]
+    ['peerid', async () => {
+      const key = await generateKeyPair('Ed25519')
+      return peerIdFromPrivateKey(key)
+    }]
   ] as const
 
   IPNS_TYPES.flatMap(([type, fn]) => {

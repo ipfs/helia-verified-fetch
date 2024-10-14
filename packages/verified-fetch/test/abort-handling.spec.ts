@@ -1,9 +1,10 @@
 import { dagCbor } from '@helia/dag-cbor'
 import { type DNSLinkResolveResult, type IPNS, type IPNSResolveResult } from '@helia/ipns'
 import { unixfs } from '@helia/unixfs'
+import { generateKeyPair } from '@libp2p/crypto/keys'
 import { stop, type ComponentLogger, type Logger } from '@libp2p/interface'
 import { prefixLogger, logger as libp2pLogger } from '@libp2p/logger'
-import { createEd25519PeerId } from '@libp2p/peer-id-factory'
+import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import browserReadableStreamToIt from 'browser-readablestream-to-it'
 import { fixedSize } from 'ipfs-unixfs-importer/chunker'
@@ -102,11 +103,12 @@ describe('abort-handling', function () {
       hello: 'world'
     })
 
-    const peerId = await createEd25519PeerId()
+    const key = await generateKeyPair('Ed25519')
+    const peerId = peerIdFromPrivateKey(key)
 
-    await name.publish(peerId, cid, { lifetime: 1000 * 60 * 60 })
+    await name.publish(key, cid, { lifetime: 1000 * 60 * 60 })
 
-    await expect(makeAbortedRequest(verifiedFetch, [`ipns://${peerId}`], peerIdResolverCalled.promise)).to.eventually.be.rejectedWith('aborted')
+    await expect(makeAbortedRequest(verifiedFetch, [`ipns://${peerId.toString()}`], peerIdResolverCalled.promise)).to.eventually.be.rejectedWith('aborted')
     expect(peerIdResolver.callCount).to.equal(1)
     expect(dnsLinkResolver.callCount).to.equal(0) // not called because signal abort was detected
     expect(blockRetriever.retrieve.callCount).to.equal(0) // not called because we never got the cid

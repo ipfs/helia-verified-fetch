@@ -1,3 +1,4 @@
+import { InvalidRangeError } from '../errors.js'
 import type { CID } from 'multiformats/cid'
 
 interface CacheControlHeaderOptions {
@@ -46,10 +47,10 @@ export function getContentRangeHeader ({ byteStart, byteEnd, byteSize }: { byteS
   const total = byteSize ?? '*' // if we don't know the total size, we should use *
 
   if ((byteEnd ?? 0) >= (byteSize ?? Infinity)) {
-    throw new Error('Invalid range: Range-end index is greater than or equal to the size of the file.')
+    throw new InvalidRangeError('Invalid range: Range-end index is greater than or equal to the size of the file.')
   }
   if ((byteStart ?? 0) >= (byteSize ?? Infinity)) {
-    throw new Error('Invalid range: Range-start index is greater than or equal to the size of the file.')
+    throw new InvalidRangeError('Invalid range: Range-start index is greater than or equal to the size of the file.')
   }
 
   if (byteStart != null && byteEnd == null) {

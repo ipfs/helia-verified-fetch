@@ -3,7 +3,7 @@ import { CID } from 'multiformats/cid'
 import { TLRU } from './tlru.js'
 import type { RequestFormatShorthand } from '../types.js'
 import type { DNSLinkResolveResult, IPNS, IPNSResolveResult, IPNSRoutingEvents, ResolveDNSLinkProgressEvents, ResolveProgressEvents, ResolveResult } from '@helia/ipns'
-import type { AbortOptions, ComponentLogger } from '@libp2p/interface'
+import type { AbortOptions, ComponentLogger, PeerId } from '@libp2p/interface'
 import type { ProgressOptions } from 'progress-events'
 
 const ipnsCache = new TLRU<DNSLinkResolveResult | IPNSResolveResult>(1000)
@@ -174,11 +174,14 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       log.trace('resolved %s to %c from cache', cidOrPeerIdOrDnsLink, cid)
     } else {
       log.trace('Attempting to resolve PeerId for %s', cidOrPeerIdOrDnsLink)
-      let peerId = null
+      let peerId: PeerId | undefined
       try {
         // try resolving as an IPNS name
         peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
-        resolveResult = await ipns.resolve(peerId, options)
+        if (peerId.publicKey == null) {
+          throw new TypeError('cidOrPeerIdOrDnsLink contains no public key')
+        }
+        resolveResult = await ipns.resolve(peerId.publicKey, options)
         cid = resolveResult?.cid
         resolvedPath = resolveResult?.path
         log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)

@@ -1,3 +1,4 @@
+import { InvalidRangeError } from '../errors.js'
 import { calculateByteRangeIndexes, getHeader } from './request-headers.js'
 import { getContentRangeHeader } from './response-headers.js'
 import type { SupportedBodyTypes } from '../types.js'
@@ -32,7 +33,7 @@ function getByteRangeFromHeader (rangeHeader: string): { start: string, end: str
    */
   const match = rangeHeader.match(/^bytes=(?<start>\d+)?-(?<end>\d+)?$/)
   if (match?.groups == null) {
-    throw new Error('Invalid range request')
+    throw new InvalidRangeError('Invalid range request')
   }
 
   const { start, end } = match.groups
@@ -289,7 +290,7 @@ export class ByteRangeContext {
   public get contentRangeHeaderValue (): string {
     if (!this.isValidRangeRequest) {
       this.log.error('cannot get contentRangeHeaderValue for invalid range request')
-      throw new Error('Invalid range request')
+      throw new InvalidRangeError('Invalid range request')
     }
 
     return getContentRangeHeader({
