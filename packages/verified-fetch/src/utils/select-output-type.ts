@@ -133,7 +133,7 @@ function parseQFactor (str?: string): number {
     str = str.trim()
   }
 
-  if (str == null || !str.startsWith('q=')) {
+  if (str?.startsWith('q=') !== true) {
     return 1
   }
 
