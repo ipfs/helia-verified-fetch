@@ -1,4 +1,5 @@
 import { peerIdFromString } from '@libp2p/peer-id'
+import { base36 } from 'multiformats/bases/base36'
 import { CID } from 'multiformats/cid'
 import { TLRU } from './tlru.js'
 import type { RequestFormatShorthand } from '../types.js'
@@ -177,7 +178,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       let peerId: PeerId | undefined
       try {
         // try resolving as an IPNS name
-        peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
+        peerId = peerIdFromString(cidOrPeerIdOrDnsLink, base36.decoder)
         if (peerId.publicKey == null) {
           throw new TypeError('cidOrPeerIdOrDnsLink contains no public key')
         }
