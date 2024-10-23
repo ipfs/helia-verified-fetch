@@ -48,7 +48,9 @@ describe('@helia/verified-fetch - unixfs directory', () => {
         allowInsecure: true
       })
       expect(resp).to.be.ok()
-      expect(resp.status).to.equal(501) // TODO: we should do a directory listing instead
+      expect(resp.status).to.equal(200)
+      expect(resp.headers.get('content-type')).to.equal('text/html')
+      expect(await resp.text()).to.contain('A directory of content-addressed files hosted on IPFS.')
     })
 
     it('can return a string for unixfs pathed data', async () => {
