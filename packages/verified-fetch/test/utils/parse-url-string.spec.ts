@@ -77,7 +77,7 @@ describe('parseUrlString', () => {
           ipns,
           logger
         })
-      ).to.eventually.be.rejected.with.property('message', 'Could not parse PeerId in ipns url "mydomain.com", Unable to decode multibase string "mydomain.com", base36 decoder only supports inputs prefixed with k')
+      ).to.eventually.be.rejected.with.property('message', 'Could not parse PeerId in ipns url "mydomain.com", To parse non base32, base36 or base58btc encoded CID multibase decoder must be provided')
     })
   })
 
@@ -162,7 +162,7 @@ describe('parseUrlString', () => {
 
       await expect(parseUrlString({ urlString: 'ipns://mydomain.com', ipns, logger })).to.eventually.be.rejected
         .with.property('errors').that.deep.equals([
-          new TypeError('Could not parse PeerId in ipns url "mydomain.com", Unable to decode multibase string "mydomain.com", base36 decoder only supports inputs prefixed with k'),
+          new TypeError('Could not parse PeerId in ipns url "mydomain.com", To parse non base32, base36 or base58btc encoded CID multibase decoder must be provided'),
           new Error('Unexpected failure from ipns dns query')
         ])
     })
