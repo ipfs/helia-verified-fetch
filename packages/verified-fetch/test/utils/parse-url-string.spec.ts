@@ -4,6 +4,7 @@ import { defaultLogger } from '@libp2p/logger'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { type Answer } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
+import { base36 } from 'multiformats/bases/base36'
 import { CID } from 'multiformats/cid'
 import { match } from 'sinon'
 import { stubInterface } from 'sinon-ts'
@@ -76,7 +77,7 @@ describe('parseUrlString', () => {
           ipns,
           logger
         })
-      ).to.eventually.be.rejected.with.property('message', 'Could not parse PeerId in ipns url "mydomain.com", Please pass a multibase decoder for strings that do not start with "1" or "Q"')
+      ).to.eventually.be.rejected.with.property('message', 'Could not parse PeerId in ipns url "mydomain.com", To parse non base32, base36 or base58btc encoded CID multibase decoder must be provided')
     })
   })
 
@@ -161,7 +162,7 @@ describe('parseUrlString', () => {
 
       await expect(parseUrlString({ urlString: 'ipns://mydomain.com', ipns, logger })).to.eventually.be.rejected
         .with.property('errors').that.deep.equals([
-          new TypeError('Could not parse PeerId in ipns url "mydomain.com", Please pass a multibase decoder for strings that do not start with "1" or "Q"'),
+          new TypeError('Could not parse PeerId in ipns url "mydomain.com", To parse non base32, base36 or base58btc encoded CID multibase decoder must be provided'),
           new Error('Unexpected failure from ipns dns query')
         ])
     })
@@ -459,10 +460,13 @@ describe('parseUrlString', () => {
 
   describe('ipns://<peerId> URLs', () => {
     let testPeerId: PeerId
+    let base36CidPeerId: string
 
     beforeEach(async () => {
       const key = await generateKeyPair('Ed25519')
       testPeerId = peerIdFromPrivateKey(key)
+
+      base36CidPeerId = key.publicKey.toCID().toString(base36)
     })
 
     it('handles invalid PeerIds', async () => {
@@ -496,6 +500,23 @@ describe('parseUrlString', () => {
 
       await assertMatchUrl(
         `ipns://${testPeerId}`, {
+          protocol: 'ipns',
+          cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
+          path: '',
+          query: {}
+        }
+      )
+    })
+
+    it('can parse a base36 PeerId CID', async () => {
+      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+        cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
+        path: '',
+        record: ipnsRecordStub({ peerId: testPeerId })
+      })
+
+      await assertMatchUrl(
+        `ipns://${base36CidPeerId}`, {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
           path: '',
