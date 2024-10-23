@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.0.0...@helia/verified-fetch-2.0.1) (2024-10-23)
+
+### Bug Fixes
+
+* allow passing cid encoded ipns keys ([#117](https://github.com/ipfs/helia-verified-fetch/issues/117)) ([1836e40](https://github.com/ipfs/helia-verified-fetch/commit/1836e40b9f4f7eded1c28a5d514b0e7a10d00059))
+
 ## [@helia/verified-fetch-v2.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-1.5.0...@helia/verified-fetch-2.0.0) (2024-10-14)
 
 ### ⚠ BREAKING CHANGES
