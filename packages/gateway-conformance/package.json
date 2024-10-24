@@ -52,7 +52,7 @@
     "test": "aegir test -t node"
   },
   "dependencies": {
-    "@helia/block-brokers": "^3.0.1",
+    "@helia/block-brokers": "^4.0.1",
     "@helia/http": "^1.0.8",
     "@helia/interface": "^4.3.0",
     "@helia/routers": "^1.1.0",
