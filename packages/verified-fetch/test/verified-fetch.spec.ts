@@ -319,7 +319,7 @@ describe('@helia/verifed-fetch', () => {
       expect(toBuffer(output)).to.equalBytes(content)
     })
 
-    it('should return 501 if index file is not found', async () => {
+    it('should return directory index if index.html file is not found', async () => {
       const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
 
       const fs = unixfs(helia)
@@ -339,8 +339,9 @@ describe('@helia/verifed-fetch', () => {
 
       const resp = await verifiedFetch.fetch(res.cid)
       expect(resp).to.be.ok()
-      expect(resp.status).to.equal(501)
-      expect(resp.statusText).to.equal('Not Implemented')
+      expect(resp.status).to.equal(200)
+      expect(resp.headers.get('content-type')).to.equal('text/html')
+      expect(await resp.text()).to.contain('A directory of content-addressed files hosted on IPFS.')
     })
 
     it('can round trip json via .json()', async () => {
