@@ -594,10 +594,16 @@
  * 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal. Note that this is a `AbortError` from `@libp2p/interface` and not the standard `AbortError` from the Fetch API.
  */
 
-import { trustlessGateway } from '@helia/block-brokers'
+import { bitswap, trustlessGateway } from '@helia/block-brokers'
+import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
 import { createHeliaHTTP } from '@helia/http'
-import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
+import { delegatedHTTPRouting, httpGatewayRouting, libp2pRouting } from '@helia/routers'
+import { webRTCDirect } from '@libp2p/webrtc'
+import { webSockets } from '@libp2p/websockets'
+import { webTransport } from '@libp2p/webtransport'
 import { dns } from '@multiformats/dns'
+import { createHelia, libp2pDefaults } from 'helia'
+import { createLibp2p } from 'libp2p'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia } from '@helia/interface'
 import type { ResolveDNSLinkProgressEvents } from '@helia/ipns'
@@ -638,6 +644,27 @@ export interface VerifiedFetch {
 export interface CreateVerifiedFetchInit {
   gateways: string[]
   routers?: string[]
+
+  /**
+   * Whether to enable WebTransport providers.
+   *
+   * @default false
+   */
+  webSocketsProviders?: boolean
+
+  /**
+   * Whether to enable WebTransport providers.
+   *
+   * @default false
+   */
+  webTransportProviders?: boolean
+
+  /**
+   * Whether to enable WebRTC providers.
+   *
+   * @default false
+   */
+  webRTCProviders?: boolean
 
   /**
    * In order to parse DNSLink records, we need to resolve DNS queries. You can
@@ -789,21 +816,67 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
   if (!isHelia(init)) {
-    init = await createHeliaHTTP({
-      blockBrokers: [
-        trustlessGateway({
-          allowInsecure: init?.allowInsecure,
-          allowLocal: init?.allowLocal
-        })
-      ],
-      routers: [
-        ...(init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
-        httpGatewayRouting({
-          gateways: init?.gateways ?? ['https://trustless-gateway.link']
-        })
-      ],
-      dns: createDns(init?.dnsResolvers)
-    })
+    if (init?.webTransportProviders ?? init?.webSocketsProviders ?? init?.webRTCProviders ?? false) {
+      const libp2pConfig = libp2pDefaults()
+
+      libp2pConfig.transports = []
+
+      if (init?.webTransportProviders === true) {
+        libp2pConfig.transports.push(webTransport())
+      }
+      if (init?.webSocketsProviders === true) {
+        libp2pConfig.transports.push(webSockets())
+      }
+      if (init?.webRTCProviders === true) {
+        libp2pConfig.transports.push(webRTCDirect())
+      }
+
+      libp2pConfig.peerDiscovery = [] // disable default bootstrap peers
+      libp2pConfig.addresses = {} // disable default listen addresses
+
+      const routers = init?.routers ?? ['https://delegated-ipfs.dev']
+      for (let index = 0; index < routers.length; index++) {
+        const routerUrl = routers[index]
+        libp2pConfig.services[`delegatedRouting${index}`] = () => createDelegatedRoutingV1HttpApiClient(routerUrl)
+      }
+
+      libp2pConfig.dns = createDns(init?.dnsResolvers)
+
+      const libp2p = await createLibp2p(libp2pConfig)
+
+      init = await createHelia({
+        libp2p,
+        blockBrokers: [
+          trustlessGateway({
+            allowInsecure: init?.allowInsecure,
+            allowLocal: init?.allowLocal
+          }),
+          bitswap()
+        ],
+        routers: [
+          httpGatewayRouting({
+            gateways: init?.gateways ?? ['https://trustless-gateway.link']
+          }),
+          libp2pRouting(libp2p)
+        ]
+      })
+    } else {
+      init = await createHeliaHTTP({
+        blockBrokers: [
+          trustlessGateway({
+            allowInsecure: init?.allowInsecure,
+            allowLocal: init?.allowLocal
+          })
+        ],
+        routers: [
+          ...(init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
+          httpGatewayRouting({
+            gateways: init?.gateways ?? ['https://trustless-gateway.link']
+          })
+        ],
+        dns: createDns(init?.dnsResolvers)
+      })
+    }
   }
 
   const verifiedFetchInstance = new VerifiedFetchClass({ helia: init }, options)
