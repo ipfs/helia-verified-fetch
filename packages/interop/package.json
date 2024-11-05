@@ -57,15 +57,17 @@
     "test:electron-main": "aegir test -t electron-main"
   },
   "dependencies": {
+    "@helia/delegated-routing-v1-http-api-server": "^4.0.4",
     "@helia/verified-fetch": "2.1.2",
     "aegir": "^45.0.1",
     "execa": "^9.1.0",
-    "fast-glob": "^3.3.2",
+    "glob": "^11.0.0",
     "ipfsd-ctl": "^14.1.0",
     "kubo": "^0.32.0",
     "kubo-rpc-client": "^4.1.1",
     "magic-bytes.js": "^1.10.0",
-    "multiformats": "^13.1.0"
+    "multiformats": "^13.1.0",
+    "sinon-ts": "^2.0.0"
   },
   "browser": {
     "./dist/src/fixtures/create-kubo.js": "./dist/src/fixtures/create-kubo.browser.js",
