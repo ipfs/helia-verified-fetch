@@ -650,21 +650,21 @@ export interface CreateVerifiedFetchInit {
    *
    * @default false
    */
-  webSocketsProviders?: boolean
+  webSockets?: boolean
 
   /**
    * Whether to enable WebTransport providers.
    *
    * @default false
    */
-  webTransportProviders?: boolean
+  webTransport?: boolean
 
   /**
    * Whether to enable WebRTC providers.
    *
    * @default false
    */
-  webRTCProviders?: boolean
+  webRTC?: boolean
 
   /**
    * In order to parse DNSLink records, we need to resolve DNS queries. You can
@@ -816,18 +816,18 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
   if (!isHelia(init)) {
-    if (init?.webTransportProviders ?? init?.webSocketsProviders ?? init?.webRTCProviders ?? false) {
+    if (init?.webTransport ?? init?.webSockets ?? init?.webRTC ?? false) {
       const libp2pConfig = libp2pDefaults()
 
       libp2pConfig.transports = []
 
-      if (init?.webTransportProviders === true) {
+      if (init?.webTransport === true) {
         libp2pConfig.transports.push(webTransport())
       }
-      if (init?.webSocketsProviders === true) {
+      if (init?.webSockets === true) {
         libp2pConfig.transports.push(webSockets())
       }
-      if (init?.webRTCProviders === true) {
+      if (init?.webRTC === true) {
         libp2pConfig.transports.push(webRTCDirect())
       }
 
