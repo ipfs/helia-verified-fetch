@@ -29,7 +29,7 @@ Learn more in the [announcement blog post](https://blog.ipfs.tech/verified-fetch
 
 # API Docs
 
-- <https://ipfs.github.io/helia-verified-fetch/modules.html>
+- [https://ipfs.github.io/helia-verified-fetch/modules.html](https://ipfs.github.io/helia-verified-fetch/modules/_helia_verified_fetch.html)
 
 # License
 
