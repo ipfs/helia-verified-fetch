@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.0.1...@helia/verified-fetch-2.1.0) (2024-11-13)
+
+### Features
+
+* return IPNSRecords for ipns subdomain URLs ([#131](https://github.com/ipfs/helia-verified-fetch/issues/131)) ([05b7ac6](https://github.com/ipfs/helia-verified-fetch/commit/05b7ac634f2f7be4c287ca4e86654ac1f4fb8125))
+
 ## [@helia/verified-fetch-v2.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.0.0...@helia/verified-fetch-2.0.1) (2024-10-23)
 
 ### Bug Fixes
