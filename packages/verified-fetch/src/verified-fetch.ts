@@ -5,11 +5,12 @@ import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
 import { Record as DHTRecord } from '@libp2p/kad-dht'
-import { peerIdFromString } from '@libp2p/peer-id'
+import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
 import { Key } from 'interface-datastore'
 import { exporter } from 'ipfs-unixfs-exporter'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { LRUCache } from 'lru-cache'
+import { CID } from 'multiformats/cid'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
@@ -37,7 +38,6 @@ import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
-import type { CID } from 'multiformats/cid'
 
 const SESSION_CACHE_MAX_SIZE = 100
 const SESSION_CACHE_TTL_MS = 60 * 1000
@@ -144,20 +144,37 @@ export class VerifiedFetch {
   }
 
   /**
-   * Accepts an `ipns://...` URL as a string and returns a `Response` containing
+   * Accepts an `ipns://...` or `https?://<ipnsname>.ipns.<domain>` URL as a string and returns a `Response` containing
    * a raw IPNS record.
    */
   private async handleIPNSRecord ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
-    if (path !== '' || !resource.startsWith('ipns://')) {
+    if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.'))) {
+      this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
       return badRequestResponse(resource, 'Invalid IPNS name')
     }
 
     let peerId: PeerId
 
     try {
-      peerId = peerIdFromString(resource.replace('ipns://', ''))
+      if (resource.startsWith('ipns://')) {
+        const peerIdString = resource.replace('ipns://', '')
+        this.log.trace('trying to parse peer id from "%s"', peerIdString)
+        peerId = peerIdFromString(peerIdString)
+      } else {
+        const peerIdString = resource.split('.ipns.')[0].split('://')[1]
+        this.log.trace('trying to parse peer id from "%s"', peerIdString)
+        let cid: CID
+        try {
+          cid = CID.parse(peerIdString)
+        } catch (err: any) {
+          this.log.error('could not construct CID from peerId string "%s"', resource, err)
+          return badRequestResponse(resource, err)
+        }
+
+        peerId = peerIdFromCID(cid)
+      }
     } catch (err: any) {
-      this.log.error('could not parse peer id from IPNS url %s', resource)
+      this.log.error('could not parse peer id from IPNS url %s', resource, err)
 
       return badRequestResponse(resource, err)
     }
