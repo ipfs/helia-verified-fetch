@@ -16,7 +16,7 @@ import { peerIdFromString } from '@libp2p/peer-id'
 import { $ } from 'execa'
 import fg from 'fast-glob'
 import { Key } from 'interface-datastore'
-import { peerIdToRoutingKey } from 'ipns'
+import { multihashToIPNSRoutingKey } from 'ipns'
 import { path } from 'kubo'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { GWC_IMAGE } from '../constants.js'
@@ -98,7 +98,7 @@ export async function loadFixtures (kuboRepoDir: string): Promise<string> {
     const relativePath = relative(GWC_FIXTURES_PATH, fsIpnsRecord)
     log('Loading *.ipns-record fixture %s', relativePath)
     const key = peerIdFromString(peerIdString)
-    const customRoutingKey = peerIdToRoutingKey(key)
+    const customRoutingKey = multihashToIPNSRoutingKey(key.toMultihash())
     const dhtKey = new Key('/dht/record/' + uint8ArrayToString(customRoutingKey, 'base32'), false)
 
     const dhtRecord = new DhtRecord(customRoutingKey, await readFile(fsIpnsRecord, null), new Date(Date.now() + 9999999))
