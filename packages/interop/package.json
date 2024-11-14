@@ -57,7 +57,7 @@
     "test:electron-main": "aegir test -t electron-main"
   },
   "dependencies": {
-    "@helia/verified-fetch": "1.5.0",
+    "@helia/verified-fetch": "2.1.0",
     "aegir": "^44.1.4",
     "execa": "^9.1.0",
     "fast-glob": "^3.3.2",
