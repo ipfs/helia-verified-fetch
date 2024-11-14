@@ -165,7 +165,7 @@
     "it-pipe": "^3.0.1",
     "it-tar": "^6.0.5",
     "it-to-browser-readablestream": "^2.0.9",
-    "lru-cache": "^10.2.2",
+    "lru-cache": "^11.0.2",
     "multiformats": "^13.3.0",
     "progress-events": "^1.0.1",
     "uint8arrays": "^5.1.0"
