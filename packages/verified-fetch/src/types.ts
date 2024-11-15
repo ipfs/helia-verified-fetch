@@ -1,4 +1,4 @@
-import { type AbortOptions } from '@libp2p/interface'
+import { type AbortOptions, type PeerId } from '@libp2p/interface'
 import { type CID } from 'multiformats/cid'
 import type { VerifiedFetchInit } from './index.js'
 
@@ -8,6 +8,7 @@ export type SupportedBodyTypes = string | ArrayBuffer | Blob | ReadableStream<Ui
 
 export interface FetchHandlerFunctionArg {
   cid: CID
+  peerId?: PeerId
   path: string
 
   /**

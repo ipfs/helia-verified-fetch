@@ -1,5 +1,5 @@
-import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
 import { CID } from 'multiformats/cid'
+import { peerIdFromString } from './peer-id-from-string.js'
 import { TLRU } from './tlru.js'
 import type { RequestFormatShorthand } from '../types.js'
 import type { DNSLinkResolveResult, IPNS, IPNSResolveResult, IPNSRoutingEvents, ResolveDNSLinkProgressEvents, ResolveProgressEvents, ResolveResult } from '@helia/ipns'
@@ -41,6 +41,11 @@ interface ParsedUrlStringResultsBase extends ResolveResult {
    * seconds as a number
    */
   ttl?: number
+
+  /**
+   * The resolved PeerId if the URL was an IPNS URL
+   */
+  peerId?: PeerId
 }
 
 export type ParsedUrlStringResults = ParsedUrlStringResultsBase
@@ -151,6 +156,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
 
   let cid: CID | undefined
   let resolvedPath: string | undefined
+  let peerId: PeerId | undefined
   const errors: Error[] = []
   let resolveResult: IPNSResolveResult | DNSLinkResolveResult | undefined
 
@@ -174,16 +180,9 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       log.trace('resolved %s to %c from cache', cidOrPeerIdOrDnsLink, cid)
     } else {
       log.trace('Attempting to resolve PeerId for %s', cidOrPeerIdOrDnsLink)
-      let peerId: PeerId | undefined
       try {
         // try resolving as an IPNS name
-
-        if (cidOrPeerIdOrDnsLink.charAt(0) === '1' || cidOrPeerIdOrDnsLink.charAt(0) === 'Q') {
-          peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
-        } else {
-          // try resolving as a base36 CID
-          peerId = peerIdFromCID(CID.parse(cidOrPeerIdOrDnsLink))
-        }
+        peerId = peerIdFromString(cidOrPeerIdOrDnsLink, log)
         if (peerId.publicKey == null) {
           throw new TypeError('cidOrPeerIdOrDnsLink contains no public key')
         }
@@ -263,6 +262,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
   }
 
   return {
+    peerId,
     protocol,
     cid,
     path: joinPaths(resolvedPath, urlPath ?? ''),

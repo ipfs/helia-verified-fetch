@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { httpGatewayRouting } from '@helia/routers'
 import { logger } from '@libp2p/logger'
 import { dns } from '@multiformats/dns'
@@ -57,9 +58,9 @@ async function createHelia (init: CreateHeliaOptions): Promise<ReturnType<typeof
       })
     ],
     routers: [
-      httpGatewayRouting({
-        gateways: init.gateways
-      })
+      // httpGatewayRouting({
+      //   gateways: init.gateways
+      // })
     ],
     dns: dns({
       resolvers: {
@@ -135,9 +136,29 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
   }
   res.on('finish', onResFinish)
 
+  // // test that the content can be requested from the trustless gateway directly
+  // void fetch(fullUrlHref.toString().replace('3441', '3440')).then(async (res) => {
+  //   if (!res.ok) {
+  //     log.error('Error fetching directly from trustless gateway', res.status, res.statusText)
+  //   }
+  //   log('Fetched directly from trustless gateway', res.status, res.statusText)
+  //   log('content: %s', await res.text())
+  // }).catch((err) => {
+  //   log.error('Error fetching directly from trustless gateway', err)
+  // })
   try {
     urlLog.trace('calling verified-fetch')
-    const resp = await verifiedFetch(fullUrlHref.toString(), { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: convertNodeJsHeadersToFetchHeaders(req.headers) })
+    const resp = await verifiedFetch(fullUrlHref.toString(), {
+      redirect: 'manual',
+      signal: requestController.signal,
+      session: useSessions,
+      allowInsecure: true,
+      allowLocal: true,
+      headers: convertNodeJsHeadersToFetchHeaders(req.headers),
+      onProgress: (progress) => {
+        urlLog('progress: %O', progress)
+      }
+    })
     urlLog.trace('verified-fetch response status: %d', resp.status)
 
     const headers = convertFetchHeadersToNodeJsHeaders({ resp, log: urlLog, fixingGwcAnnoyance, serverPort })
@@ -192,6 +213,7 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
   if (kuboGateway == null) {
     throw new Error('options.kuboGateway or KUBO_GATEWAY env var is required')
   }
+  log('Using trustless Kubo gateway: %s', kuboGateway)
 
   const blockstore = new MemoryBlockstore()
   const datastore = getIpnsRecordDatastore()

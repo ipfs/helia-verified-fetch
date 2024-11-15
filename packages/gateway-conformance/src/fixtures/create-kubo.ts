@@ -32,8 +32,8 @@ export async function createKuboNode (listenPort?: number): Promise<KuboNodeDeta
           }
         }
       }
-    },
-    args: ['--enable-pubsub-experiment', '--enable-namesys-pubsub']
+    }
+    // args: ['--enable-pubsub-experiment', '--enable-namesys-pubsub']
   })
   const info = await controller.info()
 

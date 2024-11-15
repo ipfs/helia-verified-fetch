@@ -3,14 +3,13 @@ import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
-import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
+import { type AbortOptions, type Logger } from '@libp2p/interface'
 import { Record as DHTRecord } from '@libp2p/kad-dht'
-import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
 import { Key } from 'interface-datastore'
 import { exporter } from 'ipfs-unixfs-exporter'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { LRUCache } from 'lru-cache'
-import { CID } from 'multiformats/cid'
+import { type CID } from 'multiformats/cid'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
@@ -147,36 +146,32 @@ export class VerifiedFetch {
    * Accepts an `ipns://...` or `https?://<ipnsname>.ipns.<domain>` URL as a string and returns a `Response` containing
    * a raw IPNS record.
    */
-  private async handleIPNSRecord ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleIPNSRecord ({ resource, peerId, path, options }: FetchHandlerFunctionArg): Promise<Response> {
     if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.'))) {
       this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
       return badRequestResponse(resource, 'Invalid IPNS name')
     }
 
-    let peerId: PeerId
+    // let peerId: PeerId
+    // let peerIdString: string
+    // if (resource.startsWith('ipns://')) {
+    //   peerIdString = resource.replace('ipns://', '')
+    // } else {
+    //   peerIdString = resource.split('.ipns.')[0].split('://')[1]
+    // }
 
-    try {
-      if (resource.startsWith('ipns://')) {
-        const peerIdString = resource.replace('ipns://', '')
-        this.log.trace('trying to parse peer id from "%s"', peerIdString)
-        peerId = peerIdFromString(peerIdString)
-      } else {
-        const peerIdString = resource.split('.ipns.')[0].split('://')[1]
-        this.log.trace('trying to parse peer id from "%s"', peerIdString)
-        let cid: CID
-        try {
-          cid = CID.parse(peerIdString)
-        } catch (err: any) {
-          this.log.error('could not construct CID from peerId string "%s"', resource, err)
-          return badRequestResponse(resource, err)
-        }
+    // this.log.trace('trying to parse peer id from "%s"', peerIdString)
 
-        peerId = peerIdFromCID(cid)
-      }
-    } catch (err: any) {
-      this.log.error('could not parse peer id from IPNS url %s', resource, err)
+    // try {
+    //   peerId = peerIdFromString(peerIdString)
+    // } catch (err: any) {
+    //   this.log.error('could not parse peer id from IPNS url %s', resource, err)
 
-      return badRequestResponse(resource, err)
+    //   return badRequestResponse(resource, err)
+    // }
+    if (peerId == null) {
+      this.log.error('no peerId passed to handleIPNSRecord for request of "%s"', resource)
+      return badRequestResponse(resource, 'Could not determine peer ID')
     }
 
     // since this call happens after parseResource, we've already resolved the
@@ -232,7 +227,9 @@ export class VerifiedFetch {
   private async handleJson ({ resource, cid, path, accept, session, options }: FetchHandlerFunctionArg): Promise<Response> {
     this.log.trace('fetching %c/%s', cid, path)
     const blockstore = this.getBlockstore(cid, resource, session, options)
+    this.log.trace('got blockstore. getting block %c, with options %O', cid, options)
     const block = await blockstore.get(cid, options)
+    this.log.trace('got block for %c', cid)
     let body: string | Uint8Array
 
     if (accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {
@@ -506,6 +503,7 @@ export class VerifiedFetch {
     let ttl: ParsedUrlStringResults['ttl']
     let protocol: ParsedUrlStringResults['protocol']
     let ipfsPath: string
+    let peerId: ParsedUrlStringResults['peerId']
     try {
       const result = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
       cid = result.cid
@@ -514,6 +512,7 @@ export class VerifiedFetch {
       ttl = result.ttl
       protocol = result.protocol
       ipfsPath = result.ipfsPath
+      peerId = result.peerId
     } catch (err: any) {
       options?.signal?.throwIfAborted()
       this.log.error('error parsing resource %s', resource, err)
@@ -540,7 +539,7 @@ export class VerifiedFetch {
       return redirectResponse
     }
 
-    const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options }
+    const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, peerId, options }
 
     if (accept === 'application/vnd.ipfs.ipns-record') {
       // the user requested a raw IPNS record
