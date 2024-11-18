@@ -598,10 +598,9 @@
 
 import { bitswap, trustlessGateway } from '@helia/block-brokers'
 import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
-import { delegatedHTTPRouting, httpGatewayRouting, libp2pRouting } from '@helia/routers'
+import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
 import { webRTCDirect } from '@libp2p/webrtc'
 import { webSockets } from '@libp2p/websockets'
-import { webTransport } from '@libp2p/webtransport'
 import { dns } from '@multiformats/dns'
 import { createHelia, libp2pDefaults } from 'helia'
 import { createLibp2p } from 'libp2p'

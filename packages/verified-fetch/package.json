@@ -171,15 +171,15 @@
     "it-to-browser-readablestream": "^2.0.9",
     "libp2p": "^2.2.1",
     "lru-cache": "^11.0.2",
-    "multiformats": "^13.3.0",
+    "multiformats": "^13.3.1",
     "progress-events": "^1.0.1",
     "uint8arrays": "^5.1.0"
   },
   "devDependencies": {
     "@helia/dag-cbor": "^4.0.0",
     "@helia/dag-json": "^4.0.0",
+    "@helia/http": "^2.0.1",
     "@helia/json": "^4.0.0",
-    "@helia/utils": "^1.0.0",
     "@ipld/car": "^5.3.2",
     "@libp2p/crypto": "^5.0.5",
     "@libp2p/interface-compliance-tests": "^6.1.6",
