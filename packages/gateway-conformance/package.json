@@ -55,7 +55,7 @@
     "@helia/block-brokers": "^3.0.1",
     "@helia/http": "^1.0.8",
     "@helia/interface": "^4.3.0",
-    "@helia/routers": "^1.1.0",
+    "@helia/routers": "^2.1.0",
     "@helia/verified-fetch": "1.5.0",
     "@libp2p/kad-dht": "^12.0.17",
     "@libp2p/logger": "^5.1.4",
