@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "@helia/verified-fetch": "1.5.0",
-    "aegir": "^44.1.4",
+    "aegir": "^45.0.1",
     "execa": "^9.1.0",
     "fast-glob": "^3.3.2",
     "ipfsd-ctl": "^14.1.0",
