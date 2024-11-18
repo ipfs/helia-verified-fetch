@@ -59,7 +59,7 @@
     "@helia/verified-fetch": "1.5.0",
     "@libp2p/kad-dht": "^12.0.17",
     "@libp2p/logger": "^5.1.4",
-    "@libp2p/peer-id": "^4.1.2",
+    "@libp2p/peer-id": "^5.0.8",
     "@multiformats/dns": "^1.0.6",
     "@sgtpooki/file-type": "^1.0.1",
     "aegir": "^45.0.1",
