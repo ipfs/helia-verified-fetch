@@ -157,7 +157,6 @@
     "@libp2p/peer-id": "^5.0.5",
     "@libp2p/webrtc": "^5.0.16",
     "@libp2p/websockets": "^9.0.11",
-    "@libp2p/webtransport": "^5.0.16",
     "@multiformats/dns": "^1.0.6",
     "cborg": "^4.2.4",
     "hashlru": "^2.3.0",
