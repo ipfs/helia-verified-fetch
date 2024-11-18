@@ -61,7 +61,7 @@
     "aegir": "^45.0.1",
     "execa": "^9.1.0",
     "fast-glob": "^3.3.2",
-    "ipfsd-ctl": "^14.1.0",
+    "ipfsd-ctl": "^15.0.1",
     "kubo": "^0.32.0",
     "kubo-rpc-client": "^4.1.1",
     "magic-bytes.js": "^1.10.0",
