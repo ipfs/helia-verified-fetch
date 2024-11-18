@@ -598,15 +598,17 @@
 
 import { bitswap, trustlessGateway } from '@helia/block-brokers'
 import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
+import { ipnsSelector, ipnsValidator, type ResolveDNSLinkProgressEvents } from '@helia/ipns'
 import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
+import { type Libp2p } from '@libp2p/interface'
+import { kadDHT } from '@libp2p/kad-dht'
 import { webRTCDirect } from '@libp2p/webrtc'
 import { webSockets } from '@libp2p/websockets'
 import { dns } from '@multiformats/dns'
-import { createHelia, libp2pDefaults } from 'helia'
+import { createHelia, type DefaultLibp2pServices, libp2pDefaults } from 'helia'
 import { createLibp2p } from 'libp2p'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia } from '@helia/interface'
-import type { ResolveDNSLinkProgressEvents } from '@helia/ipns'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
@@ -790,27 +792,49 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
   allowInsecure?: boolean
 }
 
+type Libp2pServiceType = Pick<DefaultLibp2pServices, 'dcutr' | 'identify' | 'keychain' | 'ping' > & Record<`delegatedRouting${number}`, any>
+
 /**
  * Create and return a Helia node
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
+  let libp2p: Libp2p<Libp2pServiceType> | undefined
   if (!isHelia(init)) {
     const libp2pConfig = libp2pDefaults()
+
+    libp2pConfig.start = false
 
     libp2pConfig.transports = [webSockets(), webRTCDirect()]
 
     libp2pConfig.peerDiscovery = [] // disable default bootstrap peers
     libp2pConfig.addresses = {} // disable default listen addresses
 
+    // We only need client/listen/fetch based services
+    const fetchOnlyServices = {
+      dcutr: libp2pConfig.services.dcutr,
+      dht: kadDHT({
+        clientMode: true,
+        validators: {
+          ipns: ipnsValidator
+        },
+        selectors: {
+          ipns: ipnsSelector
+        }
+      }),
+      identify: libp2pConfig.services.identify,
+      identifyPush: libp2pConfig.services.identifyPush,
+      keychain: libp2pConfig.services.keychain,
+      ping: libp2pConfig.services.ping
+    }
+    // @ts-expect-error - borked serviceMap types
+    libp2pConfig.services = fetchOnlyServices
     const routers = init?.routers ?? ['https://delegated-ipfs.dev']
     for (let index = 0; index < routers.length; index++) {
       const routerUrl = routers[index]
       libp2pConfig.services[`delegatedRouting${index}`] = () => createDelegatedRoutingV1HttpApiClient(routerUrl)
     }
 
-    libp2pConfig.dns = createDns(init?.dnsResolvers)
-
-    const libp2p = await createLibp2p(libp2pConfig)
+    libp2p = await createLibp2p(libp2pConfig)
 
     init = await createHelia({
       libp2p,
@@ -821,6 +845,7 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
         }),
         bitswap()
       ],
+      dns: createDns(init?.dnsResolvers),
       routers: [
         httpGatewayRouting({
           gateways: init?.gateways ?? ['https://trustless-gateway.link']
@@ -834,8 +859,8 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
   async function verifiedFetch (resource: Resource, options?: VerifiedFetchInit): Promise<Response> {
     return verifiedFetchInstance.fetch(resource, options)
   }
-  verifiedFetch.stop = verifiedFetchInstance.stop.bind(verifiedFetchInstance)
   verifiedFetch.start = verifiedFetchInstance.start.bind(verifiedFetchInstance)
+  verifiedFetch.stop = verifiedFetchInstance.stop.bind(verifiedFetchInstance)
 
   return verifiedFetch
 }
