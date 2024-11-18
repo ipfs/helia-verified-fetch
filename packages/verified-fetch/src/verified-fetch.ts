@@ -5,12 +5,11 @@ import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
 import { Record as DHTRecord } from '@libp2p/kad-dht'
-import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
 import { Key } from 'interface-datastore'
 import { exporter } from 'ipfs-unixfs-exporter'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { LRUCache } from 'lru-cache'
-import { CID } from 'multiformats/cid'
+import { type CID } from 'multiformats/cid'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
@@ -22,6 +21,7 @@ import { ByteRangeContext } from './utils/byte-range-context.js'
 import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
+import { getPeerIdFromString } from './utils/get-peer-id-from-string.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
@@ -159,19 +159,11 @@ export class VerifiedFetch {
       if (resource.startsWith('ipns://')) {
         const peerIdString = resource.replace('ipns://', '')
         this.log.trace('trying to parse peer id from "%s"', peerIdString)
-        peerId = peerIdFromString(peerIdString)
+        peerId = getPeerIdFromString(peerIdString)
       } else {
         const peerIdString = resource.split('.ipns.')[0].split('://')[1]
         this.log.trace('trying to parse peer id from "%s"', peerIdString)
-        let cid: CID
-        try {
-          cid = CID.parse(peerIdString)
-        } catch (err: any) {
-          this.log.error('could not construct CID from peerId string "%s"', resource, err)
-          return badRequestResponse(resource, err)
-        }
-
-        peerId = peerIdFromCID(cid)
+        peerId = getPeerIdFromString(peerIdString)
       }
     } catch (err: any) {
       this.log.error('could not parse peer id from IPNS url %s', resource, err)
