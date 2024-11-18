@@ -9,8 +9,7 @@
 [![ipfs.tech](https://img.shields.io/badge/project-IPFS-blue.svg?style=flat-square)](https://ipfs.tech)
 [![Discuss](https://img.shields.io/discourse/https/discuss.ipfs.tech/posts.svg?style=flat-square)](https://discuss.ipfs.tech)
 [![codecov](https://img.shields.io/codecov/c/github/ipfs/helia-verified-fetch.svg?style=flat-square)](https://codecov.io/gh/ipfs/helia-verified-fetch)
-[![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-verified-fetch/js-test-and-release.yml?branch=main\&style=flat-square)](https://github.com/ipfs/helia-verified-fetch/actions/workflows/js-test-and-release.yml?query=branch%3Amain)
-
+[![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-verified-fetch/js-test-and-release.yml?branch=main&style=flat-square)](https://github.com/ipfs/helia-verified-fetch/actions/workflows/js-test-and-release.yml?query=branch%3Amain)
 
 ## About
 
@@ -29,7 +28,7 @@ Learn more in the [announcement blog post](https://blog.ipfs.tech/verified-fetch
 
 # API Docs
 
-- <https://ipfs.github.io/helia-verified-fetch/modules.html>
+- [https://ipfs.github.io/helia-verified-fetch/modules/\_helia_verified_fetch.html](https://ipfs.github.io/helia-verified-fetch/modules/_helia_verified_fetch.html)
 
 # License
 

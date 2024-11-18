@@ -1,3 +1,15 @@
+## [@helia/verified-fetch-v2.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.0...@helia/verified-fetch-2.1.1) (2024-11-14)
+
+### Dependencies
+
+* bump lru-cache from 10.4.3 to 11.0.2 ([#129](https://github.com/ipfs/helia-verified-fetch/issues/129)) ([6c1f9ed](https://github.com/ipfs/helia-verified-fetch/commit/6c1f9ed3f4de3d27a35086c9e72901526e0567e5))
+
+## [@helia/verified-fetch-v2.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.0.1...@helia/verified-fetch-2.1.0) (2024-11-13)
+
+### Features
+
+* return IPNSRecords for ipns subdomain URLs ([#131](https://github.com/ipfs/helia-verified-fetch/issues/131)) ([05b7ac6](https://github.com/ipfs/helia-verified-fetch/commit/05b7ac634f2f7be4c287ca4e86654ac1f4fb8125))
+
 ## [@helia/verified-fetch-v2.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.0.0...@helia/verified-fetch-2.0.1) (2024-10-23)
 
 ### Bug Fixes

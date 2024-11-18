@@ -1,6 +1,6 @@
 {
   "name": "@helia/verified-fetch",
-  "version": "2.0.1",
+  "version": "2.1.1",
   "description": "A fetch-like API for obtaining verified & trustless IPFS content on the web",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/verified-fetch#readme",
@@ -170,7 +170,7 @@
     "it-tar": "^6.0.5",
     "it-to-browser-readablestream": "^2.0.9",
     "libp2p": "^2.2.1",
-    "lru-cache": "^10.2.2",
+    "lru-cache": "^11.0.2",
     "multiformats": "^13.3.0",
     "progress-events": "^1.0.1",
     "uint8arrays": "^5.1.0"
