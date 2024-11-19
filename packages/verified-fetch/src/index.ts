@@ -597,13 +597,14 @@
  */
 
 import { bitswap, trustlessGateway } from '@helia/block-brokers'
+import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
 import { type ResolveDNSLinkProgressEvents } from '@helia/ipns'
 import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
 import { type Libp2p } from '@libp2p/interface'
 import { dns } from '@multiformats/dns'
 import { createHelia } from 'helia'
 import { createLibp2p } from 'libp2p'
-import { getLibp2pConfig, type Libp2pServices } from './utils/libp2p-defaults.js'
+import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia } from '@helia/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
@@ -793,11 +794,18 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
  * Create and return a Helia node
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
-  let libp2p: Libp2p<Libp2pServices> | undefined
+  let libp2p: Libp2p<any> | undefined
   if (!isHelia(init)) {
     const dns = createDns(init?.dnsResolvers)
 
-    const libp2pConfig = getLibp2pConfig({ routers: init?.routers, dns })
+    const libp2pConfig = getLibp2pConfig()
+    libp2pConfig.dns = dns
+
+    const routers = init?.routers ?? ['https://delegated-ipfs.dev']
+    for (let index = 0; index < routers.length; index++) {
+      const routerUrl = routers[index]
+      libp2pConfig.services[`delegatedRouting${index}`] = () => createDelegatedRoutingV1HttpApiClient(routerUrl)
+    }
     libp2p = await createLibp2p(libp2pConfig)
 
     init = await createHelia({
