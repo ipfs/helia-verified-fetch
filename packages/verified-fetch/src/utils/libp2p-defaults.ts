@@ -104,6 +104,7 @@ export function getLibp2pConfig (options: Libp2pOptionsInit): Libp2pOptions<Libp
   const routers = options?.routers ?? ['https://delegated-ipfs.dev']
   for (let index = 0; index < routers.length; index++) {
     const routerUrl = routers[index]
+    // @ts-expect-error for some reason the types are not working here
     config.services[`delegatedRouting${index}`] = createDelegatedRoutingV1HttpApiClient(routerUrl) // TODO: add filters
   }
 
