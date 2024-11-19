@@ -200,5 +200,8 @@
     "sinon": "^18.0.0",
     "sinon-ts": "^2.0.0"
   },
+  "browser": {
+    "./dist/src/utils/libp2p-defaults.js": "./dist/src/utils/libp2p-defaults.browser.js"
+  },
   "sideEffects": false
 }

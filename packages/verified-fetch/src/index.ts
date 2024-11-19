@@ -597,16 +597,13 @@
  */
 
 import { bitswap, trustlessGateway } from '@helia/block-brokers'
-import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
-import { ipnsSelector, ipnsValidator, type ResolveDNSLinkProgressEvents } from '@helia/ipns'
+import { type ResolveDNSLinkProgressEvents } from '@helia/ipns'
 import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
 import { type Libp2p } from '@libp2p/interface'
-import { kadDHT } from '@libp2p/kad-dht'
-import { webRTCDirect } from '@libp2p/webrtc'
-import { webSockets } from '@libp2p/websockets'
 import { dns } from '@multiformats/dns'
-import { createHelia, type DefaultLibp2pServices, libp2pDefaults } from 'helia'
+import { createHelia } from 'helia'
 import { createLibp2p } from 'libp2p'
+import { getLibp2pConfig, type Libp2pServices } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia } from '@helia/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
@@ -792,42 +789,15 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
   allowInsecure?: boolean
 }
 
-type Libp2pServiceType = Pick<DefaultLibp2pServices, 'dcutr' | 'identify' | 'keychain' | 'ping' > & Record<`delegatedRouting${number}`, any>
-
 /**
  * Create and return a Helia node
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
-  let libp2p: Libp2p<Libp2pServiceType> | undefined
+  let libp2p: Libp2p<Libp2pServices> | undefined
   if (!isHelia(init)) {
     const dns = createDns(init?.dnsResolvers)
-    const libp2pConfig = libp2pDefaults()
 
-    libp2pConfig.start = false
-
-    libp2pConfig.transports = [webSockets(), webRTCDirect()]
-
-    libp2pConfig.peerDiscovery = [] // disable default bootstrap peers
-    libp2pConfig.addresses = {} // disable default listen addresses
-
-    // We only need client/listen/fetch based services
-    const fetchOnlyServices = {
-      dcutr: libp2pConfig.services.dcutr,
-      identify: libp2pConfig.services.identify,
-      identifyPush: libp2pConfig.services.identifyPush,
-      keychain: libp2pConfig.services.keychain,
-      ping: libp2pConfig.services.ping
-    }
-    // @ts-expect-error - borked serviceMap types
-    libp2pConfig.services = fetchOnlyServices
-    const routers = init?.routers ?? ['https://delegated-ipfs.dev']
-    for (let index = 0; index < routers.length; index++) {
-      const routerUrl = routers[index]
-      libp2pConfig.services[`delegatedRouting${index}`] = () => createDelegatedRoutingV1HttpApiClient(routerUrl)
-    }
-
-    libp2pConfig.dns = dns
-
+    const libp2pConfig = getLibp2pConfig({ routers: init?.routers, dns })
     libp2p = await createLibp2p(libp2pConfig)
 
     init = await createHelia({
