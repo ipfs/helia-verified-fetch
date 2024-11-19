@@ -800,6 +800,7 @@ type Libp2pServiceType = Pick<DefaultLibp2pServices, 'dcutr' | 'identify' | 'key
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
   let libp2p: Libp2p<Libp2pServiceType> | undefined
   if (!isHelia(init)) {
+    const dns = createDns(init?.dnsResolvers)
     const libp2pConfig = libp2pDefaults()
 
     libp2pConfig.start = false
@@ -812,15 +813,6 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
     // We only need client/listen/fetch based services
     const fetchOnlyServices = {
       dcutr: libp2pConfig.services.dcutr,
-      dht: kadDHT({
-        clientMode: true,
-        validators: {
-          ipns: ipnsValidator
-        },
-        selectors: {
-          ipns: ipnsSelector
-        }
-      }),
       identify: libp2pConfig.services.identify,
       identifyPush: libp2pConfig.services.identifyPush,
       keychain: libp2pConfig.services.keychain,
@@ -834,6 +826,8 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
       libp2pConfig.services[`delegatedRouting${index}`] = () => createDelegatedRoutingV1HttpApiClient(routerUrl)
     }
 
+    libp2pConfig.dns = dns
+
     libp2p = await createLibp2p(libp2pConfig)
 
     init = await createHelia({
@@ -845,7 +839,7 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
         }),
         bitswap()
       ],
-      dns: createDns(init?.dnsResolvers),
+      dns,
       routers: [
         httpGatewayRouting({
           gateways: init?.gateways ?? ['https://trustless-gateway.link']
