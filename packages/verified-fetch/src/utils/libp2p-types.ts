@@ -6,7 +6,9 @@ import type { Libp2pOptions } from 'libp2p'
 type BaseServiceMap = Record<string, unknown>
 type DelegatedRoutingServices = Record<`delegatedRouting${number}`, unknown | ((components?: unknown) => DelegatedRoutingV1HttpApiClient)>
 
-export interface Libp2pServices extends BaseServiceMap, DelegatedRoutingServices, Record<string, any> {
+// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
+export interface Libp2pServices extends BaseServiceMap, DelegatedRoutingServices {
+  [key: string]: any
 }
 
 interface Libp2pInitOverride<T extends ServiceMap = Libp2pServices & DefaultLibp2pServices> extends Omit<Libp2pOptions<T>, 'services'> {
