@@ -606,7 +606,7 @@ import { webRTCDirect } from '@libp2p/webrtc'
 import { webSockets } from '@libp2p/websockets'
 import { dns } from '@multiformats/dns'
 import { createHelia, type DefaultLibp2pServices, libp2pDefaults } from 'helia'
-import { createLibp2p } from 'libp2p'
+import { createLibp2p, type Libp2pOptions } from 'libp2p'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia } from '@helia/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
@@ -800,7 +800,7 @@ type Libp2pServiceType = Pick<DefaultLibp2pServices, 'dcutr' | 'identify' | 'key
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
   let libp2p: Libp2p<Libp2pServiceType> | undefined
   if (!isHelia(init)) {
-    const libp2pConfig = libp2pDefaults()
+    const libp2pConfig: Libp2pOptions<Libp2pServiceType> = libp2pDefaults()
 
     libp2pConfig.start = false
 
@@ -822,11 +822,10 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
         }
       }),
       identify: libp2pConfig.services.identify,
-      identifyPush: libp2pConfig.services.identifyPush,
       keychain: libp2pConfig.services.keychain,
       ping: libp2pConfig.services.ping
     }
-    // @ts-expect-error - borked serviceMap types
+
     libp2pConfig.services = fetchOnlyServices
     const routers = init?.routers ?? ['https://delegated-ipfs.dev']
     for (let index = 0; index < routers.length; index++) {
