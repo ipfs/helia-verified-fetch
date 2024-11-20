@@ -600,10 +600,10 @@ import { bitswap, trustlessGateway } from '@helia/block-brokers'
 import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
 import { type ResolveDNSLinkProgressEvents } from '@helia/ipns'
 import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
-import { type Libp2p } from '@libp2p/interface'
+import { type Libp2p, type ServiceMap } from '@libp2p/interface'
 import { dns } from '@multiformats/dns'
 import { createHelia } from 'helia'
-import { createLibp2p } from 'libp2p'
+import { createLibp2p, type Libp2pOptions } from 'libp2p'
 import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
@@ -681,6 +681,16 @@ export interface CreateVerifiedFetchInit {
    * @default false
    */
   allowInsecure?: boolean
+
+  /**
+   * We will instantiate a libp2p node for you, but if you want to override the libp2p configuration,
+   * you can pass it here.
+   *
+   * **WARNING**: We use Object.assign to merge the default libp2p configuration from Helia with the one you pass here,
+   * which results in a shallow merge. If you need a deep merge, you should do it yourself before passing the
+   * configuration here.
+   */
+  libp2pConfig?: Partial<Libp2pOptions<ServiceMap>>
 }
 
 export interface CreateVerifiedFetchOptions {
@@ -805,6 +815,10 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
     for (let index = 0; index < delegatedRouters.length; index++) {
       const routerUrl = delegatedRouters[index]
       libp2pConfig.services[`delegatedRouting${index}`] = () => createDelegatedRoutingV1HttpApiClient(routerUrl)
+    }
+    // merge any passed options from init.libp2pConfig into libp2pConfig if it exists
+    if (init?.libp2pConfig != null) {
+      Object.assign(libp2pConfig, init.libp2pConfig)
     }
     libp2p = await createLibp2p(libp2pConfig)
 

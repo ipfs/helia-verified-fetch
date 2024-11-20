@@ -24,8 +24,6 @@ export default {
       const multiaddrs = (await kuboNode.api.id()).addresses
       const id = (await kuboNode.api.id()).id
 
-      console.log(multiaddrs.map(ma => ma.toString()).join('\n'))
-
       const helia = stubInterface({
         routing: stubInterface({
           findProviders: async function * findProviders () {

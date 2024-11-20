@@ -14,7 +14,11 @@ export async function createKuboNode (repoPath = undefined): Promise<KuboNode> {
         Addresses: {
           Swarm: [
             '/ip4/0.0.0.0/tcp/4001',
-            '/ip4/0.0.0.0/tcp/4002/ws'
+            '/ip4/0.0.0.0/tcp/4002/ws',
+            '/ip4/0.0.0.0/udp/4001/webrtc-direct',
+            '/ip4/0.0.0.0/udp/4001/quic-v1/webtransport',
+            '/ip6/::/udp/4001/webrtc-direct',
+            '/ip6/::/udp/4001/quic-v1/webtransport'
           ],
           Gateway: '/ip4/127.0.0.1/tcp/8180'
         },
