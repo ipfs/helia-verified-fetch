@@ -16,8 +16,9 @@ import { peerIdFromString } from '@libp2p/peer-id'
 import { $ } from 'execa'
 import fg from 'fast-glob'
 import { Key } from 'interface-datastore'
-import { peerIdToRoutingKey } from 'ipns'
 import { path } from 'kubo'
+import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { GWC_IMAGE } from '../constants.js'
 import { getIpnsRecordDatastore } from './ipns-record-datastore.js'
@@ -92,13 +93,17 @@ export async function loadFixtures (kuboRepoDir: string): Promise<string> {
   }
 
   const datastore = getIpnsRecordDatastore()
+  const IPNS_PREFIX = uint8ArrayFromString('/ipns/')
 
   for (const fsIpnsRecord of await fg.glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
     const peerIdString = basename(fsIpnsRecord, '.ipns-record').split('_')[0]
     const relativePath = relative(GWC_FIXTURES_PATH, fsIpnsRecord)
     log('Loading *.ipns-record fixture %s', relativePath)
     const key = peerIdFromString(peerIdString)
-    const customRoutingKey = peerIdToRoutingKey(key)
+    const customRoutingKey = uint8ArrayConcat([
+      IPNS_PREFIX,
+      key.toBytes()
+    ])
     const dhtKey = new Key('/dht/record/' + uint8ArrayToString(customRoutingKey, 'base32'), false)
 
     const dhtRecord = new DhtRecord(customRoutingKey, await readFile(fsIpnsRecord, null), new Date(Date.now() + 9999999))

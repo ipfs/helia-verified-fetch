@@ -52,8 +52,8 @@
     "test": "aegir test -t node"
   },
   "dependencies": {
-    "@helia/http": "^2.0.1",
     "@helia/block-brokers": "^4.0.0",
+    "@helia/http": "^2.0.1",
     "@helia/interface": "^5.0.0",
     "@helia/routers": "^2.0.0",
     "@helia/verified-fetch": "2.1.2",
@@ -70,7 +70,6 @@
     "interface-blockstore": "^5.2.10",
     "interface-datastore": "^8.2.11",
     "ipfsd-ctl": "^14.1.0",
-    "ipns": "^9.1.0",
     "kubo": "^0.32.0",
     "kubo-rpc-client": "^4.1.1",
     "uint8arrays": "^5.1.0",
