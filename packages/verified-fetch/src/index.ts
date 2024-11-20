@@ -606,7 +606,7 @@ import { createHelia } from 'helia'
 import { createLibp2p } from 'libp2p'
 import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
-import type { GetBlockProgressEvents, Helia } from '@helia/interface'
+import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
@@ -801,29 +801,30 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
     const libp2pConfig = getLibp2pConfig()
     libp2pConfig.dns = dns
 
-    const routers = init?.routers ?? ['https://delegated-ipfs.dev']
-    for (let index = 0; index < routers.length; index++) {
-      const routerUrl = routers[index]
+    const delegatedRouters = init?.routers ?? ['https://delegated-ipfs.dev']
+    for (let index = 0; index < delegatedRouters.length; index++) {
+      const routerUrl = delegatedRouters[index]
       libp2pConfig.services[`delegatedRouting${index}`] = () => createDelegatedRoutingV1HttpApiClient(routerUrl)
     }
     libp2p = await createLibp2p(libp2pConfig)
 
+    const blockBrokers = [
+      bitswap()
+    ]
+    const routers: Array<Partial<Routing>> = [
+      libp2pRouting(libp2p)
+    ]
+    if (init?.gateways == null || init.gateways.length > 0) {
+      // if gateways is null, or set to a non-empty array, use trustless gateways.
+      blockBrokers.push(trustlessGateway({ allowInsecure: init?.allowInsecure, allowLocal: init?.allowLocal }))
+      routers.push(httpGatewayRouting({ gateways: init?.gateways ?? ['https://trustless-gateway.link'] }))
+    }
+
     init = await createHelia({
       libp2p,
-      blockBrokers: [
-        trustlessGateway({
-          allowInsecure: init?.allowInsecure,
-          allowLocal: init?.allowLocal
-        }),
-        bitswap()
-      ],
+      blockBrokers,
       dns,
-      routers: [
-        httpGatewayRouting({
-          gateways: init?.gateways ?? ['https://trustless-gateway.link']
-        }),
-        libp2pRouting(libp2p)
-      ]
+      routers
     })
   }
 

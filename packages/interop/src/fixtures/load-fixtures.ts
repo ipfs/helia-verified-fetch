@@ -11,7 +11,7 @@ export async function loadFixtures (IPFS_PATH = undefined): Promise<void> {
 
   const files = await glob('**/fixtures/data/*.car', { cwd: process.cwd() })
 
-  await Promise.all(files.map(async (carFile) => {
+  await Promise.allSettled(files.map(async (carFile) => {
     await $({ env: { IPFS_PATH } })`${kuboBinary} dag import --pin-roots=false --offline ${carFile}`
   }))
 }

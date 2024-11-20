@@ -57,6 +57,7 @@
     "test:electron-main": "aegir test -t electron-main"
   },
   "dependencies": {
+    "@helia/delegated-routing-v1-http-api-server": "^4.0.4",
     "@helia/verified-fetch": "2.1.2",
     "aegir": "^45.0.1",
     "execa": "^9.1.0",
