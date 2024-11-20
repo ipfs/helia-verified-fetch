@@ -57,10 +57,10 @@
     "test:electron-main": "aegir test -t electron-main"
   },
   "dependencies": {
-    "@helia/verified-fetch": "1.5.0",
+    "@helia/verified-fetch": "2.1.2",
     "aegir": "^45.0.1",
     "execa": "^9.1.0",
-    "fast-glob": "^3.3.2",
+    "glob": "^11.0.0",
     "ipfsd-ctl": "^14.1.0",
     "kubo": "^0.32.0",
     "kubo-rpc-client": "^4.1.1",

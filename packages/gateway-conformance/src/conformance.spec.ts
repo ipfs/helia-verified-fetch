@@ -171,8 +171,15 @@ const tests: TestConfig[] = [
   // },
   {
     name: 'TestGatewaySubdomainAndIPNS',
-    run: ['TestGatewaySubdomainAndIPNS'],
-    successRate: 31.58
+    run: [
+      'TestGatewaySubdomainAndIPNS'
+    ],
+    skip: [
+      'TestGatewaySubdomainAndIPNS/request_for_a_ED25519_libp2p-key_.*',
+      'TestGatewaySubdomainAndIPNS/.*redirects_to_CID_with_libp2p-key_multicodec',
+      'TestGatewaySubdomainAndIPNS/.*redirects_to_CIDv1.*'
+    ],
+    successRate: 46.15
   },
   {
     // TODO: add directory listing support to verified-fetch

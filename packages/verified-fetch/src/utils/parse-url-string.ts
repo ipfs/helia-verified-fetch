@@ -1,5 +1,5 @@
-import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
 import { CID } from 'multiformats/cid'
+import { getPeerIdFromString } from './get-peer-id-from-string.js'
 import { TLRU } from './tlru.js'
 import type { RequestFormatShorthand } from '../types.js'
 import type { DNSLinkResolveResult, IPNS, IPNSResolveResult, IPNSRoutingEvents, ResolveDNSLinkProgressEvents, ResolveProgressEvents, ResolveResult } from '@helia/ipns'
@@ -178,12 +178,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
       try {
         // try resolving as an IPNS name
 
-        if (cidOrPeerIdOrDnsLink.charAt(0) === '1' || cidOrPeerIdOrDnsLink.charAt(0) === 'Q') {
-          peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
-        } else {
-          // try resolving as a base36 CID
-          peerId = peerIdFromCID(CID.parse(cidOrPeerIdOrDnsLink))
-        }
+        peerId = getPeerIdFromString(cidOrPeerIdOrDnsLink)
         if (peerId.publicKey == null) {
           throw new TypeError('cidOrPeerIdOrDnsLink contains no public key')
         }

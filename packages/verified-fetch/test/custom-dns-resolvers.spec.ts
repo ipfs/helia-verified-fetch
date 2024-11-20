@@ -5,19 +5,8 @@ import Sinon from 'sinon'
 import { createVerifiedFetch } from '../src/index.js'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
-import type { Helia } from '@helia/interface'
 
 describe('custom dns-resolvers', () => {
-  let helia: Helia
-
-  beforeEach(async () => {
-    helia = await createHelia()
-  })
-
-  afterEach(async () => {
-    await stop(helia)
-  })
-
   it('is used when passed to createVerifiedFetch', async () => {
     const customDnsResolver = Sinon.stub().withArgs('_dnslink.some-non-cached-domain.com').resolves({
       Answer: [{
@@ -40,6 +29,7 @@ describe('custom dns-resolvers', () => {
         RecordType.TXT
       ]
     }])
+    await stop(fetch)
   })
 
   it('is used when passed to VerifiedFetch', async () => {
@@ -49,8 +39,7 @@ describe('custom dns-resolvers', () => {
       }]
     })
 
-    await stop(helia)
-    helia = await createHelia({
+    const helia = await createHelia({
       dns: dns({
         resolvers: {
           '.': customDnsResolver
@@ -73,5 +62,6 @@ describe('custom dns-resolvers', () => {
         RecordType.TXT
       ]
     }])
+    await stop(helia, verifiedFetch)
   })
 })
