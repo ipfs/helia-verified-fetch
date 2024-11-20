@@ -179,7 +179,7 @@ const tests: TestConfig[] = [
       'TestGatewaySubdomainAndIPNS/.*redirects_to_CID_with_libp2p-key_multicodec',
       'TestGatewaySubdomainAndIPNS/.*redirects_to_CIDv1.*'
     ],
-    successRate: 31.58
+    successRate: 46.15
   },
   {
     // TODO: add directory listing support to verified-fetch
