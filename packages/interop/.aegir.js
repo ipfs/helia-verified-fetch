@@ -7,6 +7,13 @@ const IPFS_PATH = resolve(tmpdir(), 'verified-fetch-interop-ipfs-repo')
 
 /** @type {import('aegir').PartialOptions} */
 export default {
+  dependencyCheck: {
+    ignore: [
+      '@helia/delegated-routing-v1-http-api-server',
+      'sinon-ts'
+    ]
+
+  },
   test: {
     files: './dist/src/*.spec.js',
     before: async () => {

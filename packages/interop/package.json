@@ -66,7 +66,9 @@
     "kubo": "^0.32.0",
     "kubo-rpc-client": "^4.1.1",
     "magic-bytes.js": "^1.10.0",
-    "multiformats": "^13.1.0"
+    "multiformats": "^13.1.0",
+    "sinon-ts": "^2.0.0",
+    "wherearewe": "^2.0.1"
   },
   "browser": {
     "./dist/src/fixtures/create-kubo.js": "./dist/src/fixtures/create-kubo.browser.js",
