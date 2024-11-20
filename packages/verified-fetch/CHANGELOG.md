@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.1.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.2...@helia/verified-fetch-2.1.3) (2024-11-20)
+
+### Dependencies
+
+* bump the helia-deps group across 3 directories with 7 updates ([#141](https://github.com/ipfs/helia-verified-fetch/issues/141)) ([d867350](https://github.com/ipfs/helia-verified-fetch/commit/d8673505044e84cc69c36128dc2874f0713853ab))
+
 ## [@helia/verified-fetch-v2.1.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.1...@helia/verified-fetch-2.1.2) (2024-11-18)
 
 ### Dependencies
