@@ -1,16 +1,19 @@
 import { webRTCDirect } from '@libp2p/webrtc'
 import { webSockets } from '@libp2p/websockets'
-import { libp2pDefaults } from 'helia'
-import type { Libp2pServices, VerifiedFetchLibp2p } from './libp2p-types.js'
+import { libp2pDefaults, type DefaultLibp2pServices } from 'helia'
+import type { ServiceFactoryMap } from './libp2p-types'
+import type { Libp2pOptions } from 'libp2p'
 
-export function getLibp2pConfig (): VerifiedFetchLibp2p {
+type ServiceMap = Pick<DefaultLibp2pServices, 'dcutr' | 'identify' | 'keychain' | 'ping'>
+
+export function getLibp2pConfig (): Libp2pOptions & Required<Pick<Libp2pOptions, 'services'>> {
   const libp2pDefaultOptions = libp2pDefaults()
 
   libp2pDefaultOptions.start = false
   libp2pDefaultOptions.addresses = { listen: [] }
   libp2pDefaultOptions.transports = [webRTCDirect(), webSockets()]
 
-  const services: Libp2pServices = {
+  const services: ServiceFactoryMap<ServiceMap> = {
     dcutr: libp2pDefaultOptions.services.dcutr,
     identify: libp2pDefaultOptions.services.identify,
     keychain: libp2pDefaultOptions.services.keychain,

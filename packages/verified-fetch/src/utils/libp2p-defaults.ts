@@ -1,21 +1,20 @@
 import { kadDHT } from '@libp2p/kad-dht'
-import { libp2pDefaults } from 'helia'
+import { libp2pDefaults, type DefaultLibp2pServices } from 'helia'
 import { ipnsSelector } from 'ipns/selector'
 import { ipnsValidator } from 'ipns/validator'
-import type { Libp2pServices, VerifiedFetchLibp2p } from './libp2p-types.js'
+import type { ServiceFactoryMap } from './libp2p-types'
+import type { Libp2pOptions } from 'libp2p'
 
-export function getLibp2pConfig (): VerifiedFetchLibp2p {
+type ServiceMap = Pick<DefaultLibp2pServices, 'autoNAT' | 'dcutr' | 'dht' | 'identify' | 'keychain' | 'ping' | 'upnp'>
+
+export function getLibp2pConfig (): Libp2pOptions & Required<Pick<Libp2pOptions, 'services'>> {
   const libp2pDefaultOptions = libp2pDefaults()
 
   libp2pDefaultOptions.start = false
 
-  const services: Libp2pServices = {
+  const services: ServiceFactoryMap<ServiceMap> = {
     autoNAT: libp2pDefaultOptions.services.autoNAT,
     dcutr: libp2pDefaultOptions.services.dcutr,
-    identify: libp2pDefaultOptions.services.identify,
-    keychain: libp2pDefaultOptions.services.keychain,
-    ping: libp2pDefaultOptions.services.ping,
-    upnp: libp2pDefaultOptions.services.upnp,
     dht: kadDHT({
       clientMode: true,
       validators: {
@@ -24,13 +23,16 @@ export function getLibp2pConfig (): VerifiedFetchLibp2p {
       selectors: {
         ipns: ipnsSelector
       }
-    })
+    }),
+    identify: libp2pDefaultOptions.services.identify,
+    keychain: libp2pDefaultOptions.services.keychain,
+    ping: libp2pDefaultOptions.services.ping,
+    upnp: libp2pDefaultOptions.services.upnp
   }
-  const libp2pOptions: VerifiedFetchLibp2p = {
+
+  return {
     ...libp2pDefaultOptions,
     start: false,
     services
   }
-
-  return libp2pOptions
 }
