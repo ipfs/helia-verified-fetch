@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.3...@helia/verified-fetch-2.2.0) (2024-11-21)
+
+### Features
+
+* support p2p retrieval by default ([#130](https://github.com/ipfs/helia-verified-fetch/issues/130)) ([9d33f89](https://github.com/ipfs/helia-verified-fetch/commit/9d33f8996f555fdee73ad3b0b129560c4d5b6cb6))
+
 ## [@helia/verified-fetch-v2.1.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.2...@helia/verified-fetch-2.1.3) (2024-11-20)
 
 ### Dependencies
