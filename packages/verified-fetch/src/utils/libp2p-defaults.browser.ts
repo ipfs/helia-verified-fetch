@@ -12,6 +12,7 @@ export function getLibp2pConfig (): Libp2pOptions & Required<Pick<Libp2pOptions,
   libp2pDefaultOptions.start = false
   libp2pDefaultOptions.addresses = { listen: [] }
   libp2pDefaultOptions.transports = [webRTCDirect(), webSockets()]
+  libp2pDefaultOptions.peerDiscovery = [] // Avoid connecting to bootstrap nodes
 
   const services: ServiceFactoryMap<ServiceMap> = {
     dcutr: libp2pDefaultOptions.services.dcutr,
