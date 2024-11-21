@@ -145,7 +145,6 @@
     "@helia/block-brokers": "^4.0.2",
     "@helia/car": "^4.0.1",
     "@helia/delegated-routing-v1-http-api-client": "^4.2.1",
-    "@helia/http": "^2.0.2",
     "@helia/interface": "^5.1.0",
     "@helia/ipns": "^8.0.1",
     "@helia/routers": "^2.2.0",
