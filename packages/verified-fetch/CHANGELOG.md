@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.2.0...@helia/verified-fetch-2.2.1) (2024-11-21)
+
+### Bug Fixes
+
+* do not connect to bootstrap nodes in browsers ([#149](https://github.com/ipfs/helia-verified-fetch/issues/149)) ([f1bd3d4](https://github.com/ipfs/helia-verified-fetch/commit/f1bd3d4fe7bfd575adf260e751647bc14427fc37))
+
 ## [@helia/verified-fetch-v2.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.3...@helia/verified-fetch-2.2.0) (2024-11-21)
 
 ### Features
