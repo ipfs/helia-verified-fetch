@@ -840,7 +840,7 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
       dns,
       routers
     })
-    init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config:', JSON.stringify(libp2pConfig))
+    init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config: %j', libp2pConfig)
   }
 
   const verifiedFetchInstance = new VerifiedFetchClass({ helia: init }, options)
