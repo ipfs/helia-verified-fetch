@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.2.1...@helia/verified-fetch-2.2.2) (2024-11-22)
+
+### Bug Fixes
+
+* add trace logging of libp2p config ([#151](https://github.com/ipfs/helia-verified-fetch/issues/151)) ([97de1a3](https://github.com/ipfs/helia-verified-fetch/commit/97de1a3bed597c929d617e23f33ddf6c67236459))
+
 ## [@helia/verified-fetch-v2.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.2.0...@helia/verified-fetch-2.2.1) (2024-11-21)
 
 ### Bug Fixes
