@@ -194,6 +194,24 @@
  *   }
  * })
  * ```
+ * ### Custom Hashers
+ *
+ * By default, `@helia/verified-fetch` supports `sha256`, `sha512`, and `identity` hashers.
+ *
+ * If you need to use a different hasher, you can provide a [custom `hasher` function](https://multiformats.github.io/js-multiformats/interfaces/hashes_interface.MultihashHasher.html) as an option to `createVerifiedFetch`.
+ *
+ * @example Passing a custom hashing function
+ *
+ * ```typescript
+ * import { createVerifiedFetch } from '@helia/verified-fetch'
+ * import { blake2b256 } from '@multiformats/blake2/blake2b'
+ *
+ * const verifiedFetch = await createVerifiedFetch({
+ *   hashers: [blake2b256]
+ * })
+ *
+ * const resp = await verifiedFetch('ipfs://cid-using-blake2b256')
+ * ```
  *
  * ### IPLD codec handling
  *
@@ -616,8 +634,8 @@ import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
+import type { MultihashHasher } from 'multiformats/hashes/interface'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
-
 /**
  * The types for the first argument of the `verifiedFetch` function.
  */
@@ -661,6 +679,13 @@ export interface CreateVerifiedFetchInit {
    * @default [dnsJsonOverHttps('https://cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
    */
   dnsResolvers?: DNSResolver[] | DNSResolvers
+
+  /**
+   * By default sha256, sha512 and identity hashes are supported for
+   * retrieval operations. To retrieve blocks by CIDs using other hashes
+   * pass appropriate MultihashHashers here.
+   */
+  hashers?: MultihashHasher[]
 
   /**
    * By default we will not connect to any HTTP Gateways providers over local or
@@ -843,7 +868,8 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
       libp2p,
       blockBrokers,
       dns,
-      routers
+      routers,
+      hashers: init?.hashers
     })
     init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config: %j', libp2pConfig)
   }
