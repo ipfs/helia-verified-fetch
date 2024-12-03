@@ -238,6 +238,7 @@ import { createVerifiedFetch } from '@helia/verified-fetch'
 import { blake2b256 } from '@multiformats/blake2/blake2b'
 
 const verifiedFetch = await createVerifiedFetch({
+  gateways: ['https://ipfs.io'],
   hashers: [blake2b256]
 })
 

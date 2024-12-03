@@ -207,6 +207,7 @@
  * import { blake2b256 } from '@multiformats/blake2/blake2b'
  *
  * const verifiedFetch = await createVerifiedFetch({
+ *   gateways: ['https://ipfs.io'],
  *   hashers: [blake2b256]
  * })
  *
@@ -625,7 +626,7 @@ import { type ResolveDNSLinkProgressEvents } from '@helia/ipns'
 import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
 import { type Libp2p, type ServiceMap } from '@libp2p/interface'
 import { dns } from '@multiformats/dns'
-import { createHelia } from 'helia'
+import { createHelia, type HeliaInit } from 'helia'
 import { createLibp2p, type Libp2pOptions } from 'libp2p'
 import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
@@ -685,7 +686,7 @@ export interface CreateVerifiedFetchInit {
    * retrieval operations. To retrieve blocks by CIDs using other hashes
    * pass appropriate MultihashHashers here.
    */
-  hashers?: MultihashHasher[]
+  hashers?: HeliaInit['hashers']
 
   /**
    * By default we will not connect to any HTTP Gateways providers over local or
