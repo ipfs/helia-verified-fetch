@@ -204,6 +204,7 @@
  *
  * ```typescript
  * import { createVerifiedFetch } from '@helia/verified-fetch'
+ * // @ts-expect-error - blake2b256 is not a direct dependency
  * import { blake2b256 } from '@multiformats/blake2/blake2b'
  *
  * const verifiedFetch = await createVerifiedFetch({
