@@ -635,7 +635,6 @@ import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
-import type { MultihashHasher } from 'multiformats/hashes/interface'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
 /**
  * The types for the first argument of the `verifiedFetch` function.
