@@ -5,7 +5,12 @@
  *
  * All content is retrieved in a [trustless manner](https://www.techopedia.com/definition/trustless), and the integrity of all bytes are verified by comparing hashes of the data.
  *
- * By default, providers for CIDs are found with delegated routers and retrieved over HTTP from [trustless gateways](https://specs.ipfs.tech/http-gateways/trustless-gateway/), and WebTransport and WebRTC providers if available.
+ * By default, providers for CIDs are found using [delegated routing endpoints](https://docs.ipfs.tech/concepts/public-utilities/#delegated-routing).
+ *
+ * Data is retrieved using the following strategies:
+ * - Directly from providers, using [Bitswap](https://docs.ipfs.tech/concepts/bitswap/) over WebSockets and WebRTC if available.
+ * - Directly from providers exposing a [trustless gateway](https://specs.ipfs.tech/http-gateways/trustless-gateway/) over HTTPS.
+ * - As a fallback, if no providers reachable from a browser are found, data is retrieved using recursive gateways, e.g. `trustless-gateway.link` which can be configured.
  *
  * This is a marked improvement over `fetch` which offers no such protections and is vulnerable to all sorts of attacks like [Content Spoofing](https://owasp.org/www-community/attacks/Content_Spoofing), [DNS Hijacking](https://en.wikipedia.org/wiki/DNS_hijacking), etc.
  *
@@ -188,6 +193,25 @@
  *     '.': dnsOverHttps('https://my-dns-resolver.example.com/dns-query')
  *   }
  * })
+ * ```
+ * ### Custom Hashers
+ *
+ * By default, `@helia/verified-fetch` supports `sha256`, `sha512`, and `identity` hashers.
+ *
+ * If you need to use a different hasher, you can provide a [custom `hasher` function](https://multiformats.github.io/js-multiformats/interfaces/hashes_interface.MultihashHasher.html) as an option to `createVerifiedFetch`.
+ *
+ * @example Passing a custom hashing function
+ *
+ * ```typescript
+ * import { createVerifiedFetch } from '@helia/verified-fetch'
+ * import { blake2b256 } from '@multiformats/blake2/blake2b'
+ *
+ * const verifiedFetch = await createVerifiedFetch({
+ *   gateways: ['https://ipfs.io'],
+ *   hashers: [blake2b256]
+ * })
+ *
+ * const resp = await verifiedFetch('ipfs://cid-using-blake2b256')
  * ```
  *
  * ### IPLD codec handling
@@ -602,7 +626,7 @@ import { type ResolveDNSLinkProgressEvents } from '@helia/ipns'
 import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
 import { type Libp2p, type ServiceMap } from '@libp2p/interface'
 import { dns } from '@multiformats/dns'
-import { createHelia } from 'helia'
+import { createHelia, type HeliaInit } from 'helia'
 import { createLibp2p, type Libp2pOptions } from 'libp2p'
 import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
@@ -612,7 +636,6 @@ import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
-
 /**
  * The types for the first argument of the `verifiedFetch` function.
  */
@@ -656,6 +679,13 @@ export interface CreateVerifiedFetchInit {
    * @default [dnsJsonOverHttps('https://cloudflare-dns.com/dns-query'),dnsJsonOverHttps('https://dns.google/resolve')]
    */
   dnsResolvers?: DNSResolver[] | DNSResolvers
+
+  /**
+   * By default sha256, sha512 and identity hashes are supported for
+   * retrieval operations. To retrieve blocks by CIDs using other hashes
+   * pass appropriate MultihashHashers here.
+   */
+  hashers?: HeliaInit['hashers']
 
   /**
    * By default we will not connect to any HTTP Gateways providers over local or
@@ -838,7 +868,8 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
       libp2p,
       blockBrokers,
       dns,
-      routers
+      routers,
+      hashers: init?.hashers
     })
     init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config: %j', libp2pConfig)
   }

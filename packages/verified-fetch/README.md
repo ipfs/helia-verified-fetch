@@ -32,11 +32,19 @@ repo and examine the changes made.
 
 `@helia/verified-fetch` provides a [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)-like API for retrieving content from the [IPFS](https://ipfs.tech/) network.
 
-All content is retrieved in a [trustless manner](https://www.techopedia.com/definition/trustless), and the integrity of all bytes are verified by comparing hashes of the data. By default, CIDs are retrieved over HTTP from [trustless gateways](https://specs.ipfs.tech/http-gateways/trustless-gateway/).
+All content is retrieved in a [trustless manner](https://www.techopedia.com/definition/trustless), and the integrity of all bytes are verified by comparing hashes of the data.
+
+By default, providers for CIDs are found using [delegated routing endpoints](https://docs.ipfs.tech/concepts/public-utilities/#delegated-routing).
+
+Data is retrieved using the following strategies:
+
+- Directly from providers, using [Bitswap](https://docs.ipfs.tech/concepts/bitswap/) over WebSockets and WebRTC if available.
+- Directly from providers exposing a [trustless gateway](https://specs.ipfs.tech/http-gateways/trustless-gateway/) over HTTPS.
+- As a fallback, if no providers reachable from a browser are found, data is retrieved using recursive gateways, e.g. `trustless-gateway.link` which can be configured.
 
 This is a marked improvement over `fetch` which offers no such protections and is vulnerable to all sorts of attacks like [Content Spoofing](https://owasp.org/www-community/attacks/Content_Spoofing), [DNS Hijacking](https://en.wikipedia.org/wiki/DNS_hijacking), etc.
 
-A `verifiedFetch` function is exported to get up and running quickly, and a `createVerifiedFetch` function is also available that allows customizing the underlying [Helia](https://helia.io/) node for complete control over how content is retrieved.
+A `verifiedFetch` function is exported to get up and running quickly, and a `createVerifiedFetch` function is also available that allows customizing the underlying [Helia](https://ipfs.github.io/helia/) node for complete control over how content is retrieved.
 
 Browser-cache-friendly [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response) objects are returned which should be instantly familiar to web developers.
 
@@ -119,7 +127,7 @@ For full control of how `@helia/verified-fetch` fetches content from the distrib
 
 The [helia](https://www.npmjs.com/package/helia) module is configured with a libp2p node that is suited for decentralized applications, alternatively [@helia/http](https://www.npmjs.com/package/@helia/http) is available which uses HTTP gateways for all network operations.
 
-You can see variations of Helia and js-libp2p configuration options at <https://helia.io/interfaces/helia.index.HeliaInit.html>.
+You can see variations of Helia and js-libp2p configuration options at <https://ipfs.github.io/helia/interfaces/helia.HeliaInit.html>.
 
 ```typescript
 import { trustlessGateway } from '@helia/block-brokers'
@@ -215,6 +223,26 @@ const fetch = await createVerifiedFetch({
     '.': dnsOverHttps('https://my-dns-resolver.example.com/dns-query')
   }
 })
+```
+
+### Custom Hashers
+
+By default, `@helia/verified-fetch` supports `sha256`, `sha512`, and `identity` hashers.
+
+If you need to use a different hasher, you can provide a [custom `hasher` function](https://multiformats.github.io/js-multiformats/interfaces/hashes_interface.MultihashHasher.html) as an option to `createVerifiedFetch`.
+
+## Example - Passing a custom hashing function
+
+```typescript
+import { createVerifiedFetch } from '@helia/verified-fetch'
+import { blake2b256 } from '@multiformats/blake2/blake2b'
+
+const verifiedFetch = await createVerifiedFetch({
+  gateways: ['https://ipfs.io'],
+  hashers: [blake2b256]
+})
+
+const resp = await verifiedFetch('ipfs://cid-using-blake2b256')
 ```
 
 ### IPLD codec handling
