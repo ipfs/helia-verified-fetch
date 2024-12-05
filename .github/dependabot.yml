@@ -2,8 +2,7 @@ version: 2
 updates:
 - package-ecosystem: npm
   directories:
-    - "/"
-    - "/packages/*"
+    - "/**/*"
   schedule:
     interval: daily
     time: "10:00"
