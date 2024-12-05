@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.3.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.2.2...@helia/verified-fetch-2.3.0) (2024-12-05)
+
+### Features
+
+* allow passing custom hashers to verified fetch ([#156](https://github.com/ipfs/helia-verified-fetch/issues/156)) ([212b16d](https://github.com/ipfs/helia-verified-fetch/commit/212b16d574dc60b25c7497f8574e96ad244d93ec))
+
 ## [@helia/verified-fetch-v2.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.2.1...@helia/verified-fetch-2.2.2) (2024-11-22)
 
 ### Bug Fixes
