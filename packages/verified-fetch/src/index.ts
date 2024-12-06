@@ -628,6 +628,7 @@ import { type Libp2p, type ServiceMap } from '@libp2p/interface'
 import { dns } from '@multiformats/dns'
 import { createHelia, type HeliaInit } from 'helia'
 import { createLibp2p, type Libp2pOptions } from 'libp2p'
+import { type ContentTypeParser } from './types.js'
 import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
@@ -751,19 +752,7 @@ export interface CreateVerifiedFetchOptions {
   sessionTTLms?: number
 }
 
-/**
- * A ContentTypeParser attempts to return the mime type of a given file. It
- * receives the first chunk of the file data and the file name, if it is
- * available.  The function can be sync or async and if it returns/resolves to
- * `undefined`, `application/octet-stream` will be used.
- */
-export interface ContentTypeParser {
-  /**
-   * Attempt to determine a mime type, either via of the passed bytes or the
-   * filename if it is available.
-   */
-  (bytes: Uint8Array, fileName?: string): Promise<string | undefined> | string | undefined
-}
+export type { ContentTypeParser } from './types.js'
 
 export type BubbledProgressEvents =
   // unixfs-exporter
