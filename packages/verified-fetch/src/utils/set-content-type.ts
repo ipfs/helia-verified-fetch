@@ -7,7 +7,7 @@ export interface SetContentTypeOptions {
   path: string
   response: Response
   defaultContentType?: string
-  contentTypeParser: ContentTypeParser | undefined
+  contentTypeParser?: ContentTypeParser
   log: Logger
 }
 

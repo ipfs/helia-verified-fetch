@@ -19,11 +19,12 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { ByteRangeContext } from './utils/byte-range-context.js'
 import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
+import { enhancedDagTraversal } from './utils/enhanced-dag-traversal.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getPeerIdFromString } from './utils/get-peer-id-from-string.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
-import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
+// import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
 import { getRedirectResponse } from './utils/handle-redirects.js'
 import { parseResource } from './utils/parse-resource.js'
@@ -375,35 +376,57 @@ export class VerifiedFetch {
     this.log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
     try {
-      const entry = await exporter(resolvedCID, this.helia.blockstore, {
-        signal: options?.signal,
-        onProgress: options?.onProgress
-      })
+      // const entry = await exporter(resolvedCID, this.helia.blockstore, {
+      //   signal: options?.signal,
+      //   onProgress: options?.onProgress
+      // })
 
-      const asyncIter = entry.content({
-        signal: options?.signal,
-        onProgress: options?.onProgress,
-        offset,
-        length
-      })
+      // const asyncIter = entry.content({
+      //   signal: options?.signal,
+      //   onProgress: options?.onProgress,
+      //   offset,
+      //   length
+      // })
       this.log('got async iterator for %c/%s', cid, path)
 
-      const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
+      // const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
+      //   onProgress: options?.onProgress,
+      //   signal: options?.signal
+      // })
+      const tmpResponse = new Response()
+      const { stream } = await enhancedDagTraversal({
+        blockstore: this.helia.blockstore,
+        signal: options?.signal,
         onProgress: options?.onProgress,
-        signal: options?.signal
+        cidOrPath: resolvedCID,
+        offset,
+        length,
+        path,
+        response: tmpResponse,
+        logger: this.helia.logger,
+        contentTypeParser: this.contentTypeParser
       })
       byteRangeContext.setBody(stream)
       // if not a valid range request, okRangeRequest will call okResponse
       const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
         redirected
       })
+      const contentType = tmpResponse.headers.get('content-type')
+      if (contentType != null) {
+        response.headers.set('content-type', contentType)
+      } else {
+        this.log('FIXME: content-type should be set')
+      }
 
-      await setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log })
+      // await setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log })
       setIpfsRoots(response, ipfsRoots)
 
       return response
     } catch (err: any) {
       options?.signal?.throwIfAborted()
+      // if (options?.signal?.aborted === true) {
+      //   throw new Error('aborted')
+      // }
       this.log.error('error streaming %c/%s', cid, path, err)
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
