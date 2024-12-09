@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { type ComponentLogger } from '@libp2p/interface'
 import { type ReadableStorage, exporter, type ExporterOptions } from 'ipfs-unixfs-exporter'
 import first from 'it-first'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { type CID } from 'multiformats/cid'
 import { type ContentTypeParser } from '../types.js'
-import { getStreamFromAsyncIterable } from './get-stream-from-async-iterable.js'
 import { setContentType } from './set-content-type.js'
 
 export interface EnhancedDagTraversalOptions extends ExporterOptions {
@@ -22,69 +20,84 @@ export interface EnhancedDagTraversalResponse {
   firstChunk: Uint8Array
 }
 
-export async function enhancedDagTraversal ({ blockstore, signal, onProgress, cidOrPath, offset, length, path, logger, contentTypeParser, response }: EnhancedDagTraversalOptions): Promise<EnhancedDagTraversalResponse> {
+export async function enhancedDagTraversal ({
+  blockstore,
+  signal,
+  onProgress,
+  cidOrPath,
+  offset,
+  length,
+  path,
+  logger,
+  contentTypeParser,
+  response
+}: EnhancedDagTraversalOptions): Promise<EnhancedDagTraversalResponse> {
   const log = logger.forComponent('helia:verified-fetch:enhanced-dag-traversal')
-  let firstChunk: any
-  // try {
-  const singleBlockEntry = await exporter(cidOrPath, blockstore, {
+
+  // Fetch the first chunk eagerly
+  const dfsEntry = await exporter(cidOrPath, blockstore, {
     signal,
     onProgress,
     blockReadConcurrency: 1
   })
 
-  const singleBlockIter = singleBlockEntry.content({
+  const dfsIter = dfsEntry.content({
     signal,
     onProgress,
     offset,
     length
   })
-  log.trace('got single concurrency iterator for %s', cidOrPath)
 
-  firstChunk = await first(singleBlockIter)
+  let firstChunk
+  let error: Error
+  try {
+    firstChunk = await first(dfsIter)
+  } catch (err: any) {
+    if (signal?.aborted === true) {
+      error = err
+      log.trace('Request aborted while fetching first chunk')
+    } else {
+      throw err
+    }
+  }
+
+  // Determine content type based on the first chunk
   await setContentType({ bytes: firstChunk, path, response, contentTypeParser, log })
 
   const contentType = response.headers.get('content-type')
+  const isImageOrVideo = contentType?.startsWith('video/') === true || contentType?.startsWith('image/') === true
+  log.trace('Content type determined: %s', contentType)
 
-  // if video or image, return toBrowserReadableStream(asyncIter)
-  if (contentType?.startsWith('video/') === true || contentType?.startsWith('image/') === true) {
-    log('returning stream for image/video')
-    return {
-      // stream: toBrowserReadableStream(singleBlockIter),
-      stream: (await getStreamFromAsyncIterable(singleBlockIter, path, logger, { signal })).stream,
-      firstChunk
+  const enhancedIter = async function * (): AsyncGenerator<Uint8Array, void, undefined> {
+    if (error != null) {
+      throw error
     }
+    if (isImageOrVideo) {
+      yield * dfsIter
+      return
+    }
+
+    // If not image/video, switch to a BFS iterator
+    const bfsEntry = await exporter(cidOrPath, blockstore, {
+      signal,
+      onProgress
+    })
+
+    const bfsIter = bfsEntry.content({
+      signal,
+      onProgress,
+      offset,
+      length
+    })
+
+    // continue with the BFS iterator
+    yield * bfsIter
   }
-  // } catch (err: any) {
-  //   // signal?.throwIfAborted()
-  //   log.error('Unknown error', err)
-  //   throw err
-  // }
 
-  // try {
-  log.trace('getting iterator for non-image/video content')
-  // otherwise, use blockReadConcurrency: undefined
-  const entry = await exporter(cidOrPath, blockstore, {
-    signal,
-    onProgress
-  })
-  const iter = entry.content({
-    signal,
-    onProgress,
-    offset,
-    length
-  })
-  firstChunk ??= await first(iter)
+  const stream = toBrowserReadableStream(enhancedIter())
 
-  log('returning stream for non-image/video content')
   return {
-    // stream: toBrowserReadableStream(iter),
-    stream: (await getStreamFromAsyncIterable(iter, path, logger, { signal })).stream,
+    stream,
     firstChunk
   }
-  // } catch (err: any) {
-  //   // if aborted
-  //   // signal?.throwIfAborted()
-  //   log.error('Unknown error', err)
-  //   throw err
-  // }
 }
