@@ -6,7 +6,7 @@ import { code as dagPbCode } from '@ipld/dag-pb'
 import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
 import { Record as DHTRecord } from '@libp2p/kad-dht'
 import { Key } from 'interface-datastore'
-import { exporter } from 'ipfs-unixfs-exporter'
+import { exporter, type ObjectNode } from 'ipfs-unixfs-exporter'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { LRUCache } from 'lru-cache'
 import { type CID } from 'multiformats/cid'
@@ -32,12 +32,12 @@ import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
 import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
+import { setContentType } from './utils/set-content-type.js'
 import { handlePathWalking, isObjectNode } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
-import type { ObjectNode } from 'ipfs-unixfs-exporter'
 
 const SESSION_CACHE_MAX_SIZE = 100
 const SESSION_CACHE_TTL_MS = 60 * 1000
@@ -398,7 +398,7 @@ export class VerifiedFetch {
         redirected
       })
 
-      await this.setContentType(firstChunk, path, response)
+      await setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log })
       setIpfsRoots(response, ipfsRoots)
 
       return response
@@ -434,35 +434,9 @@ export class VerifiedFetch {
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    await this.setContentType(result, path, response, getOverridenRawContentType({ headers: options?.headers, accept }))
+    await setContentType({ bytes: result, path, response, defaultContentType: getOverridenRawContentType({ headers: options?.headers, accept }), contentTypeParser: this.contentTypeParser, log: this.log })
 
     return response
-  }
-
-  private async setContentType (bytes: Uint8Array, path: string, response: Response, defaultContentType = 'application/octet-stream'): Promise<void> {
-    let contentType: string | undefined
-
-    if (this.contentTypeParser != null) {
-      try {
-        let fileName = path.split('/').pop()?.trim()
-        fileName = fileName === '' ? undefined : fileName
-        const parsed = this.contentTypeParser(bytes, fileName)
-
-        if (isPromise(parsed)) {
-          const result = await parsed
-
-          if (result != null) {
-            contentType = result
-          }
-        } else if (parsed != null) {
-          contentType = parsed
-        }
-      } catch (err) {
-        this.log.error('error parsing content type', err)
-      }
-    }
-    this.log.trace('setting content type to "%s"', contentType ?? defaultContentType)
-    response.headers.set('content-type', contentType ?? defaultContentType)
   }
 
   /**
@@ -613,8 +587,4 @@ export class VerifiedFetch {
   async stop (): Promise<void> {
     await this.helia.stop()
   }
-}
-
-function isPromise <T> (p?: any): p is Promise<T> {
-  return p?.then != null
 }
