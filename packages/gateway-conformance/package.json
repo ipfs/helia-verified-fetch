@@ -56,7 +56,7 @@
     "@helia/http": "^2.0.2",
     "@helia/interface": "^5.1.0",
     "@helia/routers": "^2.2.0",
-    "@helia/verified-fetch": "2.3.0",
+    "@helia/verified-fetch": "^2.3.0",
     "@libp2p/interface": "^2.2.1",
     "@libp2p/kad-dht": "^14.1.3",
     "@libp2p/logger": "^5.1.4",
