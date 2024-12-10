@@ -1,7 +1,7 @@
 import { type ComponentLogger } from '@libp2p/interface'
 import { type ReadableStorage, exporter, type ExporterOptions } from 'ipfs-unixfs-exporter'
 import first from 'it-first'
-// import peekable from 'it-peekable'
+import peekable from 'it-peekable'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { type CID } from 'multiformats/cid'
 import { type ContentTypeParser } from '../types.js'
@@ -50,7 +50,14 @@ export async function enhancedDagTraversal ({
   let error: Error
   try {
     // Fetch the first chunk eagerly
-    firstChunk = await first(dfsIter)
+    const peekableIter = peekable(dfsIter)
+    const firstPeek = await peekableIter.peek()
+    if (firstPeek.done === true) {
+      throw new Error('No content found')
+    }
+    // firstChunk = await first(dfsIter)
+    firstChunk = firstPeek.value
+    peekableIter.push(firstChunk)
   } catch (err: any) {
     if (signal?.aborted === true) {
       error = err
