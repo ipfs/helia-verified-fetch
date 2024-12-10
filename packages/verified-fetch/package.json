@@ -168,6 +168,7 @@
     "ipns": "^10.0.0",
     "it-first": "^3.0.6",
     "it-map": "^3.1.1",
+    "it-peekable": "^3.0.5",
     "it-pipe": "^3.0.1",
     "it-tar": "^6.0.5",
     "it-to-browser-readablestream": "^2.0.9",
