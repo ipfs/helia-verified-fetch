@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.3.0...@helia/verified-fetch-2.3.1) (2024-12-10)
+
+### Dependencies
+
+* **dev:** bump sinon from 18.0.1 to 19.0.2 in /packages/verified-fetch ([#145](https://github.com/ipfs/helia-verified-fetch/issues/145)) ([d2d597a](https://github.com/ipfs/helia-verified-fetch/commit/d2d597a922a21679b3877a9d01883c69a48bc6dd))
+
 ## [@helia/verified-fetch-v2.3.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.2.2...@helia/verified-fetch-2.3.0) (2024-12-05)
 
 ### Features
