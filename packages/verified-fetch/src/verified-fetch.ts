@@ -376,15 +376,11 @@ export class VerifiedFetch {
 
     try {
       const { firstChunk, stream } = await enhancedDagTraversal({
-        blockstore: this.helia.blockstore,
         signal: options?.signal,
         onProgress: options?.onProgress,
-        cidOrPath: resolvedCID,
         offset,
         length,
-        path,
         logger: this.helia.logger,
-        contentTypeParser: this.contentTypeParser,
         entry: terminalElement
       })
       byteRangeContext.setBody(stream)
