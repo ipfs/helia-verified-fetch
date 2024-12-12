@@ -26,8 +26,9 @@ export async function enhancedDagTraversal ({
   const peekableIter = peekable(entry.content({
     signal,
     onProgress,
-    offset,
-    length: 50,
+    offset: 0,
+    // https://pkg.go.dev/net/http#DetectContentType reads the first 512 bytes
+    length: 512,
     blockReadConcurrency: 1
   }))
 
