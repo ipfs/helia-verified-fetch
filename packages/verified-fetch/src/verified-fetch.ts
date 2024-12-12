@@ -321,7 +321,7 @@ export class VerifiedFetch {
       return pathDetails
     }
     const ipfsRoots = pathDetails.ipfsRoots
-    const terminalElement = pathDetails.terminalElement
+    let terminalElement = pathDetails.terminalElement
     let resolvedCID = terminalElement.cid
 
     if (terminalElement?.type === 'directory') {
@@ -353,6 +353,8 @@ export class VerifiedFetch {
         })
 
         this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
+
+        terminalElement = entry
         path = rootFilePath
         resolvedCID = entry.cid
       } catch (err: any) {
