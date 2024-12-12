@@ -27,7 +27,7 @@ export async function enhancedDagTraversal ({
     signal,
     onProgress,
     offset,
-    length,
+    length: 50,
     blockReadConcurrency: 1
   }))
 
