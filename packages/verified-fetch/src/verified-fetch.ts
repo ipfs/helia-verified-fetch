@@ -384,7 +384,8 @@ export class VerifiedFetch {
         length,
         path,
         logger: this.helia.logger,
-        contentTypeParser: this.contentTypeParser
+        contentTypeParser: this.contentTypeParser,
+        entry: terminalElement
       })
       byteRangeContext.setBody(stream)
       // if not a valid range request, okRangeRequest will call okResponse
