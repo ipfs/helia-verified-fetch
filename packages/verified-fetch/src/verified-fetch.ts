@@ -32,6 +32,7 @@ import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
 import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
+import { serverTiming } from './utils/server-timing.js'
 import { setContentType } from './utils/set-content-type.js'
 import { handlePathWalking, isObjectNode } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
@@ -111,6 +112,7 @@ export class VerifiedFetch {
   private readonly log: Logger
   private readonly contentTypeParser: ContentTypeParser | undefined
   private readonly blockstoreSessions: LRUCache<string, SessionBlockstore>
+  private serverTimingHeaders: string[] = []
 
   constructor ({ helia, ipns }: VerifiedFetchComponents, init?: CreateVerifiedFetchOptions) {
     this.helia = helia
@@ -254,7 +256,11 @@ export class VerifiedFetch {
     const blockstore = this.getBlockstore(cid, resource, session, options)
 
     // need to walk path, if it exists, to get the terminal element
-    const pathDetails = await handlePathWalking({ cid, path, resource, options, blockstore, log: this.log })
+    const { error, result: pathDetails, header: pathWalkingHeader } = await serverTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log }))
+    if (error != null) {
+      throw error
+    }
+    this.serverTimingHeaders.push(pathWalkingHeader)
     if (pathDetails instanceof Response) {
       return pathDetails
     }
@@ -316,7 +322,12 @@ export class VerifiedFetch {
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const blockstore = this.getBlockstore(cid, resource, session, options)
-    const pathDetails = await handlePathWalking({ cid, path, resource, options, blockstore, log: this.log })
+    const { error, result: pathDetails, header: pathWalkingHeader } = await serverTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log }))
+    if (error != null) {
+      throw error
+    }
+    this.serverTimingHeaders.push(pathWalkingHeader)
+
     if (pathDetails instanceof Response) {
       return pathDetails
     }
@@ -347,10 +358,14 @@ export class VerifiedFetch {
       try {
         this.log.trace('found directory at %c/%s, looking for index.html', cid, path)
 
-        const entry = await exporter(`/ipfs/${dirCid}/${rootFilePath}`, this.helia.blockstore, {
+        const { error, result: entry, header } = await serverTiming('exporter-dir', '', async () => exporter(`/ipfs/${dirCid}/${rootFilePath}`, this.helia.blockstore, {
           signal: options?.signal,
           onProgress: options?.onProgress
-        })
+        }))
+        if (error != null) {
+          throw error
+        }
+        this.serverTimingHeaders.push(header)
 
         this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
         path = rootFilePath
@@ -375,10 +390,14 @@ export class VerifiedFetch {
     this.log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
     try {
-      const entry = await exporter(resolvedCID, this.helia.blockstore, {
+      const { error: exporterFileErr, result: entry, header: exporterFileHeader } = await serverTiming('exporter-file', '', async () => exporter(resolvedCID, this.helia.blockstore, {
         signal: options?.signal,
         onProgress: options?.onProgress
-      })
+      }))
+      if (exporterFileErr != null) {
+        throw exporterFileErr
+      }
+      this.serverTimingHeaders.push(exporterFileHeader)
 
       const asyncIter = entry.content({
         signal: options?.signal,
@@ -388,10 +407,16 @@ export class VerifiedFetch {
       })
       this.log('got async iterator for %c/%s', cid, path)
 
-      const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
+      const { error, result, header: streamAndFirstChunkHeader } = await serverTiming(`stream-and-chunk-${Math.random().toString(36).slice(2, 9)}`, '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress,
         signal: options?.signal
-      })
+      }))
+      if (error != null) {
+        throw error
+      }
+      this.serverTimingHeaders.push(streamAndFirstChunkHeader)
+      const { stream, firstChunk } = result
+
       byteRangeContext.setBody(stream)
       // if not a valid range request, okRangeRequest will call okResponse
       const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
@@ -452,6 +477,14 @@ export class VerifiedFetch {
     [identity.code]: this.handleRaw
   }
 
+  private responseWithServerTiming (response: Response): Response {
+    const headerString = this.serverTimingHeaders.join(', ')
+    response.headers.set('Server-Timing', headerString)
+    this.serverTimingHeaders = []
+
+    return response
+  }
+
   /**
    * We're starting to get to the point where we need a queue or pipeline of
    * operations to perform and a single place to handle errors.
@@ -484,7 +517,7 @@ export class VerifiedFetch {
       options?.signal?.throwIfAborted()
       this.log.error('error parsing resource %s', resource, err)
 
-      return badRequestResponse(resource.toString(), err)
+      return this.responseWithServerTiming(badRequestResponse(resource.toString(), err))
     }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
@@ -495,7 +528,7 @@ export class VerifiedFetch {
     this.log('output type %s', accept)
 
     if (acceptHeader != null && accept == null) {
-      return notAcceptableResponse(resource.toString())
+      return this.responseWithServerTiming(notAcceptableResponse(resource.toString()))
     }
 
     let response: Response
@@ -503,7 +536,7 @@ export class VerifiedFetch {
 
     const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid })
     if (redirectResponse != null) {
-      return redirectResponse
+      return this.responseWithServerTiming(redirectResponse)
     }
 
     const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options }
@@ -536,7 +569,7 @@ export class VerifiedFetch {
       const codecHandler = this.codecHandlers[cid.code]
 
       if (codecHandler == null) {
-        return notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`)
+        return this.responseWithServerTiming(notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`))
       }
       this.log.trace('calling handler "%s"', codecHandler.name)
 
@@ -571,7 +604,7 @@ export class VerifiedFetch {
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))
 
-    return response
+    return this.responseWithServerTiming(response)
   }
 
   /**
