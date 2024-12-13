@@ -407,7 +407,7 @@ export class VerifiedFetch {
       })
       this.log('got async iterator for %c/%s', cid, path)
 
-      const { error, result, header: streamAndFirstChunkHeader } = await serverTiming(`stream-and-chunk-${Math.random().toString(36).slice(2, 9)}`, '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
+      const { error, result, header: streamAndFirstChunkHeader } = await serverTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress,
         signal: options?.signal
       }))
