@@ -257,10 +257,10 @@ export class VerifiedFetch {
 
     // need to walk path, if it exists, to get the terminal element
     const { error, result: pathDetails, header: pathWalkingHeader } = await serverTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log }))
+    this.serverTimingHeaders.push(pathWalkingHeader)
     if (error != null) {
       throw error
     }
-    this.serverTimingHeaders.push(pathWalkingHeader)
     if (pathDetails instanceof Response) {
       return pathDetails
     }
@@ -323,10 +323,10 @@ export class VerifiedFetch {
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const blockstore = this.getBlockstore(cid, resource, session, options)
     const { error, result: pathDetails, header: pathWalkingHeader } = await serverTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log }))
+    this.serverTimingHeaders.push(pathWalkingHeader)
     if (error != null) {
       throw error
     }
-    this.serverTimingHeaders.push(pathWalkingHeader)
 
     if (pathDetails instanceof Response) {
       return pathDetails
@@ -362,10 +362,10 @@ export class VerifiedFetch {
           signal: options?.signal,
           onProgress: options?.onProgress
         }))
+        this.serverTimingHeaders.push(header)
         if (error != null) {
           throw error
         }
-        this.serverTimingHeaders.push(header)
 
         this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
         path = rootFilePath
@@ -394,10 +394,10 @@ export class VerifiedFetch {
         signal: options?.signal,
         onProgress: options?.onProgress
       }))
+      this.serverTimingHeaders.push(exporterFileHeader)
       if (exporterFileErr != null) {
         throw exporterFileErr
       }
-      this.serverTimingHeaders.push(exporterFileHeader)
 
       const asyncIter = entry.content({
         signal: options?.signal,
@@ -407,14 +407,14 @@ export class VerifiedFetch {
       })
       this.log('got async iterator for %c/%s', cid, path)
 
-      const { error, result, header: streamAndFirstChunkHeader } = await serverTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
+      const { error: streamAndChunkErr, result, header: streamAndFirstChunkHeader } = await serverTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress,
         signal: options?.signal
       }))
-      if (error != null) {
-        throw error
-      }
       this.serverTimingHeaders.push(streamAndFirstChunkHeader)
+      if (streamAndChunkErr != null) {
+        throw streamAndChunkErr
+      }
       const { stream, firstChunk } = result
 
       byteRangeContext.setBody(stream)
@@ -423,7 +423,14 @@ export class VerifiedFetch {
         redirected
       })
 
-      await setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log })
+      const { error: setContentTypeErr, header: setContentTypeTiming } = await serverTiming('set-content-type', '', async () => setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log }))
+      // await setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log })
+      this.serverTimingHeaders.push(setContentTypeTiming)
+
+      if (setContentTypeErr != null) {
+        throw setContentTypeErr
+      }
+
       setIpfsRoots(response, ipfsRoots)
 
       return response
