@@ -256,11 +256,8 @@ export class VerifiedFetch {
     const blockstore = this.getBlockstore(cid, resource, session, options)
 
     // need to walk path, if it exists, to get the terminal element
-    const { error, result: pathDetails, header: pathWalkingHeader } = await serverTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log }))
-    this.serverTimingHeaders.push(pathWalkingHeader)
-    if (error != null) {
-      throw error
-    }
+    const pathDetails = await this.handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log }))
+
     if (pathDetails instanceof Response) {
       return pathDetails
     }
@@ -322,11 +319,7 @@ export class VerifiedFetch {
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const blockstore = this.getBlockstore(cid, resource, session, options)
-    const { error, result: pathDetails, header: pathWalkingHeader } = await serverTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log }))
-    this.serverTimingHeaders.push(pathWalkingHeader)
-    if (error != null) {
-      throw error
-    }
+    const pathDetails = await this.handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log }))
 
     if (pathDetails instanceof Response) {
       return pathDetails
@@ -358,14 +351,10 @@ export class VerifiedFetch {
       try {
         this.log.trace('found directory at %c/%s, looking for index.html', cid, path)
 
-        const { error, result: entry, header } = await serverTiming('exporter-dir', '', async () => exporter(`/ipfs/${dirCid}/${rootFilePath}`, this.helia.blockstore, {
+        const entry = await this.handleServerTiming('exporter-dir', '', async () => exporter(`/ipfs/${dirCid}/${rootFilePath}`, this.helia.blockstore, {
           signal: options?.signal,
           onProgress: options?.onProgress
         }))
-        this.serverTimingHeaders.push(header)
-        if (error != null) {
-          throw error
-        }
 
         this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
         path = rootFilePath
@@ -390,14 +379,10 @@ export class VerifiedFetch {
     this.log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
     try {
-      const { error: exporterFileErr, result: entry, header: exporterFileHeader } = await serverTiming('exporter-file', '', async () => exporter(resolvedCID, this.helia.blockstore, {
+      const entry = await this.handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, this.helia.blockstore, {
         signal: options?.signal,
         onProgress: options?.onProgress
       }))
-      this.serverTimingHeaders.push(exporterFileHeader)
-      if (exporterFileErr != null) {
-        throw exporterFileErr
-      }
 
       const asyncIter = entry.content({
         signal: options?.signal,
@@ -407,15 +392,10 @@ export class VerifiedFetch {
       })
       this.log('got async iterator for %c/%s', cid, path)
 
-      const { error: streamAndChunkErr, result, header: streamAndFirstChunkHeader } = await serverTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
+      const { stream, firstChunk } = await this.handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress,
         signal: options?.signal
       }))
-      this.serverTimingHeaders.push(streamAndFirstChunkHeader)
-      if (streamAndChunkErr != null) {
-        throw streamAndChunkErr
-      }
-      const { stream, firstChunk } = result
 
       byteRangeContext.setBody(stream)
       // if not a valid range request, okRangeRequest will call okResponse
@@ -423,13 +403,7 @@ export class VerifiedFetch {
         redirected
       })
 
-      const { error: setContentTypeErr, header: setContentTypeTiming } = await serverTiming('set-content-type', '', async () => setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log }))
-      // await setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log })
-      this.serverTimingHeaders.push(setContentTypeTiming)
-
-      if (setContentTypeErr != null) {
-        throw setContentTypeErr
-      }
+      await this.handleServerTiming('set-content-type', '', async () => setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log }))
 
       setIpfsRoots(response, ipfsRoots)
 
@@ -484,6 +458,16 @@ export class VerifiedFetch {
     [identity.code]: this.handleRaw
   }
 
+  private async handleServerTiming<T> (name: string, description: string, fn: () => Promise<T>): Promise<T> {
+    const { error, result, header } = await serverTiming(name, description, fn)
+    this.serverTimingHeaders.push(header)
+    if (error != null) {
+      throw error
+    }
+
+    return result
+  }
+
   private responseWithServerTiming (response: Response): Response {
     const headerString = this.serverTimingHeaders.join(', ')
     response.headers.set('Server-Timing', headerString)
@@ -513,7 +497,7 @@ export class VerifiedFetch {
     let protocol: ParsedUrlStringResults['protocol']
     let ipfsPath: string
     try {
-      const result = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
+      const result = await this.handleServerTiming('parse-resource', '', async () => parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options))
       cid = result.cid
       path = result.path
       query = result.query
