@@ -61,6 +61,7 @@ describe('serverTiming', () => {
 
     const [, timingDuration] = result.header.split(';')
     const durationValue = Number(timingDuration.replace('dur=', ''))
-    expect(durationValue).to.be.greaterThan(20).and.lessThan(30)
+    // round durationValue to nearest 10ms. On windows and firefox, a delay of 20ms returns ~19.x ms
+    expect(Math.ceil(durationValue / 10) * 10).to.be.greaterThanOrEqual(20).and.lessThanOrEqual(30)
   })
 })
