@@ -635,6 +635,14 @@ Some known header specifications:
 - <https://specs.ipfs.tech/http-gateways/trustless-gateway/#response-headers>
 - <https://specs.ipfs.tech/http-gateways/subdomain-gateway/#response-headers>
 
+#### Server Timing headers
+
+By default, we do not include Server Timing headers in responses. If you want to include them, you can pass an
+`includeServerTiming` option to the `createVerifiedFetch` function to include them in all future responses. You can
+also pass the `includeServerTiming` option to each fetch call to include them only for that specific response.
+
+See PR where this was added, <https://github.com/ipfs/helia-verified-fetch/pull/164>, for more information.
+
 ### Possible Scenarios that could cause confusion
 
 #### Attempting to fetch the CID for content that does not make sense
