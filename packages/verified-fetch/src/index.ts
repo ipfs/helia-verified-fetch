@@ -750,6 +750,14 @@ export interface CreateVerifiedFetchOptions {
    * @default 60000
    */
   sessionTTLms?: number
+
+  /**
+   * Whether to include server-timing headers in responses. This option can be overridden on a per-request basis.
+   *
+   * @default false
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
+   */
+  includeServerTiming?: boolean
 }
 
 export type { ContentTypeParser } from './types.js'
@@ -817,6 +825,14 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
    * @default false
    */
   allowInsecure?: boolean
+
+  /**
+   * Whether to include server-timing headers in the response for an individual request.
+   *
+   * @default false
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
+   */
+  includeServerTiming?: boolean
 }
 
 /**

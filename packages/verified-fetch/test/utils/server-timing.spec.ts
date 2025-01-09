@@ -1,5 +1,7 @@
 import { expect } from 'aegir/chai'
+import { createVerifiedFetch, type VerifiedFetch } from '../../src/index.js'
 import { serverTiming, type ServerTimingResult } from '../../src/utils/server-timing.js'
+import { createHelia } from '../fixtures/create-offline-helia.js'
 
 describe('serverTiming', () => {
   it('should return a success object with the correct header and no error', async () => {
@@ -63,5 +65,24 @@ describe('serverTiming', () => {
     const durationValue = Number(timingDuration.replace('dur=', ''))
     // round durationValue to nearest 10ms. On windows and firefox, a delay of 20ms returns ~19.x ms
     expect(Math.ceil(durationValue / 10) * 10).to.be.greaterThanOrEqual(20).and.lessThanOrEqual(30)
+  })
+
+  describe('serverTiming with verified-fetch', () => {
+    let vFetch: VerifiedFetch
+    before(async () => {
+      vFetch = await createVerifiedFetch(await createHelia())
+    })
+
+    it('response does not include server timing by default', async () => {
+      const response = await vFetch('https://example.com')
+      expect(response.headers.get('Server-Timing')).to.be.null()
+    })
+
+    it('can include one-off server timing headers in response', async () => {
+      const response = await vFetch('https://example.com', {
+        includeServerTiming: true
+      })
+      expect(response.headers.get('Server-Timing')).to.be.a('string')
+    })
   })
 })

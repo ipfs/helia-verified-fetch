@@ -113,6 +113,7 @@ export class VerifiedFetch {
   private readonly contentTypeParser: ContentTypeParser | undefined
   private readonly blockstoreSessions: LRUCache<string, SessionBlockstore>
   private serverTimingHeaders: string[] = []
+  private readonly includeServerTiming: boolean
 
   constructor ({ helia, ipns }: VerifiedFetchComponents, init?: CreateVerifiedFetchOptions) {
     this.helia = helia
@@ -126,6 +127,7 @@ export class VerifiedFetch {
         store.close()
       }
     })
+    this.includeServerTiming = init?.includeServerTiming ?? false
     this.log.trace('created VerifiedFetch instance')
   }
 
@@ -468,9 +470,11 @@ export class VerifiedFetch {
     return result
   }
 
-  private responseWithServerTiming (response: Response): Response {
-    const headerString = this.serverTimingHeaders.join(', ')
-    response.headers.set('Server-Timing', headerString)
+  private responseWithServerTiming (response: Response, includeServerTiming = this.includeServerTiming): Response {
+    if (includeServerTiming) {
+      const headerString = this.serverTimingHeaders.join(', ')
+      response.headers.set('Server-Timing', headerString)
+    }
     this.serverTimingHeaders = []
 
     return response
@@ -487,6 +491,7 @@ export class VerifiedFetch {
     this.log('fetch %s', resource)
 
     const options = convertOptions(opts)
+    const includeServerTiming = options?.includeServerTiming ?? this.includeServerTiming
 
     options?.onProgress?.(new CustomProgressEvent<ResourceDetail>('verified-fetch:request:start', { resource }))
     // resolve the CID/path from the requested resource
@@ -508,7 +513,7 @@ export class VerifiedFetch {
       options?.signal?.throwIfAborted()
       this.log.error('error parsing resource %s', resource, err)
 
-      return this.responseWithServerTiming(badRequestResponse(resource.toString(), err))
+      return this.responseWithServerTiming(badRequestResponse(resource.toString(), err), includeServerTiming)
     }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
@@ -519,7 +524,7 @@ export class VerifiedFetch {
     this.log('output type %s', accept)
 
     if (acceptHeader != null && accept == null) {
-      return this.responseWithServerTiming(notAcceptableResponse(resource.toString()))
+      return this.responseWithServerTiming(notAcceptableResponse(resource.toString()), includeServerTiming)
     }
 
     let response: Response
@@ -527,7 +532,7 @@ export class VerifiedFetch {
 
     const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid })
     if (redirectResponse != null) {
-      return this.responseWithServerTiming(redirectResponse)
+      return this.responseWithServerTiming(redirectResponse, includeServerTiming)
     }
 
     const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options }
@@ -560,7 +565,7 @@ export class VerifiedFetch {
       const codecHandler = this.codecHandlers[cid.code]
 
       if (codecHandler == null) {
-        return this.responseWithServerTiming(notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`))
+        return this.responseWithServerTiming(notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`), includeServerTiming)
       }
       this.log.trace('calling handler "%s"', codecHandler.name)
 
@@ -595,7 +600,7 @@ export class VerifiedFetch {
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))
 
-    return this.responseWithServerTiming(response)
+    return this.responseWithServerTiming(response, includeServerTiming)
   }
 
   /**
