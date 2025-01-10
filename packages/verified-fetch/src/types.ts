@@ -29,6 +29,11 @@ export interface FetchHandlerFunctionArg {
    * The originally requested resource
    */
   resource: string
+
+  /**
+   * Whether to include server-timing headers in the response.
+   */
+  withServerTiming: boolean
 }
 
 /**

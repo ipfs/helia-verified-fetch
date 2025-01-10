@@ -637,9 +637,9 @@ Some known header specifications:
 
 #### Server Timing headers
 
-By default, we do not include Server Timing headers in responses. If you want to include them, you can pass an
-`includeServerTiming` option to the `createVerifiedFetch` function to include them in all future responses. You can
-also pass the `includeServerTiming` option to each fetch call to include them only for that specific response.
+By default, we do not include [Server Timing](https://developer.mozilla.org/en-US/docs/Web/API/Performance_API/Server_timing) headers in responses. If you want to include them, you can pass an
+`withServerTiming` option to the `createVerifiedFetch` function to include them in all future responses. You can
+also pass the `withServerTiming` option to each fetch call to include them only for that specific response.
 
 See PR where this was added, <https://github.com/ipfs/helia-verified-fetch/pull/164>, for more information.
 

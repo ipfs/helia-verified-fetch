@@ -1,5 +1,6 @@
 import { CID } from 'multiformats/cid'
 import { getPeerIdFromString } from './get-peer-id-from-string.js'
+import { serverTiming, type ServerTimingResult } from './server-timing.js'
 import { TLRU } from './tlru.js'
 import type { RequestFormatShorthand } from '../types.js'
 import type { DNSLinkResolveResult, IPNS, IPNSResolveResult, IPNSRoutingEvents, ResolveDNSLinkProgressEvents, ResolveProgressEvents, ResolveResult } from '@helia/ipns'
@@ -12,6 +13,7 @@ export interface ParseUrlStringInput {
   urlString: string
   ipns: IPNS
   logger: ComponentLogger
+  withServerTiming?: boolean
 }
 export interface ParseUrlStringOptions extends ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents | ResolveDNSLinkProgressEvents>, AbortOptions {
 
@@ -23,7 +25,7 @@ export interface ParsedUrlQuery extends Record<string, string | unknown> {
   filename?: string
 }
 
-interface ParsedUrlStringResultsBase extends ResolveResult {
+export interface ParsedUrlStringResults extends ResolveResult {
   protocol: 'ipfs' | 'ipns'
   query: ParsedUrlQuery
 
@@ -41,9 +43,12 @@ interface ParsedUrlStringResultsBase extends ResolveResult {
    * seconds as a number
    */
   ttl?: number
-}
 
-export type ParsedUrlStringResults = ParsedUrlStringResultsBase
+  /**
+   * serverTiming items
+   */
+  serverTimings: Array<ServerTimingResult<any>>
+}
 
 const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
 const PATH_REGEX = /^\/(?<protocol>ip[fn]s)\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
@@ -145,7 +150,7 @@ function dnsLinkLabelDecoder (linkLabel: string): string {
  * @todo we need to break out each step of this function (cid parsing, ipns resolving, dnslink resolving) into separate functions and then remove the eslint-disable comment
  */
 // eslint-disable-next-line complexity
-export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStringInput, options?: ParseUrlStringOptions): Promise<ParsedUrlStringResults> {
+export async function parseUrlString ({ urlString, ipns, logger, withServerTiming = false }: ParseUrlStringInput, options?: ParseUrlStringOptions): Promise<ParsedUrlStringResults> {
   const log = logger.forComponent('helia:verified-fetch:parse-url-string')
   const { protocol, cidOrPeerIdOrDnsLink, path: urlPath, queryString } = matchURLString(urlString)
 
@@ -153,6 +158,7 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
   let resolvedPath: string | undefined
   const errors: Error[] = []
   let resolveResult: IPNSResolveResult | DNSLinkResolveResult | undefined
+  const serverTimings: Array<ServerTimingResult<any>> = []
 
   if (protocol === 'ipfs') {
     try {
@@ -182,7 +188,19 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         if (peerId.publicKey == null) {
           throw new TypeError('cidOrPeerIdOrDnsLink contains no public key')
         }
-        resolveResult = await ipns.resolve(peerId.publicKey, options)
+
+        if (withServerTiming) {
+          const resolveResultWithServerTiming = await serverTiming('ipns.resolve', `Resolve IPNS name ${cidOrPeerIdOrDnsLink}`, ipns.resolve.bind(null, peerId.publicKey, options))
+          serverTimings.push(resolveResultWithServerTiming)
+
+          // eslint-disable-next-line max-depth
+          if (resolveResultWithServerTiming.error != null) {
+            throw resolveResultWithServerTiming.error
+          }
+          resolveResult = resolveResultWithServerTiming.result ?? undefined
+        } else {
+          resolveResult = await ipns.resolve(peerId.publicKey, options)
+        }
         cid = resolveResult?.cid
         resolvedPath = resolveResult?.path
         log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
@@ -207,7 +225,19 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
         log.trace('Attempting to resolve DNSLink for %s', decodedDnsLinkLabel)
 
         try {
-          resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, options)
+          // eslint-disable-next-line max-depth
+          if (withServerTiming) {
+            const resolveResultWithServerTiming = await serverTiming('ipns.resolveDNSLink', `Resolve DNSLink ${decodedDnsLinkLabel}`, ipns.resolveDNSLink.bind(ipns, decodedDnsLinkLabel, options))
+            serverTimings.push(resolveResultWithServerTiming)
+            // eslint-disable-next-line max-depth
+            if (resolveResultWithServerTiming.error != null) {
+              throw resolveResultWithServerTiming.error
+            }
+            resolveResult = resolveResultWithServerTiming.result ?? undefined
+          } else {
+            resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, options)
+          }
+
           cid = resolveResult?.cid
           resolvedPath = resolveResult?.path
           log.trace('resolved %s to %c', decodedDnsLinkLabel, cid)
@@ -263,7 +293,8 @@ export async function parseUrlString ({ urlString, ipns, logger }: ParseUrlStrin
     path: joinPaths(resolvedPath, urlPath ?? ''),
     query,
     ttl,
-    ipfsPath: `/${protocol}/${cidOrPeerIdOrDnsLink}${urlPath != null && urlPath !== '' ? `/${urlPath}` : ''}`
+    ipfsPath: `/${protocol}/${cidOrPeerIdOrDnsLink}${urlPath != null && urlPath !== '' ? `/${urlPath}` : ''}`,
+    serverTimings
   } satisfies ParsedUrlStringResults
 }
 

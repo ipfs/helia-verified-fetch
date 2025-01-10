@@ -80,7 +80,7 @@ describe('serverTiming', () => {
 
     it('can include one-off server timing headers in response', async () => {
       const response = await vFetch('https://example.com', {
-        includeServerTiming: true
+        withServerTiming: true
       })
       expect(response.headers.get('Server-Timing')).to.be.a('string')
     })
