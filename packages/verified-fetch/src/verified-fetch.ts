@@ -6,11 +6,11 @@ import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
 import { Record as DHTRecord } from '@libp2p/kad-dht'
-import { peerIdFromString } from '@libp2p/peer-id'
 import { Key } from 'interface-datastore'
-import { exporter } from 'ipfs-unixfs-exporter'
+import { exporter, type ObjectNode, type UnixFSEntry } from 'ipfs-unixfs-exporter'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { LRUCache } from 'lru-cache'
+import { type CID } from 'multiformats/cid'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
@@ -23,6 +23,7 @@ import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
 import { dirIndexHtml } from './utils/dir-index-html.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
+import { getPeerIdFromString } from './utils/get-peer-id-from-string.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
@@ -33,13 +34,13 @@ import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
 import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
 import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
+import { serverTiming } from './utils/server-timing.js'
+import { setContentType } from './utils/set-content-type.js'
 import { handlePathWalking, isObjectNode } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
-import type { ObjectNode, UnixFSEntry } from 'ipfs-unixfs-exporter'
-import type { CID } from 'multiformats/cid'
 
 const SESSION_CACHE_MAX_SIZE = 100
 const SESSION_CACHE_TTL_MS = 60 * 1000
@@ -113,6 +114,8 @@ export class VerifiedFetch {
   private readonly log: Logger
   private readonly contentTypeParser: ContentTypeParser | undefined
   private readonly blockstoreSessions: LRUCache<string, SessionBlockstore>
+  private serverTimingHeaders: string[] = []
+  private readonly withServerTiming: boolean
 
   constructor ({ helia, ipns }: VerifiedFetchComponents, init?: CreateVerifiedFetchOptions) {
     this.helia = helia
@@ -126,6 +129,7 @@ export class VerifiedFetch {
         store.close()
       }
     })
+    this.withServerTiming = init?.withServerTiming ?? false
     this.log.trace('created VerifiedFetch instance')
   }
 
@@ -146,20 +150,29 @@ export class VerifiedFetch {
   }
 
   /**
-   * Accepts an `ipns://...` URL as a string and returns a `Response` containing
+   * Accepts an `ipns://...` or `https?://<ipnsname>.ipns.<domain>` URL as a string and returns a `Response` containing
    * a raw IPNS record.
    */
   private async handleIPNSRecord ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
-    if (path !== '' || !resource.startsWith('ipns://')) {
+    if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.'))) {
+      this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
       return badRequestResponse(resource, 'Invalid IPNS name')
     }
 
     let peerId: PeerId
 
     try {
-      peerId = peerIdFromString(resource.replace('ipns://', ''))
+      if (resource.startsWith('ipns://')) {
+        const peerIdString = resource.replace('ipns://', '')
+        this.log.trace('trying to parse peer id from "%s"', peerIdString)
+        peerId = getPeerIdFromString(peerIdString)
+      } else {
+        const peerIdString = resource.split('.ipns.')[0].split('://')[1]
+        this.log.trace('trying to parse peer id from "%s"', peerIdString)
+        peerId = getPeerIdFromString(peerIdString)
+      }
     } catch (err: any) {
-      this.log.error('could not parse peer id from IPNS url %s', resource)
+      this.log.error('could not parse peer id from IPNS url %s', resource, err)
 
       return badRequestResponse(resource, err)
     }
@@ -241,13 +254,14 @@ export class VerifiedFetch {
     return response
   }
 
-  private async handleDagCbor ({ resource, cid, path, accept, session, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleDagCbor ({ resource, cid, path, accept, session, options, withServerTiming }: FetchHandlerFunctionArg): Promise<Response> {
     this.log.trace('fetching %c/%s', cid, path)
     let terminalElement: ObjectNode
     const blockstore = this.getBlockstore(cid, resource, session, options)
 
     // need to walk path, if it exists, to get the terminal element
-    const pathDetails = await handlePathWalking({ cid, path, resource, options, blockstore, log: this.log })
+    const pathDetails = await this.handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log, withServerTiming }), withServerTiming)
+
     if (pathDetails instanceof Response) {
       return pathDetails
     }
@@ -305,11 +319,12 @@ export class VerifiedFetch {
     return response
   }
 
-  private async handleDagPb ({ cid, path, resource, session, options }: FetchHandlerFunctionArg): Promise<Response> {
+  private async handleDagPb ({ cid, path, resource, session, options, withServerTiming }: FetchHandlerFunctionArg): Promise<Response> {
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
     const blockstore = this.getBlockstore(cid, resource, session, options)
-    const pathDetails = await handlePathWalking({ cid, path, resource, options, blockstore, log: this.log })
+    const pathDetails = await this.handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log, withServerTiming }), withServerTiming)
+
     if (pathDetails instanceof Response) {
       return pathDetails
     }
@@ -340,10 +355,10 @@ export class VerifiedFetch {
       try {
         this.log.trace('found directory at %c/%s, looking for index.html', cid, path)
 
-        const entry = await exporter(`/ipfs/${dirCid}/${rootFilePath}`, this.helia.blockstore, {
+        const entry = await this.handleServerTiming('exporter-dir', '', async () => exporter(`/ipfs/${dirCid}/${rootFilePath}`, this.helia.blockstore, {
           signal: options?.signal,
           onProgress: options?.onProgress
-        })
+        }), withServerTiming)
 
         this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
         path = rootFilePath
@@ -390,10 +405,10 @@ export class VerifiedFetch {
     this.log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
     try {
-      const entry = await exporter(resolvedCID, this.helia.blockstore, {
+      const entry = await this.handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, this.helia.blockstore, {
         signal: options?.signal,
         onProgress: options?.onProgress
-      })
+      }), withServerTiming)
 
       const asyncIter = entry.content({
         signal: options?.signal,
@@ -403,17 +418,19 @@ export class VerifiedFetch {
       })
       this.log('got async iterator for %c/%s', cid, path)
 
-      const { stream, firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
+      const { stream, firstChunk } = await this.handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
         onProgress: options?.onProgress,
         signal: options?.signal
-      })
+      }), withServerTiming)
+
       byteRangeContext.setBody(stream)
       // if not a valid range request, okRangeRequest will call okResponse
       const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
         redirected
       })
 
-      await this.setContentType(firstChunk, path, response)
+      await this.handleServerTiming('set-content-type', '', async () => setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log }), withServerTiming)
+
       setIpfsRoots(response, ipfsRoots)
 
       return response
@@ -449,35 +466,9 @@ export class VerifiedFetch {
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    await this.setContentType(result, path, response, getOverridenRawContentType({ headers: options?.headers, accept }))
+    await setContentType({ bytes: result, path, response, defaultContentType: getOverridenRawContentType({ headers: options?.headers, accept }), contentTypeParser: this.contentTypeParser, log: this.log })
 
     return response
-  }
-
-  private async setContentType (bytes: Uint8Array, path: string, response: Response, defaultContentType = 'application/octet-stream'): Promise<void> {
-    let contentType: string | undefined
-
-    if (this.contentTypeParser != null) {
-      try {
-        let fileName = path.split('/').pop()?.trim()
-        fileName = fileName === '' ? undefined : fileName
-        const parsed = this.contentTypeParser(bytes, fileName)
-
-        if (isPromise(parsed)) {
-          const result = await parsed
-
-          if (result != null) {
-            contentType = result
-          }
-        } else if (parsed != null) {
-          contentType = parsed
-        }
-      } catch (err) {
-        this.log.error('error parsing content type', err)
-      }
-    }
-    this.log.trace('setting content type to "%s"', contentType ?? defaultContentType)
-    response.headers.set('content-type', contentType ?? defaultContentType)
   }
 
   /**
@@ -493,6 +484,34 @@ export class VerifiedFetch {
     [identity.code]: this.handleRaw
   }
 
+  private async handleServerTiming<T> (name: string, description: string, fn: () => Promise<T>, withServerTiming: boolean): Promise<T> {
+    if (!withServerTiming) {
+      return fn()
+    }
+    const { error, result, header } = await serverTiming(name, description, fn)
+    this.serverTimingHeaders.push(header)
+    if (error != null) {
+      throw error
+    }
+
+    return result
+  }
+
+  /**
+   * The last place a Response touches in verified-fetch before being returned to the user. This is where we add the
+   * Server-Timing header to the response if it has been collected. It should be used for any final processing of the
+   * response before it is returned to the user.
+   */
+  private handleFinalResponse (response: Response): Response {
+    if (this.serverTimingHeaders.length > 0) {
+      const headerString = this.serverTimingHeaders.join(', ')
+      response.headers.set('Server-Timing', headerString)
+      this.serverTimingHeaders = []
+    }
+
+    return response
+  }
+
   /**
    * We're starting to get to the point where we need a queue or pipeline of
    * operations to perform and a single place to handle errors.
@@ -504,6 +523,7 @@ export class VerifiedFetch {
     this.log('fetch %s', resource)
 
     const options = convertOptions(opts)
+    const withServerTiming = options?.withServerTiming ?? this.withServerTiming
 
     options?.onProgress?.(new CustomProgressEvent<ResourceDetail>('verified-fetch:request:start', { resource }))
     // resolve the CID/path from the requested resource
@@ -514,18 +534,19 @@ export class VerifiedFetch {
     let protocol: ParsedUrlStringResults['protocol']
     let ipfsPath: string
     try {
-      const result = await parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, options)
+      const result = await this.handleServerTiming('parse-resource', '', async () => parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, { withServerTiming, ...options }), withServerTiming)
       cid = result.cid
       path = result.path
       query = result.query
       ttl = result.ttl
       protocol = result.protocol
       ipfsPath = result.ipfsPath
+      this.serverTimingHeaders.push(...result.serverTimings.map(({ header }) => header))
     } catch (err: any) {
       options?.signal?.throwIfAborted()
       this.log.error('error parsing resource %s', resource, err)
 
-      return badRequestResponse(resource.toString(), err)
+      return this.handleFinalResponse(badRequestResponse(resource.toString(), err))
     }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
@@ -536,7 +557,7 @@ export class VerifiedFetch {
     this.log('output type %s', accept)
 
     if (acceptHeader != null && accept == null) {
-      return notAcceptableResponse(resource.toString())
+      return this.handleFinalResponse(notAcceptableResponse(resource.toString()))
     }
 
     let response: Response
@@ -544,10 +565,10 @@ export class VerifiedFetch {
 
     const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid })
     if (redirectResponse != null) {
-      return redirectResponse
+      return this.handleFinalResponse(redirectResponse)
     }
 
-    const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options }
+    const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options, withServerTiming }
 
     if (accept === 'application/vnd.ipfs.ipns-record') {
       // the user requested a raw IPNS record
@@ -577,7 +598,7 @@ export class VerifiedFetch {
       const codecHandler = this.codecHandlers[cid.code]
 
       if (codecHandler == null) {
-        return notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`)
+        return this.handleFinalResponse(notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`))
       }
       this.log.trace('calling handler "%s"', codecHandler.name)
 
@@ -612,7 +633,7 @@ export class VerifiedFetch {
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))
 
-    return response
+    return this.handleFinalResponse(response)
   }
 
   /**
@@ -628,8 +649,4 @@ export class VerifiedFetch {
   async stop (): Promise<void> {
     await this.helia.stop()
   }
-}
-
-function isPromise <T> (p?: any): p is Promise<T> {
-  return p?.then != null
 }

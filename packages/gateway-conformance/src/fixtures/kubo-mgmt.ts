@@ -10,17 +10,29 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, relative, posix, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { type PeerId } from '@libp2p/interface'
 import { Record as DhtRecord } from '@libp2p/kad-dht'
 import { logger } from '@libp2p/logger'
-import { peerIdFromString } from '@libp2p/peer-id'
+import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
 import { $ } from 'execa'
 import fg from 'fast-glob'
 import { Key } from 'interface-datastore'
-import { peerIdToRoutingKey } from 'ipns'
 import { path } from 'kubo'
+import { CID } from 'multiformats/cid'
+import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { GWC_IMAGE } from '../constants.js'
 import { getIpnsRecordDatastore } from './ipns-record-datastore.js'
+
+function getPeerIdFromString (peerIdString: string): PeerId {
+  if (peerIdString.charAt(0) === '1' || peerIdString.charAt(0) === 'Q') {
+    return peerIdFromString(peerIdString)
+  }
+
+  // try resolving as a base36 CID
+  return peerIdFromCID(CID.parse(peerIdString))
+}
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -92,13 +104,23 @@ export async function loadFixtures (kuboRepoDir: string): Promise<string> {
   }
 
   const datastore = getIpnsRecordDatastore()
+  const IPNS_PREFIX = uint8ArrayFromString('/ipns/')
 
   for (const fsIpnsRecord of await fg.glob([`${GWC_FIXTURES_PATH}/**/*.ipns-record`])) {
     const peerIdString = basename(fsIpnsRecord, '.ipns-record').split('_')[0]
     const relativePath = relative(GWC_FIXTURES_PATH, fsIpnsRecord)
     log('Loading *.ipns-record fixture %s', relativePath)
-    const key = peerIdFromString(peerIdString)
-    const customRoutingKey = peerIdToRoutingKey(key)
+    const key = getPeerIdFromString(peerIdString)
+    let bytes: Uint8Array
+    if (['Ed25519', 'RSA'].includes(key.type)) {
+      bytes = key.toMultihash().bytes
+    } else {
+      throw new Error('Unsupported key type')
+    }
+    const customRoutingKey = uint8ArrayConcat([
+      IPNS_PREFIX,
+      bytes
+    ])
     const dhtKey = new Key('/dht/record/' + uint8ArrayToString(customRoutingKey, 'base32'), false)
 
     const dhtRecord = new DhtRecord(customRoutingKey, await readFile(fsIpnsRecord, null), new Date(Date.now() + 9999999))

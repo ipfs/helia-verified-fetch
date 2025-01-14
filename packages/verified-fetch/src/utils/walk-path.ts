@@ -19,7 +19,7 @@ export interface PathWalkerFn {
   (blockstore: ReadableStorage, path: string, options?: PathWalkerOptions): Promise<PathWalkerResponse>
 }
 
-export async function walkPath (blockstore: ReadableStorage, path: string, options?: PathWalkerOptions): Promise<PathWalkerResponse> {
+async function walkPath (blockstore: ReadableStorage, path: string, options?: PathWalkerOptions): Promise<PathWalkerResponse> {
   const ipfsRoots: CID[] = []
   let terminalElement: UnixFSEntry | undefined
 

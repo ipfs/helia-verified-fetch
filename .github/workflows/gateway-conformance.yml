@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
-      - uses: ipfs/aegir/actions/cache-node-modules@master
+      - uses: ipfs/aegir/actions/cache-node-modules@main
 
       # 2. Set up 'go' so we can install the gateway-conformance binary
       - name: Setup Go

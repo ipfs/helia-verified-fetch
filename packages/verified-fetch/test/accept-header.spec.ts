@@ -9,6 +9,7 @@ import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import * as cborg from 'cborg'
 import { marshalIPNSRecord } from 'ipns'
+import { base36 } from 'multiformats/bases/base36'
 import { CID } from 'multiformats/cid'
 import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
@@ -292,6 +293,44 @@ describe('accept header', () => {
     const buf = await resp.arrayBuffer()
 
     expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record))
+  })
+
+  it('should support fetching IPNS records for a ipns subdomain', async () => {
+    const key = await generateKeyPair('Ed25519')
+    const peerId = peerIdFromPrivateKey(key)
+
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const i = ipns(helia)
+    const record = await i.publish(key, cid)
+
+    /**
+     * Works with k51... peerIds
+     */
+    let resp = await verifiedFetch.fetch(`http://${peerId.toCID().toString(base36)}.ipns.example.com`, {
+      headers: {
+        accept: 'application/vnd.ipfs.ipns-record'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
+    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(marshalIPNSRecord(record))
+
+    /**
+     * Works with default CID peerIds
+     */
+    resp = await verifiedFetch.fetch(`http://${peerId.toCID().toString()}.ipns.example.com`, {
+      headers: {
+        accept: 'application/vnd.ipfs.ipns-record'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
+    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(marshalIPNSRecord(record))
   })
 
   shouldNotAcceptCborWith({

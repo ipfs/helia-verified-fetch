@@ -1,15 +1,14 @@
-import { Helia as HeliaClass } from '@helia/utils'
+import { createHeliaHTTP } from '@helia/http'
 import { MemoryBlockstore } from 'blockstore-core'
 import { IdentityBlockstore } from 'blockstore-core/identity'
 import { MemoryDatastore } from 'datastore-core'
-import type { HeliaHTTPInit } from '@helia/http'
-import type { Helia } from '@helia/interface'
+import { type HeliaInit } from 'helia'
 
-export async function createHelia (init: Partial<HeliaHTTPInit> = {}): Promise<Helia> {
+export async function createHelia (init: Partial<HeliaInit> = {}): Promise<ReturnType<typeof createHeliaHTTP>> {
   const datastore = new MemoryDatastore()
   const blockstore = new IdentityBlockstore(new MemoryBlockstore())
 
-  const helia = new HeliaClass({
+  const helia = await createHeliaHTTP({
     datastore,
     blockstore,
     blockBrokers: [],

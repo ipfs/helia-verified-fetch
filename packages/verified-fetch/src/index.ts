@@ -3,11 +3,18 @@
  *
  * `@helia/verified-fetch` provides a [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)-like API for retrieving content from the [IPFS](https://ipfs.tech/) network.
  *
- * All content is retrieved in a [trustless manner](https://www.techopedia.com/definition/trustless), and the integrity of all bytes are verified by comparing hashes of the data. By default, CIDs are retrieved over HTTP from [trustless gateways](https://specs.ipfs.tech/http-gateways/trustless-gateway/).
+ * All content is retrieved in a [trustless manner](https://www.techopedia.com/definition/trustless), and the integrity of all bytes are verified by comparing hashes of the data.
+ *
+ * By default, providers for CIDs are found using [delegated routing endpoints](https://docs.ipfs.tech/concepts/public-utilities/#delegated-routing).
+ *
+ * Data is retrieved using the following strategies:
+ * - Directly from providers, using [Bitswap](https://docs.ipfs.tech/concepts/bitswap/) over WebSockets and WebRTC if available.
+ * - Directly from providers exposing a [trustless gateway](https://specs.ipfs.tech/http-gateways/trustless-gateway/) over HTTPS.
+ * - As a fallback, if no providers reachable from a browser are found, data is retrieved using recursive gateways, e.g. `trustless-gateway.link` which can be configured.
  *
  * This is a marked improvement over `fetch` which offers no such protections and is vulnerable to all sorts of attacks like [Content Spoofing](https://owasp.org/www-community/attacks/Content_Spoofing), [DNS Hijacking](https://en.wikipedia.org/wiki/DNS_hijacking), etc.
  *
- * A `verifiedFetch` function is exported to get up and running quickly, and a `createVerifiedFetch` function is also available that allows customizing the underlying [Helia](https://helia.io/) node for complete control over how content is retrieved.
+ * A `verifiedFetch` function is exported to get up and running quickly, and a `createVerifiedFetch` function is also available that allows customizing the underlying [Helia](https://ipfs.github.io/helia/) node for complete control over how content is retrieved.
  *
  * Browser-cache-friendly [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response) objects are returned which should be instantly familiar to web developers.
  *
@@ -90,7 +97,7 @@
  *
  * The [helia](https://www.npmjs.com/package/helia) module is configured with a libp2p node that is suited for decentralized applications, alternatively [@helia/http](https://www.npmjs.com/package/@helia/http) is available which uses HTTP gateways for all network operations.
  *
- * You can see variations of Helia and js-libp2p configuration options at <https://helia.io/interfaces/helia.index.HeliaInit.html>.
+ * You can see variations of Helia and js-libp2p configuration options at <https://ipfs.github.io/helia/interfaces/helia.HeliaInit.html>.
  *
  * ```typescript
  * import { trustlessGateway } from '@helia/block-brokers'
@@ -186,6 +193,25 @@
  *     '.': dnsOverHttps('https://my-dns-resolver.example.com/dns-query')
  *   }
  * })
+ * ```
+ * ### Custom Hashers
+ *
+ * By default, `@helia/verified-fetch` supports `sha256`, `sha512`, and `identity` hashers.
+ *
+ * If you need to use a different hasher, you can provide a [custom `hasher` function](https://multiformats.github.io/js-multiformats/interfaces/hashes_interface.MultihashHasher.html) as an option to `createVerifiedFetch`.
+ *
+ * @example Passing a custom hashing function
+ *
+ * ```typescript
+ * import { createVerifiedFetch } from '@helia/verified-fetch'
+ * import { blake2b256 } from '@multiformats/blake2/blake2b'
+ *
+ * const verifiedFetch = await createVerifiedFetch({
+ *   gateways: ['https://ipfs.io'],
+ *   hashers: [blake2b256]
+ * })
+ *
+ * const resp = await verifiedFetch('ipfs://cid-using-blake2b256')
  * ```
  *
  * ### IPLD codec handling
@@ -578,6 +604,14 @@
  * * https://specs.ipfs.tech/http-gateways/trustless-gateway/#response-headers
  * * https://specs.ipfs.tech/http-gateways/subdomain-gateway/#response-headers
  *
+ * #### Server Timing headers
+ *
+ * By default, we do not include [Server Timing](https://developer.mozilla.org/en-US/docs/Web/API/Performance_API/Server_timing) headers in responses. If you want to include them, you can pass an
+ * `withServerTiming` option to the `createVerifiedFetch` function to include them in all future responses. You can
+ * also pass the `withServerTiming` option to each fetch call to include them only for that specific response.
+ *
+ * See PR where this was added, https://github.com/ipfs/helia-verified-fetch/pull/164, for more information.
+ *
  * ### Possible Scenarios that could cause confusion
  *
  * #### Attempting to fetch the CID for content that does not make sense
@@ -594,19 +628,23 @@
  * 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal. Note that this is a `AbortError` from `@libp2p/interface` and not the standard `AbortError` from the Fetch API.
  */
 
-import { trustlessGateway } from '@helia/block-brokers'
-import { createHeliaHTTP } from '@helia/http'
-import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
+import { bitswap, trustlessGateway } from '@helia/block-brokers'
+import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
+import { type ResolveDNSLinkProgressEvents } from '@helia/ipns'
+import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
+import { type Libp2p, type ServiceMap } from '@libp2p/interface'
 import { dns } from '@multiformats/dns'
+import { createHelia, type HeliaInit } from 'helia'
+import { createLibp2p, type Libp2pOptions } from 'libp2p'
+import { type ContentTypeParser } from './types.js'
+import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
-import type { GetBlockProgressEvents, Helia } from '@helia/interface'
-import type { ResolveDNSLinkProgressEvents } from '@helia/ipns'
+import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
-
 /**
  * The types for the first argument of the `verifiedFetch` function.
  */
@@ -652,6 +690,13 @@ export interface CreateVerifiedFetchInit {
   dnsResolvers?: DNSResolver[] | DNSResolvers
 
   /**
+   * By default sha256, sha512 and identity hashes are supported for
+   * retrieval operations. To retrieve blocks by CIDs using other hashes
+   * pass appropriate MultihashHashers here.
+   */
+  hashers?: HeliaInit['hashers']
+
+  /**
    * By default we will not connect to any HTTP Gateways providers over local or
    * loopback addresses, this is because they are typically running on remote
    * peers that have published private addresses by mistate.
@@ -675,6 +720,16 @@ export interface CreateVerifiedFetchInit {
    * @default false
    */
   allowInsecure?: boolean
+
+  /**
+   * We will instantiate a libp2p node for you, but if you want to override the libp2p configuration,
+   * you can pass it here.
+   *
+   * **WARNING**: We use Object.assign to merge the default libp2p configuration from Helia with the one you pass here,
+   * which results in a shallow merge. If you need a deep merge, you should do it yourself before passing the
+   * configuration here.
+   */
+  libp2pConfig?: Partial<Libp2pOptions<ServiceMap>>
 }
 
 export interface CreateVerifiedFetchOptions {
@@ -703,21 +758,17 @@ export interface CreateVerifiedFetchOptions {
    * @default 60000
    */
   sessionTTLms?: number
+
+  /**
+   * Whether to include server-timing headers in responses. This option can be overridden on a per-request basis.
+   *
+   * @default false
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
+   */
+  withServerTiming?: boolean
 }
 
-/**
- * A ContentTypeParser attempts to return the mime type of a given file. It
- * receives the first chunk of the file data and the file name, if it is
- * available.  The function can be sync or async and if it returns/resolves to
- * `undefined`, `application/octet-stream` will be used.
- */
-export interface ContentTypeParser {
-  /**
-   * Attempt to determine a mime type, either via of the passed bytes or the
-   * filename if it is available.
-   */
-  (bytes: Uint8Array, fileName?: string): Promise<string | undefined> | string | undefined
-}
+export type { ContentTypeParser } from './types.js'
 
 export type BubbledProgressEvents =
   // unixfs-exporter
@@ -782,36 +833,66 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
    * @default false
    */
   allowInsecure?: boolean
+
+  /**
+   * Whether to include server-timing headers in the response for an individual request.
+   *
+   * @default false
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
+   */
+  withServerTiming?: boolean
 }
 
 /**
  * Create and return a Helia node
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
+  let libp2p: Libp2p<any> | undefined
   if (!isHelia(init)) {
-    init = await createHeliaHTTP({
-      blockBrokers: [
-        trustlessGateway({
-          allowInsecure: init?.allowInsecure,
-          allowLocal: init?.allowLocal
-        })
-      ],
-      routers: [
-        ...(init?.routers ?? ['https://delegated-ipfs.dev']).map((routerUrl) => delegatedHTTPRouting(routerUrl)),
-        httpGatewayRouting({
-          gateways: init?.gateways ?? ['https://trustless-gateway.link']
-        })
-      ],
-      dns: createDns(init?.dnsResolvers)
+    const dns = createDns(init?.dnsResolvers)
+
+    const libp2pConfig = getLibp2pConfig()
+    libp2pConfig.dns = dns
+
+    const delegatedRouters = init?.routers ?? ['https://delegated-ipfs.dev']
+    for (let index = 0; index < delegatedRouters.length; index++) {
+      const routerUrl = delegatedRouters[index]
+      libp2pConfig.services[`delegatedRouting${index}`] = () => createDelegatedRoutingV1HttpApiClient(routerUrl)
+    }
+    // merge any passed options from init.libp2pConfig into libp2pConfig if it exists
+    if (init?.libp2pConfig != null) {
+      Object.assign(libp2pConfig, init.libp2pConfig)
+    }
+    libp2p = await createLibp2p(libp2pConfig)
+
+    const blockBrokers = [
+      bitswap()
+    ]
+    const routers: Array<Partial<Routing>> = [
+      libp2pRouting(libp2p)
+    ]
+    if (init?.gateways == null || init.gateways.length > 0) {
+      // if gateways is null, or set to a non-empty array, use trustless gateways.
+      blockBrokers.push(trustlessGateway({ allowInsecure: init?.allowInsecure, allowLocal: init?.allowLocal }))
+      routers.push(httpGatewayRouting({ gateways: init?.gateways ?? ['https://trustless-gateway.link'] }))
+    }
+
+    init = await createHelia({
+      libp2p,
+      blockBrokers,
+      dns,
+      routers,
+      hashers: init?.hashers
     })
+    init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config: %j', libp2pConfig)
   }
 
   const verifiedFetchInstance = new VerifiedFetchClass({ helia: init }, options)
   async function verifiedFetch (resource: Resource, options?: VerifiedFetchInit): Promise<Response> {
     return verifiedFetchInstance.fetch(resource, options)
   }
-  verifiedFetch.stop = verifiedFetchInstance.stop.bind(verifiedFetchInstance)
   verifiedFetch.start = verifiedFetchInstance.start.bind(verifiedFetchInstance)
+  verifiedFetch.stop = verifiedFetchInstance.stop.bind(verifiedFetchInstance)
 
   return verifiedFetch
 }

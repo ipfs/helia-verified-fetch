@@ -1,12 +1,10 @@
 import { generateKeyPair } from '@libp2p/crypto/keys'
-import { matchPeerId } from '@libp2p/interface-compliance-tests/matchers'
 import { defaultLogger } from '@libp2p/logger'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { type Answer } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
 import { base36 } from 'multiformats/bases/base36'
 import { CID } from 'multiformats/cid'
-import { match } from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { parseUrlString } from '../../src/utils/parse-url-string.js'
 import { ipnsRecordStub } from '../fixtures/ipns-stubs.js'
@@ -283,7 +281,7 @@ describe('parseUrlString', () => {
       const key = await generateKeyPair('Ed25519')
       const testPeerId = peerIdFromPrivateKey(key)
 
-      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+      ipns.resolve.withArgs(key.publicKey).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId, ttl: oneHourInNanoseconds })
@@ -492,7 +490,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with PeerId only', async () => {
-      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -509,7 +507,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a base36 PeerId CID', async () => {
-      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -526,7 +524,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with PeerId+path', async () => {
-      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -543,7 +541,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with PeerId+path with a trailing slash', async () => {
-      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -560,7 +558,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with PeerId+queryString', async () => {
-      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -579,7 +577,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with PeerId+path+queryString', async () => {
-      ipns.resolve.withArgs(matchPeerId(testPeerId)).resolves({
+      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -604,7 +602,7 @@ describe('parseUrlString', () => {
       const recordPath = 'foo'
       const requestPath = 'bar/baz.txt'
 
-      ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
+      ipns.resolve.withArgs(peerId.publicKey).resolves({
         cid,
         path: recordPath,
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -627,7 +625,7 @@ describe('parseUrlString', () => {
       const recordPath = 'foo/'
       const requestPath = 'bar/baz.txt'
 
-      ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
+      ipns.resolve.withArgs(peerId.publicKey).resolves({
         cid,
         path: recordPath,
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -650,7 +648,7 @@ describe('parseUrlString', () => {
       const recordPath = '/foo/////bar//'
       const requestPath = '///baz///qux.txt'
 
-      ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
+      ipns.resolve.withArgs(peerId.publicKey).resolves({
         cid,
         path: recordPath,
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -675,7 +673,7 @@ describe('parseUrlString', () => {
       const key = await generateKeyPair('Ed25519')
       peerId = peerIdFromPrivateKey(key)
       cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
-      ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
+      ipns.resolve.withArgs(peerId.publicKey).resolves({
         cid,
         path: '',
         record: ipnsRecordStub({ peerId })
@@ -764,7 +762,7 @@ describe('parseUrlString', () => {
         const key = await generateKeyPair('Ed25519')
         peerId = peerIdFromPrivateKey(key)
         cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
-        ipns.resolve.withArgs(matchPeerId(peerId)).resolves({
+        ipns.resolve.withArgs(peerId.publicKey).resolves({
           cid,
           path: '',
           record: ipnsRecordStub({ peerId })
@@ -869,20 +867,19 @@ describe('parseUrlString', () => {
         value = await getVal(i++)
         cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
         if (type === 'peerid') {
-          ipns.resolve.withArgs(matchPeerId(value as PeerId)).resolves({
+          ipns.resolve.withArgs((value as PeerId).publicKey).resolves({
             cid,
             path: '',
             record: ipnsRecordStub({ peerId: value as PeerId })
           })
         } else if (type === 'dnslink-encoded') {
-          const matchValue = (value as string).replace(/-/g, '.')
-          ipns.resolveDNSLink.withArgs(match(matchValue)).resolves({
+          ipns.resolveDNSLink.withArgs(value.toString().replace(/-/g, '.')).resolves({
             cid,
             path: '',
             answer: stubInterface<Answer>()
           })
         } else {
-          ipns.resolveDNSLink.withArgs(match(value as string)).resolves({
+          ipns.resolveDNSLink.withArgs(value.toString()).resolves({
             cid,
             path: '',
             answer: stubInterface<Answer>()

@@ -1,3 +1,57 @@
+## [@helia/verified-fetch-v2.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.3.0...@helia/verified-fetch-2.3.1) (2024-12-10)
+
+### Dependencies
+
+* **dev:** bump sinon from 18.0.1 to 19.0.2 in /packages/verified-fetch ([#145](https://github.com/ipfs/helia-verified-fetch/issues/145)) ([d2d597a](https://github.com/ipfs/helia-verified-fetch/commit/d2d597a922a21679b3877a9d01883c69a48bc6dd))
+
+## [@helia/verified-fetch-v2.3.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.2.2...@helia/verified-fetch-2.3.0) (2024-12-05)
+
+### Features
+
+* allow passing custom hashers to verified fetch ([#156](https://github.com/ipfs/helia-verified-fetch/issues/156)) ([212b16d](https://github.com/ipfs/helia-verified-fetch/commit/212b16d574dc60b25c7497f8574e96ad244d93ec))
+
+## [@helia/verified-fetch-v2.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.2.1...@helia/verified-fetch-2.2.2) (2024-11-22)
+
+### Bug Fixes
+
+* add trace logging of libp2p config ([#151](https://github.com/ipfs/helia-verified-fetch/issues/151)) ([97de1a3](https://github.com/ipfs/helia-verified-fetch/commit/97de1a3bed597c929d617e23f33ddf6c67236459))
+
+## [@helia/verified-fetch-v2.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.2.0...@helia/verified-fetch-2.2.1) (2024-11-21)
+
+### Bug Fixes
+
+* do not connect to bootstrap nodes in browsers ([#149](https://github.com/ipfs/helia-verified-fetch/issues/149)) ([f1bd3d4](https://github.com/ipfs/helia-verified-fetch/commit/f1bd3d4fe7bfd575adf260e751647bc14427fc37))
+
+## [@helia/verified-fetch-v2.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.3...@helia/verified-fetch-2.2.0) (2024-11-21)
+
+### Features
+
+* support p2p retrieval by default ([#130](https://github.com/ipfs/helia-verified-fetch/issues/130)) ([9d33f89](https://github.com/ipfs/helia-verified-fetch/commit/9d33f8996f555fdee73ad3b0b129560c4d5b6cb6))
+
+## [@helia/verified-fetch-v2.1.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.2...@helia/verified-fetch-2.1.3) (2024-11-20)
+
+### Dependencies
+
+* bump the helia-deps group across 3 directories with 7 updates ([#141](https://github.com/ipfs/helia-verified-fetch/issues/141)) ([d867350](https://github.com/ipfs/helia-verified-fetch/commit/d8673505044e84cc69c36128dc2874f0713853ab))
+
+## [@helia/verified-fetch-v2.1.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.1...@helia/verified-fetch-2.1.2) (2024-11-18)
+
+### Dependencies
+
+* bump aegir from 44.1.4 to 45.0.1 ([#127](https://github.com/ipfs/helia-verified-fetch/issues/127)) ([53299e0](https://github.com/ipfs/helia-verified-fetch/commit/53299e0d39256e4c8aff22bb4999b1ed36e686ad))
+
+## [@helia/verified-fetch-v2.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.1.0...@helia/verified-fetch-2.1.1) (2024-11-14)
+
+### Dependencies
+
+* bump lru-cache from 10.4.3 to 11.0.2 ([#129](https://github.com/ipfs/helia-verified-fetch/issues/129)) ([6c1f9ed](https://github.com/ipfs/helia-verified-fetch/commit/6c1f9ed3f4de3d27a35086c9e72901526e0567e5))
+
+## [@helia/verified-fetch-v2.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.0.1...@helia/verified-fetch-2.1.0) (2024-11-13)
+
+### Features
+
+* return IPNSRecords for ipns subdomain URLs ([#131](https://github.com/ipfs/helia-verified-fetch/issues/131)) ([05b7ac6](https://github.com/ipfs/helia-verified-fetch/commit/05b7ac634f2f7be4c287ca4e86654ac1f4fb8125))
+
 ## [@helia/verified-fetch-v2.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.0.0...@helia/verified-fetch-2.0.1) (2024-10-23)
 
 ### Bug Fixes

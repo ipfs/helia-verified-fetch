@@ -11,16 +11,16 @@ export interface ParseResourceComponents {
 }
 
 export interface ParseResourceOptions extends ParseUrlStringOptions {
-
+  withServerTiming?: boolean
 }
 /**
  * Handles the different use cases for the `resource` argument.
  * The resource can represent an IPFS path, IPNS path, or CID.
  * If the resource represents an IPNS path, we need to resolve it to a CID.
  */
-export async function parseResource (resource: Resource, { ipns, logger }: ParseResourceComponents, options?: ParseResourceOptions): Promise<ParsedUrlStringResults> {
+export async function parseResource (resource: Resource, { ipns, logger }: ParseResourceComponents, { withServerTiming = false, ...options }: ParseResourceOptions = { withServerTiming: false }): Promise<ParsedUrlStringResults> {
   if (typeof resource === 'string') {
-    return parseUrlString({ urlString: resource, ipns, logger }, options)
+    return parseUrlString({ urlString: resource, ipns, logger, withServerTiming }, options)
   }
 
   const cid = CID.asCID(resource)
@@ -33,7 +33,8 @@ export async function parseResource (resource: Resource, { ipns, logger }: Parse
       path: '',
       query: {},
       ipfsPath: `/ipfs/${cid.toString()}`,
-      ttl: 29030400 // 1 year for ipfs content
+      ttl: 29030400, // 1 year for ipfs content
+      serverTimings: []
     } satisfies ParsedUrlStringResults
   }
 

@@ -1,5 +1,5 @@
 import { $ } from 'execa'
-import fg from 'fast-glob'
+import { glob } from 'glob'
 import { path as kuboPath } from 'kubo'
 
 /**
@@ -9,7 +9,9 @@ import { path as kuboPath } from 'kubo'
 export async function loadFixtures (IPFS_PATH = undefined): Promise<void> {
   const kuboBinary = process.env.KUBO_BINARY ?? kuboPath()
 
-  for (const carFile of await fg.glob('**/fixtures/data/*.car')) {
+  const files = await glob('**/fixtures/data/*.car', { cwd: process.cwd() })
+
+  await Promise.allSettled(files.map(async (carFile) => {
     await $({ env: { IPFS_PATH } })`${kuboBinary} dag import --pin-roots=false --offline ${carFile}`
-  }
+  }))
 }
