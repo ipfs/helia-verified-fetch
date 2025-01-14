@@ -43,12 +43,17 @@ describe('@helia/verified-fetch - unixfs directory', () => {
   describe('XKCD Barrel Part 1', () => {
     it('fails to load when passed the root', async () => {
       // The spec says we should generate HTML with directory listings, but we don't do that yet, so expect a failure
+      // const resp = await verifiedFetch('ipfs://bafybeigccimv3zqm5g4jt363faybagywkvqbrismoquogimy7kvz2sj7sq/', {
       const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR', {
         allowLocal: true,
         allowInsecure: true
       })
       expect(resp).to.be.ok()
-      expect(resp.status).to.equal(501) // TODO: we should do a directory listing instead
+      // eslint-disable-next-line no-console
+      console.log('resp', resp)
+      // expect(resp.status).to.equal(200)
+      // expect(resp.headers.get('content-type')).to.equal('text/html')
+      expect(await resp.text()).to.contain('A directory of content-addressed files hosted on IPFS.')
     })
 
     it('can return a string for unixfs pathed data', async () => {
