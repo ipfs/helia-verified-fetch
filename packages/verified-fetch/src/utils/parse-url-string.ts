@@ -197,7 +197,7 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
           if (resolveResultWithServerTiming.error != null) {
             throw resolveResultWithServerTiming.error
           }
-          resolveResult = resolveResultWithServerTiming.result ?? undefined
+          resolveResult = resolveResultWithServerTiming.result
         } else {
           resolveResult = await ipns.resolve(peerId.publicKey, options)
         }
@@ -233,7 +233,7 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
             if (resolveResultWithServerTiming.error != null) {
               throw resolveResultWithServerTiming.error
             }
-            resolveResult = resolveResultWithServerTiming.result ?? undefined
+            resolveResult = resolveResultWithServerTiming.result
           } else {
             resolveResult = await ipns.resolveDNSLink(decodedDnsLinkLabel, options)
           }
