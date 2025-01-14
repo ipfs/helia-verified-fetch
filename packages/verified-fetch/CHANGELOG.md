@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.4.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.3.1...@helia/verified-fetch-2.4.0) (2025-01-14)
+
+### Features
+
+* add server timing to responses ([#164](https://github.com/ipfs/helia-verified-fetch/issues/164)) ([0701c71](https://github.com/ipfs/helia-verified-fetch/commit/0701c716d97da747b73f9e86227493dda8a5b015))
+
 ## [@helia/verified-fetch-v2.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.3.0...@helia/verified-fetch-2.3.1) (2024-12-10)
 
 ### Dependencies
