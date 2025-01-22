@@ -19,7 +19,7 @@ export interface PluginOptions {
   withServerTiming?: boolean // TODO: move to pluginContext
   onProgress?(evt: CustomProgressEvent<any>): void // TODO: move to pluginContext
   logger: ComponentLogger
-  getBlockstore(cid: CID, resource: string | CID, useSession: boolean, options?: AbortOptions): Blockstore
+  getBlockstore(cid: CID, resource: string | CID, useSession?: boolean, options?: AbortOptions): Blockstore
   handleServerTiming<T>(name: string, description: string, fn: () => Promise<T>, withServerTiming: boolean): Promise<T>
   contentTypeParser?: ContentTypeParser
   helia: Helia

@@ -69,12 +69,17 @@ function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersIni
 }
 
 export class RawPlugin implements FetchHandlerPlugin {
-  canHandle ({ accept, cid }: PluginContext): boolean {
+  canHandle ({ accept, cid }: PluginContext, pluginOptions: PluginOptions): boolean {
+    const isValidRawCode = cid.code === rawCode || cid.code === identity.code
     if (accept === undefined) {
-      return cid.code === rawCode || cid.code === identity.code
+      return isValidRawCode
+    }
+    if (accept === 'application/x-tar') {
+      // conflict with tar requests.. need to ensure TarPlugin handles those.
+      return false
     }
 
-    return accept === 'application/vnd.ipld.raw'
+    return accept === 'application/vnd.ipld.raw' || isValidRawCode
   }
 
   async handle (context: PluginContext, pluginOptions: PluginOptions): Promise<Response> {

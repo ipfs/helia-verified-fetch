@@ -5,22 +5,20 @@ import { code as dagPbCode } from '@ipld/dag-pb'
 import { type AbortOptions, type Logger } from '@libp2p/interface'
 import { prefixLogger } from '@libp2p/logger'
 import { exporter, type ObjectNode } from 'ipfs-unixfs-exporter'
-import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { LRUCache } from 'lru-cache'
 import { type CID } from 'multiformats/cid'
 import { code as jsonCode } from 'multiformats/codecs/json'
-import { code as rawCode } from 'multiformats/codecs/raw'
 import { CustomProgressEvent } from 'progress-events'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
 import { RawPlugin } from './plugins/plugin-handle-raw.js'
+import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { ByteRangeContext } from './utils/byte-range-context.js'
 import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
-import { tarStream } from './utils/get-tar-stream.js'
 import { getRedirectResponse } from './utils/handle-redirects.js'
 import { parseResource } from './utils/parse-resource.js'
 import { type ParsedUrlStringResults } from './utils/parse-url-string.js'
@@ -101,15 +99,17 @@ export class VerifiedFetch {
       helia,
       contentTypeParser: this.contentTypeParser
     }
+
     this.plugins = [
       new IpnsRecordPlugin(),
       new CarPlugin(),
-      new RawPlugin()
+      new RawPlugin(),
+      new TarPlugin()
     ]
     this.log.trace('created VerifiedFetch instance')
   }
 
-  private getBlockstore (root: CID, resource: string | CID, useSession: boolean, options?: AbortOptions): Blockstore {
+  private getBlockstore (root: CID, resource: string | CID, useSession: boolean = true, options: AbortOptions = {}): Blockstore {
     const key = resourceToSessionCacheKey(resource)
     if (!useSession) {
       return this.helia.blockstore
@@ -123,24 +123,6 @@ export class VerifiedFetch {
     }
 
     return session
-  }
-
-  /**
-   * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
-   * directory structure referenced by the `CID`.
-   */
-  private async handleTar ({ resource, cid, path, session, options }: FetchHandlerFunctionArg): Promise<Response> {
-    if (cid.code !== dagPbCode && cid.code !== rawCode) {
-      return notAcceptableResponse('only UnixFS data can be returned in a TAR file')
-    }
-
-    const blockstore = this.getBlockstore(cid, resource, session, options)
-    const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${cid}/${path}`, blockstore, options))
-
-    const response = okResponse(resource, stream)
-    response.headers.set('content-type', 'application/x-tar')
-
-    return response
   }
 
   private async handleJson ({ resource, cid, path, accept, session, options }: FetchHandlerFunctionArg): Promise<Response> {
@@ -455,12 +437,6 @@ export class VerifiedFetch {
         ...query,
         ...context.query
       }
-    } else if (accept === 'application/x-tar') {
-      // the user requested a TAR file
-      reqFormat = 'tar'
-      query.download = true
-      query.filename = query.filename ?? `${cid.toString()}.tar`
-      response = await this.handleTar(handlerArgs)
     } else {
       this.log.trace('finding handler for cid code "%s" and output type "%s"', cid.code, accept)
       // derive the handler from the CID type
