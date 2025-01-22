@@ -1,27 +1,23 @@
-import { car } from '@helia/car'
 import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
-import { type AbortOptions, type Logger, type PeerId } from '@libp2p/interface'
-import { Record as DHTRecord } from '@libp2p/kad-dht'
-import { Key } from 'interface-datastore'
+import { type AbortOptions, type Logger } from '@libp2p/interface'
+import { prefixLogger } from '@libp2p/logger'
 import { exporter, type ObjectNode } from 'ipfs-unixfs-exporter'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { LRUCache } from 'lru-cache'
 import { type CID } from 'multiformats/cid'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
-import { identity } from 'multiformats/hashes/identity'
 import { CustomProgressEvent } from 'progress-events'
-import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { CarPlugin } from './plugins/plugin-handle-car.js'
+import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
+import { RawPlugin } from './plugins/plugin-handle-raw.js'
 import { ByteRangeContext } from './utils/byte-range-context.js'
 import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
-import { getPeerIdFromString } from './utils/get-peer-id-from-string.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { tarStream } from './utils/get-tar-stream.js'
@@ -30,12 +26,13 @@ import { parseResource } from './utils/parse-resource.js'
 import { type ParsedUrlStringResults } from './utils/parse-url-string.js'
 import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
 import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse, notFoundResponse } from './utils/responses.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
 import { serverTiming } from './utils/server-timing.js'
 import { setContentType } from './utils/set-content-type.js'
 import { handlePathWalking, isObjectNode } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
+import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './plugins/types.js'
 import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
@@ -70,42 +67,6 @@ function convertOptions (options?: VerifiedFetchOptions): (Omit<VerifiedFetchOpt
   }
 }
 
-/**
- * These are Accept header values that will cause content type sniffing to be
- * skipped and set to these values.
- */
-const RAW_HEADERS = [
-  'application/vnd.ipld.dag-json',
-  'application/vnd.ipld.raw',
-  'application/octet-stream'
-]
-
-/**
- * if the user has specified an `Accept` header, and it's in our list of
- * allowable "raw" format headers, use that instead of detecting the content
- * type. This avoids the user from receiving something different when they
- * signal that they want to `Accept` a specific mime type.
- */
-function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersInit, accept?: string }): string | undefined {
-  // accept has already been resolved by getResolvedAcceptHeader, if we have it, use it.
-  const acceptHeader = accept ?? new Headers(headers).get('accept') ?? ''
-
-  // e.g. "Accept: text/html, application/xhtml+xml, application/xml;q=0.9, image/webp, */*;q=0.8"
-  const acceptHeaders = acceptHeader.split(',')
-    .map(s => s.split(';')[0])
-    .map(s => s.trim())
-
-  for (const mimeType of acceptHeaders) {
-    if (mimeType === '*/*') {
-      return
-    }
-
-    if (RAW_HEADERS.includes(mimeType ?? '')) {
-      return mimeType
-    }
-  }
-}
-
 export class VerifiedFetch {
   private readonly helia: Helia
   private readonly ipns: IPNS
@@ -114,6 +75,8 @@ export class VerifiedFetch {
   private readonly blockstoreSessions: LRUCache<string, SessionBlockstore>
   private serverTimingHeaders: string[] = []
   private readonly withServerTiming: boolean
+  private readonly pluginOptions: PluginOptions
+  private readonly plugins: FetchHandlerPlugin[] = []
 
   constructor ({ helia, ipns }: VerifiedFetchComponents, init?: CreateVerifiedFetchOptions) {
     this.helia = helia
@@ -128,6 +91,21 @@ export class VerifiedFetch {
       }
     })
     this.withServerTiming = init?.withServerTiming ?? false
+
+    this.pluginOptions = {
+      ...init,
+      logger: prefixLogger('helia:verified-fetch'),
+      getBlockstore: (cid, resource, useSession, options) => this.getBlockstore(cid, resource, useSession, options),
+      handleServerTiming: async (name, description, fn) => this.handleServerTiming(name, description, fn, this.withServerTiming),
+      withServerTiming: this.withServerTiming,
+      helia,
+      contentTypeParser: this.contentTypeParser
+    }
+    this.plugins = [
+      new IpnsRecordPlugin(),
+      new CarPlugin(),
+      new RawPlugin()
+    ]
     this.log.trace('created VerifiedFetch instance')
   }
 
@@ -145,66 +123,6 @@ export class VerifiedFetch {
     }
 
     return session
-  }
-
-  /**
-   * Accepts an `ipns://...` or `https?://<ipnsname>.ipns.<domain>` URL as a string and returns a `Response` containing
-   * a raw IPNS record.
-   */
-  private async handleIPNSRecord ({ resource, cid, path, options }: FetchHandlerFunctionArg): Promise<Response> {
-    if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.'))) {
-      this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
-      return badRequestResponse(resource, 'Invalid IPNS name')
-    }
-
-    let peerId: PeerId
-
-    try {
-      if (resource.startsWith('ipns://')) {
-        const peerIdString = resource.replace('ipns://', '')
-        this.log.trace('trying to parse peer id from "%s"', peerIdString)
-        peerId = getPeerIdFromString(peerIdString)
-      } else {
-        const peerIdString = resource.split('.ipns.')[0].split('://')[1]
-        this.log.trace('trying to parse peer id from "%s"', peerIdString)
-        peerId = getPeerIdFromString(peerIdString)
-      }
-    } catch (err: any) {
-      this.log.error('could not parse peer id from IPNS url %s', resource, err)
-
-      return badRequestResponse(resource, err)
-    }
-
-    // since this call happens after parseResource, we've already resolved the
-    // IPNS name so a local copy should be in the helia datastore, so we can
-    // just read it out..
-    const routingKey = uint8ArrayConcat([
-      uint8ArrayFromString('/ipns/'),
-      peerId.toMultihash().bytes
-    ])
-    const datastoreKey = new Key('/dht/record/' + uint8ArrayToString(routingKey, 'base32'), false)
-    const buf = await this.helia.datastore.get(datastoreKey, options)
-    const record = DHTRecord.deserialize(buf)
-
-    const response = okResponse(resource, record.value)
-    response.headers.set('content-type', 'application/vnd.ipfs.ipns-record')
-
-    return response
-  }
-
-  /**
-   * Accepts a `CID` and returns a `Response` with a body stream that is a CAR
-   * of the `DAG` referenced by the `CID`.
-   */
-  private async handleCar ({ resource, cid, session, options }: FetchHandlerFunctionArg): Promise<Response> {
-    const blockstore = this.getBlockstore(cid, resource, session, options)
-    const c = car({ blockstore, getCodec: this.helia.getCodec })
-    const stream = toBrowserReadableStream(c.stream(cid, options))
-
-    const response = okResponse(resource, stream)
-    response.headers.set('content-type', 'application/vnd.ipld.car; version=1')
-
-    return response
   }
 
   /**
@@ -420,33 +338,6 @@ export class VerifiedFetch {
     }
   }
 
-  private async handleRaw ({ resource, cid, path, session, options, accept }: FetchHandlerFunctionArg): Promise<Response> {
-    /**
-     * if we have a path, we can't walk it, so we need to return a 404.
-     *
-     * @see https://github.com/ipfs/gateway-conformance/blob/26994cfb056b717a23bf694ce4e94386728748dd/tests/subdomain_gateway_ipfs_test.go#L198-L204
-     */
-    if (path !== '') {
-      this.log.trace('404-ing raw codec request for %c/%s', cid, path)
-      return notFoundResponse(resource, 'Raw codec does not support paths')
-    }
-
-    const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
-    const blockstore = this.getBlockstore(cid, resource, session, options)
-    const result = await blockstore.get(cid, options)
-    byteRangeContext.setBody(result)
-    const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
-      redirected: false
-    })
-
-    // if the user has specified an `Accept` header that corresponds to a raw
-    // type, honour that header, so for example they don't request
-    // `application/vnd.ipld.raw` but get `application/octet-stream`
-    await setContentType({ bytes: result, path, response, defaultContentType: getOverridenRawContentType({ headers: options?.headers, accept }), contentTypeParser: this.contentTypeParser, log: this.log })
-
-    return response
-  }
-
   /**
    * If the user has not specified an Accept header or format query string arg,
    * use the CID codec to choose an appropriate handler for the block data.
@@ -455,9 +346,7 @@ export class VerifiedFetch {
     [dagPbCode]: this.handleDagPb,
     [ipldDagJson.code]: this.handleJson,
     [jsonCode]: this.handleJson,
-    [ipldDagCbor.code]: this.handleDagCbor,
-    [rawCode]: this.handleRaw,
-    [identity.code]: this.handleRaw
+    [ipldDagCbor.code]: this.handleDagCbor
   }
 
   private async handleServerTiming<T> (name: string, description: string, fn: () => Promise<T>, withServerTiming: boolean): Promise<T> {
@@ -545,23 +434,27 @@ export class VerifiedFetch {
     }
 
     const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options, withServerTiming }
+    const context: PluginContext = { cid, path, resource: resource.toString(), accept, reqFormat, query, options, withServerTiming }
 
-    if (accept === 'application/vnd.ipfs.ipns-record') {
-      // the user requested a raw IPNS record
-      reqFormat = 'ipns-record'
-      response = await this.handleIPNSRecord(handlerArgs)
-    } else if (accept === 'application/vnd.ipld.car') {
-      // the user requested a CAR file
-      reqFormat = 'car'
-      query.download = true
-      query.filename = query.filename ?? `${cid.toString()}.car`
-      response = await this.handleCar(handlerArgs)
-    } else if (accept === 'application/vnd.ipld.raw') {
-      // the user requested a raw block
-      reqFormat = 'raw'
-      query.download = true
-      query.filename = query.filename ?? `${cid.toString()}.bin`
-      response = await this.handleRaw(handlerArgs)
+    const pluginOptions: PluginOptions = {
+      ...this.pluginOptions,
+      onProgress: options?.onProgress,
+      options: {
+        ...this.pluginOptions.options,
+        ...options
+      }
+    }
+
+    const plugin = this.plugins.find(p => p.canHandle(context, pluginOptions))
+
+    if (plugin != null) {
+      this.log.trace('using plugin "%s"', plugin.constructor.name)
+      response = await plugin.handle(context, pluginOptions)
+      reqFormat = context.reqFormat
+      query = {
+        ...query,
+        ...context.query
+      }
     } else if (accept === 'application/x-tar') {
       // the user requested a TAR file
       reqFormat = 'tar'

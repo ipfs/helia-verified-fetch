@@ -1,0 +1,52 @@
+import type { PluginError } from '../errors.js'
+import type { VerifiedFetchInit } from '../index.js'
+import type { ContentTypeParser, RequestFormatShorthand } from '../types.js'
+import type { ParsedUrlStringResults } from '../utils/parse-url-string.js'
+import type { AbortOptions, ComponentLogger } from '@libp2p/interface'
+import type { Helia } from 'helia'
+import type { Blockstore } from 'interface-blockstore'
+import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { CID } from 'multiformats/cid'
+import type { CustomProgressEvent } from 'progress-events'
+
+/**
+ * Contains all configuration needed to handle a request.
+ * - User Config: signal, timeouts, onProgress callbacks, booleans like withServerTiming, etc.
+ * - Read-Only: Plugins can read but shouldn’t rewrite them.
+ * - Persistent: Relevant even after the request completes (e.g., logging or metrics).
+ */
+export interface PluginOptions {
+  withServerTiming?: boolean // TODO: move to pluginContext
+  onProgress?(evt: CustomProgressEvent<any>): void // TODO: move to pluginContext
+  logger: ComponentLogger
+  getBlockstore(cid: CID, resource: string | CID, useSession: boolean, options?: AbortOptions): Blockstore
+  handleServerTiming<T>(name: string, description: string, fn: () => Promise<T>, withServerTiming: boolean): Promise<T>
+  contentTypeParser?: ContentTypeParser
+  helia: Helia
+  options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions // TODO: move to pluginContext
+}
+
+/**
+ * Represents the ephemeral, modifiable state used by the pipeline.
+ * - Mutable: Evolves as you walk the plugin chain.
+ * - Shared Data: Allows plugins to communicate partial results, discovered data, or interim errors.
+ * - Ephemeral: Typically discarded once fetch(...) completes.
+ */
+export interface PluginContext {
+  readonly cid: CID
+  readonly path: string
+  readonly resource: string
+  readonly accept?: string
+  isDirectory?: boolean
+  missingIndexHtml?: boolean
+  directoryEntries?: UnixFSEntry[]
+  errors?: PluginError[]
+  reqFormat?: RequestFormatShorthand
+  query: ParsedUrlStringResults['query']
+  [key: string]: unknown
+}
+
+export interface FetchHandlerPlugin {
+  canHandle (context: PluginContext, options: PluginOptions): boolean
+  handle (context: PluginContext, options: PluginOptions): Promise<Response>
+}
