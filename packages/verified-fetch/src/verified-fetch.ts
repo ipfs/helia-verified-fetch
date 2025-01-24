@@ -65,6 +65,16 @@ function convertOptions (options?: VerifiedFetchOptions): (Omit<VerifiedFetchOpt
   }
 }
 
+// TODO: merge/combine with PluginContext
+interface FinalResponseContext {
+  cid?: ParsedUrlStringResults['cid']
+  reqFormat?: RequestFormatShorthand
+  ttl?: ParsedUrlStringResults['ttl']
+  protocol?: ParsedUrlStringResults['protocol']
+  ipfsPath?: string
+  query?: ParsedUrlStringResults['query']
+}
+
 export class VerifiedFetch {
   private readonly helia: Helia
   private readonly ipns: IPNS
@@ -349,11 +359,49 @@ export class VerifiedFetch {
    * Server-Timing header to the response if it has been collected. It should be used for any final processing of the
    * response before it is returned to the user.
    */
-  private handleFinalResponse (response: Response): Response {
+  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath }: FinalResponseContext = {}): Response {
     if (this.serverTimingHeaders.length > 0) {
       const headerString = this.serverTimingHeaders.join(', ')
       response.headers.set('Server-Timing', headerString)
       this.serverTimingHeaders = []
+    }
+
+    // set Content-Disposition header
+    let contentDisposition: string | undefined
+
+    // force download if requested
+    if (query?.download === true) {
+      contentDisposition = 'attachment'
+    } else {
+      this.log.trace('download not requested')
+    }
+
+    // override filename if requested
+    if (query?.filename != null) {
+      if (contentDisposition == null) {
+        contentDisposition = 'inline'
+      }
+
+      contentDisposition = `${contentDisposition}; ${getContentDispositionFilename(query.filename)}`
+    } else {
+      this.log.trace('no filename specified in query')
+    }
+
+    if (contentDisposition != null) {
+      response.headers.set('Content-Disposition', contentDisposition)
+    } else {
+      this.log.trace('no content disposition specified')
+    }
+
+    if (cid != null) {
+      response.headers.set('etag', getETag({ cid, reqFormat, weak: false }))
+    }
+
+    if (protocol != null) {
+      setCacheControlHeader({ response, ttl, protocol })
+    }
+    if (ipfsPath != null) {
+      response.headers.set('X-Ipfs-Path', ipfsPath)
     }
 
     return response
@@ -450,35 +498,9 @@ export class VerifiedFetch {
       response = await codecHandler.call(this, handlerArgs)
     }
 
-    response.headers.set('etag', getETag({ cid, reqFormat, weak: false }))
-
-    setCacheControlHeader({ response, ttl, protocol })
-    response.headers.set('X-Ipfs-Path', ipfsPath)
-
-    // set Content-Disposition header
-    let contentDisposition: string | undefined
-
-    // force download if requested
-    if (query.download === true) {
-      contentDisposition = 'attachment'
-    }
-
-    // override filename if requested
-    if (query.filename != null) {
-      if (contentDisposition == null) {
-        contentDisposition = 'inline'
-      }
-
-      contentDisposition = `${contentDisposition}; ${getContentDispositionFilename(query.filename)}`
-    }
-
-    if (contentDisposition != null) {
-      response.headers.set('Content-Disposition', contentDisposition)
-    }
-
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))
 
-    return this.handleFinalResponse(response)
+    return this.handleFinalResponse(response, { query, cid, reqFormat, ttl, protocol, ipfsPath })
   }
 
   /**

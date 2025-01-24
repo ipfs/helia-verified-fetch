@@ -76,6 +76,7 @@ export class RawPlugin implements FetchHandlerPlugin {
     }
     if (accept === 'application/x-tar') {
       // conflict with tar requests.. need to ensure TarPlugin handles those.
+      // TODO: we shouldn't need to "DenyList" other plugins that may handle things, but instead have a way to prioritize or fallback to other plugins.
       return false
     }
 
