@@ -88,6 +88,10 @@ export class RawPlugin implements FetchHandlerPlugin {
     const session = options?.session ?? true
     const log = logger.forComponent('raw-plugin')
 
+    context.reqFormat = 'raw'
+    context.query.download = true
+    context.query.filename = context.query.filename ?? `${cid.toString()}.bin`
+
     if (path !== '') {
       log.trace('404-ing raw codec request for %c/%s', cid, path)
       return notFoundResponse(resource, 'Raw codec does not support paths')
