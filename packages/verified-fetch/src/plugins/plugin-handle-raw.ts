@@ -1,36 +1,11 @@
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
+import { PluginError } from '../errors.js'
 import { ByteRangeContext } from '../utils/byte-range-context.js'
-import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
+// import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
+import { okRangeResponse } from '../utils/responses.js'
 import { setContentType } from '../utils/set-content-type.js'
 import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
-
-// private async handleRaw ({ resource, cid, path, session, options, accept }: FetchHandlerFunctionArg): Promise<Response> {
-//   /**
-//    * if we have a path, we can't walk it, so we need to return a 404.
-//    *
-//    * @see https://github.com/ipfs/gateway-conformance/blob/26994cfb056b717a23bf694ce4e94386728748dd/tests/subdomain_gateway_ipfs_test.go#L198-L204
-//    */
-//   if (path !== '') {
-//     this.log.trace('404-ing raw codec request for %c/%s', cid, path)
-//     return notFoundResponse(resource, 'Raw codec does not support paths')
-//   }
-
-//   const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
-//   const blockstore = this.getBlockstore(cid, resource, session, options)
-//   const result = await blockstore.get(cid, options)
-//   byteRangeContext.setBody(result)
-//   const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
-//     redirected: false
-//   })
-
-//   // if the user has specified an `Accept` header that corresponds to a raw
-//   // type, honour that header, so for example they don't request
-//   // `application/vnd.ipld.raw` but get `application/octet-stream`
-//   await setContentType({ bytes: result, path, response, defaultContentType: getOverridenRawContentType({ headers: options?.headers, accept }), contentTypeParser: this.contentTypeParser, log: this.log })
-
-//   return response
-// }
 
 /**
  * These are Accept header values that will cause content type sniffing to be
@@ -74,11 +49,11 @@ export class RawPlugin implements FetchHandlerPlugin {
     if (accept === undefined) {
       return isValidRawCode
     }
-    if (accept === 'application/x-tar') {
-      // conflict with tar requests.. need to ensure TarPlugin handles those.
-      // TODO: we shouldn't need to "DenyList" other plugins that may handle things, but instead have a way to prioritize or fallback to other plugins.
-      return false
-    }
+    // if (accept === 'application/x-tar') {
+    //   // conflict with tar requests.. need to ensure TarPlugin handles those.
+    //   // TODO: we shouldn't need to "DenyList" other plugins that may handle things, but instead have a way to prioritize or fallback to other plugins.
+    //   return false
+    // }
 
     return accept === 'application/vnd.ipld.raw' || isValidRawCode
   }
@@ -89,13 +64,16 @@ export class RawPlugin implements FetchHandlerPlugin {
     const session = options?.session ?? true
     const log = logger.forComponent('raw-plugin')
 
-    context.reqFormat = 'raw'
-    context.query.download = true
-    context.query.filename = context.query.filename ?? `${cid.toString()}.bin`
+    if (accept === 'application/vnd.ipld.raw') {
+      context.reqFormat = 'raw'
+      context.query.download = true
+      context.query.filename = context.query.filename ?? `${cid.toString()}.bin`
+    }
 
     if (path !== '') {
       log.trace('404-ing raw codec request for %c/%s', cid, path)
-      return notFoundResponse(resource, 'Raw codec does not support paths')
+      throw new PluginError('ERR_RAW_PATHS_NOT_SUPPORTED', 'Raw codec does not support paths')
+      // return notFoundResponse(resource, 'Raw codec does not support paths')
     }
 
     const byteRangeContext = new ByteRangeContext(logger, options?.headers)

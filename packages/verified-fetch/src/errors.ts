@@ -42,11 +42,11 @@ export class PluginError extends Error {
   }
 }
 
-export class FatalError extends PluginError {
-  public name = 'FatalError'
+export class PluginFatalError extends PluginError {
+  public name = 'PluginFatalError'
 
   constructor (code: string, message: string, details?: Record<string, any>) {
     super(code, message, { fatal: true, details })
-    this.name = 'FatalError'
+    this.name = 'PluginFatalError'
   }
 }

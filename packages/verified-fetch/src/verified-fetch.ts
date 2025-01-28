@@ -455,7 +455,7 @@ export class VerifiedFetch {
       return this.handleFinalResponse(notAcceptableResponse(resource.toString()))
     }
 
-    let response: Response
+    let response: Response | undefined
     let reqFormat: RequestFormatShorthand | undefined
 
     const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid })
@@ -475,15 +475,30 @@ export class VerifiedFetch {
       }
     }
 
-    const plugin = this.plugins.find(p => p.canHandle(context, pluginOptions))
+    const plugins = this.plugins.filter(p => p.canHandle(context, pluginOptions))
 
-    if (plugin != null) {
-      this.log.trace('using plugin "%s"', plugin.constructor.name)
-      response = await plugin.handle(context, pluginOptions)
-      reqFormat = context.reqFormat
-      query = {
-        ...query,
-        ...context.query
+    if (plugins.length > 0) {
+      this.log.trace('found %d plugins that can handle request', plugins.length)
+      for (const plugin of plugins) {
+        try {
+          this.log.trace('using plugin "%s"', plugin.constructor.name)
+          response = await plugin.handle(context, pluginOptions)
+          reqFormat = context.reqFormat
+          query = {
+            ...query,
+            ...context.query
+          }
+          // if the response is not null, we can break out of the loop
+          if (response?.ok && response.headers.get('content-type') === accept) {
+            break
+          }
+        } catch (err: any) {
+          options?.signal?.throwIfAborted()
+          this.log.error('plugin "%s" failed to handle request', plugin.constructor.name, err)
+          if (err.name === 'PluginFatalError') {
+            return this.handleFinalResponse(badGatewayResponse(resource.toString(), 'Failed to fetch'))
+          }
+        }
       }
     } else {
       this.log.trace('finding handler for cid code "%s" and output type "%s"', cid.code, accept)
@@ -499,6 +514,10 @@ export class VerifiedFetch {
     }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))
+
+    if (response == null) {
+      return this.handleFinalResponse(notSupportedResponse(resource.toString()))
+    }
 
     return this.handleFinalResponse(response, { query, cid, reqFormat, ttl, protocol, ipfsPath })
   }
