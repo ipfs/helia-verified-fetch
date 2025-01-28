@@ -448,12 +448,14 @@ export class VerifiedFetch {
 
     const acceptHeader = getResolvedAcceptHeader({ query, headers: options?.headers, logger: this.helia.logger })
 
-    const accept = selectOutputType(cid, acceptHeader)
+    const accept: string | undefined = selectOutputType(cid, acceptHeader)
     this.log('output type %s', accept)
 
     if (acceptHeader != null && accept == null) {
       return this.handleFinalResponse(notAcceptableResponse(resource.toString()))
     }
+
+    const responseContentType: string = accept?.split(';')[0] ?? 'application/octet-stream'
 
     let response: Response | undefined
     let reqFormat: RequestFormatShorthand | undefined
@@ -475,6 +477,7 @@ export class VerifiedFetch {
       }
     }
 
+    this.log.trace('finding handler for cid code "%s" and response content type "%s"', cid.code, responseContentType)
     const plugins = this.plugins.filter(p => p.canHandle(context, pluginOptions))
 
     if (plugins.length > 0) {
@@ -483,13 +486,13 @@ export class VerifiedFetch {
         try {
           this.log.trace('using plugin "%s"', plugin.constructor.name)
           response = await plugin.handle(context, pluginOptions)
-          // reqFormat = context.reqFormat
-          // query = {
-          //   ...query,
-          //   ...context.query
-          // }
-          // if the response is not null, we can break out of the loop
-          if (response?.ok && response.headers.get('content-type') === accept) {
+          const pluginContentType = response?.headers.get('content-type') ?? 'UNKNOWN'
+
+          this.log.trace('plugin "%s" response.ok: %s, plugins response content type: %s', plugin.constructor.name, response?.ok, pluginContentType)
+          // if the response is not null, and of the correct format, we can break out of the loop
+          if (response?.ok && pluginContentType.startsWith(responseContentType)) {
+            // TODO: limit the number of plugins that can handle a request as much as possible. can we pass responseContentType and restrict the plugins that can handle it?
+            // we already have a list of known CID-> content types in CID_TYPE_MAP - can we use that to restrict the plugins that can handle a request?
             this.log.trace('plugin "%s" handled request', plugin.constructor.name)
             break
           }
@@ -507,19 +510,10 @@ export class VerifiedFetch {
           }
         }
       }
-    } else {
-      // this.log.trace('finding handler for cid code "%s" and output type "%s"', cid.code, accept)
-      // // derive the handler from the CID type
-      // const codecHandler = this.codecHandlers[cid.code]
-
-      // if (codecHandler == null) {
-      //   return this.handleFinalResponse(notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`))
-      // }
-      // this.log.trace('calling handler "%s"', codecHandler.name)
-
-      // response = await codecHandler.call(this, handlerArgs)
     }
+
     if (response == null) {
+      // TODO: move all of these to plugin handlers.
       this.log.trace('finding handler for cid code "%s" and output type "%s"', cid.code, accept)
       // derive the handler from the CID type
       const codecHandler = this.codecHandlers[cid.code]
