@@ -7,10 +7,10 @@ import { prefixLogger } from '@libp2p/logger'
 import { exporter, type ObjectNode } from 'ipfs-unixfs-exporter'
 import { LRUCache } from 'lru-cache'
 import { type CID } from 'multiformats/cid'
-import { code as jsonCode } from 'multiformats/codecs/json'
 import { CustomProgressEvent } from 'progress-events'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
+import { JsonPlugin } from './plugins/plugin-handle-json.js'
 import { RawPlugin } from './plugins/plugin-handle-raw.js'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { ByteRangeContext } from './utils/byte-range-context.js'
@@ -110,11 +110,13 @@ export class VerifiedFetch {
       contentTypeParser: this.contentTypeParser
     }
 
+    // TODO: pass logger, handleServerTiming, and contentTypeParser to plugins during construction
     this.plugins = [
       new IpnsRecordPlugin(),
       new CarPlugin(),
       new RawPlugin(),
-      new TarPlugin()
+      new TarPlugin(),
+      new JsonPlugin()
     ]
     this.log.trace('created VerifiedFetch instance')
   }
@@ -133,33 +135,6 @@ export class VerifiedFetch {
     }
 
     return session
-  }
-
-  private async handleJson ({ resource, cid, path, accept, session, options }: FetchHandlerFunctionArg): Promise<Response> {
-    this.log.trace('fetching %c/%s', cid, path)
-    const blockstore = this.getBlockstore(cid, resource, session, options)
-    const block = await blockstore.get(cid, options)
-    let body: string | Uint8Array
-
-    if (accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {
-      try {
-        // if vnd.ipld.dag-cbor has been specified, convert to the format - note
-        // that this supports more data types than regular JSON, the content-type
-        // response header is set so the user knows to process it differently
-        const obj = ipldDagJson.decode(block)
-        body = ipldDagCbor.encode(obj)
-      } catch (err) {
-        this.log.error('could not transform %c to application/vnd.ipld.dag-cbor', err)
-        return notAcceptableResponse(resource)
-      }
-    } else {
-      // skip decoding
-      body = block
-    }
-
-    const response = okResponse(resource, body)
-    response.headers.set('content-type', accept ?? 'application/json')
-    return response
   }
 
   private async handleDagCbor ({ resource, cid, path, accept, session, options, withServerTiming }: FetchHandlerFunctionArg): Promise<Response> {
@@ -336,8 +311,6 @@ export class VerifiedFetch {
    */
   private readonly codecHandlers: Record<number, FetchHandlerFunction> = {
     [dagPbCode]: this.handleDagPb,
-    [ipldDagJson.code]: this.handleJson,
-    [jsonCode]: this.handleJson,
     [ipldDagCbor.code]: this.handleDagCbor
   }
 
@@ -510,6 +483,8 @@ export class VerifiedFetch {
           }
         }
       }
+    } else {
+      this.log.trace('no plugins found that can handle request')
     }
 
     if (response == null) {
