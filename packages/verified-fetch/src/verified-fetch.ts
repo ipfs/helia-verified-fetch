@@ -483,13 +483,14 @@ export class VerifiedFetch {
         try {
           this.log.trace('using plugin "%s"', plugin.constructor.name)
           response = await plugin.handle(context, pluginOptions)
-          reqFormat = context.reqFormat
-          query = {
-            ...query,
-            ...context.query
-          }
+          // reqFormat = context.reqFormat
+          // query = {
+          //   ...query,
+          //   ...context.query
+          // }
           // if the response is not null, we can break out of the loop
           if (response?.ok && response.headers.get('content-type') === accept) {
+            this.log.trace('plugin "%s" handled request', plugin.constructor.name)
             break
           }
         } catch (err: any) {
@@ -498,9 +499,27 @@ export class VerifiedFetch {
           if (err.name === 'PluginFatalError') {
             return this.handleFinalResponse(badGatewayResponse(resource.toString(), 'Failed to fetch'))
           }
+        } finally {
+          reqFormat = context.reqFormat
+          query = {
+            ...query,
+            ...context.query
+          }
         }
       }
     } else {
+      // this.log.trace('finding handler for cid code "%s" and output type "%s"', cid.code, accept)
+      // // derive the handler from the CID type
+      // const codecHandler = this.codecHandlers[cid.code]
+
+      // if (codecHandler == null) {
+      //   return this.handleFinalResponse(notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`))
+      // }
+      // this.log.trace('calling handler "%s"', codecHandler.name)
+
+      // response = await codecHandler.call(this, handlerArgs)
+    }
+    if (response == null) {
       this.log.trace('finding handler for cid code "%s" and output type "%s"', cid.code, accept)
       // derive the handler from the CID type
       const codecHandler = this.codecHandlers[cid.code]

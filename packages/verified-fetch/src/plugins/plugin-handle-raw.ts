@@ -1,9 +1,9 @@
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
-import { PluginError } from '../errors.js'
+// import { PluginError } from '../errors.js'
 import { ByteRangeContext } from '../utils/byte-range-context.js'
-// import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
-import { okRangeResponse } from '../utils/responses.js'
+import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
+// import { okRangeResponse } from '../utils/responses.js'
 import { setContentType } from '../utils/set-content-type.js'
 import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
 
@@ -46,7 +46,7 @@ function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersIni
 export class RawPlugin implements FetchHandlerPlugin {
   canHandle ({ accept, cid }: PluginContext, pluginOptions: PluginOptions): boolean {
     const isValidRawCode = cid.code === rawCode || cid.code === identity.code
-    if (accept === undefined) {
+    if (accept == null) {
       return isValidRawCode
     }
     // if (accept === 'application/x-tar') {
@@ -72,8 +72,8 @@ export class RawPlugin implements FetchHandlerPlugin {
 
     if (path !== '') {
       log.trace('404-ing raw codec request for %c/%s', cid, path)
-      throw new PluginError('ERR_RAW_PATHS_NOT_SUPPORTED', 'Raw codec does not support paths')
-      // return notFoundResponse(resource, 'Raw codec does not support paths')
+      // throw new PluginError('ERR_RAW_PATHS_NOT_SUPPORTED', 'Raw codec does not support paths')
+      return notFoundResponse(resource, 'Raw codec does not support paths')
     }
 
     const byteRangeContext = new ByteRangeContext(logger, options?.headers)

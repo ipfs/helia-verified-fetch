@@ -9,7 +9,7 @@ import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.j
  */
 export class CarPlugin implements FetchHandlerPlugin {
   canHandle ({ accept }: PluginContext): boolean {
-    return accept === 'application/vnd.ipld.car'
+    return accept?.startsWith('application/vnd.ipld.car') === true // application/vnd.ipld.car
   }
 
   async handle (context: PluginContext, options: PluginOptions): Promise<Response> {
