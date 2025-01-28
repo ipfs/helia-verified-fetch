@@ -15,6 +15,8 @@ interface TestConfig {
   spec?: string
   skip?: string[]
   run?: string[]
+  expectPassing?: string[]
+  expectFailing?: string[]
   successRate: number
   timeout?: number
 }
@@ -131,7 +133,22 @@ const tests: TestConfig[] = [
   {
     name: 'TestTrustlessCarOrderAndDuplicates',
     run: ['TestTrustlessCarOrderAndDuplicates'],
-    successRate: 44.83
+    successRate: 44.83,
+    expectPassing: [
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_UnixFS_Directory_With_Duplicate_Files/Status_code',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_UnixFS_Directory_With_Duplicate_Files/Header_Content-Type',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_UnixFS_Directory_With_Duplicate_Files/Body',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=n_of_UnixFS_Directory_With_Duplicate_Files/Status_code',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=n_of_UnixFS_Directory_With_Duplicate_Files/Header_Content-Type',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_smoke-test_with_order=unk_of_UnixFS_Directory/Status_code',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_smoke-test_with_order=unk_of_UnixFS_Directory/Header_Content-Type',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_smoke-test_with_order=unk_of_UnixFS_Directory/Body',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_identity_CID/Status_code',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_identity_CID/Header_Content-Type',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_Accept_and_%3Fformat%2C_specific_Accept_header_is_prioritized/Status_code',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_Accept_and_%3Fformat%2C_specific_Accept_header_is_prioritized/Header_Content-Type',
+      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_Accept_and_%3Fformat%2C_specific_Accept_header_is_prioritized/Body'
+    ]
   },
   // {
   //   // currently timing out
@@ -257,9 +274,19 @@ const tests: TestConfig[] = [
   }
 ]
 
-async function getReportDetails (path: string): Promise<{ failureCount: number, successCount: number, successRate: number }> {
+interface ReportDetails {
+  passingTests: string[]
+  failingTests: string[]
+  failureCount: number
+  successCount: number
+  successRate: number
+}
+
+async function getReportDetails (path: string): Promise<ReportDetails> {
   let failureCount = 0
   let successCount = 0
+  const passingTests: string[] = []
+  const failingTests: string[] = []
 
   // parse the newline delimited JSON report at gwc-report-${name}.json and count the number of "PASS:" and "FAIL:" lines
   const report = await readFile(path, 'utf8')
@@ -267,13 +294,17 @@ async function getReportDetails (path: string): Promise<{ failureCount: number, 
   for (const line of lines) {
     if (line.includes('--- FAIL:')) {
       failureCount++
+      failingTests.push(line.split('--- FAIL: ')[1].split(' ')[0])
     } else if (line.includes('--- PASS:')) {
       successCount++
+      passingTests.push(line.split('--- PASS: ')[1].split(' ')[0])
     }
   }
   const successRate = Number.parseFloat(((successCount / (successCount + failureCount)) * 100).toFixed(2))
 
   return {
+    failingTests,
+    passingTests,
     failureCount,
     successCount,
     successRate
@@ -345,7 +376,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       }
     })
 
-    tests.forEach(({ name, spec, skip, run, timeout, successRate: minSuccessRate }) => {
+    tests.forEach(({ name, spec, skip, run, timeout, successRate: minSuccessRate, expectPassing, expectFailing }) => {
       const log = logger.forComponent(`output:${name}`)
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : minSuccessRate
 
@@ -369,6 +400,32 @@ describe('@helia/verified-fetch - gateway conformance', function () {
 
         const { successRate } = await getReportDetails(`gwc-report-${name}.json`)
         expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate)
+      })
+
+      describe(`${name} passes and fails tests as expected`, function () {
+        let passingTests: string[]
+        let failingTests: string[]
+        before(async function () {
+          const details = await getReportDetails(`gwc-report-${name}.json`)
+          passingTests = details.passingTests
+          failingTests = details.failingTests
+        })
+        if (expectPassing != null) {
+          for (const test of expectPassing) {
+            // eslint-disable-next-line no-loop-func
+            it(`${test}`, () => {
+              expect(passingTests).to.include(test)
+            })
+          }
+        }
+        if (expectFailing != null) {
+          for (const test of expectFailing) {
+            // eslint-disable-next-line no-loop-func
+            it(`${test}`, () => {
+              expect(failingTests).to.include(test)
+            })
+          }
+        }
       })
     })
 
