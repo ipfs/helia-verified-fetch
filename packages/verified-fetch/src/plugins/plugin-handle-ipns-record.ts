@@ -3,6 +3,7 @@ import { Key } from 'interface-datastore'
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { PluginFatalError } from '../errors.js'
 import { getPeerIdFromString } from '../utils/get-peer-id-from-string.js'
 import { badRequestResponse, okResponse } from '../utils/responses.js'
 import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
@@ -21,26 +22,28 @@ export class IpnsRecordPlugin implements FetchHandlerPlugin {
     const { resource, path } = context
     context.reqFormat = 'ipns-record'
     const log = logger.forComponent('ipns-record-plugin')
-    if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.'))) {
+    if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.') || resource.includes('/ipns/'))) {
       log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
-      return badRequestResponse(resource, 'Invalid IPNS name')
+      throw new PluginFatalError('ERR_INVALID_IPNS_NAME', 'Invalid IPNS name', { response: badRequestResponse(resource, 'Invalid IPNS name') })
     }
     let peerId: PeerId
 
     try {
+      let peerIdString: string
       if (resource.startsWith('ipns://')) {
-        const peerIdString = resource.replace('ipns://', '')
-        log.trace('trying to parse peer id from "%s"', peerIdString)
-        peerId = getPeerIdFromString(peerIdString)
+        peerIdString = resource.replace('ipns://', '')
+      } else if (resource.includes('/ipns/')) {
+        peerIdString = resource.split('/ipns/')[1].split('/')[0].split('?')[0]
       } else {
-        const peerIdString = resource.split('.ipns.')[0].split('://')[1]
-        log.trace('trying to parse peer id from "%s"', peerIdString)
-        peerId = getPeerIdFromString(peerIdString)
+        peerIdString = resource.split('.ipns.')[0].split('://')[1]
       }
+
+      log.trace('trying to parse peer id from "%s"', peerIdString)
+      peerId = getPeerIdFromString(peerIdString)
     } catch (err: any) {
       log.error('could not parse peer id from IPNS url %s', resource, err)
 
-      return badRequestResponse(resource, err)
+      throw new PluginFatalError('ERR_NO_PEER_ID_FOUND', 'could not parse peer id from url', { response: badRequestResponse(resource, err) })
     }
 
     // since this call happens after parseResource, we've already resolved the

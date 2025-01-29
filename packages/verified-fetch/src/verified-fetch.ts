@@ -1,20 +1,18 @@
 import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
-import * as ipldDagCbor from '@ipld/dag-cbor'
-import * as ipldDagJson from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { type AbortOptions, type Logger } from '@libp2p/interface'
 import { prefixLogger } from '@libp2p/logger'
-import { exporter, type ObjectNode } from 'ipfs-unixfs-exporter'
+import { exporter } from 'ipfs-unixfs-exporter'
 import { LRUCache } from 'lru-cache'
 import { type CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
+import { DagCborPlugin } from './plugins/plugin-handle-dag-cbor.js'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
 import { JsonPlugin } from './plugins/plugin-handle-json.js'
 import { RawPlugin } from './plugins/plugin-handle-raw.js'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { ByteRangeContext } from './utils/byte-range-context.js'
-import { dagCborToSafeJSON } from './utils/dag-cbor-to-safe-json.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
@@ -24,11 +22,11 @@ import { parseResource } from './utils/parse-resource.js'
 import { type ParsedUrlStringResults } from './utils/parse-url-string.js'
 import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
 import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, okResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
+import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
 import { serverTiming } from './utils/server-timing.js'
 import { setContentType } from './utils/set-content-type.js'
-import { handlePathWalking, isObjectNode } from './utils/walk-path.js'
+import { handlePathWalking } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './plugins/types.js'
 import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
@@ -116,7 +114,8 @@ export class VerifiedFetch {
       new CarPlugin(),
       new RawPlugin(),
       new TarPlugin(),
-      new JsonPlugin()
+      new JsonPlugin(),
+      new DagCborPlugin()
     ]
     this.log.trace('created VerifiedFetch instance')
   }
@@ -135,71 +134,6 @@ export class VerifiedFetch {
     }
 
     return session
-  }
-
-  private async handleDagCbor ({ resource, cid, path, accept, session, options, withServerTiming }: FetchHandlerFunctionArg): Promise<Response> {
-    this.log.trace('fetching %c/%s', cid, path)
-    let terminalElement: ObjectNode
-    const blockstore = this.getBlockstore(cid, resource, session, options)
-
-    // need to walk path, if it exists, to get the terminal element
-    const pathDetails = await this.handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log, withServerTiming }), withServerTiming)
-
-    if (pathDetails instanceof Response) {
-      return pathDetails
-    }
-    const ipfsRoots = pathDetails.ipfsRoots
-    if (isObjectNode(pathDetails.terminalElement)) {
-      terminalElement = pathDetails.terminalElement
-    } else {
-      // this should never happen, but if it does, we should log it and return notSupportedResponse
-      this.log.error('terminal element is not a dag-cbor node')
-      return notSupportedResponse(resource, 'Terminal element is not a dag-cbor node')
-    }
-
-    const block = terminalElement.node
-
-    let body: string | Uint8Array
-
-    if (accept === 'application/octet-stream' || accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {
-      // skip decoding
-      body = block
-    } else if (accept === 'application/vnd.ipld.dag-json') {
-      try {
-        // if vnd.ipld.dag-json has been specified, convert to the format - note
-        // that this supports more data types than regular JSON, the content-type
-        // response header is set so the user knows to process it differently
-        const obj = ipldDagCbor.decode(block)
-        body = ipldDagJson.encode(obj)
-      } catch (err) {
-        this.log.error('could not transform %c to application/vnd.ipld.dag-json', err)
-        return notAcceptableResponse(resource)
-      }
-    } else {
-      try {
-        body = dagCborToSafeJSON(block)
-      } catch (err) {
-        if (accept === 'application/json') {
-          this.log('could not decode DAG-CBOR as JSON-safe, but the client sent "Accept: application/json"', err)
-
-          return notAcceptableResponse(resource)
-        }
-
-        this.log('could not decode DAG-CBOR as JSON-safe, falling back to `application/octet-stream`', err)
-        body = block
-      }
-    }
-
-    const response = okResponse(resource, body)
-
-    if (accept == null) {
-      accept = body instanceof Uint8Array ? 'application/octet-stream' : 'application/json'
-    }
-
-    response.headers.set('content-type', accept)
-    setIpfsRoots(response, ipfsRoots)
-
-    return response
   }
 
   private async handleDagPb ({ cid, path, resource, session, options, withServerTiming }: FetchHandlerFunctionArg): Promise<Response> {
@@ -310,8 +244,7 @@ export class VerifiedFetch {
    * use the CID codec to choose an appropriate handler for the block data.
    */
   private readonly codecHandlers: Record<number, FetchHandlerFunction> = {
-    [dagPbCode]: this.handleDagPb,
-    [ipldDagCbor.code]: this.handleDagCbor
+    [dagPbCode]: this.handleDagPb
   }
 
   private async handleServerTiming<T> (name: string, description: string, fn: () => Promise<T>, withServerTiming: boolean): Promise<T> {
@@ -473,6 +406,11 @@ export class VerifiedFetch {
           options?.signal?.throwIfAborted()
           this.log.error('plugin "%s" failed to handle request', plugin.constructor.name, err)
           if (err.name === 'PluginFatalError') {
+            // eslint-disable-next-line max-depth
+            if (err.response != null) {
+              this.log.trace('plugin "%s" returned fatal response', plugin.constructor.name)
+              return this.handleFinalResponse(err.response)
+            }
             return this.handleFinalResponse(badGatewayResponse(resource.toString(), 'Failed to fetch'))
           }
         } finally {

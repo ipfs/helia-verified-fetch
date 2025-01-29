@@ -17,7 +17,7 @@ interface TestConfig {
   run?: string[]
   expectPassing?: string[]
   expectFailing?: string[]
-  successRate: number
+  successRate?: number
   timeout?: number
 }
 
@@ -753,7 +753,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       function logIndividualTestResult (passOrFail: string, test: string): void {
         log.trace(`${passOrFail}: ${test}`)
       }
-      it(`${name} has a success rate of at least ${expectedSuccessRate}%`, async function () {
+      it(`${name} has a success rate of at least ${expectedSuccessRate ?? 0}%`, async function () {
         if (timeout != null) {
           this.timeout(timeout)
         }
@@ -778,7 +778,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         passingTests.forEach(logIndividualTestResult.bind(null, 'PASS'))
         log.trace('Failing tests:')
         failingTests.forEach(logIndividualTestResult.bind(null, 'FAIL'))
-        expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate)
+        expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate ?? 0)
       })
 
       describe(`${name} passes and fails tests as expected`, function () {

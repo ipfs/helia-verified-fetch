@@ -9,12 +9,7 @@ import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.j
  * directory structure referenced by the `CID`.
  */
 export class JsonPlugin implements FetchHandlerPlugin {
-  canHandle ({ accept, cid }: PluginContext, { logger }: PluginOptions): boolean {
-    const log = logger.forComponent('json-plugin')
-    // json code
-    // eslint-disable-next-line no-console
-    log(`jsonCode: ${jsonCode}, cid.code: ${cid.code}`)
-
+  canHandle ({ cid }: PluginContext): boolean {
     return ipldDagJson.code === cid.code || jsonCode === cid.code
   }
 
