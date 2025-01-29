@@ -47,6 +47,8 @@ export function isObjectNode (node: UnixFSEntry): node is ObjectNode {
  * If the signal is aborted, the function will throw an AbortError
  * If a terminal element is not found, a notFoundResponse is returned
  * If another unknown error occurs, a badGatewayResponse is returned
+ *
+ * TODO: replace FetchHandlerFunctionArg with a more specific type
  */
 export async function handlePathWalking ({ cid, path, resource, options, blockstore, log }: Omit<FetchHandlerFunctionArg, 'session'> & { blockstore: Blockstore, log: Logger }): Promise<PathWalkerResponse | Response> {
   try {

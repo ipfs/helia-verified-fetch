@@ -1,35 +1,30 @@
 import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
-import { code as dagPbCode } from '@ipld/dag-pb'
 import { type AbortOptions, type Logger } from '@libp2p/interface'
 import { prefixLogger } from '@libp2p/logger'
-import { exporter } from 'ipfs-unixfs-exporter'
 import { LRUCache } from 'lru-cache'
 import { type CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { DagCborPlugin } from './plugins/plugin-handle-dag-cbor.js'
+import { DagPbPlugin } from './plugins/plugin-handle-dag-pb.js'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
 import { JsonPlugin } from './plugins/plugin-handle-json.js'
 import { RawPlugin } from './plugins/plugin-handle-raw.js'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
-import { ByteRangeContext } from './utils/byte-range-context.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
-import { getStreamFromAsyncIterable } from './utils/get-stream-from-async-iterable.js'
 import { getRedirectResponse } from './utils/handle-redirects.js'
 import { parseResource } from './utils/parse-resource.js'
 import { type ParsedUrlStringResults } from './utils/parse-url-string.js'
 import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
-import { setCacheControlHeader, setIpfsRoots } from './utils/response-headers.js'
-import { badRequestResponse, movedPermanentlyResponse, notAcceptableResponse, notSupportedResponse, badRangeResponse, okRangeResponse, badGatewayResponse } from './utils/responses.js'
+import { setCacheControlHeader } from './utils/response-headers.js'
+import { badRequestResponse, notAcceptableResponse, notSupportedResponse, badGatewayResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
 import { serverTiming } from './utils/server-timing.js'
-import { setContentType } from './utils/set-content-type.js'
-import { handlePathWalking } from './utils/walk-path.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './plugins/types.js'
-import type { FetchHandlerFunctionArg, RequestFormatShorthand } from './types.js'
+import type { RequestFormatShorthand } from './types.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
 
@@ -39,10 +34,6 @@ const SESSION_CACHE_TTL_MS = 60 * 1000
 interface VerifiedFetchComponents {
   helia: Helia
   ipns?: IPNS
-}
-
-interface FetchHandlerFunction {
-  (options: FetchHandlerFunctionArg): Promise<Response>
 }
 
 function convertOptions (options?: VerifiedFetchOptions): (Omit<VerifiedFetchOptions, 'signal'> & AbortOptions) | undefined {
@@ -115,7 +106,8 @@ export class VerifiedFetch {
       new RawPlugin(),
       new TarPlugin(),
       new JsonPlugin(),
-      new DagCborPlugin()
+      new DagCborPlugin(),
+      new DagPbPlugin()
     ]
     this.log.trace('created VerifiedFetch instance')
   }
@@ -134,117 +126,6 @@ export class VerifiedFetch {
     }
 
     return session
-  }
-
-  private async handleDagPb ({ cid, path, resource, session, options, withServerTiming }: FetchHandlerFunctionArg): Promise<Response> {
-    let redirected = false
-    const byteRangeContext = new ByteRangeContext(this.helia.logger, options?.headers)
-    const blockstore = this.getBlockstore(cid, resource, session, options)
-    const pathDetails = await this.handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log, withServerTiming }), withServerTiming)
-
-    if (pathDetails instanceof Response) {
-      return pathDetails
-    }
-    const ipfsRoots = pathDetails.ipfsRoots
-    const terminalElement = pathDetails.terminalElement
-    let resolvedCID = terminalElement.cid
-
-    if (terminalElement?.type === 'directory') {
-      const dirCid = terminalElement.cid
-      const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
-
-      // https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
-      if (redirectCheckNeeded) {
-        if (options?.redirect === 'error') {
-          this.log('could not redirect to %s/ as redirect option was set to "error"', resource)
-          throw new TypeError('Failed to fetch')
-        } else if (options?.redirect === 'manual') {
-          this.log('returning 301 permanent redirect to %s/', resource)
-          return movedPermanentlyResponse(resource, `${resource}/`)
-        }
-
-        // fall-through simulates following the redirect?
-        resource = `${resource}/`
-        redirected = true
-      }
-
-      const rootFilePath = 'index.html'
-      try {
-        this.log.trace('found directory at %c/%s, looking for index.html', cid, path)
-
-        const entry = await this.handleServerTiming('exporter-dir', '', async () => exporter(`/ipfs/${dirCid}/${rootFilePath}`, this.helia.blockstore, {
-          signal: options?.signal,
-          onProgress: options?.onProgress
-        }), withServerTiming)
-
-        this.log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
-        path = rootFilePath
-        resolvedCID = entry.cid
-      } catch (err: any) {
-        options?.signal?.throwIfAborted()
-        this.log('error loading path %c/%s', dirCid, rootFilePath, err)
-        return notSupportedResponse('Unable to find index.html for directory at given path. Support for directories with implicit root is not implemented')
-      } finally {
-        options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid: dirCid, path: rootFilePath }))
-      }
-    }
-
-    // we have a validRangeRequest & terminalElement is a file, we know the size and should set it
-    if (byteRangeContext.isRangeRequest && byteRangeContext.isValidRangeRequest && terminalElement.type === 'file') {
-      byteRangeContext.setFileSize(terminalElement.unixfs.fileSize())
-
-      this.log.trace('fileSize for rangeRequest %d', byteRangeContext.getFileSize())
-    }
-    const offset = byteRangeContext.offset
-    const length = byteRangeContext.length
-    this.log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
-
-    try {
-      const entry = await this.handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, this.helia.blockstore, {
-        signal: options?.signal,
-        onProgress: options?.onProgress
-      }), withServerTiming)
-
-      const asyncIter = entry.content({
-        signal: options?.signal,
-        onProgress: options?.onProgress,
-        offset,
-        length
-      })
-      this.log('got async iterator for %c/%s', cid, path)
-
-      const { stream, firstChunk } = await this.handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.helia.logger, {
-        onProgress: options?.onProgress,
-        signal: options?.signal
-      }), withServerTiming)
-
-      byteRangeContext.setBody(stream)
-      // if not a valid range request, okRangeRequest will call okResponse
-      const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log: this.log }, {
-        redirected
-      })
-
-      await this.handleServerTiming('set-content-type', '', async () => setContentType({ bytes: firstChunk, path, response, contentTypeParser: this.contentTypeParser, log: this.log }), withServerTiming)
-
-      setIpfsRoots(response, ipfsRoots)
-
-      return response
-    } catch (err: any) {
-      options?.signal?.throwIfAborted()
-      this.log.error('error streaming %c/%s', cid, path, err)
-      if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
-        return badRangeResponse(resource)
-      }
-      return badGatewayResponse(resource.toString(), 'Unable to stream content')
-    }
-  }
-
-  /**
-   * If the user has not specified an Accept header or format query string arg,
-   * use the CID codec to choose an appropriate handler for the block data.
-   */
-  private readonly codecHandlers: Record<number, FetchHandlerFunction> = {
-    [dagPbCode]: this.handleDagPb
   }
 
   private async handleServerTiming<T> (name: string, description: string, fn: () => Promise<T>, withServerTiming: boolean): Promise<T> {
@@ -371,7 +252,6 @@ export class VerifiedFetch {
       return this.handleFinalResponse(redirectResponse)
     }
 
-    const handlerArgs: FetchHandlerFunctionArg = { resource: resource.toString(), cid, path, accept, session: options?.session ?? true, options, withServerTiming }
     const context: PluginContext = { cid, path, resource: resource.toString(), accept, reqFormat, query, options, withServerTiming }
 
     const pluginOptions: PluginOptions = {
@@ -423,20 +303,6 @@ export class VerifiedFetch {
       }
     } else {
       this.log.trace('no plugins found that can handle request')
-    }
-
-    if (response == null) {
-      // TODO: move all of these to plugin handlers.
-      this.log.trace('finding handler for cid code "%s" and output type "%s"', cid.code, accept)
-      // derive the handler from the CID type
-      const codecHandler = this.codecHandlers[cid.code]
-
-      if (codecHandler == null) {
-        return this.handleFinalResponse(notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`))
-      }
-      this.log.trace('calling handler "%s"', codecHandler.name)
-
-      response = await codecHandler.call(this, handlerArgs)
     }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))
