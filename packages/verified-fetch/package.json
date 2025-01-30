@@ -148,7 +148,7 @@
     "@helia/delegated-routing-v1-http-api-client": "^4.2.1",
     "@helia/interface": "^5.1.0",
     "@helia/ipns": "^8.0.1",
-    "@helia/routers": "^2.2.0",
+    "@helia/routers": "^3.0.0",
     "@helia/unixfs": "^4.0.1",
     "@ipld/dag-cbor": "^9.2.1",
     "@ipld/dag-json": "^10.2.2",
