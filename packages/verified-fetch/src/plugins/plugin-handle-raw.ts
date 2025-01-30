@@ -1,9 +1,6 @@
-import { code as rawCode } from 'multiformats/codecs/raw'
-import { identity } from 'multiformats/hashes/identity'
-// import { PluginError } from '../errors.js'
+import { PluginFatalError } from '../errors.js'
 import { ByteRangeContext } from '../utils/byte-range-context.js'
 import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
-// import { okRangeResponse } from '../utils/responses.js'
 import { setContentType } from '../utils/set-content-type.js'
 import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
 
@@ -44,36 +41,39 @@ function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersIni
 }
 
 export class RawPlugin implements FetchHandlerPlugin {
-  canHandle ({ accept, cid }: PluginContext, pluginOptions: PluginOptions): boolean {
-    const isValidRawCode = cid.code === rawCode || cid.code === identity.code
-    if (accept == null) {
-      return isValidRawCode
-    }
-    // if (accept === 'application/x-tar') {
-    //   // conflict with tar requests.. need to ensure TarPlugin handles those.
-    //   // TODO: we shouldn't need to "DenyList" other plugins that may handle things, but instead have a way to prioritize or fallback to other plugins.
-    //   return false
+  canHandle ({ accept, cid, query }: PluginContext, pluginOptions: PluginOptions): boolean {
+    const { logger } = pluginOptions
+    const log = logger.forComponent('raw-plugin')
+    // const isValidRawCode = cid.code === rawCode || cid.code === identity.code
+    log.trace('checking if we can handle %c with accept %s', cid, accept)
+    // if (accept == null) {
+    //   log.trace('accept header not set, returning %s', isValidRawCode)
+    //   return isValidRawCode
     // }
 
-    return accept === 'application/vnd.ipld.raw' || isValidRawCode
+    return accept === 'application/vnd.ipld.raw' || query.format === 'raw' // || (isValidRawCode && accept === 'application/octet-stream')
   }
 
   async handle (context: PluginContext, pluginOptions: PluginOptions): Promise<Response> {
-    const { path, resource, cid, accept } = context
+    const { path, resource, cid, accept, query } = context
     const { options, getBlockstore, logger, contentTypeParser } = pluginOptions
     const session = options?.session ?? true
     const log = logger.forComponent('raw-plugin')
 
-    if (accept === 'application/vnd.ipld.raw') {
+    if (accept === 'application/vnd.ipld.raw' || query.format === 'raw') {
       context.reqFormat = 'raw'
       context.query.download = true
       context.query.filename = context.query.filename ?? `${cid.toString()}.bin`
+      log.trace('Set content disposition...')
+    } else {
+      log.trace('Did NOT setting content disposition...')
     }
 
     if (path !== '') {
       log.trace('404-ing raw codec request for %c/%s', cid, path)
       // throw new PluginError('ERR_RAW_PATHS_NOT_SUPPORTED', 'Raw codec does not support paths')
-      return notFoundResponse(resource, 'Raw codec does not support paths')
+      // return notFoundResponse(resource, 'Raw codec does not support paths')
+      throw new PluginFatalError('ERR_RAW_PATHS_NOT_SUPPORTED', 'Raw codec does not support paths', { response: notFoundResponse(resource, 'Raw codec does not support paths') })
     }
 
     const byteRangeContext = new ByteRangeContext(logger, options?.headers)

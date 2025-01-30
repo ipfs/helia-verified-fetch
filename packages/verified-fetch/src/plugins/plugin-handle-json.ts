@@ -9,7 +9,16 @@ import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.j
  * directory structure referenced by the `CID`.
  */
 export class JsonPlugin implements FetchHandlerPlugin {
-  canHandle ({ cid }: PluginContext): boolean {
+  canHandle ({ cid, accept }: PluginContext, pluginOptions: PluginOptions): boolean {
+    const { logger } = pluginOptions
+    const log = logger.forComponent('dag-pb-plugin')
+    log('checking if we can handle %c with accept %s', cid, accept)
+
+    if (accept === 'application/vnd.ipld.dag-json' && cid.code !== ipldDagCbor.code) {
+      // we can handle application/vnd.ipld.dag-json, but if the CID codec is ipldDagCbor, DagCborPlugin should handle it
+      return true
+    }
+
     return ipldDagJson.code === cid.code || jsonCode === cid.code
   }
 

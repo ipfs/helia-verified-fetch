@@ -156,6 +156,8 @@ export class VerifiedFetch {
     // set Content-Disposition header
     let contentDisposition: string | undefined
 
+    this.log.trace('checking for content disposition')
+
     // force download if requested
     if (query?.download === true) {
       contentDisposition = 'attachment'
@@ -267,7 +269,7 @@ export class VerifiedFetch {
     const plugins = this.plugins.filter(p => p.canHandle(context, pluginOptions))
 
     if (plugins.length > 0) {
-      this.log.trace('found %d plugins that can handle request', plugins.length)
+      this.log.trace('found %d plugins that can handle request: %s', plugins.length, plugins.map(p => p.constructor.name).join(', '))
       for (const plugin of plugins) {
         try {
           this.log.trace('using plugin "%s"', plugin.constructor.name)
@@ -276,7 +278,8 @@ export class VerifiedFetch {
 
           this.log.trace('plugin "%s" response.ok: %s, plugins response content type: %s', plugin.constructor.name, response?.ok, pluginContentType)
           // if the response is not null, and of the correct format, we can break out of the loop
-          if (response?.ok && pluginContentType.startsWith(responseContentType)) {
+          if (response?.ok) {
+          // if (response?.ok && pluginContentType.startsWith(responseContentType)) {
             // TODO: limit the number of plugins that can handle a request as much as possible. can we pass responseContentType and restrict the plugins that can handle it?
             // we already have a list of known CID-> content types in CID_TYPE_MAP - can we use that to restrict the plugins that can handle a request?
             this.log.trace('plugin "%s" handled request', plugin.constructor.name)
@@ -286,12 +289,23 @@ export class VerifiedFetch {
           options?.signal?.throwIfAborted()
           this.log.error('plugin "%s" failed to handle request', plugin.constructor.name, err)
           if (err.name === 'PluginFatalError') {
+            let response = badGatewayResponse(resource.toString(), 'Failed to fetch')
             // eslint-disable-next-line max-depth
             if (err.response != null) {
               this.log.trace('plugin "%s" returned fatal response', plugin.constructor.name)
-              return this.handleFinalResponse(err.response)
+              response = err.response
             }
-            return this.handleFinalResponse(badGatewayResponse(resource.toString(), 'Failed to fetch'))
+            return this.handleFinalResponse(response, {
+              query: {
+                ...query,
+                ...context.query
+              },
+              cid,
+              reqFormat: context.reqFormat,
+              ttl,
+              protocol,
+              ipfsPath
+            })
           }
         } finally {
           reqFormat = context.reqFormat
@@ -308,7 +322,7 @@ export class VerifiedFetch {
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))
 
     if (response == null) {
-      return this.handleFinalResponse(notSupportedResponse(resource.toString()))
+      return this.handleFinalResponse(notSupportedResponse(resource.toString()), { query, cid, reqFormat, ttl, protocol, ipfsPath })
     }
 
     return this.handleFinalResponse(response, { query, cid, reqFormat, ttl, protocol, ipfsPath })

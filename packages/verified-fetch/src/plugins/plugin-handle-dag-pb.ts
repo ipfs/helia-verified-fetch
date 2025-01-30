@@ -15,12 +15,16 @@ import type { CIDDetail } from '../index.js'
  * directory structure referenced by the `CID`.
  */
 export class DagPbPlugin implements FetchHandlerPlugin {
-  canHandle ({ cid }: PluginContext): boolean {
+  canHandle ({ cid, accept }: PluginContext, pluginOptions: PluginOptions): boolean {
+    const { logger } = pluginOptions
+    const log = logger.forComponent('dag-pb-plugin')
+    log('checking if we can handle %c with accept %s', cid, accept)
+
     return cid.code === dagPbCode
   }
 
   async handle (context: PluginContext, pluginOptions: PluginOptions): Promise<Response> {
-    const { cid } = context
+    const { cid, query } = context
     const { logger, options, getBlockstore, handleServerTiming, withServerTiming = false, contentTypeParser, helia } = pluginOptions
     const log = logger.forComponent('dag-pb-plugin')
     const session = options?.session ?? true
@@ -41,7 +45,11 @@ export class DagPbPlugin implements FetchHandlerPlugin {
 
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
-      const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
+      let redirectCheckNeeded = false
+      if (query.format != null) {
+        redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
+      }
+      log.trace('path: %s, resource: %s, redirectCheckNeeded: %s', path, resource.toString(), redirectCheckNeeded)
 
       // https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
       if (redirectCheckNeeded) {
@@ -50,7 +58,10 @@ export class DagPbPlugin implements FetchHandlerPlugin {
           throw new TypeError('Failed to fetch')
         } else if (options?.redirect === 'manual') {
           log('returning 301 permanent redirect to %s/', resource)
-          return movedPermanentlyResponse(resource, `${resource}/`)
+          const url = new URL(resource.toString())
+          // make sure we append slash to end of the path
+          url.pathname = `${url.pathname}/`
+          return movedPermanentlyResponse(resource, url.toString())
         }
 
         // fall-through simulates following the redirect?
