@@ -378,10 +378,18 @@ const tests: TestConfig[] = [
     run: ['TestGatewayIPNSRecord'],
     successRate: 52.17,
     expectPassing: [
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Content-Type',
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Body',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Content-Type',
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Body',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Content-Type',
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
-      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control'
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Body',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Content-Type',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Body',
     ]
   },
   {
