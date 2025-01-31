@@ -83,7 +83,7 @@ const tests: TestConfig[] = [
       'TestDagPbConversion/GET_UnixFS_with_format=cbor_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#01',
       'TestDagPbConversion/GET_UnixFS_with_format=cbor_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#02',
       'TestDagPbConversion/GET_UnixFS_with_%27Accept:_application%2Fcbor%27_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#01',
-      'TestDagPbConversion/GET_UnixFS_with_%27Accept:_application%2Fcbor%27_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#02',
+      'TestDagPbConversion/GET_UnixFS_with_%27Accept:_application%2Fcbor%27_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#02'
     ]
   },
   {
@@ -329,7 +329,7 @@ const tests: TestConfig[] = [
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Status_code',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_ETag',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_X-IPFS-Path',
-      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_Cache-Control',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_Cache-Control'
     ]
   },
   {
@@ -389,7 +389,7 @@ const tests: TestConfig[] = [
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Body',
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Content-Type',
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
-      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Body',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Body'
     ]
   },
   {
