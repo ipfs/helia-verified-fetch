@@ -24,8 +24,28 @@ export class DagPbPlugin implements FetchHandlerPlugin {
     return cid.code === dagPbCode
   }
 
+  /**
+   * @see https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
+   */
+  getRedirectUrl (context: PluginContext, pluginOptions: PluginOptions): string | null {
+    const { resource, path } = context
+    const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
+    if (redirectCheckNeeded) {
+      try {
+        const url = new URL(resource.toString())
+        // make sure we append slash to end of the path
+        url.pathname = `${url.pathname}/`
+        return url.toString()
+      } catch (err: any) {
+        // resource is likely a CID
+        return `${resource.toString()}/`
+      }
+    }
+    return null
+  }
+
   async handle (context: PluginContext, pluginOptions: PluginOptions): Promise<Response> {
-    const { cid, query } = context
+    const { cid } = context
     const { logger, options, getBlockstore, handleServerTiming, withServerTiming = false, contentTypeParser, helia } = pluginOptions
     const log = logger.forComponent('dag-pb-plugin')
     const session = options?.session ?? true
@@ -46,27 +66,21 @@ export class DagPbPlugin implements FetchHandlerPlugin {
 
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
-      // let redirectCheckNeeded = false
-      // if (query.format != null) {
-      const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
-      // }
-      log.trace('path: %s, resource: %s, redirectCheckNeeded: %s', path, resource.toString(), redirectCheckNeeded)
+      const redirectUrl = this.getRedirectUrl(context, pluginOptions)
 
-      // https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
-      if (redirectCheckNeeded) {
+      if (redirectUrl != null) {
+        log.trace('directory url normalization spec requires redirect...')
         if (options?.redirect === 'error') {
-          log('could not redirect to %s/ as redirect option was set to "error"', resource)
+          log('could not redirect to %s as redirect option was set to "error"', redirectUrl)
           throw new TypeError('Failed to fetch')
         } else if (options?.redirect === 'manual') {
-          log('returning 301 permanent redirect to %s/', resource)
-          const url = new URL(resource.toString())
-          // make sure we append slash to end of the path
-          url.pathname = `${url.pathname}/`
-          return movedPermanentlyResponse(resource, url.toString())
+          log('returning 301 permanent redirect to %s', redirectUrl)
+          return movedPermanentlyResponse(resource, redirectUrl)
         }
+        log('following redirect to %s', redirectUrl)
 
         // fall-through simulates following the redirect?
-        resource = `${resource}/`
+        resource = redirectUrl
         redirected = true
       }
 
