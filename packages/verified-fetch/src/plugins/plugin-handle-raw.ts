@@ -46,7 +46,9 @@ function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersIni
 export class RawPlugin extends BasePlugin {
   codes: number[] = [rawCode, identity.code]
 
-  canHandle ({ accept, query }: PluginContext): boolean {
+  canHandle ({ cid, accept, query }: PluginContext): boolean {
+    this.log('checking if we can handle %c with accept %s', cid, accept)
+    // const isValidRawCode = rawCode === cid.code || identity.code === cid.code
     return accept === 'application/vnd.ipld.raw' || query.format === 'raw' // || (isValidRawCode && accept === 'application/octet-stream')
   }
 
@@ -73,6 +75,7 @@ export class RawPlugin extends BasePlugin {
     }
 
     const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
+    // const blockstore = context.blockstore ?? getBlockstore(cid, resource, session, options)
     const blockstore = getBlockstore(cid, resource, session, options)
     const result = await blockstore.get(cid, options)
     byteRangeContext.setBody(result)

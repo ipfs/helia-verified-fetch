@@ -2,8 +2,8 @@ import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { dagCborToSafeJSON } from '../utils/dag-cbor-to-safe-json.js'
 import { setIpfsRoots } from '../utils/response-headers.js'
-import { notAcceptableResponse, notSupportedResponse, okResponse } from '../utils/responses.js'
-import { handlePathWalking, isObjectNode } from '../utils/walk-path.js'
+import { notAcceptableResponse, okResponse } from '../utils/responses.js'
+import { isObjectNode } from '../utils/walk-path.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
@@ -15,34 +15,52 @@ import type { ObjectNode } from 'ipfs-unixfs-exporter'
 export class DagCborPlugin extends BasePlugin {
   readonly codes = [ipldDagCbor.code]
 
-  canHandle ({ cid, accept }: PluginContext): boolean {
-    // TODO: we should only be checking for ipldDagCbor.code here
-    return cid.code === ipldDagCbor.code || accept === 'application/vnd.ipld.dag-json'
+  canHandle ({ cid, accept, pathDetails }: PluginContext): boolean {
+    this.log('checking if we can handle %c with accept %s', cid, accept)
+    if (pathDetails == null) {
+      return false
+    }
+    if (!isObjectNode(pathDetails.terminalElement)) {
+      return false
+    }
+    if (cid.code !== ipldDagCbor.code) {
+      return false
+    }
+
+    return isObjectNode(pathDetails.terminalElement)
+    // // TODO: we should only be checking for ipldDagCbor.code here
+    // return cid.code === ipldDagCbor.code || accept === 'application/vnd.ipld.dag-json'
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { cid, path, resource, accept, options, withServerTiming = false } = context
-    const { getBlockstore, handleServerTiming } = this.pluginOptions
-    const session = options?.session ?? true
+    const { cid, path, resource, accept, pathDetails } = context
+    // const { getBlockstore, handleServerTiming } = this.pluginOptions
+    // const session = options?.session ?? true
 
     this.log.trace('fetching %c/%s', cid, path)
-    let terminalElement: ObjectNode
-    const blockstore = getBlockstore(cid, resource, session, options)
+    // let terminalElement: ObjectNode
+    // const blockstore = getBlockstore(cid, resource, session, options)
 
-    // need to walk path, if it exists, to get the terminal element
-    const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log: this.log }), withServerTiming)
+    // // need to walk path, if it exists, to get the terminal element
+    // // const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log: this.log }), withServerTiming)
 
-    if (pathDetails instanceof Response) {
-      return pathDetails
+    // // if (pathDetails instanceof Response) {
+    // //   return pathDetails
+    // // }
+    if (pathDetails == null) {
+      throw new Error('pathDetails is null')
     }
     const ipfsRoots = pathDetails.ipfsRoots
-    if (isObjectNode(pathDetails.terminalElement)) {
-      terminalElement = pathDetails.terminalElement
-    } else {
-      // this should never happen, but if it does, we should log it and return notSupportedResponse
-      this.log.error('terminal element is not a dag-cbor node')
-      return notSupportedResponse(resource, 'Terminal element is not a dag-cbor node')
-    }
+    const terminalElement = pathDetails.terminalElement as ObjectNode // checked in canHandle fn.
+    // const { ipfsRoots, terminalElement } = pathDetails
+
+    // if (isObjectNode(pathDetails.terminalElement)) {
+    //   terminalElement = pathDetails.terminalElement
+    // } else {
+    //   // this should never happen, but if it does, we should log it and return notSupportedResponse
+    //   this.log.error('terminal element is not a dag-cbor node')
+    //   return notSupportedResponse(resource, 'Terminal element is not a dag-cbor node')
+    // }
 
     const block = terminalElement.node
 

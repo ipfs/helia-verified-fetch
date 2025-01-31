@@ -16,7 +16,7 @@ export class BasePlugin implements FetchHandlerPlugin {
     return false
   }
 
-  async handle (context: PluginContext): Promise<Response> {
+  async handle (context: PluginContext): Promise<Response | null> {
     throw new Error('Not implemented')
   }
 }

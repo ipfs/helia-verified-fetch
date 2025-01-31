@@ -12,8 +12,7 @@ import type { PluginContext } from './types.js'
 export class JsonPlugin extends BasePlugin {
   readonly codes = [ipldDagJson.code, jsonCode]
   canHandle ({ cid, accept }: PluginContext): boolean {
-    const log = this.log
-    log('checking if we can handle %c with accept %s', cid, accept)
+    this.log('checking if we can handle %c with accept %s', cid, accept)
 
     if (accept === 'application/vnd.ipld.dag-json' && cid.code !== ipldDagCbor.code) {
       // we can handle application/vnd.ipld.dag-json, but if the CID codec is ipldDagCbor, DagCborPlugin should handle it
@@ -28,9 +27,9 @@ export class JsonPlugin extends BasePlugin {
     const { path, resource, cid, accept, options } = context
     const { getBlockstore } = this.pluginOptions
     const session = options?.session ?? true
-    const log = this.log
 
-    log.trace('fetching %c/%s', cid, path)
+    this.log.trace('fetching %c/%s', cid, path)
+    // const blockstore = context.blockstore ?? getBlockstore(cid, resource, session, options)
     const blockstore = getBlockstore(cid, resource, session, options)
     const block = await blockstore.get(cid, options)
     let body: string | Uint8Array
@@ -43,7 +42,7 @@ export class JsonPlugin extends BasePlugin {
         const obj = ipldDagJson.decode(block)
         body = ipldDagCbor.encode(obj)
       } catch (err) {
-        log.error('could not transform %c to application/vnd.ipld.dag-cbor', err)
+        this.log.error('could not transform %c to application/vnd.ipld.dag-cbor', err)
         return notAcceptableResponse(resource)
       }
     } else {

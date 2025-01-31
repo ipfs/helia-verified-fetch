@@ -12,7 +12,8 @@ import type { PluginContext } from './types.js'
  */
 export class TarPlugin extends BasePlugin {
   readonly codes = []
-  canHandle ({ accept }: PluginContext): boolean {
+  canHandle ({ cid, accept }: PluginContext): boolean {
+    this.log('checking if we can handle %c with accept %s', cid, accept)
     return accept === 'application/x-tar'
   }
 
@@ -27,6 +28,7 @@ export class TarPlugin extends BasePlugin {
     context.query.download = true
     context.query.filename = context.query.filename ?? `${cid.toString()}.tar`
 
+    // const blockstore = context.blockstore ?? getBlockstore(cid, resource, options?.session, options)
     const blockstore = getBlockstore(cid, resource, options?.session, options)
     const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${cid}/${path}`, blockstore, options))
 

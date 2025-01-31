@@ -2,6 +2,7 @@ import type { PluginError } from '../errors.js'
 import type { VerifiedFetchInit } from '../index.js'
 import type { ContentTypeParser, RequestFormatShorthand } from '../types.js'
 import type { ParsedUrlStringResults } from '../utils/parse-url-string.js'
+import type { PathWalkerResponse } from '../utils/walk-path.js'
 import type { AbortOptions, ComponentLogger, Logger } from '@libp2p/interface'
 import type { Helia } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
@@ -34,6 +35,12 @@ export interface PluginContext {
   readonly path: string
   readonly resource: string
   readonly accept?: string
+  /**
+   * The last time the context is modified, so we know whether a plugin has modified it.
+   * A plugin should increment this value if it modifies the context.
+   */
+  modified: number
+  blockstore?: Blockstore
   withServerTiming?: boolean
   onProgress?(evt: CustomProgressEvent<any>): void
   options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
@@ -42,6 +49,7 @@ export interface PluginContext {
   directoryEntries?: UnixFSEntry[]
   errors?: PluginError[]
   reqFormat?: RequestFormatShorthand
+  pathDetails?: PathWalkerResponse
   query: ParsedUrlStringResults['query']
   [key: string]: unknown
 }
@@ -50,5 +58,5 @@ export interface FetchHandlerPlugin {
   readonly codes: number[]
   readonly log: Logger
   canHandle (context: PluginContext): boolean
-  handle (context: PluginContext): Promise<Response>
+  handle (context: PluginContext): Promise<Response | null>
 }

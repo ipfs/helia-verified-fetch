@@ -9,7 +9,8 @@ import type { PluginContext } from './types.js'
  * of the `DAG` referenced by the `CID`.
  */
 export class CarPlugin extends BasePlugin {
-  canHandle ({ accept }: PluginContext): boolean {
+  canHandle ({ cid, accept }: PluginContext): boolean {
+    this.log('checking if we can handle %c with accept %s', cid, accept)
     return accept?.startsWith('application/vnd.ipld.car') === true // application/vnd.ipld.car
   }
 
@@ -19,6 +20,7 @@ export class CarPlugin extends BasePlugin {
     context.reqFormat = 'car'
     context.query.download = true
     context.query.filename = context.query.filename ?? `${context.cid.toString()}.car`
+    // const blockstore = context.blockstore ?? getBlockstore(context.cid, context.resource, options?.session ?? true, options)
     const blockstore = getBlockstore(context.cid, context.resource, options?.session ?? true, options)
     const c = car({ blockstore, getCodec: helia.getCodec })
     const stream = toBrowserReadableStream(c.stream(context.cid, options))

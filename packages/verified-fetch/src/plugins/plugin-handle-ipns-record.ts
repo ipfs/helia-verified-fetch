@@ -16,7 +16,13 @@ import type { PeerId } from '@libp2p/interface'
  */
 export class IpnsRecordPlugin extends BasePlugin {
   readonly codes = []
-  canHandle ({ accept }: PluginContext): boolean {
+  canHandle ({ cid, accept, path, pathDetails }: PluginContext): boolean {
+    this.log('checking if we can handle %c with accept %s', cid, accept)
+    // if path exists and we haven't walked the path yet, we can't handle it
+    if (path !== '' && pathDetails == null) {
+      return false
+    }
+
     return accept === 'application/vnd.ipfs.ipns-record'
   }
 

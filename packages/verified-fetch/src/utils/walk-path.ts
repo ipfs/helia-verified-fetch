@@ -12,7 +12,6 @@ export interface PathWalkerOptions extends ExporterOptions {
 export interface PathWalkerResponse {
   ipfsRoots: CID[]
   terminalElement: UnixFSEntry
-
 }
 
 export interface PathWalkerFn {

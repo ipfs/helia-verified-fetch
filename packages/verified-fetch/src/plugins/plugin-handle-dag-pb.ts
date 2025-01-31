@@ -6,7 +6,6 @@ import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-itera
 import { setIpfsRoots } from '../utils/response-headers.js'
 import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, notSupportedResponse, okRangeResponse } from '../utils/responses.js'
 import { setContentType } from '../utils/set-content-type.js'
-import { handlePathWalking } from '../utils/walk-path.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 import type { CIDDetail } from '../index.js'
@@ -17,8 +16,11 @@ import type { CIDDetail } from '../index.js'
  */
 export class DagPbPlugin extends BasePlugin {
   readonly codes = [dagPbCode]
-  canHandle ({ cid, accept }: PluginContext): boolean {
+  canHandle ({ cid, accept, pathDetails }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
+    if (pathDetails == null) {
+      return false
+    }
 
     return cid.code === dagPbCode
   }
@@ -44,20 +46,23 @@ export class DagPbPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { cid, options, withServerTiming = false } = context
-    const { getBlockstore, handleServerTiming, contentTypeParser, helia } = this.pluginOptions
+    const { cid, options, withServerTiming = false, pathDetails } = context
+    const { handleServerTiming, contentTypeParser, helia } = this.pluginOptions
     const log = this.log
-    const session = options?.session ?? true
+    // const session = options?.session ?? true
     let resource = context.resource
     let path = context.path
 
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
-    const blockstore = getBlockstore(cid, resource, session, options)
-    const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log }), withServerTiming)
+    // const blockstore = getBlockstore(cid, resource, session, options)
+    // const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log }), withServerTiming)
 
-    if (pathDetails instanceof Response) {
-      return pathDetails
+    // if (pathDetails instanceof Response) {
+    //   return pathDetails
+    // }
+    if (pathDetails == null) {
+      throw new TypeError('Path details are required')
     }
     const ipfsRoots = pathDetails.ipfsRoots
     const terminalElement = pathDetails.terminalElement
