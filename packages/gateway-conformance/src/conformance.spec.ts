@@ -310,12 +310,26 @@ const tests: TestConfig[] = [
     run: ['TestGatewayBlock'],
     successRate: 68.97,
     expectPassing: [
+      'TestGatewayBlock/GET_with_format=raw_param_returns_a_raw_block/Status_code',
+      'TestGatewayBlock/GET_with_format=raw_param_returns_a_raw_block/Body',
+      'TestGatewayBlock/GET_with_format=raw_param_returns_a_raw_block',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_a_raw_block/Status_code',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_a_raw_block/Body',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_a_raw_block',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_with_single_range_request_includes_correct_bytes/Status_code',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_with_single_range_request_includes_correct_bytes/Header_Content-Range',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_with_single_range_request_includes_correct_bytes/Body',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_response_headers/Status_code',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_response_headers/Header_Content-Disposition',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_response_headers/Body',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_and_filename_param_returns_expected_Content-Disposition_header_with_custom_filename/Status_code',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_and_filename_param_returns_expected_Content-Disposition_header_with_custom_filename/Header_Content-Disposition',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_and_filename_param_returns_expected_Content-Disposition_header_with_custom_filename/Header_Content-Disposition#01',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_and_filename_param_returns_expected_Content-Disposition_header_with_custom_filename',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Status_code',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_ETag',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_X-IPFS-Path',
-      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_Cache-Control'
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_Cache-Control',
     ]
   },
   {
