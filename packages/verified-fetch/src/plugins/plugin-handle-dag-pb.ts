@@ -15,6 +15,7 @@ import type { CIDDetail } from '../index.js'
  * directory structure referenced by the `CID`.
  */
 export class DagPbPlugin implements FetchHandlerPlugin {
+  readonly codes = [dagPbCode]
   canHandle ({ cid, accept }: PluginContext, pluginOptions: PluginOptions): boolean {
     const { logger } = pluginOptions
     const log = logger.forComponent('dag-pb-plugin')
@@ -45,10 +46,10 @@ export class DagPbPlugin implements FetchHandlerPlugin {
 
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
-      let redirectCheckNeeded = false
-      if (query.format != null) {
-        redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
-      }
+      // let redirectCheckNeeded = false
+      // if (query.format != null) {
+      const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
+      // }
       log.trace('path: %s, resource: %s, redirectCheckNeeded: %s', path, resource.toString(), redirectCheckNeeded)
 
       // https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization

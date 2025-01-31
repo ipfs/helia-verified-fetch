@@ -12,6 +12,8 @@ import type { ObjectNode } from 'ipfs-unixfs-exporter'
  * directory structure referenced by the `CID`.
  */
 export class DagCborPlugin implements FetchHandlerPlugin {
+  readonly codes = [ipldDagCbor.code]
+
   canHandle ({ cid, accept }: PluginContext): boolean {
     // TODO: we should only be checking for ipldDagCbor.code here
     return cid.code === ipldDagCbor.code || accept === 'application/vnd.ipld.dag-json'

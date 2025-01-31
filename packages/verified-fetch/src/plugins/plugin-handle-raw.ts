@@ -1,3 +1,5 @@
+import { code as rawCode } from 'multiformats/codecs/raw'
+import { identity } from 'multiformats/hashes/identity'
 import { PluginFatalError } from '../errors.js'
 import { ByteRangeContext } from '../utils/byte-range-context.js'
 import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
@@ -41,6 +43,8 @@ function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersIni
 }
 
 export class RawPlugin implements FetchHandlerPlugin {
+  codes: number[] = [rawCode, identity.code]
+
   canHandle ({ accept, cid, query }: PluginContext, pluginOptions: PluginOptions): boolean {
     const { logger } = pluginOptions
     const log = logger.forComponent('raw-plugin')

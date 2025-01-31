@@ -8,6 +8,7 @@ import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.j
  * of the `DAG` referenced by the `CID`.
  */
 export class CarPlugin implements FetchHandlerPlugin {
+  readonly codes = []
   canHandle ({ accept }: PluginContext): boolean {
     return accept?.startsWith('application/vnd.ipld.car') === true // application/vnd.ipld.car
   }

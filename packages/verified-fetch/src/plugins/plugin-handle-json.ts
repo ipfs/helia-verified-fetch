@@ -9,6 +9,7 @@ import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.j
  * directory structure referenced by the `CID`.
  */
 export class JsonPlugin implements FetchHandlerPlugin {
+  readonly codes = [ipldDagJson.code, jsonCode]
   canHandle ({ cid, accept }: PluginContext, pluginOptions: PluginOptions): boolean {
     const { logger } = pluginOptions
     const log = logger.forComponent('dag-pb-plugin')
@@ -16,6 +17,7 @@ export class JsonPlugin implements FetchHandlerPlugin {
 
     if (accept === 'application/vnd.ipld.dag-json' && cid.code !== ipldDagCbor.code) {
       // we can handle application/vnd.ipld.dag-json, but if the CID codec is ipldDagCbor, DagCborPlugin should handle it
+      // TODO: remove the need for deny-listing cases in plugins
       return true
     }
 

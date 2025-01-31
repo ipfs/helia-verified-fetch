@@ -10,6 +10,7 @@ import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.j
  * directory structure referenced by the `CID`.
  */
 export class TarPlugin implements FetchHandlerPlugin {
+  readonly codes = []
   canHandle ({ accept }: PluginContext): boolean {
     return accept === 'application/x-tar'
   }

@@ -47,6 +47,7 @@ export interface PluginContext {
 }
 
 export interface FetchHandlerPlugin {
+  readonly codes: number[]
   canHandle (context: PluginContext, options: PluginOptions): boolean
   handle (context: PluginContext, options: PluginOptions): Promise<Response>
 }

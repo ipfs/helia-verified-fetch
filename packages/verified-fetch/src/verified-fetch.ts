@@ -316,7 +316,43 @@ export class VerifiedFetch {
         }
       }
     } else {
-      this.log.trace('no plugins found that can handle request')
+      this.log.trace('no plugins found that can handle request. Calling plugin by supported codec')
+      const plugin = this.plugins.find(p => p.codes.includes(cid.code))
+      if (plugin != null) {
+        try {
+          response = await plugin.handle(context, pluginOptions)
+        } catch (err: any) {
+          options?.signal?.throwIfAborted()
+          this.log.error('plugin "%s" failed to handle request', plugin.constructor.name, err)
+          if (err.name === 'PluginFatalError') {
+            let response = badGatewayResponse(resource.toString(), 'Failed to fetch')
+            // eslint-disable-next-line max-depth
+            if (err.response != null) {
+              this.log.trace('plugin "%s" returned fatal response', plugin.constructor.name)
+              response = err.response
+            }
+            return this.handleFinalResponse(response, {
+              query: {
+                ...query,
+                ...context.query
+              },
+              cid,
+              reqFormat: context.reqFormat,
+              ttl,
+              protocol,
+              ipfsPath
+            })
+          }
+        } finally {
+          reqFormat = context.reqFormat
+          query = {
+            ...query,
+            ...context.query
+          }
+        }
+      } else {
+        return this.handleFinalResponse(notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`))
+      }
     }
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))

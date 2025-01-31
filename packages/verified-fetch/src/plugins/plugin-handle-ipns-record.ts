@@ -14,6 +14,7 @@ import type { PeerId } from '@libp2p/interface'
  * a raw IPNS record.
  */
 export class IpnsRecordPlugin implements FetchHandlerPlugin {
+  readonly codes = []
   canHandle ({ accept }: PluginContext): boolean {
     return accept === 'application/vnd.ipfs.ipns-record'
   }
