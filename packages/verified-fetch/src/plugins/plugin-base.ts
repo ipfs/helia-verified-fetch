@@ -13,6 +13,8 @@ export class BasePlugin implements FetchHandlerPlugin {
   }
 
   canHandle (context: PluginContext): boolean {
+    this.log('checking if we can handle request for %c with accept %s', context.cid, context.accept)
+
     return false
   }
 

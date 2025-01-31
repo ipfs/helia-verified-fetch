@@ -9,9 +9,9 @@ import type { PluginContext } from './types.js'
  * of the `DAG` referenced by the `CID`.
  */
 export class CarPlugin extends BasePlugin {
-  canHandle ({ cid, accept }: PluginContext): boolean {
-    this.log('checking if we can handle %c with accept %s', cid, accept)
-    return accept?.startsWith('application/vnd.ipld.car') === true // application/vnd.ipld.car
+  canHandle (context: PluginContext): boolean {
+    super.canHandle(context)
+    return context.accept?.startsWith('application/vnd.ipld.car') === true // application/vnd.ipld.car
   }
 
   async handle (context: PluginContext): Promise<Response> {

@@ -14,17 +14,14 @@ export class DagWalkPlugin extends BasePlugin {
   /**
    * Return false if the path has already been walked, otherwise return true.
    */
-  canHandle ({ pathDetails, cid, path }: PluginContext): boolean {
+  canHandle (context: PluginContext): boolean {
+    super.canHandle(context)
+    const { pathDetails, cid } = context
     this.log('checking if the path needs walked')
     if (pathDetails != null) {
       // path has already been walked
       return false
     }
-
-    // if (path === '') {
-    //   // no path to walk
-    //   return false
-    // }
 
     return (cid.code === dagPbCode || cid.code === dagCborCode)
   }
@@ -37,15 +34,24 @@ export class DagWalkPlugin extends BasePlugin {
     const { getBlockstore, handleServerTiming } = this.pluginOptions
     // const blockstore = context.blockstore ?? getBlockstore(cid, resource, options?.session ?? true, options)
     const blockstore = getBlockstore(cid, resource, options?.session ?? true, options)
+    // TODO: migrate handlePathWalking into this plugin
     const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log: this.log }), withServerTiming)
 
+    context.modified++
     if (pathDetails instanceof Response) {
-      return pathDetails
+      this.log.trace('path walking failed')
+
+      if (pathDetails.status === 404) {
+        // invalid or incorrect path.. we walked the path but nothing is there
+        // send the 404 response
+        return pathDetails
+      }
+
+      // some error walking the path
+      return null
     }
 
     context.pathDetails = pathDetails
-    context.modified++
-    // context.blockstore = blockstore
 
     return null
   }

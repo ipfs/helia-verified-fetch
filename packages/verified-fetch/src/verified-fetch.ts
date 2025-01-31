@@ -196,15 +196,13 @@ export class VerifiedFetch {
   }
 
   /**
-   * Runs plugins in a loop. After each plugin that returns `undefined` (partial/no final),
+   * Runs plugins in a loop. After each plugin that returns `null` (partial/no final),
    * we re-check `canHandle()` for all plugins in the next iteration if the context changed.
    */
   private async runPluginPipeline (context: PluginContext, maxPasses: number = 3): Promise<Response | undefined> {
     let finalResponse: Response | undefined
     let passCount = 0
-
-    // We'll snapshot the context each pass to see if changes occurred
-    // let prevSnapshot = JSON.stringify(context)
+    const pluginsUsed = new Set<string>()
 
     let prevModificationId = context.modified
 
@@ -212,8 +210,8 @@ export class VerifiedFetch {
       passCount++
       this.log(`Starting pipeline pass #${passCount}`)
 
-      // Gather plugins that say they can handle the *current* context
-      const readyPlugins = this.plugins.filter(p => p.canHandle(context))
+      // gather plugins that say they can handle the *current* context, but haven't been used yet
+      const readyPlugins = this.plugins.filter(p => !pluginsUsed.has(p.constructor.name)).filter(p => p.canHandle(context))
       if (readyPlugins.length === 0) {
         this.log.trace('No plugins can handle the current context.. checking by CID code')
         const plugins = this.plugins.filter(p => p.codes.includes(context.cid.code))
@@ -225,32 +223,35 @@ export class VerifiedFetch {
         }
       }
 
-      // We'll track if any plugin changed the context or returned a response
+      this.log.trace('Plugins ready to handle request: ', readyPlugins.map(p => p.constructor.name).join(', '))
+
+      // track if any plugin changed the context or returned a response
       let contextChanged = false
       let pluginHandled = false
 
       for (const plugin of readyPlugins) {
         try {
           this.log.trace('Invoking plugin:', plugin.constructor.name)
+          pluginsUsed.add(plugin.constructor.name)
 
           const maybeResponse = await plugin.handle(context)
           if (maybeResponse != null) {
-          // If a plugin returns a final Response, short-circuit
+            // if a plugin returns a final Response, short-circuit
             finalResponse = maybeResponse
             pluginHandled = true
             break
           }
         } catch (err: any) {
           this.log.error('Error in plugin:', plugin.constructor.name, err)
-          // If fatal, short-circuit the pipeline
+          // if fatal, short-circuit the pipeline
           if (err.name === 'PluginFatalError') {
-            // If plugin provides a custom error response, return it
+            // if plugin provides a custom error response, return it
             return err.response ?? badGatewayResponse(context.resource, 'Failed to fetch')
           }
-          // Otherwise re-throw or handle as you prefer
+          // TODO: determine whether we need to handle anything here.
           throw err
         } finally {
-        // On each plugin call, check for changes in the context
+          // on each plugin call, check for changes in the context
           const newModificationId = context.modified
           contextChanged = newModificationId !== prevModificationId
           if (contextChanged) {
@@ -264,13 +265,11 @@ export class VerifiedFetch {
         }
       }
 
-      // If a plugin produced a final response, stop immediately
       if (pluginHandled && finalResponse != null) {
         break
       }
 
       if (!contextChanged) {
-      // No plugin changed the context or returned a response - no reason to keep looping
         this.log.trace('No context changes and no final response; exiting pipeline.')
         break
       }
@@ -329,9 +328,6 @@ export class VerifiedFetch {
 
     const responseContentType: string = accept?.split(';')[0] ?? 'application/octet-stream'
 
-    // let response: Response | null = null
-    // let reqFormat: RequestFormatShorthand | undefined
-
     const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid })
     if (redirectResponse != null) {
       return this.handleFinalResponse(redirectResponse)
@@ -340,101 +336,8 @@ export class VerifiedFetch {
     const context: PluginContext = { cid, path, resource: resource.toString(), accept, query, options, withServerTiming, onProgress: options?.onProgress, modified: 0 }
 
     this.log.trace('finding handler for cid code "%s" and response content type "%s"', cid.code, responseContentType)
-    // const plugins = this.plugins.filter(p => p.canHandle(context))
-
-    // if (plugins.length > 0) {
-    //   if (plugins.length > 1) {
-    //     const log = this.helia.logger.forComponent('verified-fetch:plugin-debug')
-    //     log.trace('found %d plugins that can handle request(accept header: %s, resource: %s): %s', plugins.length, accept, resource.toString(), plugins.map(p => p.constructor.name).join(', '))
-    //   }
-    //   this.log.trace('found %d plugins that can handle request: %s', plugins.length, plugins.map(p => p.constructor.name).join(', '))
-    //   for (const plugin of plugins) {
-    //     try {
-    //       this.log.trace('using plugin "%s"', plugin.constructor.name)
-    //       response = await plugin.handle(context)
-    //       const pluginContentType = response?.headers.get('content-type') ?? 'UNKNOWN'
-
-    //       this.log.trace('plugin "%s" response.ok: %s, plugins response content type: %s', plugin.constructor.name, response?.ok, pluginContentType)
-    //       // if the response is not null, and of the correct format, we can break out of the loop
-    //       if (response?.ok === true) {
-    //       // if (response?.ok && pluginContentType.startsWith(responseContentType)) {
-    //         // TODO: limit the number of plugins that can handle a request as much as possible. can we pass responseContentType and restrict the plugins that can handle it?
-    //         // we already have a list of known CID-> content types in CID_TYPE_MAP - can we use that to restrict the plugins that can handle a request?
-    //         this.log.trace('plugin "%s" handled request', plugin.constructor.name)
-    //         break
-    //       }
-    //     } catch (err: any) {
-    //       options?.signal?.throwIfAborted()
-    //       this.log.error('plugin "%s" failed to handle request', plugin.constructor.name, err)
-    //       if (err.name === 'PluginFatalError') {
-    //         let response = badGatewayResponse(resource.toString(), 'Failed to fetch')
-    //         // eslint-disable-next-line max-depth
-    //         if (err.response != null) {
-    //           this.log.trace('plugin "%s" returned fatal response', plugin.constructor.name)
-    //           response = err.response
-    //         }
-    //         return this.handleFinalResponse(response, {
-    //           query: {
-    //             ...query,
-    //             ...context.query
-    //           },
-    //           cid,
-    //           reqFormat: context.reqFormat,
-    //           ttl,
-    //           protocol,
-    //           ipfsPath
-    //         })
-    //       }
-    //     } finally {
-    //       reqFormat = context.reqFormat
-    //       query = {
-    //         ...query,
-    //         ...context.query
-    //       }
-    //     }
-    //   }
-    // } else {
-    //   this.log.trace('no plugins found that can handle request. Calling plugin by supported codec')
-    //   const plugin = this.plugins.find(p => p.codes.includes(cid.code))
-    //   if (plugin != null) {
-    //     try {
-    //       response = await plugin.handle(context)
-    //     } catch (err: any) {
-    //       options?.signal?.throwIfAborted()
-    //       this.log.error('plugin "%s" failed to handle request', plugin.constructor.name, err)
-    //       if (err.name === 'PluginFatalError') {
-    //         let response = badGatewayResponse(resource.toString(), 'Failed to fetch')
-    //         // eslint-disable-next-line max-depth
-    //         if (err.response != null) {
-    //           this.log.trace('plugin "%s" returned fatal response', plugin.constructor.name)
-    //           response = err.response
-    //         }
-    //         return this.handleFinalResponse(response, {
-    //           query: {
-    //             ...query,
-    //             ...context.query
-    //           },
-    //           cid,
-    //           reqFormat: context.reqFormat,
-    //           ttl,
-    //           protocol,
-    //           ipfsPath
-    //         })
-    //       }
-    //     } finally {
-    //       reqFormat = context.reqFormat
-    //       query = {
-    //         ...query,
-    //         ...context.query
-    //       }
-    //     }
-    //   } else {
-    //     return this.handleFinalResponse(notSupportedResponse(`Support for codec with code ${cid.code} is not yet implemented. Please open an issue at https://github.com/ipfs/helia-verified-fetch/issues/new`))
-    //   }
-    // }
 
     const response = await this.runPluginPipeline(context)
-    this.log('plugin pipeline completed')
 
     options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))
 
