@@ -15,12 +15,11 @@ export class CarPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { options } = context ?? {}
+    const { options } = context
     const { getBlockstore, helia } = this.pluginOptions
     context.reqFormat = 'car'
     context.query.download = true
     context.query.filename = context.query.filename ?? `${context.cid.toString()}.car`
-    // const blockstore = context.blockstore ?? getBlockstore(context.cid, context.resource, options?.session ?? true, options)
     const blockstore = getBlockstore(context.cid, context.resource, options?.session ?? true, options)
     const c = car({ blockstore, getCodec: helia.getCodec })
     const stream = toBrowserReadableStream(c.stream(context.cid, options))

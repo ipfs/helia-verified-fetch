@@ -32,7 +32,6 @@ export class DagWalkPlugin extends BasePlugin {
   async handle (context: PluginContext): Promise<Response | null> {
     const { cid, resource, options, withServerTiming = false } = context
     const { getBlockstore, handleServerTiming } = this.pluginOptions
-    // const blockstore = context.blockstore ?? getBlockstore(cid, resource, options?.session ?? true, options)
     const blockstore = getBlockstore(cid, resource, options?.session ?? true, options)
     // TODO: migrate handlePathWalking into this plugin
     const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log: this.log }), withServerTiming)

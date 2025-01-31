@@ -49,18 +49,12 @@ export class DagPbPlugin extends BasePlugin {
     const { cid, options, withServerTiming = false, pathDetails } = context
     const { handleServerTiming, contentTypeParser, helia } = this.pluginOptions
     const log = this.log
-    // const session = options?.session ?? true
     let resource = context.resource
     let path = context.path
 
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
-    // const blockstore = getBlockstore(cid, resource, session, options)
-    // const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log }), withServerTiming)
 
-    // if (pathDetails instanceof Response) {
-    //   return pathDetails
-    // }
     if (pathDetails == null) {
       throw new TypeError('Path details are required')
     }

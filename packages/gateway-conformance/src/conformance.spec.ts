@@ -59,7 +59,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestDagPbConversion',
     run: ['TestDagPbConversion'],
-    successRate: 26.15,
+    successRate: 35.38,
     expectPassing: [
       'TestDagPbConversion/GET_UnixFS_file_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Status_code',
       'TestDagPbConversion/GET_UnixFS_file_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Header_Content-Type#01',
@@ -302,7 +302,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayBlock',
     run: ['TestGatewayBlock'],
-    successRate: 20.69,
+    successRate: 68.97,
     expectPassing: [
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_response_headers/Header_Content-Disposition',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_and_filename_param_returns_expected_Content-Disposition_header_with_custom_filename/Header_Content-Disposition',
@@ -356,7 +356,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayIPNSRecord',
     run: ['TestGatewayIPNSRecord'],
-    successRate: 17.39,
+    successRate: 52.17,
     expectPassing: [
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
@@ -469,7 +469,7 @@ const tests: TestConfig[] = [
     skip: [
       'TestGatewaySubdomains/.*HTTP_proxy_tunneling_via_CONNECT' // verified fetch should not be doing HTTP proxy tunneling.
     ],
-    successRate: 41.35,
+    successRate: 44.26,
     expectPassing: [
       'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7Bcid%7D_redirects_to_%7Bcid%7D.ipfs.example.com/Status_code',
       'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7Bcid%7D_redirects_to_%7Bcid%7D.ipfs.example.com/Header_Location',
@@ -503,7 +503,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
     run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
-    successRate: 10.26,
+    successRate: 11.11,
     expectPassing: [
       'TestUnixFSDirectoryListingOnSubdomainGateway/redirect_dir_listing_to_URL_with_trailing_slash/Status_code'
     ]
@@ -516,7 +516,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestRedirectsFileSupportWithDNSLink',
     run: ['TestRedirectsFileSupportWithDNSLink'],
-    successRate: 26.09,
+    successRate: 27.27,
     expectPassing: [
       'TestRedirectsFileSupportWithDNSLink/request_for_%2F%2F%7Bdnslink%7D%2Fen%2Fhas-no-redirects-entry_returns_custom_404%2C_per__redirects_file/Header_Cache-Control',
       'TestRedirectsFileSupportWithDNSLink/request_for_%2F%2F%7Bdnslink%7D%2Fen%2Fhas-no-redirects-entry_returns_custom_404%2C_per__redirects_file/Header_Cache-Control#01',
@@ -823,7 +823,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       log.error(stderr)
 
       const { successRate } = await getReportDetails('gwc-report-all.json')
-      const knownSuccessRate = 42.47
+      const knownSuccessRate = 47.34
       // check latest success rate with `SUCCESS_RATE=100 npm run test -- -g 'total'`
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : knownSuccessRate
 

@@ -29,9 +29,10 @@ export class JsonPlugin extends BasePlugin {
     const session = options?.session ?? true
 
     this.log.trace('fetching %c/%s', cid, path)
-    // const blockstore = context.blockstore ?? getBlockstore(cid, resource, session, options)
-    const blockstore = getBlockstore(cid, resource, session, options)
-    const block = await blockstore.get(cid, options)
+
+    const terminalCid = context.pathDetails?.terminalElement.cid ?? context.cid
+    const blockstore = getBlockstore(terminalCid, resource, session, options)
+    const block = await blockstore.get(terminalCid, options)
     let body: string | Uint8Array
 
     if (accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {

@@ -48,7 +48,6 @@ export class RawPlugin extends BasePlugin {
 
   canHandle ({ cid, accept, query }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
-    // const isValidRawCode = rawCode === cid.code || identity.code === cid.code
     return accept === 'application/vnd.ipld.raw' || query.format === 'raw' // || (isValidRawCode && accept === 'application/octet-stream')
   }
 
@@ -67,7 +66,7 @@ export class RawPlugin extends BasePlugin {
       log.trace('Did NOT setting content disposition...')
     }
 
-    if (path !== '') {
+    if (path !== '' && cid.code === rawCode) {
       log.trace('404-ing raw codec request for %c/%s', cid, path)
       // throw new PluginError('ERR_RAW_PATHS_NOT_SUPPORTED', 'Raw codec does not support paths')
       // return notFoundResponse(resource, 'Raw codec does not support paths')
@@ -75,9 +74,9 @@ export class RawPlugin extends BasePlugin {
     }
 
     const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
-    // const blockstore = context.blockstore ?? getBlockstore(cid, resource, session, options)
-    const blockstore = getBlockstore(cid, resource, session, options)
-    const result = await blockstore.get(cid, options)
+    const terminalCid = context.pathDetails?.terminalElement.cid ?? context.cid
+    const blockstore = getBlockstore(terminalCid, resource, session, options)
+    const result = await blockstore.get(terminalCid, options)
     byteRangeContext.setBody(result)
     const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log }, {
       redirected: false

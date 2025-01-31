@@ -28,7 +28,6 @@ export class TarPlugin extends BasePlugin {
     context.query.download = true
     context.query.filename = context.query.filename ?? `${cid.toString()}.tar`
 
-    // const blockstore = context.blockstore ?? getBlockstore(cid, resource, options?.session, options)
     const blockstore = getBlockstore(cid, resource, options?.session, options)
     const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${cid}/${path}`, blockstore, options))
 
