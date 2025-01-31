@@ -62,11 +62,17 @@ const tests: TestConfig[] = [
     successRate: 35.38,
     expectPassing: [
       'TestDagPbConversion/GET_UnixFS_file_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Status_code',
+      'TestDagPbConversion/GET_UnixFS_file_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Header_Content-Type',
       'TestDagPbConversion/GET_UnixFS_file_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Header_Content-Type#01',
+      'TestDagPbConversion/GET_UnixFS_directory_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Status_code',
+      'TestDagPbConversion/GET_UnixFS_directory_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Header_Content-Type',
       'TestDagPbConversion/GET_UnixFS_directory_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Header_Content-Type#01',
       'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_application%2Fvnd.ipld.dag-json%27_converts_to_the_expected_Content-Type/Status_code',
+      'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_application%2Fvnd.ipld.dag-json%27_converts_to_the_expected_Content-Type/Header_Content-Type',
       'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_application%2Fvnd.ipld.dag-json%27_converts_to_the_expected_Content-Type/Header_Content-Type#01',
       'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_foo%2C_application%2Fvnd.ipld.dag-json%2Cbar%27_converts_to_the_expected_Content-Type/Status_code',
+      'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_foo%2C_application%2Fvnd.ipld.dag-json%2Cbar%27_converts_to_the_expected_Content-Type/Header_Content-Type',
+      'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_foo%2C_application%2Fvnd.ipld.dag-json%2Cbar%27_converts_to_the_expected_Content-Type',
       'TestDagPbConversion/GET_UnixFS_with_format=json_%28not_dag-json%29_is_no-op_%28no_conversion%29/Header_Content-Type#01',
       'TestDagPbConversion/GET_UnixFS_with_format=json_%28not_dag-json%29_is_no-op_%28no_conversion%29/Header_Content-Type#02',
       'TestDagPbConversion/GET_UnixFS_with_%27Accept:_application%2Fjson%27_%28not_dag-json%29_is_no-op_%28no_conversion%29/Header_Content-Type#01',
@@ -77,7 +83,7 @@ const tests: TestConfig[] = [
       'TestDagPbConversion/GET_UnixFS_with_format=cbor_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#01',
       'TestDagPbConversion/GET_UnixFS_with_format=cbor_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#02',
       'TestDagPbConversion/GET_UnixFS_with_%27Accept:_application%2Fcbor%27_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#01',
-      'TestDagPbConversion/GET_UnixFS_with_%27Accept:_application%2Fcbor%27_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#02'
+      'TestDagPbConversion/GET_UnixFS_with_%27Accept:_application%2Fcbor%27_%28not_dag-cbor%29_is_no-op_%28no_conversion%29/Header_Content-Type#02',
     ]
   },
   {
