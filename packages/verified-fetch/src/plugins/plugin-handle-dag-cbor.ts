@@ -30,7 +30,7 @@ export class DagCborPlugin extends BasePlugin {
     const blockstore = getBlockstore(cid, resource, session, options)
 
     // need to walk path, if it exists, to get the terminal element
-    const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log, withServerTiming }), withServerTiming)
+    const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log: this.log }), withServerTiming)
 
     if (pathDetails instanceof Response) {
       return pathDetails

@@ -54,7 +54,7 @@ export class DagPbPlugin extends BasePlugin {
     let redirected = false
     const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
     const blockstore = getBlockstore(cid, resource, session, options)
-    const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log, withServerTiming }), withServerTiming)
+    const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log }), withServerTiming)
 
     if (pathDetails instanceof Response) {
       return pathDetails
