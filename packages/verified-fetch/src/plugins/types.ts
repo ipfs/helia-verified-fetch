@@ -2,7 +2,7 @@ import type { PluginError } from '../errors.js'
 import type { VerifiedFetchInit } from '../index.js'
 import type { ContentTypeParser, RequestFormatShorthand } from '../types.js'
 import type { ParsedUrlStringResults } from '../utils/parse-url-string.js'
-import type { AbortOptions, ComponentLogger } from '@libp2p/interface'
+import type { AbortOptions, ComponentLogger, Logger } from '@libp2p/interface'
 import type { Helia } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
@@ -16,14 +16,11 @@ import type { CustomProgressEvent } from 'progress-events'
  * - Persistent: Relevant even after the request completes (e.g., logging or metrics).
  */
 export interface PluginOptions {
-  withServerTiming?: boolean // TODO: move to pluginContext
-  onProgress?(evt: CustomProgressEvent<any>): void // TODO: move to pluginContext
   logger: ComponentLogger
   getBlockstore(cid: CID, resource: string | CID, useSession?: boolean, options?: AbortOptions): Blockstore
   handleServerTiming<T>(name: string, description: string, fn: () => Promise<T>, withServerTiming: boolean): Promise<T>
   contentTypeParser?: ContentTypeParser
   helia: Helia
-  options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions // TODO: move to pluginContext
 }
 
 /**
@@ -37,6 +34,9 @@ export interface PluginContext {
   readonly path: string
   readonly resource: string
   readonly accept?: string
+  withServerTiming?: boolean
+  onProgress?(evt: CustomProgressEvent<any>): void
+  options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
   isDirectory?: boolean
   missingIndexHtml?: boolean
   directoryEntries?: UnixFSEntry[]
@@ -48,6 +48,7 @@ export interface PluginContext {
 
 export interface FetchHandlerPlugin {
   readonly codes: number[]
-  canHandle (context: PluginContext, options: PluginOptions): boolean
-  handle (context: PluginContext, options: PluginOptions): Promise<Response>
+  readonly log: Logger
+  canHandle (context: PluginContext): boolean
+  handle (context: PluginContext): Promise<Response>
 }

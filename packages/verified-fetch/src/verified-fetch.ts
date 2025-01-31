@@ -72,7 +72,6 @@ export class VerifiedFetch {
   private readonly blockstoreSessions: LRUCache<string, SessionBlockstore>
   private serverTimingHeaders: string[] = []
   private readonly withServerTiming: boolean
-  private readonly pluginOptions: PluginOptions
   private readonly plugins: FetchHandlerPlugin[] = []
 
   constructor ({ helia, ipns }: VerifiedFetchComponents, init?: CreateVerifiedFetchOptions) {
@@ -89,25 +88,23 @@ export class VerifiedFetch {
     })
     this.withServerTiming = init?.withServerTiming ?? false
 
-    this.pluginOptions = {
+    const pluginOptions: PluginOptions = {
       ...init,
       logger: prefixLogger('helia:verified-fetch'),
       getBlockstore: (cid, resource, useSession, options) => this.getBlockstore(cid, resource, useSession, options),
       handleServerTiming: async (name, description, fn) => this.handleServerTiming(name, description, fn, this.withServerTiming),
-      withServerTiming: this.withServerTiming,
       helia,
       contentTypeParser: this.contentTypeParser
     }
 
-    // TODO: pass logger, handleServerTiming, and contentTypeParser to plugins during construction
     this.plugins = [
-      new IpnsRecordPlugin(),
-      new CarPlugin(),
-      new RawPlugin(),
-      new TarPlugin(),
-      new JsonPlugin(),
-      new DagCborPlugin(),
-      new DagPbPlugin()
+      new IpnsRecordPlugin(pluginOptions),
+      new CarPlugin(pluginOptions),
+      new RawPlugin(pluginOptions),
+      new TarPlugin(pluginOptions),
+      new JsonPlugin(pluginOptions),
+      new DagCborPlugin(pluginOptions),
+      new DagPbPlugin(pluginOptions)
     ]
     this.log.trace('created VerifiedFetch instance')
   }
@@ -254,26 +251,17 @@ export class VerifiedFetch {
       return this.handleFinalResponse(redirectResponse)
     }
 
-    const context: PluginContext = { cid, path, resource: resource.toString(), accept, reqFormat, query, options, withServerTiming }
-
-    const pluginOptions: PluginOptions = {
-      ...this.pluginOptions,
-      onProgress: options?.onProgress,
-      options: {
-        ...this.pluginOptions.options,
-        ...options
-      }
-    }
+    const context: PluginContext = { cid, path, resource: resource.toString(), accept, reqFormat, query, options, withServerTiming, onProgress: options?.onProgress }
 
     this.log.trace('finding handler for cid code "%s" and response content type "%s"', cid.code, responseContentType)
-    const plugins = this.plugins.filter(p => p.canHandle(context, pluginOptions))
+    const plugins = this.plugins.filter(p => p.canHandle(context))
 
     if (plugins.length > 0) {
       this.log.trace('found %d plugins that can handle request: %s', plugins.length, plugins.map(p => p.constructor.name).join(', '))
       for (const plugin of plugins) {
         try {
           this.log.trace('using plugin "%s"', plugin.constructor.name)
-          response = await plugin.handle(context, pluginOptions)
+          response = await plugin.handle(context)
           const pluginContentType = response?.headers.get('content-type') ?? 'UNKNOWN'
 
           this.log.trace('plugin "%s" response.ok: %s, plugins response content type: %s', plugin.constructor.name, response?.ok, pluginContentType)
@@ -320,7 +308,7 @@ export class VerifiedFetch {
       const plugin = this.plugins.find(p => p.codes.includes(cid.code))
       if (plugin != null) {
         try {
-          response = await plugin.handle(context, pluginOptions)
+          response = await plugin.handle(context)
         } catch (err: any) {
           options?.signal?.throwIfAborted()
           this.log.error('plugin "%s" failed to handle request', plugin.constructor.name, err)

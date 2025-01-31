@@ -4,14 +4,15 @@ import { dagCborToSafeJSON } from '../utils/dag-cbor-to-safe-json.js'
 import { setIpfsRoots } from '../utils/response-headers.js'
 import { notAcceptableResponse, notSupportedResponse, okResponse } from '../utils/responses.js'
 import { handlePathWalking, isObjectNode } from '../utils/walk-path.js'
-import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
+import { BasePlugin } from './plugin-base.js'
+import type { PluginContext } from './types.js'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
 
 /**
  * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
  * directory structure referenced by the `CID`.
  */
-export class DagCborPlugin implements FetchHandlerPlugin {
+export class DagCborPlugin extends BasePlugin {
   readonly codes = [ipldDagCbor.code]
 
   canHandle ({ cid, accept }: PluginContext): boolean {
@@ -19,18 +20,17 @@ export class DagCborPlugin implements FetchHandlerPlugin {
     return cid.code === ipldDagCbor.code || accept === 'application/vnd.ipld.dag-json'
   }
 
-  async handle (context: PluginContext, pluginOptions: PluginOptions): Promise<Response> {
-    const { cid, path, resource, accept } = context
-    const { logger, options, getBlockstore, handleServerTiming, withServerTiming = false } = pluginOptions
-    const log = logger.forComponent('dag-cbor-plugin')
+  async handle (context: PluginContext): Promise<Response> {
+    const { cid, path, resource, accept, options, withServerTiming = false } = context
+    const { getBlockstore, handleServerTiming } = this.pluginOptions
     const session = options?.session ?? true
 
-    log.trace('fetching %c/%s', cid, path)
+    this.log.trace('fetching %c/%s', cid, path)
     let terminalElement: ObjectNode
     const blockstore = getBlockstore(cid, resource, session, options)
 
     // need to walk path, if it exists, to get the terminal element
-    const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log, withServerTiming }), withServerTiming)
+    const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log: this.log, withServerTiming }), withServerTiming)
 
     if (pathDetails instanceof Response) {
       return pathDetails
@@ -40,7 +40,7 @@ export class DagCborPlugin implements FetchHandlerPlugin {
       terminalElement = pathDetails.terminalElement
     } else {
       // this should never happen, but if it does, we should log it and return notSupportedResponse
-      log.error('terminal element is not a dag-cbor node')
+      this.log.error('terminal element is not a dag-cbor node')
       return notSupportedResponse(resource, 'Terminal element is not a dag-cbor node')
     }
 
@@ -59,7 +59,7 @@ export class DagCborPlugin implements FetchHandlerPlugin {
         const obj = ipldDagCbor.decode(block)
         body = ipldDagJson.encode(obj)
       } catch (err) {
-        log.error('could not transform %c to application/vnd.ipld.dag-json', err)
+        this.log.error('could not transform %c to application/vnd.ipld.dag-json', err)
         return notAcceptableResponse(resource)
       }
     } else {
@@ -67,12 +67,12 @@ export class DagCborPlugin implements FetchHandlerPlugin {
         body = dagCborToSafeJSON(block)
       } catch (err) {
         if (accept === 'application/json') {
-          log('could not decode DAG-CBOR as JSON-safe, but the client sent "Accept: application/json"', err)
+          this.log('could not decode DAG-CBOR as JSON-safe, but the client sent "Accept: application/json"', err)
 
           return notAcceptableResponse(resource)
         }
 
-        log('could not decode DAG-CBOR as JSON-safe, falling back to `application/octet-stream`', err)
+        this.log('could not decode DAG-CBOR as JSON-safe, falling back to `application/octet-stream`', err)
         body = block
       }
     }

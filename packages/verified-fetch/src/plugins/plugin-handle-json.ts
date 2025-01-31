@@ -2,17 +2,17 @@ import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { notAcceptableResponse, okResponse } from '../utils/responses.js'
-import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
+import { BasePlugin } from './plugin-base.js'
+import type { PluginContext } from './types.js'
 
 /**
  * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
  * directory structure referenced by the `CID`.
  */
-export class JsonPlugin implements FetchHandlerPlugin {
+export class JsonPlugin extends BasePlugin {
   readonly codes = [ipldDagJson.code, jsonCode]
-  canHandle ({ cid, accept }: PluginContext, pluginOptions: PluginOptions): boolean {
-    const { logger } = pluginOptions
-    const log = logger.forComponent('dag-pb-plugin')
+  canHandle ({ cid, accept }: PluginContext): boolean {
+    const log = this.log
     log('checking if we can handle %c with accept %s', cid, accept)
 
     if (accept === 'application/vnd.ipld.dag-json' && cid.code !== ipldDagCbor.code) {
@@ -24,11 +24,11 @@ export class JsonPlugin implements FetchHandlerPlugin {
     return ipldDagJson.code === cid.code || jsonCode === cid.code
   }
 
-  async handle (context: PluginContext, pluginOptions: PluginOptions): Promise<Response> {
-    const { path, resource, cid, accept } = context
-    const { options, getBlockstore, logger } = pluginOptions
+  async handle (context: PluginContext): Promise<Response> {
+    const { path, resource, cid, accept, options } = context
+    const { getBlockstore } = this.pluginOptions
     const session = options?.session ?? true
-    const log = logger.forComponent('json-plugin')
+    const log = this.log
 
     log.trace('fetching %c/%s', cid, path)
     const blockstore = getBlockstore(cid, resource, session, options)

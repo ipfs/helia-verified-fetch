@@ -6,21 +6,23 @@ import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { PluginFatalError } from '../errors.js'
 import { getPeerIdFromString } from '../utils/get-peer-id-from-string.js'
 import { badRequestResponse, okResponse } from '../utils/responses.js'
-import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
+import { BasePlugin } from './plugin-base.js'
+import type { PluginContext } from './types.js'
 import type { PeerId } from '@libp2p/interface'
 
 /**
  * Accepts an `ipns://...` or `https?://<ipnsname>.ipns.<domain>` URL as a string and returns a `Response` containing
  * a raw IPNS record.
  */
-export class IpnsRecordPlugin implements FetchHandlerPlugin {
+export class IpnsRecordPlugin extends BasePlugin {
   readonly codes = []
   canHandle ({ accept }: PluginContext): boolean {
     return accept === 'application/vnd.ipfs.ipns-record'
   }
 
-  async handle (context: PluginContext, { logger, helia, options }: PluginOptions): Promise<Response> {
-    const { resource, path } = context
+  async handle (context: PluginContext): Promise<Response> {
+    const { resource, path, options } = context
+    const { logger, helia } = this.pluginOptions
     context.reqFormat = 'ipns-record'
     const log = logger.forComponent('ipns-record-plugin')
     if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.') || resource.includes('/ipns/'))) {

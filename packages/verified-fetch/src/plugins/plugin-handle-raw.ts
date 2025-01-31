@@ -4,7 +4,8 @@ import { PluginFatalError } from '../errors.js'
 import { ByteRangeContext } from '../utils/byte-range-context.js'
 import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
 import { setContentType } from '../utils/set-content-type.js'
-import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
+import { BasePlugin } from './plugin-base.js'
+import type { PluginContext } from './types.js'
 
 /**
  * These are Accept header values that will cause content type sniffing to be
@@ -42,27 +43,18 @@ function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersIni
   }
 }
 
-export class RawPlugin implements FetchHandlerPlugin {
+export class RawPlugin extends BasePlugin {
   codes: number[] = [rawCode, identity.code]
 
-  canHandle ({ accept, cid, query }: PluginContext, pluginOptions: PluginOptions): boolean {
-    const { logger } = pluginOptions
-    const log = logger.forComponent('raw-plugin')
-    // const isValidRawCode = cid.code === rawCode || cid.code === identity.code
-    log.trace('checking if we can handle %c with accept %s', cid, accept)
-    // if (accept == null) {
-    //   log.trace('accept header not set, returning %s', isValidRawCode)
-    //   return isValidRawCode
-    // }
-
+  canHandle ({ accept, query }: PluginContext): boolean {
     return accept === 'application/vnd.ipld.raw' || query.format === 'raw' // || (isValidRawCode && accept === 'application/octet-stream')
   }
 
-  async handle (context: PluginContext, pluginOptions: PluginOptions): Promise<Response> {
-    const { path, resource, cid, accept, query } = context
-    const { options, getBlockstore, logger, contentTypeParser } = pluginOptions
+  async handle (context: PluginContext): Promise<Response> {
+    const { path, resource, cid, accept, query, options } = context
+    const { getBlockstore, contentTypeParser } = this.pluginOptions
     const session = options?.session ?? true
-    const log = logger.forComponent('raw-plugin')
+    const log = this.log
 
     if (accept === 'application/vnd.ipld.raw' || query.format === 'raw') {
       context.reqFormat = 'raw'
@@ -80,7 +72,7 @@ export class RawPlugin implements FetchHandlerPlugin {
       throw new PluginFatalError('ERR_RAW_PATHS_NOT_SUPPORTED', 'Raw codec does not support paths', { response: notFoundResponse(resource, 'Raw codec does not support paths') })
     }
 
-    const byteRangeContext = new ByteRangeContext(logger, options?.headers)
+    const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
     const blockstore = getBlockstore(cid, resource, session, options)
     const result = await blockstore.get(cid, options)
     byteRangeContext.setBody(result)

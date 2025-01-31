@@ -3,21 +3,22 @@ import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { tarStream } from '../utils/get-tar-stream.js'
 import { notAcceptableResponse, okResponse } from '../utils/responses.js'
-import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
+import { BasePlugin } from './plugin-base.js'
+import type { PluginContext } from './types.js'
 
 /**
  * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
  * directory structure referenced by the `CID`.
  */
-export class TarPlugin implements FetchHandlerPlugin {
+export class TarPlugin extends BasePlugin {
   readonly codes = []
   canHandle ({ accept }: PluginContext): boolean {
     return accept === 'application/x-tar'
   }
 
-  async handle (context: PluginContext, pluginOptions: PluginOptions): Promise<Response> {
-    const { cid, path, resource } = context
-    const { options, getBlockstore } = pluginOptions
+  async handle (context: PluginContext): Promise<Response> {
+    const { cid, path, resource, options } = context
+    const { getBlockstore } = this.pluginOptions
     if (cid.code !== dagPbCode && cid.code !== rawCode) {
       return notAcceptableResponse('only UnixFS data can be returned in a TAR file')
     }

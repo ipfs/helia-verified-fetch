@@ -7,19 +7,18 @@ import { setIpfsRoots } from '../utils/response-headers.js'
 import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, notSupportedResponse, okRangeResponse } from '../utils/responses.js'
 import { setContentType } from '../utils/set-content-type.js'
 import { handlePathWalking } from '../utils/walk-path.js'
-import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
+import { BasePlugin } from './plugin-base.js'
+import type { PluginContext } from './types.js'
 import type { CIDDetail } from '../index.js'
 
 /**
  * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
  * directory structure referenced by the `CID`.
  */
-export class DagPbPlugin implements FetchHandlerPlugin {
+export class DagPbPlugin extends BasePlugin {
   readonly codes = [dagPbCode]
-  canHandle ({ cid, accept }: PluginContext, pluginOptions: PluginOptions): boolean {
-    const { logger } = pluginOptions
-    const log = logger.forComponent('dag-pb-plugin')
-    log('checking if we can handle %c with accept %s', cid, accept)
+  canHandle ({ cid, accept }: PluginContext): boolean {
+    this.log('checking if we can handle %c with accept %s', cid, accept)
 
     return cid.code === dagPbCode
   }
@@ -27,7 +26,7 @@ export class DagPbPlugin implements FetchHandlerPlugin {
   /**
    * @see https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
    */
-  getRedirectUrl (context: PluginContext, pluginOptions: PluginOptions): string | null {
+  getRedirectUrl (context: PluginContext): string | null {
     const { resource, path } = context
     const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
     if (redirectCheckNeeded) {
@@ -44,16 +43,16 @@ export class DagPbPlugin implements FetchHandlerPlugin {
     return null
   }
 
-  async handle (context: PluginContext, pluginOptions: PluginOptions): Promise<Response> {
-    const { cid } = context
-    const { logger, options, getBlockstore, handleServerTiming, withServerTiming = false, contentTypeParser, helia } = pluginOptions
-    const log = logger.forComponent('dag-pb-plugin')
+  async handle (context: PluginContext): Promise<Response> {
+    const { cid, options, withServerTiming = false } = context
+    const { getBlockstore, handleServerTiming, contentTypeParser, helia } = this.pluginOptions
+    const log = this.log
     const session = options?.session ?? true
     let resource = context.resource
     let path = context.path
 
     let redirected = false
-    const byteRangeContext = new ByteRangeContext(logger, options?.headers)
+    const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
     const blockstore = getBlockstore(cid, resource, session, options)
     const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ cid, path, resource, options, blockstore, log, withServerTiming }), withServerTiming)
 
@@ -66,7 +65,7 @@ export class DagPbPlugin implements FetchHandlerPlugin {
 
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
-      const redirectUrl = this.getRedirectUrl(context, pluginOptions)
+      const redirectUrl = this.getRedirectUrl(context)
 
       if (redirectUrl != null) {
         log.trace('directory url normalization spec requires redirect...')
@@ -129,7 +128,7 @@ export class DagPbPlugin implements FetchHandlerPlugin {
       })
       log('got async iterator for %c/%s', cid, path)
 
-      const { stream, firstChunk } = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', logger, {
+      const { stream, firstChunk } = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
         onProgress: options?.onProgress,
         signal: options?.signal
       }), withServerTiming)
