@@ -98,7 +98,7 @@ export class VerifiedFetch {
       contentTypeParser: this.contentTypeParser
     }
 
-    this.plugins = [
+    const defaultPlugins = [
       new DagWalkPlugin(pluginOptions),
       new IpnsRecordPlugin(pluginOptions),
       new CarPlugin(pluginOptions),
@@ -106,9 +106,24 @@ export class VerifiedFetch {
       new TarPlugin(pluginOptions),
       new JsonPlugin(pluginOptions),
       new DagCborPlugin(pluginOptions),
-      new DagPbPlugin(pluginOptions),
-      ...init?.plugins?.map((pluginFactory) => pluginFactory(pluginOptions)) ?? []
+      new DagPbPlugin(pluginOptions)
     ]
+
+    const customPlugins = init?.plugins?.map((pluginFactory) => pluginFactory(pluginOptions)) ?? []
+
+    if (customPlugins.length > 0) {
+      // allow custom plugins to replace default plugins
+      const defaultPluginMap = new Map(defaultPlugins.map(plugin => [plugin.constructor.name, plugin]))
+      const customPluginMap = new Map(customPlugins.map(plugin => [plugin.constructor.name, plugin]))
+
+      this.plugins = defaultPlugins.map(plugin => customPluginMap.get(plugin.constructor.name) ?? plugin)
+
+      // Add any remaining custom plugins that don't replace a default plugin
+      this.plugins.push(...customPlugins.filter(plugin => !defaultPluginMap.has(plugin.constructor.name)))
+    } else {
+      this.plugins = defaultPlugins
+    }
+
     this.log.trace('created VerifiedFetch instance')
   }
 
@@ -208,8 +223,8 @@ export class VerifiedFetch {
     let prevModificationId = context.modified
 
     while (passCount < maxPasses) {
+      this.log(`Starting pipeline pass #${passCount + 1}`)
       passCount++
-      this.log(`Starting pipeline pass #${passCount}`)
 
       // gather plugins that say they can handle the *current* context, but haven't been used yet
       const readyPlugins = this.plugins.filter(p => !pluginsUsed.has(p.constructor.name)).filter(p => p.canHandle(context))
@@ -243,14 +258,13 @@ export class VerifiedFetch {
             break
           }
         } catch (err: any) {
+          context.options?.signal?.throwIfAborted()
           this.log.error('Error in plugin:', plugin.constructor.name, err)
           // if fatal, short-circuit the pipeline
           if (err.name === 'PluginFatalError') {
             // if plugin provides a custom error response, return it
             return err.response ?? badGatewayResponse(context.resource, 'Failed to fetch')
           }
-          // TODO: determine whether we need to handle anything here.
-          throw err
         } finally {
           // on each plugin call, check for changes in the context
           const newModificationId = context.modified
