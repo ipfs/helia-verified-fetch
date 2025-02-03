@@ -669,6 +669,7 @@
  *
  *    **Diagram of the Plugin Pipeline:**
  *
+ * ```mermaid
  * flowchart TD
  *     A[Resource & Options] --> B[Parse into PluginContext]
  *     B --> C[Plugin Pipeline]
@@ -681,6 +682,7 @@
  *     end
  *     C --> IP
  *     IP --> D[Final Response]
+ * ```
  *
  * 3. **Finalization:**
  *    - After the pipeline completes, the resulting response & context is processed (e.g. headers such as ETag,
