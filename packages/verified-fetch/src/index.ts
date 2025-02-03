@@ -626,6 +626,188 @@
  * 2. `TypeError` - If the options argument is passed and not an object.
  * 3. `TypeError` - If the options argument is passed and is malformed.
  * 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal. Note that this is a `AbortError` from `@libp2p/interface` and not the standard `AbortError` from the Fetch API.
+ *
+ * ## Pluggability and Extensibility
+ *
+ * Verified‑fetch can now be extended to alter how it handles requests by using plugins.
+ * Plugins are classes that extend the `BasePlugin` class and implement the `VerifiedFetchPlugin`
+ * interface. They are instantiated with `PluginOptions` when the `VerifiedFetch` class is created.
+ *
+ * Each plugin must implement two methods:
+ *
+ * - **`canHandle(context: PluginContext): boolean`**
+ *   Inspects the current `PluginContext` (which includes the CID, path, query, accept header, etc.)
+ *   and returns `true` if the plugin can operate on the current state of the request.
+ *
+ * - **`handle(context: PluginContext): Promise<Response | undefined>`**
+ *   Performs the plugin’s work. It may:
+ *     - **Return a final `Response`**: This stops the pipeline immediately.
+ *     - **Return `undefined`**: This indicates that the plugin has only partially processed the request
+ *       (for example, by performing path walking or decoding) and the pipeline should continue.
+ *    - **Throw a `PluginError`**: This logs a non-fatal error and continues the pipeline.
+ *    - **Throw a `PluginFatalError`**: This logs a fatal error and stops the pipeline immediately.
+ *
+ * Plugins are executed in a chain (a **plugin pipeline**):
+ *
+ * 1. **Initialization:**
+ *    - The `VerifiedFetch` class is instantiated with a list of plugins.
+ *    - When a request is made via the `fetch` method, the resource and options are parsed to
+ *      create a mutable `PluginContext` object.
+ *
+ * 2. **Pipeline Execution:**
+ *    - The pipeline repeatedly checks, up to a maximum number of passes (default = 3), which plugins
+ *      are currently able to handle the request by calling each plugin’s `canHandle()` method.
+ *    - Plugins that have not yet been called in the current run and return `true` for `canHandle()`
+ *      are invoked in sequence.
+ *      - If a plugin returns a final `Response` or throws a `PluginFatalError`, the pipeline immediately
+ *        stops and that response is returned.
+ *      - If a plugin returns `undefined`, it is assumed to have updated the context (for example, by
+ *        performing path walking), and the pipeline proceeds to a new pass where plugins are re‑evaluated.
+ *    - If no plugin modifies the context (i.e. no change to `context.modified`) and no final response is
+ *      produced after iterating through all plugins, the pipeline exits and a default “Not Supported”
+ *      response is returned.
+ *
+ *    **Diagram of the Plugin Pipeline:**
+ *
+ *        [Resource & Options]
+ *                │
+ *                ▼
+ *        [Parse into PluginContext]
+ *                │
+ *                ▼
+ *         [Plugin Pipeline]
+ *                │
+ *      ┌─────────┴─────────┐
+ *      │ Iterative passes  │
+ *      │   (max 3 passes)  │
+ *      │   ├─ Check canHandle() for each plugin
+ *      │   ├─ Call handle() on ready plugins
+ *      │   └─ Update PluginContext if partial work is done
+ *      └─────────┬─────────┘
+ *                │
+ *                ▼
+ *         [Final Response]
+ *
+ * 3. **Finalization:**
+ *    - After the pipeline completes, the resulting response & context is processed (e.g. headers such as ETag,
+ *      Cache‑Control, and Content‑Disposition are set) and returned.
+ *
+ * Please see the original discussion on extensibility in [Issue #167](https://github.com/ipfs/helia-verified-fetch/issues/167).
+ *
+ * ---
+ *
+ * ### Extending Verified‑Fetch with Custom Plugins
+ *
+ * To add your own plugin:
+ *
+ * 1. **Extend the BasePlugin:**
+ *
+ *    Create a new class that extends `BasePlugin` and implements:
+ *
+ *    - `canHandle(context: PluginContext): boolean`
+ *    - `handle(context: PluginContext): Promise<Response | undefined>`
+ *
+ * @example custom plugin
+ *
+ *    ```typescript
+ *    import { BasePlugin, PluginOptions } from '@helia/verified-fetch'
+ *    import { okResponse } from './utils/responses.js'
+ *
+ *    export class MyCustomPlugin extends BasePlugin {
+ *      // Optionally, list any codec codes your plugin supports:
+ *      codes = [] //
+ *
+ *      canHandle(context: PluginContext): boolean {
+ *        // Only handle requests if the Accept header matches your custom type
+ *        // Or check context for pathDetails, custom values, etc...
+ *        return context.accept === 'application/vnd.my-custom-type'
+ *      }
+ *
+ *      async handle(context: PluginContext): Promise<Response | undefined> {
+ *        // Perform any partial processing here, e.g., modify the context:
+ *        context.customProcessed = true;
+ *
+ *        // If you are ready to finalize the response:
+ *        return okResponse(context.resource, 'My Custom Data');
+ *
+ *        // Or, if further processing is needed by another plugin, simply return undefined.
+ *      }
+ *    }
+ *    export const myCustomPluginFactory = (opts) => new MyCustomPlugin(opts)
+ *    ```
+ *
+ * 2. **Integrate Your Plugin:**
+ *
+ *    Add your custom plugin to Verified‑Fetch’s plugin list when instantiating Verified‑Fetch:
+ *
+ * @example Integrate custom plugin
+ *
+ *    ```typescript
+ *    import { VerifiedFetch } from 'helia-verified-fetch'
+ *    import { myCustomPluginFactory } from './plugins/my-custom-plugin.js'
+ *
+ *    const fetch = new VerifiedFetch({ helia, ipns }, { plugins: [myCustomPluginFactory] })
+ *    ```
+ *
+ * ---
+ *
+ * ### Error Handling in the Plugin Pipeline
+ *
+ * Verified‑Fetch distinguishes between two types of errors thrown by plugins:
+ *
+ * - **PluginError (Non‑Fatal):**
+ *   - Use this when your plugin encounters an issue that should be logged but does not prevent the pipeline
+ *     from continuing.
+ *   - When a plugin throws a `PluginError`, the error is logged and the pipeline continues with the next plugin.
+ *
+ * - **PluginFatalError (Fatal):**
+ *   - Use this when a critical error occurs that should immediately abort the request.
+ *   - When a plugin throws a `PluginFatalError`, the pipeline immediately terminates and the provided error
+ *     response is returned.
+ *
+ * @example Plugin error Handling
+ *
+ * ```typescript
+ * import { PluginError, PluginFatalError } from '@helia/verified-fetch'
+ *
+ * async handle(context: PluginContext): Promise<Response | undefined> {
+ *   if (recoverable === true) {
+ *     throw new PluginError('MY_CUSTOM_WARNING', 'A non‑fatal issue occurred', {
+ *       detail: 'Additional details here'
+ *     });
+ *   }
+ *
+ *   if (recoverable === false) {
+ *     throw new PluginFatalError('MY_CUSTOM_FATAL', 'A critical error occurred', {
+ *       response: customErrorResponse  // Optional: supply your own error response
+ *     });
+ *   }
+ *
+ *   // Otherwise, continue processing...
+ * }
+ * ```
+ *
+ * ### How the Plugin Pipeline Works
+ *
+ * - **Shared Context:**
+ *   A mutable `PluginContext` is created for each request. It includes the parsed CID, path, query parameters,
+ *   accept header, and any other metadata. Plugins can update this context as they perform partial work (for example,
+ *   by doing path walking or decoding).
+ *
+ * - **Iterative Processing:**
+ *   The pipeline repeatedly checks which plugins can currently handle the request by calling `canHandle(context)`.
+ *   - Plugins that perform partial processing update the context and return `undefined`, allowing subsequent passes.
+ *   - Once a plugin is ready to finalize the response, it returns a final `Response` and the pipeline terminates.
+ *
+ * - **No Strict Ordering:**
+ *   Plugins are invoked based solely on whether they can handle the current state of the context.
+ *   This means you do not have to specify a rigid order—each plugin simply checks the context and acts if appropriate.
+ *
+ * - **Error Handling:**
+ *   - A thrown `PluginError` is considered non‑fatal and is logged, allowing the pipeline to continue.
+ *   - A thrown `PluginFatalError` immediately stops the pipeline and returns the error response.
+ *
+ * For a detailed explanation of the pipeline, please refer to the discussion in [Issue #167](https://github.com/ipfs/helia-verified-fetch/issues/167).
  */
 
 import { bitswap, trustlessGateway } from '@helia/block-brokers'
@@ -639,6 +821,7 @@ import { createLibp2p, type Libp2pOptions } from 'libp2p'
 import { type ContentTypeParser } from './types.js'
 import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
+import type { VerifiedFetchPluginFactory } from './plugins/types.js'
 import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
@@ -766,6 +949,12 @@ export interface CreateVerifiedFetchOptions {
    * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
    */
   withServerTiming?: boolean
+
+  /**
+   * Plugins to use with the verified-fetch instance. Note that we have a set of default plugins that are always used.
+   * If you want to replace one of the default plugins, you can do so by passing a plugin with the same name.
+   */
+  plugins?: VerifiedFetchPluginFactory[]
 }
 
 export type { ContentTypeParser } from './types.js'
@@ -898,6 +1087,7 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
 }
 
 export { verifiedFetch } from './singleton.js'
+export * from './plugins/index.js'
 
 function isHelia (obj: any): obj is Helia {
   // test for the presence of known Helia properties, return a boolean value

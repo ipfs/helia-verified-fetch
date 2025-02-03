@@ -6,8 +6,7 @@ import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 
 /**
- * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
- * directory structure referenced by the `CID`.
+ * Handles `dag-json` content, including requests with Accept: `application/vnd.ipld.dag-cbor` and `application/cbor`.
  */
 export class JsonPlugin extends BasePlugin {
   readonly codes = [ipldDagJson.code, jsonCode]

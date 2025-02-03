@@ -24,7 +24,7 @@ import { badRequestResponse, notAcceptableResponse, notSupportedResponse, badGat
 import { selectOutputType } from './utils/select-output-type.js'
 import { serverTiming } from './utils/server-timing.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
-import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './plugins/types.js'
+import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from './plugins/types.js'
 import type { RequestFormatShorthand } from './types.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
@@ -73,7 +73,7 @@ export class VerifiedFetch {
   private readonly blockstoreSessions: LRUCache<string, SessionBlockstore>
   private serverTimingHeaders: string[] = []
   private readonly withServerTiming: boolean
-  private readonly plugins: FetchHandlerPlugin[] = []
+  private readonly plugins: VerifiedFetchPlugin[] = []
 
   constructor ({ helia, ipns }: VerifiedFetchComponents, init?: CreateVerifiedFetchOptions) {
     this.helia = helia
@@ -106,7 +106,8 @@ export class VerifiedFetch {
       new TarPlugin(pluginOptions),
       new JsonPlugin(pluginOptions),
       new DagCborPlugin(pluginOptions),
-      new DagPbPlugin(pluginOptions)
+      new DagPbPlugin(pluginOptions),
+      ...init?.plugins?.map((pluginFactory) => pluginFactory(pluginOptions)) ?? []
     ]
     this.log.trace('created VerifiedFetch instance')
   }

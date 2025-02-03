@@ -9,8 +9,7 @@ import type { PluginContext } from './types.js'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
 
 /**
- * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
- * directory structure referenced by the `CID`.
+ * Handles `dag-cbor` content, including requests with Accept: `application/vnd.ipld.dag-json` and `application/json`.
  */
 export class DagCborPlugin extends BasePlugin {
   readonly codes = [ipldDagCbor.code]

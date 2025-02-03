@@ -12,12 +12,11 @@ import type { PluginContext } from './types.js'
  */
 export class DagWalkPlugin extends BasePlugin {
   /**
-   * Return false if the path has already been walked, otherwise return true.
+   * Return false if the path has already been walked, otherwise return true if the CID is encoded with a codec that supports pathing.
    */
   canHandle (context: PluginContext): boolean {
-    super.canHandle(context)
+    this.log('checking if we can handle %c with accept %s', context.cid, context.accept)
     const { pathDetails, cid } = context
-    this.log('checking if the path needs walked')
     if (pathDetails != null) {
       // path has already been walked
       return false
@@ -26,9 +25,6 @@ export class DagWalkPlugin extends BasePlugin {
     return (cid.code === dagPbCode || cid.code === dagCborCode)
   }
 
-  /**
-   * We need to walk the path, so
-   */
   async handle (context: PluginContext): Promise<Response | null> {
     const { cid, resource, options, withServerTiming = false } = context
     const { getBlockstore, handleServerTiming } = this.pluginOptions

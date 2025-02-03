@@ -11,8 +11,7 @@ import type { PluginContext } from './types.js'
 import type { CIDDetail } from '../index.js'
 
 /**
- * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
- * directory structure referenced by the `CID`.
+ * Handles UnixFS and dag-pb content.
  */
 export class DagPbPlugin extends BasePlugin {
   readonly codes = [dagPbCode]

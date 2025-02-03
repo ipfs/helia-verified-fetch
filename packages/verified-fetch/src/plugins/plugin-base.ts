@@ -1,7 +1,15 @@
-import type { FetchHandlerPlugin, PluginContext, PluginOptions } from './types.js'
+import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from './types.js'
 import type { Logger } from '@libp2p/interface'
 
-export class BasePlugin implements FetchHandlerPlugin {
+/**
+ * Base class for verified-fetch plugins. This class provides a basic implementation of the `FetchHandlerPlugin`
+ * interface.
+ *
+ * Subclasses should implement the `canHandle` and `handle` methods, and may override the `codes` and `log` properties.
+ *
+ * If your plugin adds/edits the context supplied in `handle`, you should increment the `context.modified` property.
+ */
+export class BasePlugin implements VerifiedFetchPlugin {
   readonly codes: number[] = []
   readonly log: Logger
   readonly pluginOptions: PluginOptions
@@ -13,9 +21,7 @@ export class BasePlugin implements FetchHandlerPlugin {
   }
 
   canHandle (context: PluginContext): boolean {
-    this.log('checking if we can handle request for %c with accept %s', context.cid, context.accept)
-
-    return false
+    throw new Error('Not implemented')
   }
 
   async handle (context: PluginContext): Promise<Response | null> {

@@ -10,8 +10,8 @@ import type { PluginContext } from './types.js'
  */
 export class CarPlugin extends BasePlugin {
   canHandle (context: PluginContext): boolean {
-    super.canHandle(context)
-    return context.accept?.startsWith('application/vnd.ipld.car') === true // application/vnd.ipld.car
+    this.log('checking if we can handle %c with accept %s', context.cid, context.accept)
+    return context.accept?.startsWith('application/vnd.ipld.car') === true || context.query.format === 'car' // application/vnd.ipld.car
   }
 
   async handle (context: PluginContext): Promise<Response> {

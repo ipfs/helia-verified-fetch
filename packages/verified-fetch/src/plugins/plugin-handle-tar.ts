@@ -12,9 +12,9 @@ import type { PluginContext } from './types.js'
  */
 export class TarPlugin extends BasePlugin {
   readonly codes = []
-  canHandle ({ cid, accept }: PluginContext): boolean {
+  canHandle ({ cid, accept, query }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
-    return accept === 'application/x-tar'
+    return accept === 'application/x-tar' || query.format === 'tar'
   }
 
   async handle (context: PluginContext): Promise<Response> {

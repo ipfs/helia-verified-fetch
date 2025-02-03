@@ -1,9 +1,9 @@
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
-import { PluginFatalError } from '../errors.js'
 import { ByteRangeContext } from '../utils/byte-range-context.js'
 import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
 import { setContentType } from '../utils/set-content-type.js'
+import { PluginFatalError } from './errors.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 
@@ -48,7 +48,7 @@ export class RawPlugin extends BasePlugin {
 
   canHandle ({ cid, accept, query }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
-    return accept === 'application/vnd.ipld.raw' || query.format === 'raw' // || (isValidRawCode && accept === 'application/octet-stream')
+    return accept === 'application/vnd.ipld.raw' || query.format === 'raw'
   }
 
   async handle (context: PluginContext): Promise<Response> {

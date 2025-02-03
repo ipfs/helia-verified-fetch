@@ -3,36 +3,31 @@ import { Key } from 'interface-datastore'
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
-import { PluginFatalError } from '../errors.js'
 import { getPeerIdFromString } from '../utils/get-peer-id-from-string.js'
 import { badRequestResponse, okResponse } from '../utils/responses.js'
+import { PluginFatalError } from './errors.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 import type { PeerId } from '@libp2p/interface'
 
 /**
- * Accepts an `ipns://...` or `https?://<ipnsname>.ipns.<domain>` URL as a string and returns a `Response` containing
- * a raw IPNS record.
+ * Accepts an `ipns://...`, `https?://<ipnsname>.ipns.<domain>`, or `https?://<domain>/ipns/...` URL as a string and
+ * returns a `Response` containing a raw IPNS record.
  */
 export class IpnsRecordPlugin extends BasePlugin {
   readonly codes = []
-  canHandle ({ cid, accept, path, pathDetails }: PluginContext): boolean {
+  canHandle ({ cid, accept, query }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
-    // if path exists and we haven't walked the path yet, we can't handle it
-    if (path !== '' && pathDetails == null) {
-      return false
-    }
 
-    return accept === 'application/vnd.ipfs.ipns-record'
+    return accept === 'application/vnd.ipfs.ipns-record' || query.format === 'ipns-record'
   }
 
   async handle (context: PluginContext): Promise<Response> {
     const { resource, path, options } = context
-    const { logger, helia } = this.pluginOptions
+    const { helia } = this.pluginOptions
     context.reqFormat = 'ipns-record'
-    const log = logger.forComponent('ipns-record-plugin')
     if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.') || resource.includes('/ipns/'))) {
-      log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
+      this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
       throw new PluginFatalError('ERR_INVALID_IPNS_NAME', 'Invalid IPNS name', { response: badRequestResponse(resource, 'Invalid IPNS name') })
     }
     let peerId: PeerId
@@ -47,10 +42,10 @@ export class IpnsRecordPlugin extends BasePlugin {
         peerIdString = resource.split('.ipns.')[0].split('://')[1]
       }
 
-      log.trace('trying to parse peer id from "%s"', peerIdString)
+      this.log.trace('trying to parse peer id from "%s"', peerIdString)
       peerId = getPeerIdFromString(peerIdString)
     } catch (err: any) {
-      log.error('could not parse peer id from IPNS url %s', resource, err)
+      this.log.error('could not parse peer id from IPNS url %s', resource, err)
 
       throw new PluginFatalError('ERR_NO_PEER_ID_FOUND', 'could not parse peer id from url', { response: badRequestResponse(resource, err) })
     }
