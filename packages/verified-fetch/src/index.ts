@@ -669,24 +669,18 @@
  *
  *    **Diagram of the Plugin Pipeline:**
  *
- *        [Resource & Options]
- *                │
- *                ▼
- *        [Parse into PluginContext]
- *                │
- *                ▼
- *         [Plugin Pipeline]
- *                │
- *      ┌─────────┴─────────┐
- *      │ Iterative passes  │
- *      │   (max 3 passes)  │
- *      │   ├─ Check canHandle() for each plugin
- *      │   ├─ Call handle() on ready plugins
- *      │   └─ Update PluginContext if partial work is done
- *      └─────────┬─────────┘
- *                │
- *                ▼
- *         [Final Response]
+ * flowchart TD
+ *     A[Resource & Options] --> B[Parse into PluginContext]
+ *     B --> C[Plugin Pipeline]
+ *     subgraph IP[Iterative Passes max 3 passes]
+ *       C1[Check canHandle for each plugin]
+ *       C2[Call handle on ready plugins]
+ *       C3[Update PluginContext if partial work is done]
+ *       C1 --> C2
+ *       C2 --> C3
+ *     end
+ *     C --> IP
+ *     IP --> D[Final Response]
  *
  * 3. **Finalization:**
  *    - After the pipeline completes, the resulting response & context is processed (e.g. headers such as ETag,
