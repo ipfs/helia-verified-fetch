@@ -822,8 +822,6 @@ async handle(context: PluginContext): Promise<Response | undefined> {
 }
 ```
 
-***
-
 ### How the Plugin Pipeline Works
 
 - **Shared Context:**
