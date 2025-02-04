@@ -639,7 +639,7 @@
  *   Inspects the current `PluginContext` (which includes the CID, path, query, accept header, etc.)
  *   and returns `true` if the plugin can operate on the current state of the request.
  *
- * - **`handle(context: PluginContext): Promise<Response | undefined>`**
+ * - **`handle(context: PluginContext): Promise<Response | null>`**
  *   Performs the plugin’s work. It may:
  *     - **Return a final `Response`**: This stops the pipeline immediately.
  *     - **Return `undefined`**: This indicates that the plugin has only partially processed the request
@@ -701,13 +701,13 @@
  *    Create a new class that extends `BasePlugin` and implements:
  *
  *    - `canHandle(context: PluginContext): boolean`
- *    - `handle(context: PluginContext): Promise<Response | undefined>`
+ *    - `handle(context: PluginContext): Promise<Response | null>`
  *
  * @example custom plugin
  *
  *    ```typescript
- *    import { BasePlugin, PluginOptions } from '@helia/verified-fetch'
- *    import { okResponse } from './utils/responses.js'
+ *    import { BasePlugin, type PluginContext, type VerifiedFetchPluginFactory, type PluginOptions } from '@helia/verified-fetch'
+ *    import { okResponse } from './dist/src/utils/responses.js'
  *
  *    export class MyCustomPlugin extends BasePlugin {
  *      // Optionally, list any codec codes your plugin supports:
@@ -719,17 +719,22 @@
  *        return context.accept === 'application/vnd.my-custom-type'
  *      }
  *
- *      async handle(context: PluginContext): Promise<Response | undefined> {
+ *      async handle(context: PluginContext): Promise<Response | null> {
  *        // Perform any partial processing here, e.g., modify the context:
  *        context.customProcessed = true;
  *
  *        // If you are ready to finalize the response:
- *        return okResponse(context.resource, 'My Custom Data');
+ *        return new Response('Hello, world!', {
+ *          status: 200,
+ *          headers: {
+ *            'Content-Type': 'text/plain'
+ *          }
+          });
  *
- *        // Or, if further processing is needed by another plugin, simply return undefined.
+ *        // Or, if further processing is needed by another plugin, simply return null.
  *      }
  *    }
- *    export const myCustomPluginFactory = (opts) => new MyCustomPlugin(opts)
+ *    export const myCustomPluginFactory: VerifiedFetchPluginFactory = (opts: PluginOptions) => new MyCustomPlugin(opts)
  *    ```
  *
  * 2. **Integrate Your Plugin:**
@@ -739,10 +744,15 @@
  * @example Integrate custom plugin
  *
  *    ```typescript
- *    import { VerifiedFetch } from 'helia-verified-fetch'
- *    import { myCustomPluginFactory } from './plugins/my-custom-plugin.js'
+ *    import { createVerifiedFetch, type VerifiedFetchPluginFactory } from '@helia/verified-fetch'
+ *    import { createHelia } from 'helia'
  *
- *    const fetch = new VerifiedFetch({ helia, ipns }, { plugins: [myCustomPluginFactory] })
+ *    const helia = await createHelia()
+ *    const plugins: VerifiedFetchPluginFactory[] = [
+ *      // myCustomPluginFactory
+ *    ]
+ *
+ *    const fetch = await createVerifiedFetch(helia, { plugins })
  *    ```
  *
  * ---
@@ -766,21 +776,24 @@
  * ```typescript
  * import { PluginError, PluginFatalError } from '@helia/verified-fetch'
  *
- * async handle(context: PluginContext): Promise<Response | undefined> {
- *   if (recoverable === true) {
- *     throw new PluginError('MY_CUSTOM_WARNING', 'A non‑fatal issue occurred', {
- *       detail: 'Additional details here'
- *     });
- *   }
+ * // async handle(context: PluginContext): Promise<Response | null> {
+ * const recoverable = Math.random() > 0.5 // Use more sophisticated logic here ;)
+ * if (recoverable === true) {
+ *   throw new PluginError('MY_CUSTOM_WARNING', 'A non‑fatal issue occurred', {
+ *     details: {
+ *       someKey: 'Additional details here'
+ *     }
+ *   });
+ * }
  *
- *   if (recoverable === false) {
- *     throw new PluginFatalError('MY_CUSTOM_FATAL', 'A critical error occurred', {
- *       response: customErrorResponse  // Optional: supply your own error response
- *     });
- *   }
+ * if (recoverable === false) {
+ *   throw new PluginFatalError('MY_CUSTOM_FATAL', 'A critical error occurred', {
+ *     response: new Response('Something happened', { status: 500 })  // Required: supply your own error response
+ *   });
+ * }
  *
  *   // Otherwise, continue processing...
- * }
+ * // }
  * ```
  *
  * ### How the Plugin Pipeline Works
