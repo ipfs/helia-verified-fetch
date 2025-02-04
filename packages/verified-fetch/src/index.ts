@@ -1096,6 +1096,7 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
 }
 
 export { verifiedFetch } from './singleton.js'
+export * from './plugins/index.js'
 
 function isHelia (obj: any): obj is Helia {
   // test for the presence of known Helia properties, return a boolean value
