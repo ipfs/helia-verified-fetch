@@ -1,5 +1,5 @@
 import type { Logger } from '@libp2p/logger'
-import type { IncomingHttpHeaders } from 'undici/types/header'
+import type { IncomingHttpHeaders } from 'undici/types/header.js'
 
 export function convertNodeJsHeadersToFetchHeaders (headers: IncomingHttpHeaders): HeadersInit {
   const fetchHeaders = new Headers()

@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
 import { httpGatewayRouting } from '@helia/routers'
+import { dirIndexHtmlPluginFactory } from '@helia/verified-fetch/plugins'
 import { logger } from '@libp2p/logger'
 import { dns } from '@multiformats/dns'
 import { MemoryBlockstore } from 'blockstore-core'
@@ -200,7 +201,8 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
   const helia = await createHelia({ gateways: [kuboGateway], dnsResolvers: [localDnsResolver], blockstore, datastore })
 
   const verifiedFetch = await createVerifiedFetch(helia, {
-    contentTypeParser
+    contentTypeParser,
+    plugins: [dirIndexHtmlPluginFactory]
   })
 
   const server = createServer((req, res) => {

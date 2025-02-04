@@ -32,6 +32,10 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
+    },
+    "./plugins": {
+      "import": "./dist/src/plugins/plugins.js",
+      "types": "./dist/src/plugins/plugins.d.ts"
     }
   },
   "eslintConfig": {

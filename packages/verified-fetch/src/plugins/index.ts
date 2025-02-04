@@ -5,3 +5,4 @@
 export { PluginError, PluginFatalError } from './errors.js'
 export { BasePlugin } from './plugin-base.js'
 export type { PluginOptions, PluginContext, VerifiedFetchPluginFactory } from './types.js'
+export * from './plugins.js'
