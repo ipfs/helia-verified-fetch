@@ -17,7 +17,7 @@ interface TestConfig {
   run?: string[]
   expectPassing?: string[]
   expectFailing?: string[]
-  successRate: number
+  successRate?: number
   timeout?: number
 }
 
@@ -59,14 +59,20 @@ const tests: TestConfig[] = [
   {
     name: 'TestDagPbConversion',
     run: ['TestDagPbConversion'],
-    successRate: 26.15,
+    successRate: 35.38,
     expectPassing: [
       'TestDagPbConversion/GET_UnixFS_file_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Status_code',
+      'TestDagPbConversion/GET_UnixFS_file_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Header_Content-Type',
       'TestDagPbConversion/GET_UnixFS_file_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Header_Content-Type#01',
+      'TestDagPbConversion/GET_UnixFS_directory_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Status_code',
+      'TestDagPbConversion/GET_UnixFS_directory_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Header_Content-Type',
       'TestDagPbConversion/GET_UnixFS_directory_as_DAG-JSON_with_format=dag-json_converts_to_the_expected_Content-Type/Header_Content-Type#01',
       'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_application%2Fvnd.ipld.dag-json%27_converts_to_the_expected_Content-Type/Status_code',
+      'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_application%2Fvnd.ipld.dag-json%27_converts_to_the_expected_Content-Type/Header_Content-Type',
       'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_application%2Fvnd.ipld.dag-json%27_converts_to_the_expected_Content-Type/Header_Content-Type#01',
       'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_foo%2C_application%2Fvnd.ipld.dag-json%2Cbar%27_converts_to_the_expected_Content-Type/Status_code',
+      'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_foo%2C_application%2Fvnd.ipld.dag-json%2Cbar%27_converts_to_the_expected_Content-Type/Header_Content-Type',
+      'TestDagPbConversion/GET_UnixFS_as_DAG-JSON_with_%27Accept:_foo%2C_application%2Fvnd.ipld.dag-json%2Cbar%27_converts_to_the_expected_Content-Type',
       'TestDagPbConversion/GET_UnixFS_with_format=json_%28not_dag-json%29_is_no-op_%28no_conversion%29/Header_Content-Type#01',
       'TestDagPbConversion/GET_UnixFS_with_format=json_%28not_dag-json%29_is_no-op_%28no_conversion%29/Header_Content-Type#02',
       'TestDagPbConversion/GET_UnixFS_with_%27Accept:_application%2Fjson%27_%28not_dag-json%29_is_no-op_%28no_conversion%29/Header_Content-Type#01',
@@ -302,11 +308,25 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayBlock',
     run: ['TestGatewayBlock'],
-    successRate: 20.69,
+    successRate: 68.97,
     expectPassing: [
+      'TestGatewayBlock/GET_with_format=raw_param_returns_a_raw_block/Status_code',
+      'TestGatewayBlock/GET_with_format=raw_param_returns_a_raw_block/Body',
+      'TestGatewayBlock/GET_with_format=raw_param_returns_a_raw_block',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_a_raw_block/Status_code',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_a_raw_block/Body',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_a_raw_block',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_with_single_range_request_includes_correct_bytes/Status_code',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_with_single_range_request_includes_correct_bytes/Header_Content-Range',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_with_single_range_request_includes_correct_bytes/Body',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_response_headers/Status_code',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_response_headers/Header_Content-Disposition',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_response_headers/Body',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_and_filename_param_returns_expected_Content-Disposition_header_with_custom_filename/Status_code',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_and_filename_param_returns_expected_Content-Disposition_header_with_custom_filename/Header_Content-Disposition',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_and_filename_param_returns_expected_Content-Disposition_header_with_custom_filename/Header_Content-Disposition#01',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_and_filename_param_returns_expected_Content-Disposition_header_with_custom_filename',
+      'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Status_code',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_ETag',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_X-IPFS-Path',
       'TestGatewayBlock/GET_with_application%2Fvnd.ipld.raw_header_returns_expected_caching_headers/Header_Cache-Control'
@@ -356,12 +376,20 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayIPNSRecord',
     run: ['TestGatewayIPNSRecord'],
-    successRate: 17.39,
+    successRate: 52.17,
     expectPassing: [
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Content-Type',
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Body',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Content-Type',
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_format=ipns-record_has_expected_HTTP_headers_and_valid_key/Body',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Content-Type',
       'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
-      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control'
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V1+V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Body',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Content-Type',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Header_Cache-Control',
+      'TestGatewayIPNSRecord/GET_IPNS_Record_%28V2%29_with_%27Accept:_application%2Fvnd.ipfs.ipns-record%27_has_expected_HTTP_headers_and_valid_key/Body'
     ]
   },
   {
@@ -469,7 +497,7 @@ const tests: TestConfig[] = [
     skip: [
       'TestGatewaySubdomains/.*HTTP_proxy_tunneling_via_CONNECT' // verified fetch should not be doing HTTP proxy tunneling.
     ],
-    successRate: 41.35,
+    successRate: 44.26,
     expectPassing: [
       'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7Bcid%7D_redirects_to_%7Bcid%7D.ipfs.example.com/Status_code',
       'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7Bcid%7D_redirects_to_%7Bcid%7D.ipfs.example.com/Header_Location',
@@ -503,7 +531,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
     run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
-    successRate: 10.26,
+    successRate: 11.11,
     expectPassing: [
       'TestUnixFSDirectoryListingOnSubdomainGateway/redirect_dir_listing_to_URL_with_trailing_slash/Status_code'
     ]
@@ -516,7 +544,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestRedirectsFileSupportWithDNSLink',
     run: ['TestRedirectsFileSupportWithDNSLink'],
-    successRate: 26.09,
+    successRate: 27.27,
     expectPassing: [
       'TestRedirectsFileSupportWithDNSLink/request_for_%2F%2F%7Bdnslink%7D%2Fen%2Fhas-no-redirects-entry_returns_custom_404%2C_per__redirects_file/Header_Cache-Control',
       'TestRedirectsFileSupportWithDNSLink/request_for_%2F%2F%7Bdnslink%7D%2Fen%2Fhas-no-redirects-entry_returns_custom_404%2C_per__redirects_file/Header_Cache-Control#01',
@@ -632,6 +660,7 @@ const tests: TestConfig[] = [
       'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Status_code',
       'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Header_Content-Disposition',
       'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Header_Content-Type',
+      'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Header_Etag',
       'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Body',
       'TestTar/GET_TAR_has_expected_root_directory/Status_code',
       'TestTar/GET_TAR_has_expected_root_directory/Body',
@@ -753,7 +782,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       function logIndividualTestResult (passOrFail: string, test: string): void {
         log.trace(`${passOrFail}: ${test}`)
       }
-      it(`${name} has a success rate of at least ${expectedSuccessRate}%`, async function () {
+      it(`${name} has a success rate of at least ${expectedSuccessRate ?? 0}%`, async function () {
         if (timeout != null) {
           this.timeout(timeout)
         }
@@ -778,7 +807,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         passingTests.forEach(logIndividualTestResult.bind(null, 'PASS'))
         log.trace('Failing tests:')
         failingTests.forEach(logIndividualTestResult.bind(null, 'FAIL'))
-        expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate)
+        expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate ?? 0)
       })
 
       describe(`${name} passes and fails tests as expected`, function () {
@@ -823,7 +852,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       log.error(stderr)
 
       const { successRate } = await getReportDetails('gwc-report-all.json')
-      const knownSuccessRate = 42.47
+      const knownSuccessRate = 47.34
       // check latest success rate with `SUCCESS_RATE=100 npm run test -- -g 'total'`
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : knownSuccessRate
 
