@@ -43,7 +43,6 @@ export interface PluginContext {
   onProgress?(evt: CustomProgressEvent<any>): void
   options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
   isDirectory?: boolean
-  missingIndexHtml?: boolean
   directoryEntries?: UnixFSEntry[]
   errors?: PluginError[]
   reqFormat?: RequestFormatShorthand

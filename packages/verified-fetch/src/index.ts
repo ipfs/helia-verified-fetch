@@ -642,7 +642,7 @@
  * - **`handle(context: PluginContext): Promise<Response | null>`**
  *   Performs the plugin’s work. It may:
  *     - **Return a final `Response`**: This stops the pipeline immediately.
- *     - **Return `undefined`**: This indicates that the plugin has only partially processed the request
+ *     - **Return `null`**: This indicates that the plugin has only partially processed the request
  *       (for example, by performing path walking or decoding) and the pipeline should continue.
  *    - **Throw a `PluginError`**: This logs a non-fatal error and continues the pipeline.
  *    - **Throw a `PluginFatalError`**: This logs a fatal error and stops the pipeline immediately.
@@ -661,8 +661,8 @@
  *      are invoked in sequence.
  *      - If a plugin returns a final `Response` or throws a `PluginFatalError`, the pipeline immediately
  *        stops and that response is returned.
- *      - If a plugin returns `undefined`, it is assumed to have updated the context (for example, by
- *        performing path walking), and the pipeline proceeds to a new pass where plugins are re‑evaluated.
+ *      - If a plugin returns `null`, it may have updated the context (for example, by
+ *        performing path walking), other plugins that said they `canHandle` will run.
  *    - If no plugin modifies the context (i.e. no change to `context.modified`) and no final response is
  *      produced after iterating through all plugins, the pipeline exits and a default “Not Supported”
  *      response is returned.
@@ -805,12 +805,12 @@
  *
  * - **Iterative Processing:**
  *   The pipeline repeatedly checks which plugins can currently handle the request by calling `canHandle(context)`.
- *   - Plugins that perform partial processing update the context and return `undefined`, allowing subsequent passes.
+ *   - Plugins that perform partial processing update the context and return `null`, allowing subsequent passes by other plugins.
  *   - Once a plugin is ready to finalize the response, it returns a final `Response` and the pipeline terminates.
  *
  * - **No Strict Ordering:**
  *   Plugins are invoked based solely on whether they can handle the current state of the context.
- *   This means you do not have to specify a rigid order—each plugin simply checks the context and acts if appropriate.
+ *   This means you do not have to specify a rigid order, each plugin simply checks the context and acts if appropriate.
  *
  * - **Error Handling:**
  *   - A thrown `PluginError` is considered non‑fatal and is logged, allowing the pipeline to continue.
