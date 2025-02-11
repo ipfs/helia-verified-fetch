@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.5.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.4.0...@helia/verified-fetch-2.5.0) (2025-02-11)
+
+### Features
+
+* dir index html listing ([#86](https://github.com/ipfs/helia-verified-fetch/issues/86)) ([0521214](https://github.com/ipfs/helia-verified-fetch/commit/05212141c0f009dbdb75b11b74e9c8f50f1dc31d))
+
 ## [@helia/verified-fetch-v2.4.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.3.1...@helia/verified-fetch-2.4.0) (2025-01-14)
 
 ### Features
