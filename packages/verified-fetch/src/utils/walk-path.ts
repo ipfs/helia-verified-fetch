@@ -2,8 +2,8 @@ import { DoesNotExistError } from '@helia/unixfs/errors'
 import { type Logger } from '@libp2p/interface'
 import { type Blockstore } from 'interface-blockstore'
 import { walkPath as exporterWalk, type ExporterOptions, type ReadableStorage, type ObjectNode, type UnixFSEntry } from 'ipfs-unixfs-exporter'
-import { type FetchHandlerFunctionArg } from '../types.js'
 import { badGatewayResponse, notFoundResponse } from './responses.js'
+import type { PluginContext } from '../plugins/types.js'
 import type { CID } from 'multiformats/cid'
 
 export interface PathWalkerOptions extends ExporterOptions {
@@ -12,7 +12,6 @@ export interface PathWalkerOptions extends ExporterOptions {
 export interface PathWalkerResponse {
   ipfsRoots: CID[]
   terminalElement: UnixFSEntry
-
 }
 
 export interface PathWalkerFn {
@@ -47,8 +46,9 @@ export function isObjectNode (node: UnixFSEntry): node is ObjectNode {
  * If the signal is aborted, the function will throw an AbortError
  * If a terminal element is not found, a notFoundResponse is returned
  * If another unknown error occurs, a badGatewayResponse is returned
+ *
  */
-export async function handlePathWalking ({ cid, path, resource, options, blockstore, log }: Omit<FetchHandlerFunctionArg, 'session'> & { blockstore: Blockstore, log: Logger }): Promise<PathWalkerResponse | Response> {
+export async function handlePathWalking ({ cid, path, resource, options, blockstore, log }: PluginContext & { blockstore: Blockstore, log: Logger }): Promise<PathWalkerResponse | Response> {
   try {
     return await walkPath(blockstore, `${cid.toString()}/${path}`, options)
   } catch (err: any) {

@@ -15,19 +15,36 @@ interface GetETagArg {
    */
   weak?: boolean
 }
+const getPrefix = ({ weak, reqFormat }: Partial<GetETagArg>): string => {
+  if (reqFormat === 'tar' || reqFormat === 'car' || reqFormat === 'ipns-record' || weak === true) {
+    return 'W/'
+  }
+  return ''
+}
+
+const getFormatSuffix = ({ reqFormat }: Partial<GetETagArg>): string => {
+  if (reqFormat == null) {
+    return ''
+  }
+  if (reqFormat === 'tar') {
+    return '.x-tar'
+  }
+
+  return `.${reqFormat}`
+}
 
 /**
  * etag
  * you need to wrap cid  with ""
- * we use strong Etags for immutable responses and weak one (prefixed with W/ ) for mutable/generated ones (ipns and generated HTML).
+ * we use strong Etags for immutable responses and weak one (prefixed with W/ ) for mutable/generated ones (ipns, car, tar, and generated HTML).
  * block and car responses should have different etag than deserialized one, so you can add some prefix like we do in existing gateway
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#etag-response-header
  */
 export function getETag ({ cid, reqFormat, weak, rangeStart, rangeEnd }: GetETagArg): string {
-  const prefix = weak === true ? 'W/' : ''
-  let suffix = reqFormat == null ? '' : `.${reqFormat}`
+  const prefix = getPrefix({ weak, reqFormat })
+  let suffix = getFormatSuffix({ reqFormat })
   if (rangeStart != null || rangeEnd != null) {
     suffix += `.${rangeStart ?? '0'}-${rangeEnd ?? 'N'}`
   }
