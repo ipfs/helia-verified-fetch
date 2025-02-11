@@ -1,3 +1,4 @@
+import { unixfs } from '@helia/unixfs'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { exporter } from 'ipfs-unixfs-exporter'
 import { CustomProgressEvent } from 'progress-events'
@@ -44,9 +45,9 @@ export class DagPbPlugin extends BasePlugin {
     return null
   }
 
-  async handle (context: PluginContext): Promise<Response> {
+  async handle (context: PluginContext): Promise<Response | null> {
     const { cid, options, withServerTiming = false, pathDetails } = context
-    const { handleServerTiming, contentTypeParser, helia } = this.pluginOptions
+    const { handleServerTiming, contentTypeParser, helia, getBlockstore } = this.pluginOptions
     const log = this.log
     let resource = context.resource
     let path = context.path
@@ -94,9 +95,22 @@ export class DagPbPlugin extends BasePlugin {
         path = rootFilePath
         resolvedCID = entry.cid
       } catch (err: any) {
+        this.log.error('error loading path %c/%s', dirCid, rootFilePath, err)
         options?.signal?.throwIfAborted()
-        log('error loading path %c/%s', dirCid, rootFilePath, err)
-        return notSupportedResponse('Unable to find index.html for directory at given path. Support for directories with implicit root is not implemented')
+        context.isDirectory = true
+        context.directoryEntries = []
+        this.log.trace('attempting to get directory entries because index.html was not found')
+        const fs = unixfs({ ...helia, blockstore: getBlockstore(context.cid, context.resource, options?.session ?? true, options) })
+        try {
+          for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress })) {
+            context.directoryEntries.push(dirItem)
+          }
+          // dir-index-html plugin or dir-index-json (future idea?) plugin should handle this
+          return null
+        } catch (e) {
+          log.error('error listing directory %c', dirCid, e)
+          return notSupportedResponse('Unable to get directory contents')
+        }
       } finally {
         options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid: dirCid, path: rootFilePath }))
       }

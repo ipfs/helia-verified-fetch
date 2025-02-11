@@ -18,6 +18,7 @@ import pDefer from 'p-defer'
 import Sinon from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { dirIndexHtmlPluginFactory } from '../src/plugins/plugin-handle-dir-index-html.js'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
@@ -341,6 +342,36 @@ describe('@helia/verifed-fetch', () => {
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(501)
       expect(resp.statusText).to.equal('Not Implemented')
+    })
+
+    it('should return html directory listing if index file is not found and dir-index-html plugin is used', async () => {
+      const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
+
+      const verifiedFetch = new VerifiedFetch({
+        helia
+      }, { plugins: [dirIndexHtmlPluginFactory] })
+
+      const fs = unixfs(helia)
+      const res = await last(fs.addAll([{
+        path: 'not_an_index.html',
+        content: finalRootFileContent
+      }], {
+        wrapWithDirectory: true
+      }))
+
+      if (res == null) {
+        throw new Error('Import failed')
+      }
+
+      const stat = await fs.stat(res.cid)
+      expect(stat.type).to.equal('directory')
+
+      const resp = await verifiedFetch.fetch(res.cid)
+      expect(resp).to.be.ok()
+      expect(resp.status).to.equal(200)
+      expect(resp.statusText).to.equal('OK')
+      expect(resp.headers.get('content-type')).to.equal('text/html')
+      expect(await resp.text()).to.include('not_an_index.html')
     })
 
     it('can round trip json via .json()', async () => {
