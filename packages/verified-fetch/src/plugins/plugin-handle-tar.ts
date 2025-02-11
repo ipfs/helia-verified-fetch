@@ -1,6 +1,7 @@
 import { code as dagPbCode } from '@ipld/dag-pb'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { code as rawCode } from 'multiformats/codecs/raw'
+import { getETag } from '../utils/get-e-tag.js'
 import { tarStream } from '../utils/get-tar-stream.js'
 import { notAcceptableResponse, okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
@@ -18,21 +19,25 @@ export class TarPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { cid, path, resource, options } = context
+    const { cid, path, resource, options, pathDetails } = context
     const { getBlockstore } = this.pluginOptions
-    if (cid.code !== dagPbCode && cid.code !== rawCode) {
+
+    const terminusElement = pathDetails?.terminalElement.cid ?? cid
+    if (terminusElement.code !== dagPbCode && terminusElement.code !== rawCode) {
       return notAcceptableResponse('only UnixFS data can be returned in a TAR file')
     }
 
     context.reqFormat = 'tar'
     context.query.download = true
-    context.query.filename = context.query.filename ?? `${cid.toString()}.tar`
+    context.query.filename = context.query.filename ?? `${terminusElement.toString()}.tar`
 
-    const blockstore = getBlockstore(cid, resource, options?.session, options)
+    const blockstore = getBlockstore(terminusElement, resource, options?.session, options)
     const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${cid}/${path}`, blockstore, options))
 
     const response = okResponse(resource, stream)
     response.headers.set('content-type', 'application/x-tar')
+
+    response.headers.set('etag', getETag({ cid: terminusElement, reqFormat: context.reqFormat, weak: true }))
 
     return response
   }

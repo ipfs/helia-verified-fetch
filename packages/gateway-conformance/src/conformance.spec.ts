@@ -660,6 +660,7 @@ const tests: TestConfig[] = [
       'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Status_code',
       'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Header_Content-Disposition',
       'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Header_Content-Type',
+      'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Header_Etag',
       'TestTar/GET_TAR_with_%27Accept:_application%2Fx-tar%27_and_extract/Body',
       'TestTar/GET_TAR_has_expected_root_directory/Status_code',
       'TestTar/GET_TAR_has_expected_root_directory/Body',
