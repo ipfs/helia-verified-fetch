@@ -651,7 +651,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestTar',
     run: ['TestTar'],
-    successRate: 62.5,
+    successRate: 79.17,
     expectPassing: [
       'TestTar/GET_TAR_with_format=tar_and_extract/Status_code',
       'TestTar/GET_TAR_with_format=tar_and_extract/Header_Content-Disposition',
