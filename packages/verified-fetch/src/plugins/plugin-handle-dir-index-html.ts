@@ -8,7 +8,6 @@ export class DirIndexHtmlPlugin extends BasePlugin {
   readonly codes = [dagPbCode]
   canHandle (context: PluginContext): boolean {
     const { cid, accept, pathDetails, directoryEntries } = context
-    this.log('checking if we can handle %c with accept %s', cid, accept)
     if (pathDetails == null) {
       return false
     }
@@ -25,13 +24,12 @@ export class DirIndexHtmlPlugin extends BasePlugin {
 
   async handle (context: PluginContext): Promise<Response> {
     const { resource, pathDetails, directoryEntries } = context
-    // const { getBlockstore } = this.pluginOptions
 
     if (pathDetails?.terminalElement == null) {
-      throw new TypeError('Path details are required')
+      throw new Error('Path details are required')
     }
     if (directoryEntries == null || directoryEntries?.length === 0) {
-      throw new TypeError('Directory entries are required')
+      throw new Error('Directory entries are required')
     }
     const terminalElement = pathDetails.terminalElement
 
