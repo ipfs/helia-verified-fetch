@@ -7,7 +7,7 @@ import type { PluginContext, VerifiedFetchPluginFactory } from './types.js'
 export class DirIndexHtmlPlugin extends BasePlugin {
   readonly codes = [dagPbCode]
   canHandle (context: PluginContext): boolean {
-    const { cid, accept, pathDetails, directoryEntries } = context
+    const { cid, pathDetails, directoryEntries } = context
     if (pathDetails == null) {
       return false
     }
