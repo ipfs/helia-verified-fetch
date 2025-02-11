@@ -197,7 +197,7 @@ export class VerifiedFetch {
       this.log.trace('no content disposition specified')
     }
 
-    if (cid != null) {
+    if (cid != null && response.headers.get('etag') == null) {
       response.headers.set('etag', getETag({ cid, reqFormat, weak: false }))
     }
 

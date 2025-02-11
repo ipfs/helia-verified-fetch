@@ -18,7 +18,8 @@ describe('getETag', () => {
 
   it('should return ETag with CID and range suffix', () => {
     expect(getETag({ cid: testCID, weak: true, reqFormat: 'car', rangeStart: 10, rangeEnd: 20 })).to.equal(`W/"${cidString}.car.10-20"`)
-    expect(getETag({ cid: testCID, weak: false, reqFormat: 'car', rangeStart: 10, rangeEnd: 20 })).to.equal(`"${cidString}.car.10-20"`)
+    // weak is false, but it's a car request, so weak is overridden.
+    expect(getETag({ cid: testCID, weak: false, reqFormat: 'car', rangeStart: 10, rangeEnd: 20 })).to.equal(`W/"${cidString}.car.10-20"`)
   })
 
   it('should return ETag with CID, format and range suffix', () => {
@@ -29,5 +30,15 @@ describe('getETag', () => {
     expect(getETag({ cid: testCID, reqFormat: 'raw', weak: false, rangeStart: undefined, rangeEnd: undefined })).to.equal(`"${cidString}.raw"`)
     expect(getETag({ cid: testCID, reqFormat: 'raw', weak: false, rangeStart: 55, rangeEnd: undefined })).to.equal(`"${cidString}.raw.55-N"`)
     expect(getETag({ cid: testCID, reqFormat: 'raw', weak: false, rangeStart: undefined, rangeEnd: 77 })).to.equal(`"${cidString}.raw.0-77"`)
+  })
+
+  it('should handle tar appropriately', () => {
+    expect(getETag({
+      cid: CID.parse('bafkreialihlqnf5uwo4byh4n3cmwlntwqzxxs2fg5vanqdi3d7tb2l5xkm'),
+      reqFormat: 'tar',
+      weak: false,
+      rangeStart: undefined,
+      rangeEnd: undefined
+    })).to.equal('W/"bafkreialihlqnf5uwo4byh4n3cmwlntwqzxxs2fg5vanqdi3d7tb2l5xkm.x-tar"')
   })
 })
