@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.5.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.0...@helia/verified-fetch-2.5.1) (2025-02-12)
+
+### Bug Fixes
+
+* dir-index-html can render in sw-gateway ([#177](https://github.com/ipfs/helia-verified-fetch/issues/177)) ([bcd066f](https://github.com/ipfs/helia-verified-fetch/commit/bcd066f8ac6bd12e5b62d870016b164b5d1138fe))
+
 ## [@helia/verified-fetch-v2.5.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.4.0...@helia/verified-fetch-2.5.0) (2025-02-11)
 
 ### Features
