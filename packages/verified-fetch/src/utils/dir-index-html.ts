@@ -117,72 +117,69 @@ export const dirIndexHtml = (dir: UnixFSEntry, items: UnixFSEntry[], { gatewayUR
     hash: dir.cid.toString()
   }
 
-  return `
-<!DOCTYPE html>
-<!--{{ $root := . }}-->
+  return `<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="description" content="A directory of content-addressed files hosted on IPFS.">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlo89/56ZQ/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACUjDu1lo89/6mhTP+zrVP/nplD/5+aRK8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHNiIS6Wjz3/ubFY/761W/+vp1D/urRZ/8vDZf/GvmH/nplD/1BNIm8AAAAAAAAAAAAAAAAAAAAAAAAAAJaPPf+knEj/vrVb/761W/++tVv/r6dQ/7q0Wf/Lw2X/y8Nl/8vDZf+tpk7/nplD/wAAAAAAAAAAAAAAAJaPPf+2rVX/vrVb/761W/++tVv/vrVb/6+nUP+6tFn/y8Nl/8vDZf/Lw2X/y8Nl/8G6Xv+emUP/AAAAAAAAAACWjz3/vrVb/761W/++tVv/vrVb/761W/+vp1D/urRZ/8vDZf/Lw2X/y8Nl/8vDZf/Lw2X/nplD/wAAAAAAAAAAlo89/761W/++tVv/vrVb/761W/++tVv/r6dQ/7q0Wf/Lw2X/y8Nl/8vDZf/Lw2X/y8Nl/56ZQ/8AAAAAAAAAAJaPPf++tVv/vrVb/761W/++tVv/vbRa/5aPPf+emUP/y8Nl/8vDZf/Lw2X/y8Nl/8vDZf+emUP/AAAAAAAAAACWjz3/vrVb/761W/++tVv/vrVb/5qTQP+inkb/op5G/6KdRv/Lw2X/y8Nl/8vDZf/Lw2X/nplD/wAAAAAAAAAAlo89/761W/++tVv/sqlS/56ZQ//LxWb/0Mlp/9DJaf/Kw2X/oJtE/7+3XP/Lw2X/y8Nl/56ZQ/8AAAAAAAAAAJaPPf+9tFr/mJE+/7GsUv/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav+xrFL/nplD/8vDZf+emUP/AAAAAAAAAACWjz3/op5G/9HKav/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav+inkb/nplD/wAAAAAAAAAAAAAAAKKeRv+3slb/0cpq/9HKav/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav+1sFX/op5G/wAAAAAAAAAAAAAAAAAAAAAAAAAAop5GUKKeRv/Nxmf/0cpq/9HKav/Rymr/0cpq/83GZ/+inkb/op5GSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAop5G16KeRv/LxWb/y8Vm/6KeRv+inkaPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAop5G/6KeRtcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/n8AAPgfAADwDwAAwAMAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAIABAACAAQAAwAMAAPAPAAD4HwAA/n8AAA==" />
-  <title>${dirData.path}</title>
-  <style>${style}</style>
-</head>
-<body>
-  <!--
-  # Some JSON content for debugging:
-
-  ## dirData
-  ${JSON.stringify(dirData, null, 2)}
-  -->
-  <header id="header">
-    <div class="ipfs-logo">&nbsp;</div>
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="A directory of content-addressed files hosted on IPFS.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlo89/56ZQ/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACUjDu1lo89/6mhTP+zrVP/nplD/5+aRK8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHNiIS6Wjz3/ubFY/761W/+vp1D/urRZ/8vDZf/GvmH/nplD/1BNIm8AAAAAAAAAAAAAAAAAAAAAAAAAAJaPPf+knEj/vrVb/761W/++tVv/r6dQ/7q0Wf/Lw2X/y8Nl/8vDZf+tpk7/nplD/wAAAAAAAAAAAAAAAJaPPf+2rVX/vrVb/761W/++tVv/vrVb/6+nUP+6tFn/y8Nl/8vDZf/Lw2X/y8Nl/8G6Xv+emUP/AAAAAAAAAACWjz3/vrVb/761W/++tVv/vrVb/761W/+vp1D/urRZ/8vDZf/Lw2X/y8Nl/8vDZf/Lw2X/nplD/wAAAAAAAAAAlo89/761W/++tVv/vrVb/761W/++tVv/r6dQ/7q0Wf/Lw2X/y8Nl/8vDZf/Lw2X/y8Nl/56ZQ/8AAAAAAAAAAJaPPf++tVv/vrVb/761W/++tVv/vbRa/5aPPf+emUP/y8Nl/8vDZf/Lw2X/y8Nl/8vDZf+emUP/AAAAAAAAAACWjz3/vrVb/761W/++tVv/vrVb/5qTQP+inkb/op5G/6KdRv/Lw2X/y8Nl/8vDZf/Lw2X/nplD/wAAAAAAAAAAlo89/761W/++tVv/sqlS/56ZQ//LxWb/0Mlp/9DJaf/Kw2X/oJtE/7+3XP/Lw2X/y8Nl/56ZQ/8AAAAAAAAAAJaPPf+9tFr/mJE+/7GsUv/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav+xrFL/nplD/8vDZf+emUP/AAAAAAAAAACWjz3/op5G/9HKav/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav+inkb/nplD/wAAAAAAAAAAAAAAAKKeRv+3slb/0cpq/9HKav/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav+1sFX/op5G/wAAAAAAAAAAAAAAAAAAAAAAAAAAop5GUKKeRv/Nxmf/0cpq/9HKav/Rymr/0cpq/83GZ/+inkb/op5GSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAop5G16KeRv/LxWb/y8Vm/6KeRv+inkaPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAop5G/6KeRtcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/n8AAPgfAADwDwAAwAMAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAIABAACAAQAAwAMAAPAPAAD4HwAA/n8AAA==">
+    <title>${dirData.path}</title>
+    <style>${style}</style>
+  </head>
+  <body>
     <!--
-    <nav>
-      <a href="https://ipfs.tech" target="_blank" rel="noopener noreferrer">About<span class="dn-mobile"> IPFS</span></a>
-      <a href="https://docs.ipfs.tech/install/" target="_blank" rel="noopener noreferrer">Install<span class="dn-mobile"> IPFS</span></a>
-    </nav>
+    # Some JSON content for debugging:
+
+    ## dirData
+    ${JSON.stringify(dirData, null, 2)}
     -->
-  </header>
-  <main id="main">
-    <header class="flex flex-wrap">
-      <div>
-        <strong>${dirListingTitle(dirData)}</strong>
-        ${dirData.hash == null
+    <header id="header">
+      <div class="ipfs-logo">&nbsp;</div>
+      <!--
+      <nav>
+        <a href="https://ipfs.tech" target="_blank" rel="noopener noreferrer">About<span class="dn-mobile"> IPFS</span></a>
+        <a href="https://docs.ipfs.tech/install/" target="_blank" rel="noopener noreferrer">Install<span class="dn-mobile"> IPFS</span></a>
+      </nav>
+      -->
+    </header>
+    <main id="main">
+      <header class="flex flex-wrap">
+        <div>
+          <strong>${dirListingTitle(dirData)}</strong>
+          ${dirData.hash == null
+            ? ''
+            : `<div class="ipfs-hash" translate="no">
+                ${dirData.hash}
+              </div>`
+          }
+        </div>
+        ${dirData.size == null
           ? ''
-          : `<div class="ipfs-hash" translate="no">
-              ${dirData.hash}
+          : `<div class="nowrap flex-shrink ml-auto">
+              <strong title="Cumulative size of IPFS DAG (data + metadata)">&nbsp;${dirData.size}</strong>
             </div>`
         }
+      </header>
+      <div>
+        <div class="grid dir">
+          <!--{{ if .BackLink }}
+            <div class="type-icon">
+              <div class="ipfs-_blank">&nbsp;</div>
+            </div>
+            <div>
+              <a href="{{.BackLink | urlEscape}}">..</a>
+            </div>
+            <div></div>
+            <div></div>
+          </tr>
+          {{ end }}-->
+          ${getAllDirListingRows(dirData)}
+        </div>
       </div>
-      ${dirData.size == null
-        ? ''
-        : `<div class="nowrap flex-shrink ml-auto">
-            <strong title="Cumulative size of IPFS DAG (data + metadata)">&nbsp;${dirData.size}</strong>
-          </div>`
-      }
-    </header>
-    <section>
-      <div class="grid dir">
-        <!--{{ if .BackLink }}
-          <div class="type-icon">
-            <div class="ipfs-_blank">&nbsp;</div>
-          </div>
-          <div>
-            <a href="{{.BackLink | urlEscape}}">..</a>
-          </div>
-          <div></div>
-          <div></div>
-        </tr>
-        {{ end }}-->
-        ${getAllDirListingRows(dirData)}
-      </div>
-    </section>
-  </main>
-</body>
-</html>
-`
+    </main>
+  </body>
+</html>`
 }
 
 const style = `
