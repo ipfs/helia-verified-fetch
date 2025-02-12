@@ -20,6 +20,10 @@ interface CacheControlHeaderOptions {
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#cache-control-response-header
  */
 export function setCacheControlHeader ({ ttl, protocol, response }: CacheControlHeaderOptions): void {
+  if (response.headers.has('cache-control')) {
+    // don't set the header if it's already set by a plugin
+    return
+  }
   let headerValue: string
   if (protocol === 'ipfs') {
     headerValue = 'public, max-age=29030400, immutable'

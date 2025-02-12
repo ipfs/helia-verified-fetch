@@ -531,9 +531,11 @@ const tests: TestConfig[] = [
   {
     name: 'TestUnixFSDirectoryListingOnSubdomainGateway',
     run: ['TestUnixFSDirectoryListingOnSubdomainGateway'],
-    successRate: 11.11,
+    successRate: 33.33,
     expectPassing: [
-      'TestUnixFSDirectoryListingOnSubdomainGateway/redirect_dir_listing_to_URL_with_trailing_slash/Status_code'
+      'TestUnixFSDirectoryListingOnSubdomainGateway/redirect_dir_listing_to_URL_with_trailing_slash/Status_code',
+      'TestUnixFSDirectoryListingOnSubdomainGateway/backlink_on_root_CID_should_be_hidden_%28TODO:_cleanup_Kubo-specifics%29/Body',
+      'TestUnixFSDirectoryListingOnSubdomainGateway/backlink_on_root_CID_should_be_hidden_%28TODO:_cleanup_Kubo-specifics%29'
     ]
   },
   {

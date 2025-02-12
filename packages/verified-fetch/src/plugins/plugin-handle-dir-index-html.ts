@@ -1,6 +1,5 @@
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { dirIndexHtml } from '../utils/dir-index-html.js'
-import { okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext, VerifiedFetchPluginFactory } from './types.js'
 
@@ -35,9 +34,16 @@ export class DirIndexHtmlPlugin extends BasePlugin {
 
     const gatewayURL = resource
     const htmlResponse = dirIndexHtml(terminalElement, directoryEntries, { gatewayURL, log: this.log })
-    const response = okResponse(resource, htmlResponse)
-    response.headers.set('content-type', 'text/html')
-    return response
+
+    return new Response(htmlResponse, {
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        'Content-Type': 'text/html',
+        // see https://github.com/ipfs/gateway-conformance/pull/219
+        'Cache-Control': 'public, max-age=604800, stale-while-revalidate=2678400'
+      }
+    })
   }
 }
 
