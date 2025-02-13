@@ -63,7 +63,7 @@
     "execa": "^9.1.0",
     "glob": "^11.0.0",
     "ipfsd-ctl": "^15.0.2",
-    "kubo": "^0.32.0",
+    "kubo": "^0.33.1",
     "kubo-rpc-client": "^5.0.2",
     "magic-bytes.js": "^1.10.0",
     "multiformats": "^13.1.0",
