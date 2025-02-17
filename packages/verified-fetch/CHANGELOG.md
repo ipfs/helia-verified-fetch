@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.5.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.1...@helia/verified-fetch-2.5.2) (2025-02-17)
+
+### Dependencies
+
+* bump deps ([#181](https://github.com/ipfs/helia-verified-fetch/issues/181)) ([1a8807e](https://github.com/ipfs/helia-verified-fetch/commit/1a8807ec28cb9cef784120a89b110509da5d5e29))
+
 ## [@helia/verified-fetch-v2.5.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.0...@helia/verified-fetch-2.5.1) (2025-02-12)
 
 ### Bug Fixes
