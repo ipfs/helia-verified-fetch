@@ -56,17 +56,25 @@ function iconFromExt (name: string): string {
  * If they click on the short hash, it should link to the host + /ipfs/ + hash + ?filename={filename}
  */
 function itemShortHashCell (item: DirectoryItem, dirData: DirectoryTemplateData): string {
-  const currentUrl = new URL(dirData.globalData.gatewayURL)
-  const currentHost = dirData.globalData.dnsLink ? 'inbrowser.dev' : currentUrl.host
-  let newHost = currentHost
-  if (currentHost.includes('.ipfs.')) {
-    newHost = currentHost.split('.ipfs.')[1]
-  } else if (currentHost.includes('.ipns.')) {
-    newHost = currentHost.split('.ipns.')[1]
+  let href: string
+  try {
+    const currentUrl = new URL(dirData.globalData.gatewayURL)
+    const currentHost = dirData.globalData.dnsLink ? 'inbrowser.dev' : currentUrl.host
+    let newHost = currentHost
+    if (currentHost.includes('.ipfs.')) {
+      newHost = currentHost.split('.ipfs.')[1]
+    } else if (currentHost.includes('.ipns.')) {
+      newHost = currentHost.split('.ipns.')[1]
+    }
+
+    href = `${currentUrl.protocol}//${newHost}/ipfs/${item.hash}?filename=${item.name}`
+
+    // return `<a class="ipfs-hash" translate="no" href="${href}">${item.shortHash}</a>`
+  } catch {
+    // resource is not a URL.
+    // TODO: handle unknown gatewayURLs in a more standardized way? if someone calls verified fetch and gatewayURL is not a valid URL, are ipfs:// links okay, or should we error in this plugin?
+    href = `ipfs://${item.hash}`
   }
-
-  const href = `${currentUrl.protocol}//${newHost}/ipfs/${item.hash}?filename=${item.name}`
-
   return `<a class="ipfs-hash" translate="no" href="${href}">${item.shortHash}</a>`
 }
 
