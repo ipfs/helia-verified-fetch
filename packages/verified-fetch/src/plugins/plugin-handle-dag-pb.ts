@@ -34,6 +34,10 @@ export class DagPbPlugin extends BasePlugin {
     if (redirectCheckNeeded) {
       try {
         const url = new URL(resource.toString())
+        if (url.pathname.endsWith('/')) {
+          // url already has a trailing slash
+          return null
+        }
         // make sure we append slash to end of the path
         url.pathname = `${url.pathname}/`
         return url.toString()
