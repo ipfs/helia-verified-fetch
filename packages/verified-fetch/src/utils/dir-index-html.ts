@@ -52,8 +52,20 @@ function iconFromExt (name: string): string {
   return 'ipfs-_blank'
 }
 
+/**
+ * If they click on the short hash, it should link to the host + /ipfs/ + hash + ?filename={filename}
+ */
 function itemShortHashCell (item: DirectoryItem, dirData: DirectoryTemplateData): string {
-  const href = dirData.globalData.dnsLink ? `https://inbrowser.dev/ipfs/${item.hash}` : `${dirData.globalData.gatewayURL}/ipfs/${item.hash}?filename=${item.name}`
+  const currentUrl = new URL(dirData.globalData.gatewayURL)
+  const currentHost = dirData.globalData.dnsLink ? 'inbrowser.dev' : currentUrl.host
+  let newHost = currentHost
+  if (currentHost.includes('.ipfs.')) {
+    newHost = currentHost.split('.ipfs.')[1]
+  } else if (currentHost.includes('.ipns.')) {
+    newHost = currentHost.split('.ipns.')[1]
+  }
+
+  const href = `${currentUrl.protocol}//${newHost}/ipfs/${item.hash}?filename=${item.name}`
 
   return `<a class="ipfs-hash" translate="no" href="${href}">${item.shortHash}</a>`
 }
