@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.5.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.2...@helia/verified-fetch-2.5.3) (2025-02-28)
+
+### Bug Fixes
+
+* shorthand url appears and links correctly ([#185](https://github.com/ipfs/helia-verified-fetch/issues/185)) ([b5a762e](https://github.com/ipfs/helia-verified-fetch/commit/b5a762e15cc6c7d6caada994245602b9d68a5415))
+
 ## [@helia/verified-fetch-v2.5.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.1...@helia/verified-fetch-2.5.2) (2025-02-17)
 
 ### Dependencies

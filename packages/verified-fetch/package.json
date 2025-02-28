@@ -1,6 +1,6 @@
 {
   "name": "@helia/verified-fetch",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "A fetch-like API for obtaining verified & trustless IPFS content on the web",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/verified-fetch#readme",
