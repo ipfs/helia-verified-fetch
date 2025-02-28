@@ -6,16 +6,24 @@ import getPort from 'aegir/get-port'
 import { startVerifiedFetchGateway } from './fixtures/basic-server.js'
 import { createKuboNode } from './fixtures/create-kubo.js'
 import { loadKuboFixtures } from './fixtures/kubo-mgmt.js'
+import type { KuboNode } from 'ipfsd-ctl'
 
 const log = logger('demo-server')
 
-const KUBO_GATEWAY_PORT = await getPort(3440)
 const SERVER_PORT = await getPort(3441)
-const { node: controller, gatewayUrl, repoPath } = await createKuboNode(KUBO_GATEWAY_PORT)
 
-const kuboGateway = gatewayUrl
-await controller.start()
-const IPFS_NS_MAP = await loadKuboFixtures(repoPath)
+let kuboGateway: string | undefined
+let controller: KuboNode | undefined
+let IPFS_NS_MAP = ''
+if (process.env.KUBO_GATEWAY == null) {
+  const KUBO_GATEWAY_PORT = await getPort(3440)
+  const kuboNodeDetails = await createKuboNode(KUBO_GATEWAY_PORT)
+  controller = kuboNodeDetails.node
+  kuboGateway = kuboNodeDetails.gatewayUrl
+  const repoPath = kuboNodeDetails.repoPath
+  await controller.start()
+  IPFS_NS_MAP = await loadKuboFixtures(repoPath)
+}
 
 const stopServer = await startVerifiedFetchGateway({
   serverPort: SERVER_PORT,
@@ -27,7 +35,7 @@ process.on('exit', () => {
   stopServer().catch((err) => {
     log.error('Failed to stop server', err)
   })
-  controller.stop().catch((err) => {
+  controller?.stop().catch((err) => {
     log.error('Failed to stop controller', err)
     process.exit(1)
   })
