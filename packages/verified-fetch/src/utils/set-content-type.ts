@@ -29,6 +29,7 @@ export async function setContentType ({ bytes, path, response, contentTypeParser
       } else if (parsed != null) {
         contentType = parsed
       }
+      log.trace('contentTypeParser returned %s', contentType)
     } catch (err) {
       log.error('error parsing content type', err)
     }
