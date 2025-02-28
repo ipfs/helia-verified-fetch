@@ -5,16 +5,24 @@ const log = logger('content-type-parser')
 
 // default from verified-fetch is application/octect-stream, which forces a download. This is not what we want for MANY file types.
 const defaultMimeType = 'text/html; charset=utf-8'
-function checkForSvg (bytes: Uint8Array): string {
+function checkForSvg (bytes: Uint8Array): boolean {
   log('checking for svg')
-  return /^(<\?xml[^>]+>)?[^<^\w]+<svg/ig.test(
-    new TextDecoder().decode(bytes.slice(0, 64)))
-    ? 'image/svg+xml'
-    : defaultMimeType
+  return /^(<\?xml[^>]+>)?[^<^\w]+<svg/ig.test(new TextDecoder().decode(bytes.slice(0, 64)))
+}
+
+async function checkForJson (bytes: Uint8Array): Promise<boolean> {
+  log('checking for json')
+  try {
+    JSON.parse(new TextDecoder().decode(bytes))
+    return true
+  } catch (err) {
+    log('failed to parse as json', err)
+    return false
+  }
 }
 
 export async function contentTypeParser (bytes: Uint8Array, fileName?: string): Promise<string> {
-  log('contentTypeParser called for fileName: %s', fileName)
+  log('contentTypeParser called for fileName: %s, byte size=%s', fileName, bytes.length)
   const detectedType = (await fileTypeFromBuffer(bytes))?.mime
   if (detectedType != null) {
     log('detectedType: %s', detectedType)
@@ -24,7 +32,12 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
 
   if (fileName == null) {
     // no other way to determine file-type.
-    return checkForSvg(bytes)
+    if (checkForSvg(bytes)) {
+      return 'image/svg+xml'
+    } else if (await checkForJson(bytes)) {
+      return 'application/json'
+    }
+    return defaultMimeType
   }
 
   // no need to include file-types listed at https://github.com/SgtPooki/file-type#supported-file-types
