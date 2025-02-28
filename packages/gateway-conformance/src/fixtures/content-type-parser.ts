@@ -12,7 +12,6 @@ function checkForSvg (bytes: Uint8Array): boolean {
 
 async function checkForJson (bytes: Uint8Array): Promise<boolean> {
   log('checking for json')
-  // try to parse as json
   try {
     JSON.parse(new TextDecoder().decode(bytes))
     return true
@@ -32,8 +31,8 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
   log('no detectedType')
 
   if (fileName == null) {
+    // no other way to determine file-type.
     if (checkForSvg(bytes)) {
-      // no other way to determine file-type.
       return 'image/svg+xml'
     } else if (await checkForJson(bytes)) {
       return 'application/json'
