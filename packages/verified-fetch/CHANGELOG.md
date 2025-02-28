@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.5.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.3...@helia/verified-fetch-2.5.4) (2025-02-28)
+
+### Tests
+
+* content-type supports json content-type in gwconformance ([#187](https://github.com/ipfs/helia-verified-fetch/issues/187)) ([47acece](https://github.com/ipfs/helia-verified-fetch/commit/47acece09b6d6c17cfe2ad04cb98deccbeebe6be))
+
 ## [@helia/verified-fetch-v2.5.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.2...@helia/verified-fetch-2.5.3) (2025-02-28)
 
 ### Bug Fixes
