@@ -52,9 +52,29 @@ function iconFromExt (name: string): string {
   return 'ipfs-_blank'
 }
 
+/**
+ * If they click on the short hash, it should link to the host + /ipfs/ + hash + ?filename={filename}
+ */
 function itemShortHashCell (item: DirectoryItem, dirData: DirectoryTemplateData): string {
-  const href = dirData.globalData.dnsLink ? `https://inbrowser.dev/ipfs/${item.hash}` : `${dirData.globalData.gatewayURL}/ipfs/${item.hash}?filename=${item.name}`
+  let href: string
+  try {
+    const currentUrl = new URL(dirData.globalData.gatewayURL)
+    const currentHost = dirData.globalData.dnsLink ? 'inbrowser.dev' : currentUrl.host
+    let newHost = currentHost
+    if (currentHost.includes('.ipfs.')) {
+      newHost = currentHost.split('.ipfs.')[1]
+    } else if (currentHost.includes('.ipns.')) {
+      newHost = currentHost.split('.ipns.')[1]
+    }
 
+    href = `${currentUrl.protocol}//${newHost}/ipfs/${item.hash}?filename=${item.name}`
+
+    // return `<a class="ipfs-hash" translate="no" href="${href}">${item.shortHash}</a>`
+  } catch {
+    // resource is not a URL.
+    // TODO: handle unknown gatewayURLs in a more standardized way? if someone calls verified fetch and gatewayURL is not a valid URL, are ipfs:// links okay, or should we error in this plugin?
+    href = `ipfs://${item.hash}`
+  }
   return `<a class="ipfs-hash" translate="no" href="${href}">${item.shortHash}</a>`
 }
 
@@ -86,6 +106,17 @@ function getItemPath (item: UnixFSEntry): string {
 }
 
 /**
+ * if <= 11, return the hash as is
+ * if > 11, return the first 4 and last 4 characters of the hash, separated by '...'
+ *
+ * e.g. QmabcccHnzA
+ * e.g. Qmab...HnzA
+ */
+function getShortHash (hash: string): string {
+  return hash.length <= 11 ? hash : `${hash.slice(0, 4)}...${hash.slice(-4)}`
+}
+
+/**
  * todo: https://github.com/ipfs/boxo/blob/09b0013e1c3e09468009b02dfc9b2b9041199d5d/gateway/handler_unixfs_dir.go#L200-L208
  *
  * @see https://github.com/ipfs/boxo/blob/09b0013e1c3e09468009b02dfc9b2b9041199d5d/gateway/assets/directory.html
@@ -106,7 +137,7 @@ export const dirIndexHtml = (dir: UnixFSEntry, items: UnixFSEntry[], { gatewayUR
         name: item.name,
         path: getItemPath(item),
         hash: item.cid.toString(),
-        shortHash: item.cid.toString().slice(0, 8)
+        shortHash: getShortHash(item.cid.toString())
       } satisfies DirectoryItem
     }),
     name: dir.name,
