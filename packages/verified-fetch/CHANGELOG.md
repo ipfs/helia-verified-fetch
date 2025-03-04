@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.5.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.4...@helia/verified-fetch-2.5.5) (2025-03-04)
+
+### Bug Fixes
+
+* byte-range request body size ([#190](https://github.com/ipfs/helia-verified-fetch/issues/190)) ([b128513](https://github.com/ipfs/helia-verified-fetch/commit/b128513f1b3ea952dec7c12deb929a56ea4a9c5a))
+
 ## [@helia/verified-fetch-v2.5.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.3...@helia/verified-fetch-2.5.4) (2025-02-28)
 
 ### Tests
