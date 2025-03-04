@@ -1,8 +1,8 @@
 import { defaultLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import sinon from 'sinon'
-import { getStreamFromAsyncIterable } from '../src/utils/get-stream-from-async-iterable.js'
 import { equals } from 'uint8arrays/equals'
+import { getStreamFromAsyncIterable } from '../src/utils/get-stream-from-async-iterable.js'
 
 describe('getStreamFromAsyncIterable', () => {
   let onProgressSpy: sinon.SinonSpy
