@@ -26,6 +26,7 @@ import { serverTiming } from './utils/server-timing.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from './plugins/types.js'
 import type { RequestFormatShorthand } from './types.js'
+import type { ByteRangeContext } from './utils/byte-range-context.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
 
@@ -63,6 +64,7 @@ interface FinalResponseContext {
   protocol?: ParsedUrlStringResults['protocol']
   ipfsPath?: string
   query?: ParsedUrlStringResults['query']
+  byteRangeContext?: ByteRangeContext
 }
 
 export class VerifiedFetch {
@@ -161,11 +163,21 @@ export class VerifiedFetch {
    * Server-Timing header to the response if it has been collected. It should be used for any final processing of the
    * response before it is returned to the user.
    */
-  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath }: FinalResponseContext = {}): Response {
+  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath, byteRangeContext }: FinalResponseContext = {}): Response {
     if (this.serverTimingHeaders.length > 0) {
       const headerString = this.serverTimingHeaders.join(', ')
       response.headers.set('Server-Timing', headerString)
       this.serverTimingHeaders = []
+    }
+
+    if (response.headers.get('Content-Length') == null && response.headers.get('Transfer-Encoding') !== 'chunked') {
+      if (byteRangeContext != null) {
+        const fileSize = byteRangeContext.getFileSize()
+        if (fileSize != null) {
+          this.log.trace('Setting Content-Length from byteRangeContext: %d', fileSize)
+          response.headers.set('Content-Length', fileSize.toString())
+        }
+      }
     }
 
     // set Content-Disposition header
@@ -365,7 +377,8 @@ export class VerifiedFetch {
       reqFormat: context.reqFormat,
       ttl,
       protocol,
-      ipfsPath
+      ipfsPath,
+      byteRangeContext: context.byteRangeContext
     })
   }
 
