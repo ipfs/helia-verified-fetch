@@ -117,12 +117,35 @@ export class ByteRangeContext {
     return body
   }
 
-  // TODO: we should be able to use this.offset and this.length to slice the body
   private getSlicedBody <T extends SliceableBody>(body: T): SliceableBody {
-    const offset = this.byteStart ?? 0
-    const length = this.byteEnd == null ? undefined : this.byteEnd + 1
-    this.log.trace('returning body with offset %o and length %o', offset, length)
-    return body.slice(offset, length) satisfies SliceableBody
+    const offset = this.byteStart ?? 0;
+
+    // Calculate the correct number of bytes to return
+    // For a range like bytes=1000-2000, we want exactly 1001 bytes
+    let length: number | undefined;
+
+    if (this.byteEnd != null && this.byteStart != null) {
+      // Exact number of bytes is (end - start + 1) due to inclusive ranges
+      length = this.byteEnd - this.byteStart + 1;
+    } else {
+      length = undefined;
+    }
+
+    this.log.trace('slicing body with offset=%o and length=%o', offset, length);
+
+    if (typeof body === 'string') {
+      // String slicing works with start and end indices
+      return body.slice(offset, length !== undefined ? offset + length : undefined) satisfies SliceableBody;
+    } else if (body instanceof Blob) {
+      // Blob.slice takes start and end positions
+      return body.slice(offset, length !== undefined ? offset + length : undefined) satisfies SliceableBody;
+    } else if (body instanceof ArrayBuffer || body instanceof Uint8Array) {
+      // ArrayBuffer.slice and Uint8Array.slice take start and end positions
+      return body.slice(offset, length !== undefined ? offset + length : undefined) satisfies SliceableBody;
+    } else {
+      // This should never happen due to type constraints
+      return body as SliceableBody;
+    }
   }
 
   /**
@@ -228,14 +251,15 @@ export class ByteRangeContext {
    * 2. slicing the body
    */
   public get length (): number | undefined {
-    if (this.byteEnd != null && this.byteStart != null && this.byteStart === this.byteEnd) {
-      return 1
+    if (this.byteEnd != null && this.byteStart != null) {
+      // For a range like bytes=1000-2000, we want a length of 1001 bytes
+      return this.byteEnd - this.byteStart + 1;
     }
     if (this.byteEnd != null) {
-      return this.byteEnd + 1
+      return this.byteEnd + 1;
     }
 
-    return this.byteSize != null ? this.byteSize - 1 : undefined
+    return this.byteSize;
   }
 
   /**
