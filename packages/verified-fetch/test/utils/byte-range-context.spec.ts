@@ -43,6 +43,7 @@ describe('ByteRangeContext', () => {
   })
 
   const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  const largeArray = Array.from({ length: 3000 }, (_, i) => i + 1)
   const uint8arrayRangeTests = [
     // full ranges:
     { type: 'Uint8Array', range: 'bytes=0-10', contentRange: 'bytes 0-10/11', body: new Uint8Array(array), expected: new Uint8Array(array) },
@@ -63,12 +64,14 @@ describe('ByteRangeContext', () => {
     { type: 'Uint8Array', range: 'bytes=1-', contentRange: 'bytes 1-10/11', body: new Uint8Array(array), expected: new Uint8Array([2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) },
     { type: 'Uint8Array', range: 'bytes=2-', contentRange: 'bytes 2-10/11', body: new Uint8Array(array), expected: new Uint8Array([3, 4, 5, 6, 7, 8, 9, 10, 11]) },
     { type: 'Uint8Array', range: 'bytes=-2', contentRange: 'bytes 9-10/11', body: new Uint8Array(array), expected: new Uint8Array(array.slice(-2)) },
+    { type: 'Uint8Array', range: 'bytes=1000-2000', contentRange: 'bytes 1000-2000/3000', body: new Uint8Array(largeArray), expected: new Uint8Array(largeArray.slice(1000, 2001)) }, // https://github.com/ipfs/helia-verified-fetch/issues/184
 
     // single byte ranges:
     { type: 'Uint8Array', range: 'bytes=1-1', contentRange: 'bytes 1-1/11', body: new Uint8Array(array), expected: new Uint8Array(array.slice(1, 2)) },
     { type: 'Uint8Array', range: 'bytes=-1', contentRange: 'bytes 10-10/11', body: new Uint8Array(array), expected: new Uint8Array(array.slice(-1)) }
 
   ]
+
   const validRanges = [
     ...uint8arrayRangeTests,
     ...uint8arrayRangeTests.map(({ range, contentRange, body, expected }) => ({
