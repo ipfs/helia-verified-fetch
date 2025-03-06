@@ -64,11 +64,7 @@ describe('accept header', () => {
   beforeEach(async () => {
     helia = await createHelia()
     verifiedFetch = new VerifiedFetch({
-      helia,
-    }, {
-      // contentTypeParser: async (bytes: Uint8Array, fileName?: string): Promise<string | undefined> => {
-      //   return undefined
-      // }
+      helia
     })
   })
 
