@@ -3,7 +3,7 @@ import { fileTypeFromBuffer } from '@sgtpooki/file-type'
 
 const log = logger('helia:verified-fetch:content-type-parser')
 
-const defaultMimeType = 'application/octet-stream'
+export const defaultMimeType = 'application/octet-stream'
 function checkForSvg (bytes: Uint8Array): boolean {
   log('checking for svg')
   return /^(<\?xml[^>]+>)?[^<^\w]+<svg/ig.test(new TextDecoder().decode(bytes.slice(0, 64)))

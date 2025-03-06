@@ -28,14 +28,19 @@ describe('content-type-parser', () => {
     await stop(verifiedFetch)
   })
 
-  it('is used when passed to createVerifiedFetch', async () => {
-    const contentTypeParser = Sinon.stub().resolves('text/plain')
+  it('can be overriden by passing a custom contentTypeParser', async () => {
+    let called = false
+    const contentTypeParser = Sinon.stub().callsFake(() => {
+      called = true
+      return 'text/plain'
+    })
     const fetch = await createVerifiedFetch(helia, {
       contentTypeParser
     })
     expect(fetch).to.be.ok()
     const resp = await fetch(cid)
     expect(resp.headers.get('content-type')).to.equal('text/plain')
+    expect(called).to.equal(true)
     await fetch.stop()
   })
 
