@@ -1,7 +1,7 @@
 import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
-import { fileTypeFromBuffer } from '@sgtpooki/file-type'
 import { expect } from 'aegir/chai'
+import { fileTypeFromBuffer } from 'file-type'
 import { filetypemime } from 'magic-bytes.js'
 import { CID } from 'multiformats/cid'
 import Sinon from 'sinon'
@@ -113,7 +113,7 @@ describe('content-type-parser', () => {
     expect(resp.headers.get('content-type')).to.equal('text/plain')
   })
 
-  it('supports @sgtpooki/file-type as a contentTypeParser', async () => {
+  it('supports file-type as a contentTypeParser', async () => {
     verifiedFetch = new VerifiedFetch({
       helia
     }, {

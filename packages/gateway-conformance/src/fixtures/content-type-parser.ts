@@ -1,5 +1,5 @@
 import { logger } from '@libp2p/logger'
-import { fileTypeFromBuffer } from '@sgtpooki/file-type'
+import { fileTypeFromBuffer } from 'file-type'
 
 const log = logger('content-type-parser')
 

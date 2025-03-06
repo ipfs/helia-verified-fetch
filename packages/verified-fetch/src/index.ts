@@ -136,7 +136,7 @@
  *
  * ```typescript
  * import { createVerifiedFetch } from '@helia/verified-fetch'
- * import { fileTypeFromBuffer } from '@sgtpooki/file-type'
+ * import { fileTypeFromBuffer } from 'file-type'
  *
  * const fetch = await createVerifiedFetch({
  *   gateways: ['https://trustless-gateway.link'],
