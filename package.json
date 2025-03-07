@@ -34,8 +34,7 @@
     "release": "run-s build docs:no-publish npm:release docs",
     "npm:release": "aegir run release",
     "docs": "aegir docs",
-    "docs:no-publish": "aegir docs --publish false",
-    "start:server": "ts-node src/server.ts"
+    "docs:no-publish": "aegir docs --publish false"
   },
   "devDependencies": {
     "aegir": "^45.0.8",
