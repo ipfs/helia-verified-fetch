@@ -1,10 +1,9 @@
 import { logger } from '@libp2p/logger'
 import { fileTypeFromBuffer } from 'file-type'
 
-const log = logger('content-type-parser')
+const log = logger('helia:verified-fetch:content-type-parser')
 
-// default from verified-fetch is application/octect-stream, which forces a download. This is not what we want for MANY file types.
-const defaultMimeType = 'text/html; charset=utf-8'
+export const defaultMimeType = 'application/octet-stream'
 function checkForSvg (bytes: Uint8Array): boolean {
   log('checking for svg')
   return /^(<\?xml[^>]+>)?[^<^\w]+<svg/ig.test(new TextDecoder().decode(bytes.slice(0, 64)))

@@ -12,6 +12,7 @@ import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
 import { JsonPlugin } from './plugins/plugin-handle-json.js'
 import { RawPlugin } from './plugins/plugin-handle-raw.js'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
+import { contentTypeParser } from './utils/content-type-parser.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
@@ -79,7 +80,7 @@ export class VerifiedFetch {
     this.helia = helia
     this.log = helia.logger.forComponent('helia:verified-fetch')
     this.ipns = ipns ?? heliaIpns(helia)
-    this.contentTypeParser = init?.contentTypeParser
+    this.contentTypeParser = init?.contentTypeParser ?? contentTypeParser
     this.blockstoreSessions = new LRUCache({
       max: init?.sessionCacheSize ?? SESSION_CACHE_MAX_SIZE,
       ttl: init?.sessionTTLms ?? SESSION_CACHE_TTL_MS,
