@@ -67,7 +67,6 @@
     "datastore-core": "^10.0.2",
     "execa": "^9.1.0",
     "fast-glob": "^3.3.2",
-    "file-type": "^20.4.0",
     "interface-blockstore": "^5.2.10",
     "interface-datastore": "^8.2.11",
     "ipfsd-ctl": "^15.0.2",
