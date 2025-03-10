@@ -25,8 +25,8 @@ function getGatewayConformanceBinaryPath (): string {
   if (process.env.GATEWAY_CONFORMANCE_BINARY != null) {
     return process.env.GATEWAY_CONFORMANCE_BINARY
   }
-  const goPath = process.env.GOPATH ?? join(homedir(), 'go', 'bin')
-  return join(goPath, 'gateway-conformance')
+  const goPath = process.env.GOPATH ?? join(homedir(), 'go')
+  return join(goPath, 'bin', 'gateway-conformance')
 }
 
 function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArgs: string[] = []): string[] {
