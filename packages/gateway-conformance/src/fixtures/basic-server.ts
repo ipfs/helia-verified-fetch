@@ -7,7 +7,6 @@ import { logger } from '@libp2p/logger'
 import { dns } from '@multiformats/dns'
 import { MemoryBlockstore } from 'blockstore-core'
 import { Agent, setGlobalDispatcher } from 'undici'
-import { contentTypeParser } from './content-type-parser.js'
 import { createVerifiedFetch } from './create-verified-fetch.js'
 import { getLocalDnsResolver } from './get-local-dns-resolver.js'
 import { convertFetchHeadersToNodeJsHeaders, convertNodeJsHeadersToFetchHeaders } from './header-utils.js'
@@ -201,7 +200,6 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
   const helia = await createHelia({ gateways: [kuboGateway], dnsResolvers: [localDnsResolver], blockstore, datastore })
 
   const verifiedFetch = await createVerifiedFetch(helia, {
-    contentTypeParser,
     plugins: [dirIndexHtmlPluginFactory]
   })
 

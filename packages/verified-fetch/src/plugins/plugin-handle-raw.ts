@@ -63,7 +63,7 @@ export class RawPlugin extends BasePlugin {
       context.query.filename = context.query.filename ?? `${cid.toString()}.bin`
       log.trace('Set content disposition...')
     } else {
-      log.trace('Did NOT setting content disposition...')
+      log.trace('Did NOT set content disposition...')
     }
 
     if (path !== '' && cid.code === rawCode) {

@@ -1,5 +1,6 @@
 import { type Logger } from '@libp2p/interface'
 import { type ContentTypeParser } from '../types.js'
+import { defaultMimeType } from './content-type-parser.js'
 import { isPromise } from './type-guards.js'
 
 export interface SetContentTypeOptions {
@@ -33,6 +34,10 @@ export async function setContentType ({ bytes, path, response, contentTypeParser
     } catch (err) {
       log.error('error parsing content type', err)
     }
+  }
+  if (contentType === defaultMimeType) {
+    // if the content type is the default in our content-type-parser, instead, set it to the default content type provided to this function.
+    contentType = defaultContentType
   }
   log.trace('setting content type to "%s"', contentType ?? defaultContentType)
   response.headers.set('content-type', contentType ?? defaultContentType)
