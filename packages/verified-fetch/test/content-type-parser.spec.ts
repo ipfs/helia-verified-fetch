@@ -44,14 +44,6 @@ describe('content-type-parser', () => {
     await fetch.stop()
   })
 
-  // it('sets default content type if contentTypeParser is not passed', async () => {
-  //   verifiedFetch = new VerifiedFetch({
-  //     helia
-  //   })
-  //   const resp = await verifiedFetch.fetch(cid)
-  //   expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
-  // })
-
   it('sets default content type if contentTypeParser returns undefined', async () => {
     verifiedFetch = new VerifiedFetch({
       helia
