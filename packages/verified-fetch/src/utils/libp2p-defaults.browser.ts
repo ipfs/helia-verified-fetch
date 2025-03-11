@@ -1,6 +1,7 @@
 import { webRTCDirect } from '@libp2p/webrtc'
 import { webSockets } from '@libp2p/websockets'
 import { libp2pDefaults, type DefaultLibp2pServices } from 'helia'
+import { trace } from '@libp2p/opentelemetry-metrics'  // Add this import
 import type { ServiceFactoryMap } from './libp2p-types'
 import type { Libp2pOptions } from 'libp2p'
 
@@ -13,6 +14,9 @@ export function getLibp2pConfig (): Libp2pOptions & Required<Pick<Libp2pOptions,
   libp2pDefaultOptions.addresses = { listen: [] }
   libp2pDefaultOptions.transports = [webRTCDirect(), webSockets()]
   libp2pDefaultOptions.peerDiscovery = [] // Avoid connecting to bootstrap nodes
+
+  // Initialize tracing
+  trace(libp2pDefaultOptions)
 
   const services: ServiceFactoryMap<ServiceMap> = {
     dcutr: libp2pDefaultOptions.services.dcutr,
