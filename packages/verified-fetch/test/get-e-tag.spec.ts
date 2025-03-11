@@ -1,6 +1,12 @@
+import { unixfs } from '@helia/unixfs'
+import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
+import last from 'it-last'
 import { CID } from 'multiformats/cid'
 import { getETag } from '../src/utils/get-e-tag.js'
+import { VerifiedFetch } from '../src/verified-fetch.js'
+import { createHelia } from './fixtures/create-offline-helia.js'
+import type { Helia } from 'helia'
 
 const cidString = 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'
 const testCID = CID.parse(cidString)
@@ -40,5 +46,44 @@ describe('getETag', () => {
       rangeStart: undefined,
       rangeEnd: undefined
     })).to.equal('W/"bafkreialihlqnf5uwo4byh4n3cmwlntwqzxxs2fg5vanqdi3d7tb2l5xkm.x-tar"')
+  })
+})
+
+describe('getEtagRequest', () => {
+  let helia: Helia
+  let verifiedFetch: VerifiedFetch
+
+  beforeEach(async () => {
+    helia = await createHelia()
+    verifiedFetch = new VerifiedFetch({ helia })
+  })
+
+  afterEach(async () => {
+    await stop(helia, verifiedFetch)
+  })
+
+  it('should return the proper etag for a verified fetch request', async () => {
+    const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
+
+    const fs = unixfs(helia)
+    const res = await last(fs.addAll([{
+      path: 'someFile.foo',
+      content: finalRootFileContent
+    }], {
+      wrapWithDirectory: true
+    }))
+
+    if (res == null) {
+      throw new Error('Import failed')
+    }
+
+    // get actual cid of the file from unixfs
+    const terminus = await last(fs.ls(res.cid, { path: 'someFile.foo' }))
+    if (terminus?.cid == null) {
+      throw new Error('Terminus CID not found')
+    }
+
+    const response = await verifiedFetch.fetch(`ipfs://${res.cid}/someFile.foo`)
+    expect(response.headers.get('etag')).to.equal(`"${terminus.cid.toString()}"`)
   })
 })
