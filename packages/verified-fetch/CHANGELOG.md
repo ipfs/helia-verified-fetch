@@ -1,3 +1,15 @@
+## [@helia/verified-fetch-v2.6.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.0...@helia/verified-fetch-2.6.1) (2025-03-10)
+
+### Bug Fixes
+
+* migrate from forked file-type to original ([#192](https://github.com/ipfs/helia-verified-fetch/issues/192)) ([28320e1](https://github.com/ipfs/helia-verified-fetch/commit/28320e1a8d9794dc9d7dc27226ee31118f9791c2))
+
+## [@helia/verified-fetch-v2.6.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.5...@helia/verified-fetch-2.6.0) (2025-03-10)
+
+### Features
+
+* provide default content-type-parser ([#193](https://github.com/ipfs/helia-verified-fetch/issues/193)) ([945dd01](https://github.com/ipfs/helia-verified-fetch/commit/945dd01778b6978bcf822eab473565ad3edba8dc))
+
 ## [@helia/verified-fetch-v2.5.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.4...@helia/verified-fetch-2.5.5) (2025-03-04)
 
 ### Bug Fixes

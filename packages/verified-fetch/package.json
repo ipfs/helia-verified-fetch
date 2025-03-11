@@ -1,6 +1,6 @@
 {
   "name": "@helia/verified-fetch",
-  "version": "2.5.5",
+  "version": "2.6.1",
   "description": "A fetch-like API for obtaining verified & trustless IPFS content on the web",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/verified-fetch#readme",
@@ -165,6 +165,7 @@
     "@libp2p/websockets": "^9.1.5",
     "@multiformats/dns": "^1.0.6",
     "cborg": "^4.2.8",
+    "file-type": "^20.4.0",
     "hashlru": "^2.3.0",
     "helia": "^5.2.1",
     "interface-blockstore": "^5.3.1",
@@ -188,7 +189,6 @@
     "@helia/json": "^4.0.2",
     "@ipld/car": "^5.4.0",
     "@libp2p/crypto": "^5.0.11",
-    "@sgtpooki/file-type": "^1.0.1",
     "@types/sinon": "^17.0.3",
     "aegir": "^45.0.9",
     "blockstore-core": "^5.0.2",
