@@ -4,6 +4,16 @@ import { okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 
+function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'cid' | 'ipfsPath'>): string {
+  if (query.filename != null) {
+    return query.filename
+  }
+
+  // convert context.ipfsPath to a filename. replace all / with _, replace prefix protocol with empty string
+  const filename = ipfsPath.replace(/\/ipfs\//, '').replace(/\/ipns\//, '').replace(/\//g, '_')
+
+  return `${filename}.car`
+}
 /**
  * Accepts a `CID` and returns a `Response` with a body stream that is a CAR
  * of the `DAG` referenced by the `CID`.
@@ -15,14 +25,14 @@ export class CarPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { options } = context
+    const { options, pathDetails, cid } = context
     const { getBlockstore, helia } = this.pluginOptions
     context.reqFormat = 'car'
     context.query.download = true
-    context.query.filename = context.query.filename ?? `${context.cid.toString()}.car`
-    const blockstore = getBlockstore(context.cid, context.resource, options?.session ?? true, options)
+    context.query.filename = getFilename(context)
+    const blockstore = getBlockstore(cid, context.resource, options?.session ?? true, options)
     const c = car({ blockstore, getCodec: helia.getCodec })
-    const stream = toBrowserReadableStream(c.stream(context.cid, options))
+    const stream = toBrowserReadableStream(c.stream(pathDetails?.terminalElement.cid ?? cid, options))
 
     const response = okResponse(context.resource, stream)
     response.headers.set('content-type', 'application/vnd.ipld.car; version=1')
