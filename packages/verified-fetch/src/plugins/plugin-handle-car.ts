@@ -14,6 +14,17 @@ function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'c
 
   return `${filename}.car`
 }
+
+// https://specs.ipfs.tech/http-gateways/trustless-gateway/#dag-scope-request-query-parameter
+type DagScope = 'all' | 'entity' | 'block'
+function getDagScope ({ query }: Pick<PluginContext, 'query'>): DagScope | null {
+  const dagScope = query['dag-scope']
+  if (dagScope === 'all' || dagScope === 'entity' || dagScope === 'block') {
+    return dagScope
+  }
+  return null
+}
+
 /**
  * Accepts a `CID` and returns a `Response` with a body stream that is a CAR
  * of the `DAG` referenced by the `CID`.
