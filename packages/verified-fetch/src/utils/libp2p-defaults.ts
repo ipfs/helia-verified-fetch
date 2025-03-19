@@ -2,15 +2,19 @@ import { kadDHT } from '@libp2p/kad-dht'
 import { libp2pDefaults, type DefaultLibp2pServices } from 'helia'
 import { ipnsSelector } from 'ipns/selector'
 import { ipnsValidator } from 'ipns/validator'
+import { trace } from '@libp2p/opentelemetry-metrics'  // Add this import
 import type { ServiceFactoryMap } from './libp2p-types'
 import type { Libp2pOptions } from 'libp2p'
 
 type ServiceMap = Pick<DefaultLibp2pServices, 'autoNAT' | 'dcutr' | 'dht' | 'identify' | 'keychain' | 'ping' | 'upnp'>
 
-export function getLibp2pConfig (): Libp2pOptions & Required<Pick<Libp2pOptions, 'services'>> {
+export function getLibp2pConfig(): Libp2pOptions & Required<Pick<Libp2pOptions, 'services'>> {
   const libp2pDefaultOptions = libp2pDefaults()
 
   libp2pDefaultOptions.start = false
+
+  // Initialize tracing
+  trace(libp2pDefaultOptions)
 
   const services: ServiceFactoryMap<ServiceMap> = {
     autoNAT: libp2pDefaultOptions.services.autoNAT,
