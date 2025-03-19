@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.1...@helia/verified-fetch-2.6.2) (2025-03-11)
+
+### Bug Fixes
+
+* etag is path aware ([#197](https://github.com/ipfs/helia-verified-fetch/issues/197)) ([595881a](https://github.com/ipfs/helia-verified-fetch/commit/595881a8bc44e243fa3ac3037661437c600de17e))
+
 ## [@helia/verified-fetch-v2.6.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.0...@helia/verified-fetch-2.6.1) (2025-03-10)
 
 ### Bug Fixes
