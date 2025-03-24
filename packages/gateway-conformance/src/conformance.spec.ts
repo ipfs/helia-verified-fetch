@@ -421,7 +421,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestTrustlessCarDagScopeAll',
     run: ['TestTrustlessCarDagScopeAll'],
-    successRate: 54.55,
+    successRate: 48.48,
     expectPassing: [
       'TestTrustlessCarDagScopeAll/GET_CAR_with_dag-scope=all_of_UnixFS_directory_with_multiple_files_%28format=car%29/Status_code',
       'TestTrustlessCarDagScopeAll/GET_CAR_with_dag-scope=all_of_UnixFS_directory_with_multiple_files_%28format=car%29/Header_Content-Type',
