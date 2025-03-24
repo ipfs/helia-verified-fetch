@@ -105,8 +105,7 @@ function getGatewayURLWithoutSubdomain (gatewayURL: string): URL {
     // If the gatewayURL is invalid (ipfs:// or ipns:// or just a CID), use inbrowser.link as a fallback
     currentUrl = new URL('https://inbrowser.link')
   }
-  const newHost = removeIpfsOrIpnsSubdomain(currentUrl.host)
-  currentUrl.host = newHost
+  currentUrl.host = removeIpfsOrIpnsSubdomain(currentUrl.host)
   return currentUrl
 }
 
