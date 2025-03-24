@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.2...@helia/verified-fetch-2.6.3) (2025-03-24)
+
+### Bug Fixes
+
+* recognize text and html ([#203](https://github.com/ipfs/helia-verified-fetch/issues/203)) ([71ed4f7](https://github.com/ipfs/helia-verified-fetch/commit/71ed4f7fb4cc023a67ec7a36a14fceba57735209))
+
 ## [@helia/verified-fetch-v2.6.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.1...@helia/verified-fetch-2.6.2) (2025-03-11)
 
 ### Bug Fixes
