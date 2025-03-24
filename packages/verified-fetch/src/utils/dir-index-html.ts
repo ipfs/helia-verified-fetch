@@ -11,6 +11,7 @@ import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 interface GlobalData {
   // Menu       []MenuItem
   gatewayURL: string
+  gatewayURLWithoutSubdomain: URL
   dnsLink: boolean
   // root: UnixFSEntry
 }
@@ -40,6 +41,9 @@ interface Breadcrumb {
 }
 
 export interface DirIndexHtmlOptions {
+  /**
+   * The URL of the requested resource
+   */
   gatewayURL: string
   dnsLink?: boolean
   log: Logger
@@ -53,29 +57,57 @@ function iconFromExt (name: string): string {
 }
 
 /**
- * If they click on the short hash, it should link to the host + /ipfs/ + hash + ?filename={filename}
+ * If they click on the short hash, it should link to the host-without-subdomain + /ipfs/ + hash + ?filename={filename}
  */
 function itemShortHashCell (item: DirectoryItem, dirData: DirectoryTemplateData): string {
-  let href: string
-  try {
-    const currentUrl = new URL(dirData.globalData.gatewayURL)
-    const currentHost = dirData.globalData.dnsLink ? 'inbrowser.dev' : currentUrl.host
-    let newHost = currentHost
-    if (currentHost.includes('.ipfs.')) {
-      newHost = currentHost.split('.ipfs.')[1]
-    } else if (currentHost.includes('.ipns.')) {
-      newHost = currentHost.split('.ipns.')[1]
+  const host = dirData.globalData.gatewayURLWithoutSubdomain.host
+  const protocol = dirData.globalData.gatewayURLWithoutSubdomain.protocol
+
+  return `<a class="ipfs-hash" translate="no" href="${protocol}//${host}/ipfs/${item.hash}?filename=${item.name}">${item.shortHash}</a>`
+}
+
+/**
+ * Returns a new host with the subdomain removed if it includes "ipfs" or "ipns".
+ *
+ * @example
+ *   subdomain.ipfs.dweb.link     -> dweb.link
+ *   abc.ipns.localhost           -> localhost
+ *   bafyfoo.ipfs.localhost:3441  -> localhost:3441
+ *   bafyfoo.ipfs.foo.localhost:3441  -> foo.localhost:3441
+ */
+function removeIpfsOrIpnsSubdomain (host: string): string {
+  const segments = host.split('.')
+  const keepSegments: string[] = []
+
+  // Walk from the right to the left
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const seg = segments[i]
+    // If we hit "ipfs" or "ipns", stop (ignore everything to the left)
+    if (seg === 'ipfs' || seg === 'ipns') {
+      break
     }
-
-    href = `${currentUrl.protocol}//${newHost}/ipfs/${item.hash}?filename=${item.name}`
-
-    // return `<a class="ipfs-hash" translate="no" href="${href}">${item.shortHash}</a>`
-  } catch {
-    // resource is not a URL.
-    // TODO: handle unknown gatewayURLs in a more standardized way? if someone calls verified fetch and gatewayURL is not a valid URL, are ipfs:// links okay, or should we error in this plugin?
-    href = `ipfs://${item.hash}`
+    keepSegments.push(seg)
   }
-  return `<a class="ipfs-hash" translate="no" href="${href}">${item.shortHash}</a>`
+
+  // Reverse because we collected from right to left
+  keepSegments.reverse()
+
+  // If keepSegments is empty, it means "ipfs" or "ipns" was at the TLD level
+  // but typically that means the next domain is empty; just return empty string
+  return keepSegments.join('.')
+}
+
+function getGatewayURLWithoutSubdomain (gatewayURL: string): URL {
+  let currentUrl: URL
+  try {
+    currentUrl = new URL(gatewayURL)
+  } catch {
+    // If the gatewayURL is invalid (ipfs:// or ipns:// or just a CID), use inbrowser.link as a fallback
+    currentUrl = new URL('https://inbrowser.link')
+  }
+  const newHost = removeIpfsOrIpnsSubdomain(currentUrl.host)
+  currentUrl.host = newHost
+  return currentUrl
 }
 
 function dirListingTitle (dirData: DirectoryTemplateData): string {
@@ -129,6 +161,7 @@ export const dirIndexHtml = (dir: UnixFSEntry, items: UnixFSEntry[], { gatewayUR
   const dirData: DirectoryTemplateData = {
     globalData: {
       gatewayURL,
+      gatewayURLWithoutSubdomain: getGatewayURLWithoutSubdomain(gatewayURL),
       dnsLink: dnsLink ?? false
     },
     listing: items.map((item) => {
