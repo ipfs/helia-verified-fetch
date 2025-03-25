@@ -4,6 +4,7 @@ import { prefixLogger } from '@libp2p/logger'
 import { LRUCache } from 'lru-cache'
 import { type CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
+import { ByteRangeContextPlugin } from './plugins/plugin-handle-byte-range-context.js'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { DagCborPlugin } from './plugins/plugin-handle-dag-cbor.js'
 import { DagPbPlugin } from './plugins/plugin-handle-dag-pb.js'
@@ -26,8 +27,6 @@ import { selectOutputType } from './utils/select-output-type.js'
 import { serverTiming } from './utils/server-timing.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from './plugins/types.js'
-import type { RequestFormatShorthand } from './types.js'
-import type { ByteRangeContext } from './utils/byte-range-context.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { Blockstore } from 'interface-blockstore'
 
@@ -92,6 +91,7 @@ export class VerifiedFetch {
 
     const defaultPlugins = [
       new DagWalkPlugin(pluginOptions),
+      new ByteRangeContextPlugin(pluginOptions),
       new IpnsRecordPlugin(pluginOptions),
       new CarPlugin(pluginOptions),
       new RawPlugin(pluginOptions),
@@ -160,12 +160,13 @@ export class VerifiedFetch {
       this.serverTimingHeaders = []
     }
 
-    if (response.headers.get('Content-Length') == null && response.headers.get('Transfer-Encoding') !== 'chunked') {
+    // if there are multiple ranges, we should omit the content-length header. see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Transfer-Encoding
+    if (response.headers.get('Transfer-Encoding') !== 'chunked') {
       if (byteRangeContext != null) {
-        const fileSize = byteRangeContext.getFileSize()
-        if (fileSize != null) {
-          this.log.trace('Setting Content-Length from byteRangeContext: %d', fileSize)
-          response.headers.set('Content-Length', fileSize.toString())
+        const contentLength = byteRangeContext.length
+        if (contentLength != null) {
+          this.log.trace('Setting Content-Length from byteRangeContext: %d', contentLength)
+          response.headers.set('Content-Length', contentLength.toString())
         }
       }
     }

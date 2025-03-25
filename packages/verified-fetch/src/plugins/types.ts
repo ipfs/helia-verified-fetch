@@ -52,6 +52,8 @@ export interface PluginContext extends ParsedUrlStringResults {
   /**
    * ByteRangeContext contains information about the size of the content and range requests.
    * This can be used to set the Content-Length header without loading the entire body.
+   *
+   * This is set by the ByteRangeContextPlugin
    */
   byteRangeContext?: ByteRangeContext
   [key: string]: unknown
