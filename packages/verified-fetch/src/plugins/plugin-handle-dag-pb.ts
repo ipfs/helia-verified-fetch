@@ -2,7 +2,6 @@ import { unixfs } from '@helia/unixfs'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { exporter } from 'ipfs-unixfs-exporter'
 import { CustomProgressEvent } from 'progress-events'
-import { ByteRangeContext } from '../utils/byte-range-context.js'
 import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-iterable.js'
 import { setIpfsRoots } from '../utils/response-headers.js'
 import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, notSupportedResponse, okRangeResponse } from '../utils/responses.js'
@@ -16,9 +15,12 @@ import type { CIDDetail } from '../index.js'
  */
 export class DagPbPlugin extends BasePlugin {
   readonly codes = [dagPbCode]
-  canHandle ({ cid, accept, pathDetails }: PluginContext): boolean {
+  canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
     if (pathDetails == null) {
+      return false
+    }
+    if (byteRangeContext == null) {
       return false
     }
 
@@ -49,7 +51,7 @@ export class DagPbPlugin extends BasePlugin {
     return null
   }
 
-  async handle (context: PluginContext): Promise<Response | null> {
+  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>): Promise<Response | null> {
     const { cid, options, withServerTiming = false, pathDetails } = context
     const { handleServerTiming, contentTypeParser, helia, getBlockstore } = this.pluginOptions
     const log = this.log
@@ -57,11 +59,8 @@ export class DagPbPlugin extends BasePlugin {
     let path = context.path
 
     let redirected = false
-    const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
 
-    if (pathDetails == null) {
-      throw new TypeError('Path details are required')
-    }
+    const byteRangeContext = context.byteRangeContext
     const ipfsRoots = pathDetails.ipfsRoots
     const terminalElement = pathDetails.terminalElement
     let resolvedCID = terminalElement.cid

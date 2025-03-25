@@ -4,6 +4,7 @@ import { prefixLogger } from '@libp2p/logger'
 import { LRUCache } from 'lru-cache'
 import { type CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
+import { ByteRangeContextPlugin } from './plugins/plugin-handle-byte-range-context.js'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { DagCborPlugin } from './plugins/plugin-handle-dag-cbor.js'
 import { DagPbPlugin } from './plugins/plugin-handle-dag-pb.js'
@@ -90,6 +91,7 @@ export class VerifiedFetch {
 
     const defaultPlugins = [
       new DagWalkPlugin(pluginOptions),
+      new ByteRangeContextPlugin(pluginOptions),
       new IpnsRecordPlugin(pluginOptions),
       new CarPlugin(pluginOptions),
       new RawPlugin(pluginOptions),
@@ -151,11 +153,22 @@ export class VerifiedFetch {
    * Server-Timing header to the response if it has been collected. It should be used for any final processing of the
    * response before it is returned to the user.
    */
-  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath, pathDetails }: Partial<PluginContext> = {}): Response {
+  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath, pathDetails, byteRangeContext }: Partial<PluginContext> = {}): Response {
     if (this.serverTimingHeaders.length > 0) {
       const headerString = this.serverTimingHeaders.join(', ')
       response.headers.set('Server-Timing', headerString)
       this.serverTimingHeaders = []
+    }
+
+    // if there are multiple ranges, we should omit the content-length header. see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Transfer-Encoding
+    if (response.headers.get('Transfer-Encoding') !== 'chunked') {
+      if (byteRangeContext != null) {
+        const contentLength = byteRangeContext.length
+        if (contentLength != null) {
+          this.log.trace('Setting Content-Length from byteRangeContext: %d', contentLength)
+          response.headers.set('Content-Length', contentLength.toString())
+        }
+      }
     }
 
     // set Content-Disposition header

@@ -107,6 +107,7 @@ export class ByteRangeContext {
       this.log.trace('returning body with byteStart=%o, byteEnd=%o, byteSize=%o', byteStart, byteEnd, byteSize)
       if (body instanceof ReadableStream) {
         // stream should already be spliced by `unixfs.cat`
+        // TODO: if the content is not unixfs and unixfs.cat was not called, we need to slice the body here.
         return body
       }
       return this.getSlicedBody(body)
