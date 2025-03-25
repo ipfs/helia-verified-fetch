@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.3...@helia/verified-fetch-2.6.4) (2025-03-25)
+
+### Bug Fixes
+
+* dir-index-html shorthash links correctly ([#204](https://github.com/ipfs/helia-verified-fetch/issues/204)) ([35fd859](https://github.com/ipfs/helia-verified-fetch/commit/35fd859c11558a19242ac2757dcc9912ff6e449b))
+
 ## [@helia/verified-fetch-v2.6.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.2...@helia/verified-fetch-2.6.3) (2025-03-24)
 
 ### Bug Fixes
