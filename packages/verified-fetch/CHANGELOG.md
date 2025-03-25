@@ -1,3 +1,39 @@
+## [@helia/verified-fetch-v2.6.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.3...@helia/verified-fetch-2.6.4) (2025-03-25)
+
+### Bug Fixes
+
+* dir-index-html shorthash links correctly ([#204](https://github.com/ipfs/helia-verified-fetch/issues/204)) ([35fd859](https://github.com/ipfs/helia-verified-fetch/commit/35fd859c11558a19242ac2757dcc9912ff6e449b))
+
+## [@helia/verified-fetch-v2.6.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.2...@helia/verified-fetch-2.6.3) (2025-03-24)
+
+### Bug Fixes
+
+* recognize text and html ([#203](https://github.com/ipfs/helia-verified-fetch/issues/203)) ([71ed4f7](https://github.com/ipfs/helia-verified-fetch/commit/71ed4f7fb4cc023a67ec7a36a14fceba57735209))
+
+## [@helia/verified-fetch-v2.6.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.1...@helia/verified-fetch-2.6.2) (2025-03-11)
+
+### Bug Fixes
+
+* etag is path aware ([#197](https://github.com/ipfs/helia-verified-fetch/issues/197)) ([595881a](https://github.com/ipfs/helia-verified-fetch/commit/595881a8bc44e243fa3ac3037661437c600de17e))
+
+## [@helia/verified-fetch-v2.6.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.0...@helia/verified-fetch-2.6.1) (2025-03-10)
+
+### Bug Fixes
+
+* migrate from forked file-type to original ([#192](https://github.com/ipfs/helia-verified-fetch/issues/192)) ([28320e1](https://github.com/ipfs/helia-verified-fetch/commit/28320e1a8d9794dc9d7dc27226ee31118f9791c2))
+
+## [@helia/verified-fetch-v2.6.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.5...@helia/verified-fetch-2.6.0) (2025-03-10)
+
+### Features
+
+* provide default content-type-parser ([#193](https://github.com/ipfs/helia-verified-fetch/issues/193)) ([945dd01](https://github.com/ipfs/helia-verified-fetch/commit/945dd01778b6978bcf822eab473565ad3edba8dc))
+
+## [@helia/verified-fetch-v2.5.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.4...@helia/verified-fetch-2.5.5) (2025-03-04)
+
+### Bug Fixes
+
+* byte-range request body size ([#190](https://github.com/ipfs/helia-verified-fetch/issues/190)) ([b128513](https://github.com/ipfs/helia-verified-fetch/commit/b128513f1b3ea952dec7c12deb929a56ea4a9c5a))
+
 ## [@helia/verified-fetch-v2.5.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.5.3...@helia/verified-fetch-2.5.4) (2025-02-28)
 
 ### Tests

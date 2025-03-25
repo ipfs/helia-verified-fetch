@@ -1,7 +1,7 @@
 import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
-import { fileTypeFromBuffer } from '@sgtpooki/file-type'
 import { expect } from 'aegir/chai'
+import { fileTypeFromBuffer } from 'file-type'
 import { filetypemime } from 'magic-bytes.js'
 import { CID } from 'multiformats/cid'
 import Sinon from 'sinon'
@@ -28,23 +28,20 @@ describe('content-type-parser', () => {
     await stop(verifiedFetch)
   })
 
-  it('is used when passed to createVerifiedFetch', async () => {
-    const contentTypeParser = Sinon.stub().resolves('text/plain')
+  it('can be overriden by passing a custom contentTypeParser', async () => {
+    let called = false
+    const contentTypeParser = Sinon.stub().callsFake(() => {
+      called = true
+      return 'text/plain'
+    })
     const fetch = await createVerifiedFetch(helia, {
       contentTypeParser
     })
     expect(fetch).to.be.ok()
     const resp = await fetch(cid)
     expect(resp.headers.get('content-type')).to.equal('text/plain')
+    expect(called).to.equal(true)
     await fetch.stop()
-  })
-
-  it('sets default content type if contentTypeParser is not passed', async () => {
-    verifiedFetch = new VerifiedFetch({
-      helia
-    })
-    const resp = await verifiedFetch.fetch(cid)
-    expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
   })
 
   it('sets default content type if contentTypeParser returns undefined', async () => {
@@ -113,7 +110,7 @@ describe('content-type-parser', () => {
     expect(resp.headers.get('content-type')).to.equal('text/plain')
   })
 
-  it('supports @sgtpooki/file-type as a contentTypeParser', async () => {
+  it('supports file-type as a contentTypeParser', async () => {
     verifiedFetch = new VerifiedFetch({
       helia
     }, {

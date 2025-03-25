@@ -30,7 +30,7 @@ export interface PluginOptions {
  * - Shared Data: Allows plugins to communicate partial results, discovered data, or interim errors.
  * - Ephemeral: Typically discarded once fetch(...) completes.
  */
-export interface PluginContext {
+export interface PluginContext extends ParsedUrlStringResults {
   readonly cid: CID
   readonly path: string
   readonly resource: string

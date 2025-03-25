@@ -12,6 +12,7 @@ import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
 import { JsonPlugin } from './plugins/plugin-handle-json.js'
 import { RawPlugin } from './plugins/plugin-handle-raw.js'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
+import { contentTypeParser } from './utils/content-type-parser.js'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
@@ -56,17 +57,6 @@ function convertOptions (options?: VerifiedFetchOptions): (Omit<VerifiedFetchOpt
   }
 }
 
-// TODO: merge/combine with PluginContext
-interface FinalResponseContext {
-  cid?: ParsedUrlStringResults['cid']
-  reqFormat?: RequestFormatShorthand
-  ttl?: ParsedUrlStringResults['ttl']
-  protocol?: ParsedUrlStringResults['protocol']
-  ipfsPath?: string
-  query?: ParsedUrlStringResults['query']
-  byteRangeContext?: ByteRangeContext
-}
-
 export class VerifiedFetch {
   private readonly helia: Helia
   private readonly ipns: IPNS
@@ -81,7 +71,7 @@ export class VerifiedFetch {
     this.helia = helia
     this.log = helia.logger.forComponent('helia:verified-fetch')
     this.ipns = ipns ?? heliaIpns(helia)
-    this.contentTypeParser = init?.contentTypeParser
+    this.contentTypeParser = init?.contentTypeParser ?? contentTypeParser
     this.blockstoreSessions = new LRUCache({
       max: init?.sessionCacheSize ?? SESSION_CACHE_MAX_SIZE,
       ttl: init?.sessionTTLms ?? SESSION_CACHE_TTL_MS,
@@ -163,7 +153,7 @@ export class VerifiedFetch {
    * Server-Timing header to the response if it has been collected. It should be used for any final processing of the
    * response before it is returned to the user.
    */
-  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath, byteRangeContext }: FinalResponseContext = {}): Response {
+  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath, pathDetails, byteRangeContext }: Partial<PluginContext> = {}): Response {
     if (this.serverTimingHeaders.length > 0) {
       const headerString = this.serverTimingHeaders.join(', ')
       response.headers.set('Server-Timing', headerString)
@@ -210,7 +200,7 @@ export class VerifiedFetch {
     }
 
     if (cid != null && response.headers.get('etag') == null) {
-      response.headers.set('etag', getETag({ cid, reqFormat, weak: false }))
+      response.headers.set('etag', getETag({ cid: pathDetails?.terminalElement.cid ?? cid, reqFormat, weak: false }))
     }
 
     if (protocol != null) {
@@ -319,22 +309,11 @@ export class VerifiedFetch {
     const withServerTiming = options?.withServerTiming ?? this.withServerTiming
 
     options?.onProgress?.(new CustomProgressEvent<ResourceDetail>('verified-fetch:request:start', { resource }))
-    // resolve the CID/path from the requested resource
-    let cid: ParsedUrlStringResults['cid']
-    let path: ParsedUrlStringResults['path']
-    let query: ParsedUrlStringResults['query']
-    let ttl: ParsedUrlStringResults['ttl']
-    let protocol: ParsedUrlStringResults['protocol']
-    let ipfsPath: string
+
+    let parsedResult: ParsedUrlStringResults
     try {
-      const result = await this.handleServerTiming('parse-resource', '', async () => parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, { withServerTiming, ...options }), withServerTiming)
-      cid = result.cid
-      path = result.path
-      query = result.query
-      ttl = result.ttl
-      protocol = result.protocol
-      ipfsPath = result.ipfsPath
-      this.serverTimingHeaders.push(...result.serverTimings.map(({ header }) => header))
+      parsedResult = await this.handleServerTiming('parse-resource', '', async () => parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, { withServerTiming, ...options }), withServerTiming)
+      this.serverTimingHeaders.push(...parsedResult.serverTimings.map(({ header }) => header))
     } catch (err: any) {
       options?.signal?.throwIfAborted()
       this.log.error('error parsing resource %s', resource, err)
@@ -342,11 +321,11 @@ export class VerifiedFetch {
       return this.handleFinalResponse(badRequestResponse(resource.toString(), err))
     }
 
-    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid, path }))
+    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid: parsedResult.cid, path: parsedResult.path }))
 
-    const acceptHeader = getResolvedAcceptHeader({ query, headers: options?.headers, logger: this.helia.logger })
+    const acceptHeader = getResolvedAcceptHeader({ query: parsedResult.query, headers: options?.headers, logger: this.helia.logger })
 
-    const accept: string | undefined = selectOutputType(cid, acceptHeader)
+    const accept: string | undefined = selectOutputType(parsedResult.cid, acceptHeader)
     this.log('output type %s', accept)
 
     if (acceptHeader != null && accept == null) {
@@ -355,31 +334,28 @@ export class VerifiedFetch {
 
     const responseContentType: string = accept?.split(';')[0] ?? 'application/octet-stream'
 
-    const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid })
+    const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid: parsedResult.cid })
     if (redirectResponse != null) {
       return this.handleFinalResponse(redirectResponse)
     }
 
-    const context: PluginContext = { cid, path, resource: resource.toString(), accept, query, options, withServerTiming, onProgress: options?.onProgress, modified: 0 }
+    const context: PluginContext = {
+      ...parsedResult,
+      resource: resource.toString(),
+      accept,
+      options,
+      withServerTiming,
+      onProgress: options?.onProgress,
+      modified: 0
+    }
 
-    this.log.trace('finding handler for cid code "%s" and response content type "%s"', cid.code, responseContentType)
+    this.log.trace('finding handler for cid code "%s" and response content type "%s"', parsedResult.cid.code, responseContentType)
 
     const response = await this.runPluginPipeline(context)
 
-    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid, path }))
+    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid: parsedResult.cid, path: parsedResult.path }))
 
-    return this.handleFinalResponse(response ?? notSupportedResponse(resource.toString()), {
-      query: {
-        ...query,
-        ...context.query
-      },
-      cid,
-      reqFormat: context.reqFormat,
-      ttl,
-      protocol,
-      ipfsPath,
-      byteRangeContext: context.byteRangeContext
-    })
+    return this.handleFinalResponse(response ?? notSupportedResponse(resource.toString()), context)
   }
 
   /**
