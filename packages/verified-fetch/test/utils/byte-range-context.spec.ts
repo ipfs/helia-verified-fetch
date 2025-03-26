@@ -191,7 +191,7 @@ describe('ByteRangeContext', () => {
         })
         const stat = await fs.stat(cid)
         context.setFileSize(stat.fileSize)
-        context.setBody(await getBodyStream(context.offset, context.length))
+        context.setBody(await getBodyStream(context.getByteRanges()[0].start, context.getLength(context.getByteRanges()[0])))
         const response = new Response(context.getBody())
         const bodyResult = await response.arrayBuffer()
         expect(context.contentRangeHeaderValue).to.equal(contentRange)

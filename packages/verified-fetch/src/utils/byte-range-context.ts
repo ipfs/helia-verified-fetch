@@ -117,10 +117,23 @@ export class ByteRangeContext {
     }
   }
 
-  public setBody (body: SupportedBodyTypes): void {
-    this._body = body
-    // if fileSize was already set, don't recalculate it
-    this.setFileSize(this._fileSize ?? getBodySizeSync(body))
+  public getByteRanges (): ByteRange[] {
+    return this.byteRanges
+  }
+
+  public setBody (
+    bodyOrProvider: SupportedBodyTypes | ((range: ByteRange) => Promise<SupportedBodyTypes>),
+    contentType: string = 'application/octet-stream'
+  ): void {
+    if (typeof bodyOrProvider === 'function') {
+      const stream = this.createRangeStream(bodyOrProvider, contentType)
+      this._body = stream
+    } else {
+      this._body = bodyOrProvider
+
+      // if fileSize was already set, don't recalculate it
+      this.setFileSize(this._fileSize ?? getBodySizeSync(bodyOrProvider))
+    }
 
     this.log.trace('set request body with fileSize %o', this._fileSize)
   }
@@ -278,49 +291,47 @@ export class ByteRangeContext {
     return true
   }
 
-  /**
-   * Given all the information we have, this function returns the offset that will be used when:
-   * 1. calling unixfs.cat
-   * 2. slicing the body
-   */
-  public get offset (): number {
-    if (this.byteRanges.length > 0) {
-      return this.byteRanges[0].start ?? 0
-    }
-    return 0
-  }
+  // /**
+  //  * Given all the information we have, this function returns the offset that will be used when:
+  //  * 1. calling unixfs.cat
+  //  * 2. slicing the body
+  //  */
+  // public offset (range: ByteRange): number {
+  //   if (this.byteRanges.length > 0) {
+  //     return this.byteRanges[0].start ?? 0
+  //   }
+  //   return 0
+  // }
 
   /**
    * Given all the information we have, this function returns the length that will be used when:
    * 1. calling unixfs.cat
    * 2. slicing the body
    */
-  public get length (): number | undefined {
-    if (this.isMultiRangeRequest) {
-      return this.getLengthForMultiRangeRequest()
+  public getLength (range?: ByteRange): number | undefined {
+    if (!this.isValidRangeRequest) {
+      this.log.error('cannot get length for invalid range request')
+      return undefined
     }
 
-    if (this.byteRanges.length > 0) {
-      const range = this.byteRanges[0]
-      if (range.end != null && range.start != null) {
-        // For a range like bytes=1000-2000, we want a length of 1001 bytes
-        return range.end - range.start + 1
-      }
-      if (range.end != null) {
-        return range.end + 1
-      }
-      return range.size
+    if (this.isMultiRangeRequest && range == null) {
+      /**
+       * The content-length for a multi-range request is the sum of the lengths of all the ranges, plus the boundaries and part headers and newlines.
+       */
+      // TODO: figure out a way to calculate the correct content-length for multi-range requests' response.
+      return undefined
     }
+    range ??= this.byteRanges[0]
+    this.log.trace('getting length for range: %o', range)
 
-    return undefined
-  }
-
-  /**
-   * The content-length for a multi-range request is the sum of the lengths of all the ranges, plus the boundaries and part headers and newlines.
-   */
-  private getLengthForMultiRangeRequest (): number | undefined {
-    // return this.byteRanges.reduce((acc, range) => acc + (range.end ?? 0) - (range.start ?? 0) + 1, 0)
-    return undefined
+    if (range.end != null && range.start != null) {
+      // For a range like bytes=1000-2000, we want a length of 1001 bytes
+      return range.end - range.start + 1
+    }
+    if (range.end != null) {
+      return range.end + 1
+    }
+    return range.size
   }
 
   /**
@@ -499,5 +510,95 @@ export class ByteRangeContext {
     }
 
     throw new InvalidRangeError('No valid ranges found')
+  }
+
+  // Unified method to create a stream for either single or multi-range requests
+  private createRangeStream (
+    contentProvider: (range: ByteRange) => Promise<SupportedBodyTypes>,
+    contentType: string
+  ): ReadableStream<Uint8Array> {
+    const encoder = new TextEncoder()
+    const byteRanges = this.byteRanges
+    const multiPartBoundary = this.multiPartBoundary
+    const fileSize = this._fileSize
+    const log = this.log
+    const isMultiRangeRequest = this.isMultiRangeRequest
+    const streamRangeContent = this.streamRangeContent
+
+    if (byteRanges.length === 0) {
+      // TODO: create a stream with a range of *
+      log.error('Cannot create range stream with no byte ranges')
+      throw new InvalidRangeError('No valid ranges found')
+    }
+
+    return new ReadableStream({
+      async start (controller) {
+        try {
+          // For multi-range requests, we need to handle multiple parts with headers
+          // if (isMultiRangeRequest) {
+          for (const range of byteRanges) {
+            // Write part header for multipart responses
+            if (isMultiRangeRequest) {
+              const partHeader =
+                `\r\n--${multiPartBoundary}\r\n` +
+                `Content-Type: ${contentType}\r\n` +
+                `Content-Range: ${getContentRangeHeader({
+                  byteStart: range.start,
+                  byteEnd: range.end,
+                  byteSize: fileSize ?? undefined
+                })}\r\n\r\n`
+
+              controller.enqueue(encoder.encode(partHeader))
+            }
+
+            // Get and stream content for this range
+            await streamRangeContent(range, controller, contentProvider)
+          }
+
+          if (isMultiRangeRequest) {
+            // Write final boundary for multipart
+            controller.enqueue(encoder.encode(`\r\n--${multiPartBoundary}--`))
+          }
+
+          controller.close()
+        } catch (err) {
+          log.error('Error processing range(s): %o', err)
+          controller.error(err)
+        }
+      }
+    })
+  }
+
+  // Helper function to stream content for a single range
+  private async streamRangeContent (range: ByteRange, controller: ReadableStreamDefaultController, contentProvider: (range: ByteRange) => Promise<SupportedBodyTypes>): Promise<void> {
+    try {
+      // Get content for this range
+      const rangeContent = await contentProvider(range)
+
+      // Handle different content types
+      if (rangeContent instanceof ReadableStream) {
+        const reader = rangeContent.getReader()
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            // eslint-disable-next-line max-depth
+            if (done) break
+            controller.enqueue(value)
+          }
+        } finally {
+          reader.releaseLock()
+        }
+      } else {
+        // Handle other body types by converting to Uint8Array
+        if (rangeContent === null) {
+          throw new Error('Range content is null')
+        }
+        const chunk = await this.convertToUint8Array(rangeContent)
+        controller.enqueue(chunk)
+      }
+    } catch (err) {
+      this.log.error('Error processing range %o: %o', range, err)
+      throw err // Re-throw to be caught by the outer try/catch
+    }
   }
 }

@@ -163,7 +163,7 @@ export class VerifiedFetch {
     // if there are multiple ranges, we should omit the content-length header. see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Transfer-Encoding
     if (response.headers.get('Transfer-Encoding') !== 'chunked') {
       if (byteRangeContext != null) {
-        const contentLength = byteRangeContext.length
+        const contentLength = byteRangeContext.getLength()
         if (contentLength != null) {
           this.log.trace('Setting Content-Length from byteRangeContext: %d', contentLength)
           response.headers.set('Content-Length', contentLength.toString())

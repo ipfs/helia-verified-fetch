@@ -1,4 +1,5 @@
 import { ByteRangeContext } from '../utils/byte-range-context.js'
+import { badRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 
@@ -16,6 +17,11 @@ export class ByteRangeContextPlugin extends BasePlugin {
   async handle (context: PluginContext): Promise<Response | null> {
     context.byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, context.options?.headers)
     context.modified++
+
+    if (context.byteRangeContext.isRangeRequest && !context.byteRangeContext.isValidRangeRequest) {
+      // invalid range request.. fail
+      return badRangeResponse(context.resource)
+    }
 
     return null
   }

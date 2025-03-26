@@ -125,9 +125,9 @@ export class DagPbPlugin extends BasePlugin {
 
       log.trace('fileSize for rangeRequest %d', byteRangeContext.getFileSize())
     }
-    const offset = byteRangeContext.offset
-    const length = byteRangeContext.length
-    log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
+    // const offset = byteRangeContext.offset
+    // const length = byteRangeContext.length
+    // log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
     try {
       const entry = await handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, helia.blockstore, {
@@ -135,20 +135,25 @@ export class DagPbPlugin extends BasePlugin {
         onProgress: options?.onProgress
       }), withServerTiming)
 
-      const asyncIter = entry.content({
-        signal: options?.signal,
-        onProgress: options?.onProgress,
-        offset,
-        length
-      })
-      log('got async iterator for %c/%s', cid, path)
+      let firstChunk: Uint8Array
+      if (byteRangeContext.isValidRangeRequest) {
+        firstChunk = await this.handleRangeRequest(context, { entry, options, withServerTiming })
+      } else {
+        const asyncIter = entry.content({
+          signal: options?.signal,
+          onProgress: options?.onProgress
+        })
+        log('got async iterator for %c/%s', cid, path)
 
-      const { stream, firstChunk } = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
-        onProgress: options?.onProgress,
-        signal: options?.signal
-      }), withServerTiming)
+        const streamAndFirstChunk = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
+          onProgress: options?.onProgress,
+          signal: options?.signal
+        }), withServerTiming)
+        const stream = streamAndFirstChunk.stream
+        firstChunk = streamAndFirstChunk.firstChunk
 
-      byteRangeContext.setBody(stream)
+        byteRangeContext.setBody(stream)
+      }
 
       const contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
       // if not a valid range request, okRangeRequest will call okResponse
@@ -169,5 +174,44 @@ export class DagPbPlugin extends BasePlugin {
       }
       return badGatewayResponse(resource.toString(), 'Unable to stream content')
     }
+  }
+
+  private async handleRangeRequest (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>, { entry, options, withServerTiming }: { entry: any, options: any, withServerTiming: boolean }): Promise<Uint8Array> {
+    const { cid, path, byteRangeContext } = context
+    const { handleServerTiming } = this.pluginOptions
+
+    // get the first chunk in order to determine the content type
+    const asyncIter = entry.content({
+      signal: options?.signal,
+      onProgress: options?.onProgress,
+      offset: 0,
+      // 8kb in order to determine the content typ
+      length: 8192
+    })
+
+    const { firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
+      onProgress: options?.onProgress,
+      signal: options?.signal
+    })
+
+    byteRangeContext?.setBody(async (range) => {
+      options?.signal?.throwIfAborted()
+      const asyncIter = entry.content({
+        signal: options?.signal,
+        onProgress: options?.onProgress,
+        offset: range.start ?? 0,
+        length: byteRangeContext.getLength(range)
+      })
+      this.log('got async iterator for %c/%s', cid, path)
+
+      const { stream } = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
+        onProgress: options?.onProgress,
+        signal: options?.signal
+      }), withServerTiming)
+
+      return stream
+    })
+
+    return firstChunk
   }
 }
