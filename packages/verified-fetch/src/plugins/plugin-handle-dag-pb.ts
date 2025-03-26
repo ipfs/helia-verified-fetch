@@ -2,11 +2,10 @@ import { unixfs } from '@helia/unixfs'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { exporter } from 'ipfs-unixfs-exporter'
 import { CustomProgressEvent } from 'progress-events'
-import { ByteRangeContext } from '../utils/byte-range-context.js'
+import { getContentType } from '../utils/get-content-type.js'
 import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-iterable.js'
 import { setIpfsRoots } from '../utils/response-headers.js'
 import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, notSupportedResponse, okRangeResponse } from '../utils/responses.js'
-import { setContentType } from '../utils/set-content-type.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 import type { CIDDetail } from '../index.js'
@@ -16,9 +15,12 @@ import type { CIDDetail } from '../index.js'
  */
 export class DagPbPlugin extends BasePlugin {
   readonly codes = [dagPbCode]
-  canHandle ({ cid, accept, pathDetails }: PluginContext): boolean {
+  canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
     if (pathDetails == null) {
+      return false
+    }
+    if (byteRangeContext == null) {
       return false
     }
 
@@ -49,7 +51,7 @@ export class DagPbPlugin extends BasePlugin {
     return null
   }
 
-  async handle (context: PluginContext): Promise<Response | null> {
+  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>): Promise<Response | null> {
     const { cid, options, withServerTiming = false, pathDetails } = context
     const { handleServerTiming, contentTypeParser, helia, getBlockstore } = this.pluginOptions
     const log = this.log
@@ -57,11 +59,8 @@ export class DagPbPlugin extends BasePlugin {
     let path = context.path
 
     let redirected = false
-    const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
 
-    if (pathDetails == null) {
-      throw new TypeError('Path details are required')
-    }
+    const byteRangeContext = context.byteRangeContext
     const ipfsRoots = pathDetails.ipfsRoots
     const terminalElement = pathDetails.terminalElement
     let resolvedCID = terminalElement.cid
@@ -126,9 +125,9 @@ export class DagPbPlugin extends BasePlugin {
 
       log.trace('fileSize for rangeRequest %d', byteRangeContext.getFileSize())
     }
-    const offset = byteRangeContext.offset
-    const length = byteRangeContext.length
-    log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
+    // const offset = byteRangeContext.offset
+    // const length = byteRangeContext.length
+    // log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
     try {
       const entry = await handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, helia.blockstore, {
@@ -136,26 +135,33 @@ export class DagPbPlugin extends BasePlugin {
         onProgress: options?.onProgress
       }), withServerTiming)
 
-      const asyncIter = entry.content({
-        signal: options?.signal,
-        onProgress: options?.onProgress,
-        offset,
-        length
-      })
-      log('got async iterator for %c/%s', cid, path)
+      let firstChunk: Uint8Array
+      if (byteRangeContext.isValidRangeRequest) {
+        firstChunk = await this.handleRangeRequest(context, { entry, options, withServerTiming })
+      } else {
+        const asyncIter = entry.content({
+          signal: options?.signal,
+          onProgress: options?.onProgress
+        })
+        log('got async iterator for %c/%s', cid, path)
 
-      const { stream, firstChunk } = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
-        onProgress: options?.onProgress,
-        signal: options?.signal
-      }), withServerTiming)
+        const streamAndFirstChunk = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
+          onProgress: options?.onProgress,
+          signal: options?.signal
+        }), withServerTiming)
+        const stream = streamAndFirstChunk.stream
+        firstChunk = streamAndFirstChunk.firstChunk
 
-      byteRangeContext.setBody(stream)
+        byteRangeContext.setBody(stream)
+      }
+
+      const contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
       // if not a valid range request, okRangeRequest will call okResponse
-      const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log }, {
+      const response = okRangeResponse(resource, byteRangeContext.getBody(contentType), { byteRangeContext, log }, {
         redirected
       })
 
-      await handleServerTiming('set-content-type', '', async () => setContentType({ bytes: firstChunk, path, response, contentTypeParser, log }), withServerTiming)
+      response.headers.set('Content-Type', byteRangeContext.getContentType() ?? contentType)
 
       setIpfsRoots(response, ipfsRoots)
 
@@ -168,5 +174,44 @@ export class DagPbPlugin extends BasePlugin {
       }
       return badGatewayResponse(resource.toString(), 'Unable to stream content')
     }
+  }
+
+  private async handleRangeRequest (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>, { entry, options, withServerTiming }: { entry: any, options: any, withServerTiming: boolean }): Promise<Uint8Array> {
+    const { cid, path, byteRangeContext } = context
+    const { handleServerTiming } = this.pluginOptions
+
+    // get the first chunk in order to determine the content type
+    const asyncIter = entry.content({
+      signal: options?.signal,
+      onProgress: options?.onProgress,
+      offset: 0,
+      // 8kb in order to determine the content typ
+      length: 8192
+    })
+
+    const { firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
+      onProgress: options?.onProgress,
+      signal: options?.signal
+    })
+
+    byteRangeContext?.setBody(async (range) => {
+      options?.signal?.throwIfAborted()
+      const asyncIter = entry.content({
+        signal: options?.signal,
+        onProgress: options?.onProgress,
+        offset: range.start ?? 0,
+        length: byteRangeContext.getLength(range)
+      })
+      this.log('got async iterator for %c/%s', cid, path)
+
+      const { stream } = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
+        onProgress: options?.onProgress,
+        signal: options?.signal
+      }), withServerTiming)
+
+      return stream
+    })
+
+    return firstChunk
   }
 }

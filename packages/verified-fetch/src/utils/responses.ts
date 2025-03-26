@@ -150,14 +150,27 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
 
   let response: Response
   try {
+    // Create headers object with any initial headers from init
+    const headers = new Headers(init?.headers)
+
+    // For multipart responses, we should use the content-type header instead of content-range
+    const multipartContentType = byteRangeContext.getContentType()
+
+    if (multipartContentType != null) {
+      headers.set('content-type', multipartContentType)
+    } else {
+      if (byteRangeContext.isMultiRangeRequest) {
+        headers.set('content-type', 'multipart/byteranges')
+      } else {
+        headers.set('content-range', byteRangeContext.contentRangeHeaderValue)
+      }
+    }
+
     response = new Response(body, {
       ...(init ?? {}),
       status: 206,
       statusText: 'Partial Content',
-      headers: {
-        ...(init?.headers ?? {}),
-        'content-range': byteRangeContext.contentRangeHeaderValue
-      }
+      headers
     })
   } catch (e: any) {
     log?.error('failed to create range response', e)

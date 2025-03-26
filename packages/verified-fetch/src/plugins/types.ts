@@ -1,6 +1,7 @@
 import type { PluginError } from './errors.js'
 import type { VerifiedFetchInit } from '../index.js'
 import type { ContentTypeParser, RequestFormatShorthand } from '../types.js'
+import type { ByteRangeContext } from '../utils/byte-range-context.js'
 import type { ParsedUrlStringResults } from '../utils/parse-url-string.js'
 import type { PathWalkerResponse } from '../utils/walk-path.js'
 import type { AbortOptions, ComponentLogger, Logger } from '@libp2p/interface'
@@ -12,7 +13,7 @@ import type { CustomProgressEvent } from 'progress-events'
 
 /**
  * Contains common components and functions required by plugins to handle a request.
- * - Read-Only: Plugins can read but shouldn’t rewrite them.
+ * - Read-Only: Plugins can read but shouldn't rewrite them.
  * - Persistent: Relevant even after the request completes (e.g., logging or metrics).
  */
 export interface PluginOptions {
@@ -47,6 +48,14 @@ export interface PluginContext extends ParsedUrlStringResults {
   errors?: PluginError[]
   reqFormat?: RequestFormatShorthand
   pathDetails?: PathWalkerResponse
+  query: ParsedUrlStringResults['query']
+  /**
+   * ByteRangeContext contains information about the size of the content and range requests.
+   * This can be used to set the Content-Length header without loading the entire body.
+   *
+   * This is set by the ByteRangeContextPlugin
+   */
+  byteRangeContext?: ByteRangeContext
   [key: string]: unknown
 }
 
