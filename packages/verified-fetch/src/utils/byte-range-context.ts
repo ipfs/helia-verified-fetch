@@ -79,15 +79,10 @@ export class ByteRangeContext {
   private _body: SupportedBodyTypes = null
   private readonly rangeRequestHeader: string | undefined
   private readonly log: Logger
-  private readonly requestRangeStart: number | null
-  private readonly requestRangeEnd: number | null
   /**
    * multiPartBoundary is required for multipart responses
    */
   private readonly multiPartBoundary?: string
-  private byteStart: number | undefined
-  private byteEnd: number | undefined
-  private byteSize: number | undefined
   private readonly requestRanges: Array<{ start: number | null, end: number | null }> = []
   private byteRanges: ByteRange[] = []
   readonly isMultiRangeRequest: boolean = false
@@ -109,29 +104,16 @@ export class ByteRangeContext {
           end: range.end != null ? parseInt(range.end) : null
         }))
 
-        // For backward compatibility, also set single-range properties when there's only one range
-        if (!this.isMultiRangeRequest && this.requestRanges.length === 1) {
-          this.requestRangeStart = this.requestRanges[0].start
-          this.requestRangeEnd = this.requestRanges[0].end
-        } else {
-          this.requestRangeStart = null
-          this.requestRangeEnd = null
-
-          this.multiPartBoundary = `multipart_byteranges_${Math.floor(Math.random() * 1000000000)}`
-        }
+        this.multiPartBoundary = `multipart_byteranges_${Math.floor(Math.random() * 1000000000)}`
       } catch (e) {
         this.log.error('error parsing range request header: %o', e)
         this.requestRanges = []
-        this.requestRangeStart = null
-        this.requestRangeEnd = null
       }
 
       this.setOffsetDetails()
     } else {
       this.log.trace('no range request detected')
       this.isRangeRequest = false
-      this.requestRangeStart = null
-      this.requestRangeEnd = null
     }
   }
 
@@ -159,18 +141,18 @@ export class ByteRangeContext {
       return toBrowserReadableStream(this.getMultipartBody(responseContentType))
     }
 
-    // Single range request handling (existing code)
-    const byteStart = this.byteStart
-    const byteEnd = this.byteEnd
-    const byteSize = this.byteSize
-    if (byteStart != null || byteEnd != null) {
-      this.log.trace('returning body with byteStart=%o, byteEnd=%o, byteSize=%o', byteStart, byteEnd, byteSize)
+    // Single range request handling
+    if (this.byteRanges.length > 0) {
+      const range = this.byteRanges[0]
       if (body instanceof ReadableStream) {
         // stream should already be spliced by `unixfs.cat`
         // TODO: if the content is not unixfs and unixfs.cat was not called, we need to slice the body here.
         return body
       }
-      return this.getSlicedBody(body)
+      if (range.start != null || range.end != null) {
+        this.log.trace('returning body with byteStart=%o, byteEnd=%o, byteSize=%o', range.start, range.end, range.size)
+      }
+      return this.getSlicedBody(body, range)
     }
 
     // we should not reach this point, but return body untouched.
@@ -178,16 +160,16 @@ export class ByteRangeContext {
     return body
   }
 
-  private getSlicedBody <T extends SliceableBody>(body: T): SliceableBody {
-    const offset = this.byteStart ?? 0
+  private getSlicedBody <T extends SliceableBody>(body: T, range: ByteRange): SliceableBody {
+    const offset = range.start ?? 0
 
     // Calculate the correct number of bytes to return
     // For a range like bytes=1000-2000, we want exactly 1001 bytes
     let length: number | undefined
 
-    if (this.byteEnd != null && this.byteStart != null) {
+    if (range.end != null && range.start != null) {
       // Exact number of bytes is (end - start + 1) due to inclusive ranges
-      length = this.byteEnd - this.byteStart + 1
+      length = range.end - range.start + 1
     } else {
       length = undefined
     }
@@ -282,49 +264,14 @@ export class ByteRangeContext {
       return false
     }
 
-    if (this.isMultiRangeRequest) {
-      // For multipart requests, check if at least one range is valid
-      if (this.byteRanges.length === 0) {
-        this.log.trace('invalid range request, no valid ranges')
-        return false
-      }
-
-      const isValid = this.byteRanges.every(range => this.isValidByteRange(range))
-      if (!isValid) {
-        this.log.trace('invalid range request, not all ranges are valid')
-        return false
-      }
-      return true
+    if (this.byteRanges.length === 0) {
+      this.log.trace('invalid range request, no valid ranges')
+      return false
     }
 
-    // Single range validation (existing code)
-    if (this.requestRangeStart == null && this.requestRangeEnd == null) {
-      this.log.trace('invalid range request, range request values not provided')
-      return false
-    }
-    if (!this.isValidByteStart(this.byteStart, this.byteEnd)) {
-      this.log.trace('invalid range request, byteStart is less than 0 or greater than fileSize')
-      return false
-    }
-    if (!this.isValidByteEnd(this.byteStart, this.byteEnd)) {
-      this.log.trace('invalid range request, byteEnd is less than 0 or greater than fileSize')
-      return false
-    }
-    if (this.requestRangeEnd != null && this.requestRangeStart != null) {
-      // we may not have enough info.. base check on requested bytes
-      if (this.requestRangeStart > this.requestRangeEnd) {
-        this.log.trace('invalid range request, start is greater than end')
-        return false
-      } else if (this.requestRangeStart < 0) {
-        this.log.trace('invalid range request, start is less than 0')
-        return false
-      } else if (this.requestRangeEnd < 0) {
-        this.log.trace('invalid range request, end is less than 0')
-        return false
-      }
-    }
-    if (this.byteEnd == null && this.byteStart == null && this.byteSize == null) {
-      this.log.trace('invalid range request, could not calculate byteStart, byteEnd, or byteSize')
+    const isValid = this.byteRanges.every(range => this.isValidByteRange(range))
+    if (!isValid) {
+      this.log.trace('invalid range request, not all ranges are valid')
       return false
     }
 
@@ -337,7 +284,10 @@ export class ByteRangeContext {
    * 2. slicing the body
    */
   public get offset (): number {
-    return this.byteStart ?? 0
+    if (this.byteRanges.length > 0) {
+      return this.byteRanges[0].start ?? 0
+    }
+    return 0
   }
 
   /**
@@ -349,15 +299,20 @@ export class ByteRangeContext {
     if (this.isMultiRangeRequest) {
       return this.getLengthForMultiRangeRequest()
     }
-    if (this.byteEnd != null && this.byteStart != null) {
-      // For a range like bytes=1000-2000, we want a length of 1001 bytes
-      return this.byteEnd - this.byteStart + 1
-    }
-    if (this.byteEnd != null) {
-      return this.byteEnd + 1
+
+    if (this.byteRanges.length > 0) {
+      const range = this.byteRanges[0]
+      if (range.end != null && range.start != null) {
+        // For a range like bytes=1000-2000, we want a length of 1001 bytes
+        return range.end - range.start + 1
+      }
+      if (range.end != null) {
+        return range.end + 1
+      }
+      return range.size
     }
 
-    return this.byteSize
+    return undefined
   }
 
   /**
@@ -378,8 +333,6 @@ export class ByteRangeContext {
    * Range: bytes=<range-start>-<range-end>
    * Range: bytes=<range-start>-
    * Range: bytes=-<suffix-length> // must pass size so we can calculate the offset. suffix-length is the number of bytes from the end of the file.
-   *
-   * NOT SUPPORTED:
    * Range: bytes=<range-start>-<range-end>, <range-start>-<range-end>
    * Range: bytes=<range-start>-<range-end>, <range-start>-<range-end>, <range-start>-<range-end>
    *
@@ -392,41 +345,19 @@ export class ByteRangeContext {
     }
 
     try {
-      if (this.isMultiRangeRequest) {
-        this.byteRanges = this.requestRanges.map(range => {
-          const { start, end, byteSize } = calculateByteRangeIndexes(
-            range.start ?? undefined,
-            range.end ?? undefined,
-            this._fileSize ?? undefined
-          )
-          return { start, end, size: byteSize }
-        })
-
-        // Also update single-range properties for backward compatibility
-        const firstRange = this.byteRanges[0]
-        this.byteStart = firstRange.start
-        this.byteEnd = firstRange.end
-        this.byteSize = firstRange.size
-      } else {
+      // Calculate byte ranges for all requests
+      this.byteRanges = this.requestRanges.map(range => {
         const { start, end, byteSize } = calculateByteRangeIndexes(
-          this.requestRangeStart ?? undefined,
-          this.requestRangeEnd ?? undefined,
+          range.start ?? undefined,
+          range.end ?? undefined,
           this._fileSize ?? undefined
         )
-        this.byteStart = start
-        this.byteEnd = end
-        this.byteSize = byteSize
-
-        // Update the multi-range structure for consistency
-        this.byteRanges = [{ start, end, size: byteSize }]
-      }
+        return { start, end, size: byteSize }
+      })
 
       this.log.trace('set byte ranges: %o', this.byteRanges)
     } catch (e) {
       this.log.error('error setting offset details: %o', e)
-      this.byteStart = undefined
-      this.byteEnd = undefined
-      this.byteSize = undefined
       this.byteRanges = []
     }
   }
@@ -558,10 +489,15 @@ export class ByteRangeContext {
       throw new InvalidRangeError('Content-Range header not applicable for multipart responses')
     }
 
-    return getContentRangeHeader({
-      byteStart: this.byteStart,
-      byteEnd: this.byteEnd,
-      byteSize: this._fileSize ?? undefined
-    })
+    if (this.byteRanges.length > 0) {
+      const range = this.byteRanges[0]
+      return getContentRangeHeader({
+        byteStart: range.start,
+        byteEnd: range.end,
+        byteSize: this._fileSize ?? undefined
+      })
+    }
+
+    throw new InvalidRangeError('No valid ranges found')
   }
 }
