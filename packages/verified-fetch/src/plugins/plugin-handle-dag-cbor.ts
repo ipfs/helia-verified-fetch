@@ -75,11 +75,15 @@ export class DagCborPlugin extends BasePlugin {
 
     context.byteRangeContext.setBody(body)
 
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
-
     const responseContentType = accept ?? (body instanceof Uint8Array ? 'application/octet-stream' : 'application/json')
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody(responseContentType), { byteRangeContext: context.byteRangeContext, log: this.log })
 
-    response.headers.set('content-type', responseContentType)
+    // if (context.byteRangeContext.isMultiRangeRequest) {
+    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? responseContentType)
+    // } else {
+    // response.headers.set('content-type', responseContentType)
+    // }
+    this.log.trace('setting content type to "%s"', context.byteRangeContext.getContentType() ?? responseContentType)
     setIpfsRoots(response, ipfsRoots)
 
     return response

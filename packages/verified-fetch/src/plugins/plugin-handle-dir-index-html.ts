@@ -32,9 +32,9 @@ export class DirIndexHtmlPlugin extends BasePlugin {
 
     context.byteRangeContext.setBody(htmlResponse)
 
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody('text/html'), { byteRangeContext: context.byteRangeContext, log: this.log })
 
-    response.headers.set('Content-Type', 'text/html')
+    response.headers.set('Content-Type', context.byteRangeContext.getContentType() ?? 'text/html')
     // see https://github.com/ipfs/gateway-conformance/pull/219
     response.headers.set('Cache-Control', 'public, max-age=604800, stale-while-revalidate=2678400')
 

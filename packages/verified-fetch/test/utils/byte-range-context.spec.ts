@@ -2,6 +2,8 @@ import { unixfs, type UnixFS } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { defaultLogger, prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
+import browserReadableStreamToIt from 'browser-readablestream-to-it'
+import all from 'it-all'
 import { ByteRangeContext } from '../../src/utils/byte-range-context.js'
 import { getStreamFromAsyncIterable } from '../../src/utils/get-stream-from-async-iterable.js'
 import { createHelia } from '../fixtures/create-offline-helia.js'
@@ -87,8 +89,13 @@ describe('ByteRangeContext', () => {
       contentRange,
       body: new Blob([body]),
       expected: new Blob([expected])
-    }))
+    })),
+
+    // multiple ranges:
+    { type: 'multipart-Uint8Array', range: 'bytes=0-1,2-3', contentRange: 'error', body: new Uint8Array(array), expected: [new Uint8Array([1, 2]), new Uint8Array([3, 4])] },
+    { type: 'multipart-Uint8Array', range: 'bytes=0-1,-2, 5-6', contentRange: 'error', body: new Uint8Array(array), expected: [new Uint8Array([1, 2]), new Uint8Array([...array.slice(-2)]), new Uint8Array([6, 7])] }
   ]
+
   validRanges.forEach(({ type, range, expected, body, contentRange }) => {
     it(`should correctly slice ${type} body with range ${range}`, async () => {
       const context = new ByteRangeContext(logger, { Range: range })
@@ -96,7 +103,46 @@ describe('ByteRangeContext', () => {
       context.setBody(body)
       const actualBody = context.getBody()
 
-      if (actualBody instanceof Blob || type === 'Blob') {
+      if (type === 'multipart-Uint8Array' && actualBody instanceof ReadableStream) {
+        // actualBody is a ReadableStream
+        const bodyAsUint8Array = await all(browserReadableStreamToIt(actualBody))
+        const expectedAsUint8Array = expected as Uint8Array[]
+
+        const getContentForExpectedPart = (index: number): Uint8Array => {
+          if (index === 0) {
+            return bodyAsUint8Array[1]
+          }
+          return bodyAsUint8Array[index * 2 + 1]
+        }
+
+        const textDecoder = new TextDecoder()
+        const getContentHeaderForExpectedRange = (index: number): string => {
+          if (index === 0) {
+            return textDecoder.decode(bodyAsUint8Array[0])
+          }
+          return textDecoder.decode(bodyAsUint8Array[index * 2])
+        }
+
+        // ensure each expected is in the body
+        expect(bodyAsUint8Array).to.have.lengthOf(expectedAsUint8Array.length * 2 + 1)
+        expectedAsUint8Array.forEach((expected: Uint8Array, i: number) => {
+          expect(getContentForExpectedPart(i)).to.deep.equal(expected)
+        })
+        const rangeParts = range.split('=')[1].split(',')
+        rangeParts.forEach((part, index) => {
+          if (part.startsWith('-')) {
+            part = `${(body as Uint8Array).length - Number(part.slice(1))}-${(body as Uint8Array).length - 1}`
+          }
+          const [start, end] = part.split('-').map(Number)
+          const header = getContentHeaderForExpectedRange(index);
+
+          ['--multipart_byteranges_', 'Content-Type: application/octet-stream', `Content-Range: bytes ${start}-${end}/${(body as Uint8Array).length}`].forEach(part => {
+            expect(header).to.include(part)
+          })
+          // const expectedHeaderParts = ['--multipart_byteranges_', 'Content-Type: application/octet-stream', `Content-Range: bytes ${start}-${end}/${bodyAsUint8Array.length}`, '\r\n\r\n']
+          // expect(getContentHeaderForExpectedRange(index)).to.equal(`bytes ${start}-${end}/${(body as Uint8Array).length}`)
+        })
+      } else if (actualBody instanceof Blob || type === 'Blob') {
         const bodyAsUint8Array = new Uint8Array(await (actualBody as Blob).arrayBuffer())
         const expectedAsUint8Array = new Uint8Array(await (expected as Blob).arrayBuffer())
         // loop through the bytes and compare them
@@ -107,7 +153,11 @@ describe('ByteRangeContext', () => {
         expect(actualBody).to.deep.equal(expected)
       }
 
-      expect(context.contentRangeHeaderValue).to.equal(contentRange)
+      if (contentRange === 'error') {
+        expect(() => context.contentRangeHeaderValue).to.throw('Content-Range header not applicable for multipart responses')
+      } else {
+        expect(context.contentRangeHeaderValue).to.equal(contentRange)
+      }
     })
   })
 

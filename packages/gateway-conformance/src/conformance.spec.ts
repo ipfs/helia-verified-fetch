@@ -47,7 +47,7 @@ function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArg
  * You can see what the latest success rates are by running the following command:
  *
  * ```
- * cd ../../ && npm run build && cd packages/gateway-conformance && SUCCESS_RATE=100 npm run test -- --bail false
+ * cd ../../ && npm run build && cd packages/gateway-conformance && SUCCESS_RATE=100 SKIP_EXPECTED_TESTS=true npm run test -- --bail=false
  * ```
  */
 const tests: TestConfig[] = [
@@ -89,8 +89,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestPlainCodec',
     run: ['TestPlainCodec'],
-    // successRate: 39.86,
-    successRate: 36.96,
+    successRate: 39.86,
     expectPassing: [
       'TestPlainCodec/GET_plain_JSON_codec_without_Accept_or_format=_has_expected_%22json%22_Content-Type_and_body_as-is_-_full_request/Check_1/Status_code',
       'TestPlainCodec/GET_plain_JSON_codec_without_Accept_or_format=_has_expected_%22json%22_Content-Type_and_body_as-is_-_full_request/Check_1/Body',
@@ -187,8 +186,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestNativeDag',
     run: ['TestNativeDag'],
-    // successRate: 60.71,
-    successRate: 58.93,
+    successRate: 60.71,
     expectPassing: [
       'TestNativeDag/GET_plain_JSON_codec_from_%2Fipfs_without_explicit_format_returns_the_same_payload_as_the_raw_block/Status_code',
       'TestNativeDag/GET_plain_JSON_codec_from_%2Fipfs_without_explicit_format_returns_the_same_payload_as_the_raw_block/Body',
@@ -255,9 +253,9 @@ const tests: TestConfig[] = [
       'TestNativeDag/Convert_application%2Fvnd.ipld.dag-cbor_to_application%2Fvnd.ipld.dag-json_with_range_request_includes_correct_bytes_-_multi_range/Check_0',
       'TestNativeDag/Convert_application%2Fvnd.ipld.dag-cbor_to_application%2Fvnd.ipld.dag-json_with_range_request_includes_correct_bytes_-_multi_range/Check_1/Check_0',
       'TestNativeDag/Convert_application%2Fvnd.ipld.dag-cbor_to_application%2Fvnd.ipld.dag-json_with_range_request_includes_correct_bytes_-_multi_range/Check_1/Check_1',
-      'TestNativeDag/Convert_application%2Fvnd.ipld.dag-cbor_to_application%2Fvnd.ipld.dag-json_with_range_request_includes_correct_bytes_-_multi_range/Check_1/Check_2'
-      // 'TestNativeDag/Convert_application%2Fvnd.ipld.dag-cbor_to_application%2Fvnd.ipld.dag-json_with_range_request_includes_correct_bytes_-_multi_range/Check_1',
-      // 'TestNativeDag/Convert_application%2Fvnd.ipld.dag-cbor_to_application%2Fvnd.ipld.dag-json_with_range_request_includes_correct_bytes_-_multi_range'
+      'TestNativeDag/Convert_application%2Fvnd.ipld.dag-cbor_to_application%2Fvnd.ipld.dag-json_with_range_request_includes_correct_bytes_-_multi_range/Check_1/Check_2',
+      'TestNativeDag/Convert_application%2Fvnd.ipld.dag-cbor_to_application%2Fvnd.ipld.dag-json_with_range_request_includes_correct_bytes_-_multi_range/Check_1',
+      'TestNativeDag/Convert_application%2Fvnd.ipld.dag-cbor_to_application%2Fvnd.ipld.dag-json_with_range_request_includes_correct_bytes_-_multi_range'
     ]
   },
   {
@@ -397,8 +395,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestTrustlessCarOrderAndDuplicates',
     run: ['TestTrustlessCarOrderAndDuplicates'],
-    // successRate: 44.83,
-    successRate: 41.38,
+    successRate: 44.83,
     expectPassing: [
       'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_UnixFS_Directory_With_Duplicate_Files/Status_code',
       'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_UnixFS_Directory_With_Duplicate_Files/Header_Content-Type',
@@ -575,7 +572,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayUnixFSFileRanges',
     run: ['TestGatewayUnixFSFileRanges'],
-    successRate: 53.33,
+    successRate: 66.67,
     expectPassing: [
       'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_single_range_request_includes_correct_bytes/Status_code',
       'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_single_range_request_includes_correct_bytes/Header_Content-Type',
@@ -815,31 +812,33 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate ?? 0)
       })
 
-      describe(`${name} passes and fails tests as expected`, function () {
-        let passingTests: string[]
-        let failingTests: string[]
-        before(async function () {
-          const details = await getReportDetails(`gwc-report-${name}.json`)
-          passingTests = details.passingTests
-          failingTests = details.failingTests
+      if (process.env.SKIP_EXPECTED_TESTS !== 'true') {
+        describe(`${name} passes and fails tests as expected`, function () {
+          let passingTests: string[]
+          let failingTests: string[]
+          before(async function () {
+            const details = await getReportDetails(`gwc-report-${name}.json`)
+            passingTests = details.passingTests
+            failingTests = details.failingTests
+          })
+          if (expectPassing != null) {
+            for (const test of expectPassing) {
+            // eslint-disable-next-line no-loop-func
+              it(`${test}`, () => {
+                expect(passingTests).to.include(test)
+              })
+            }
+          }
+          if (expectFailing != null) {
+            for (const test of expectFailing) {
+            // eslint-disable-next-line no-loop-func
+              it(`${test}`, () => {
+                expect(failingTests).to.include(test)
+              })
+            }
+          }
         })
-        if (expectPassing != null) {
-          for (const test of expectPassing) {
-            // eslint-disable-next-line no-loop-func
-            it(`${test}`, () => {
-              expect(passingTests).to.include(test)
-            })
-          }
-        }
-        if (expectFailing != null) {
-          for (const test of expectFailing) {
-            // eslint-disable-next-line no-loop-func
-            it(`${test}`, () => {
-              expect(failingTests).to.include(test)
-            })
-          }
-        }
-      })
+      }
     })
 
     /**
@@ -857,7 +856,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       log.error(stderr)
 
       const { successRate } = await getReportDetails('gwc-report-all.json')
-      const knownSuccessRate = 49.11
+      const knownSuccessRate = 50.3
       // check latest success rate with `SUCCESS_RATE=100 npm run test -- -g 'total'`
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : knownSuccessRate
 

@@ -2,10 +2,10 @@ import { unixfs } from '@helia/unixfs'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { exporter } from 'ipfs-unixfs-exporter'
 import { CustomProgressEvent } from 'progress-events'
+import { getContentType } from '../utils/get-content-type.js'
 import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-iterable.js'
 import { setIpfsRoots } from '../utils/response-headers.js'
 import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, notSupportedResponse, okRangeResponse } from '../utils/responses.js'
-import { setContentType } from '../utils/set-content-type.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 import type { CIDDetail } from '../index.js'
@@ -149,12 +149,14 @@ export class DagPbPlugin extends BasePlugin {
       }), withServerTiming)
 
       byteRangeContext.setBody(stream)
+
+      const contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
       // if not a valid range request, okRangeRequest will call okResponse
-      const response = okRangeResponse(resource, byteRangeContext.getBody(), { byteRangeContext, log }, {
+      const response = okRangeResponse(resource, byteRangeContext.getBody(contentType), { byteRangeContext, log }, {
         redirected
       })
 
-      await handleServerTiming('set-content-type', '', async () => setContentType({ bytes: firstChunk, path, response, contentTypeParser, log }), withServerTiming)
+      response.headers.set('Content-Type', byteRangeContext.getContentType() ?? contentType)
 
       setIpfsRoots(response, ipfsRoots)
 

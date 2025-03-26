@@ -55,8 +55,8 @@ export class JsonPlugin extends BasePlugin {
 
     context.byteRangeContext.setBody(body)
 
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
-    response.headers.set('content-type', accept ?? 'application/json')
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody(accept ?? 'application/json'), { byteRangeContext: context.byteRangeContext, log: this.log })
+    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? accept ?? 'application/json')
     return response
   }
 }

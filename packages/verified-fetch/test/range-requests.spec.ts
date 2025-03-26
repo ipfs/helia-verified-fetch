@@ -129,13 +129,24 @@ describe('range requests', () => {
         }))
       })
 
-      it('should return 416 Range Not Satisfiable when passed multiple ranges', async () => {
-        await assertFailingRange(verifiedFetch.fetch(cid, {
-          headers: {
-            Range: 'bytes=0-2,3-5'
-          }
-        }))
-      })
+      // it('should return valid response when passed multiple ranges', async () => {
+      //   const response = await verifiedFetch.fetch(cid, {
+      //     headers: {
+      //       Range: 'bytes=0-2,3-5'
+      //     }
+      //   })
+      //   expect(response.status).to.equal(206)
+      //   expect(response.statusText).to.equal('Partial Content')
+      //   expect(response.headers.get('content-type')).to.include('multipart/byteranges; boundary=multipart_byteranges_')
+      //   const body = await response.clone().text()
+      //   expect(body).to.include('Content-Type: application/octet-stream')
+      //   expect(body).to.include('Content-Range: bytes 0-2/11')
+      //   expect(body).to.include('Content-Type: application/octet-stream')
+      //   expect(body).to.include('Content-Range: bytes 3-5/11')
+      //   // expect content to be the correct bytes
+      //   const content = await response.arrayBuffer()
+      //   expect(new Uint8Array(content)).to.deep.equal(new Uint8Array([0, 1, 2, 3, 4, 5]))
+      // })
     })
   }
 

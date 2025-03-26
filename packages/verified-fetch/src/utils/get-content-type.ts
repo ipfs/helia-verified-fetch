@@ -3,16 +3,15 @@ import { type ContentTypeParser } from '../types.js'
 import { defaultMimeType } from './content-type-parser.js'
 import { isPromise } from './type-guards.js'
 
-export interface SetContentTypeOptions {
+export interface GetContentTypeOptions {
   bytes: Uint8Array
   path: string
-  response: Response
   defaultContentType?: string
   contentTypeParser: ContentTypeParser | undefined
   log: Logger
 }
 
-export async function setContentType ({ bytes, path, response, contentTypeParser, log, defaultContentType = 'application/octet-stream' }: SetContentTypeOptions): Promise<void> {
+export async function getContentType ({ bytes, path, contentTypeParser, log, defaultContentType = 'application/octet-stream' }: GetContentTypeOptions): Promise<string> {
   let contentType: string | undefined
 
   if (contentTypeParser != null) {
@@ -39,6 +38,6 @@ export async function setContentType ({ bytes, path, response, contentTypeParser
     // if the content type is the default in our content-type-parser, instead, set it to the default content type provided to this function.
     contentType = defaultContentType
   }
-  log.trace('setting content type to "%s"', contentType ?? defaultContentType)
-  response.headers.set('content-type', contentType ?? defaultContentType)
+
+  return contentType ?? defaultContentType
 }
