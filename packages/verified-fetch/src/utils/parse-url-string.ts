@@ -187,12 +187,16 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
         // try resolving as an IPNS name
 
         peerId = getPeerIdFromString(cidOrPeerIdOrDnsLink)
-        if (peerId.publicKey == null) {
+        const pubKey = peerId?.publicKey
+        if (pubKey == null) {
           throw new TypeError('cidOrPeerIdOrDnsLink contains no public key')
         }
 
         if (withServerTiming) {
-          const resolveResultWithServerTiming = await serverTiming('ipns.resolve', `Resolve IPNS name ${cidOrPeerIdOrDnsLink}`, ipns.resolve.bind(null, peerId.publicKey, options))
+          const resolveIpns = async (): Promise<IPNSResolveResult> => {
+            return ipns.resolve(pubKey, options)
+          }
+          const resolveResultWithServerTiming = await serverTiming('ipns.resolve', `Resolve IPNS name ${cidOrPeerIdOrDnsLink}`, resolveIpns)
           serverTimings.push(resolveResultWithServerTiming)
 
           // eslint-disable-next-line max-depth
@@ -201,7 +205,7 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
           }
           resolveResult = resolveResultWithServerTiming.result
         } else {
-          resolveResult = await ipns.resolve(peerId.publicKey, options)
+          resolveResult = await ipns.resolve(pubKey, options)
         }
         cid = resolveResult?.cid
         resolvedPath = resolveResult?.path
