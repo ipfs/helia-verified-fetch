@@ -103,11 +103,6 @@ function isArrayOfErrors (body: unknown | Error | Error[]): body is Error[] {
 }
 
 export function badRequestResponse (url: string, errors: Error | Error[], init?: ResponseInit): Response {
-  // if (isArrayOfErrors(body)) {
-  //   body = body.map(e => e.message).join('\n')
-  // } else if (body instanceof Error) {
-  //   body = 'singleError: ' + body.message
-  // }
   // stacktrace of the single error, or the stacktrace of the last error in the array
   let stack: string | undefined
   let convertedErrors: Array<{ message: string, stack: string }> | undefined
