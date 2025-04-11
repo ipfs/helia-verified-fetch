@@ -144,10 +144,12 @@ function dnsLinkLabelDecoder (linkLabel: string): string {
  * A function that parses ipfs:// and ipns:// URLs, returning an object with easily recognizable properties.
  *
  * After determining the protocol successfully, we process the cidOrPeerIdOrDnsLink:
- * * If it's ipfs, it parses the CID or throws an Aggregate error
- * * If it's ipns, it attempts to resolve the PeerId and then the DNSLink. If both fail, an Aggregate error is thrown.
+ * * If it's ipfs, it parses the CID or throws Error[]
+ * * If it's ipns, it attempts to resolve the PeerId and then the DNSLink. If both fail, Error[] is thrown.
  *
  * @todo we need to break out each step of this function (cid parsing, ipns resolving, dnslink resolving) into separate functions and then remove the eslint-disable comment
+ *
+ * @throws {Error[]}
  */
 // eslint-disable-next-line complexity
 export async function parseUrlString ({ urlString, ipns, logger, withServerTiming = false }: ParseUrlStringInput, options?: ParseUrlStringOptions): Promise<ParsedUrlStringResults> {
@@ -211,7 +213,7 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
           errors.push(new TypeError(`Could not parse PeerId in ipns url "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
         } else {
           log.error('could not resolve PeerId %c', peerId, err)
-          errors.push(new TypeError(`Could not resolve PeerId "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
+          errors.push(new TypeError(`Could not resolve PeerId "${cidOrPeerIdOrDnsLink}": ${(err as Error).message}`))
         }
       }
 
@@ -255,7 +257,10 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
       throw errors[0]
     }
 
-    throw new AggregateError(errors, `Invalid resource. Cannot determine CID from URL "${urlString}"`)
+    errors.push(new Error(`Invalid resource. Cannot determine CID from URL "${urlString}".`))
+
+    // eslint-disable-next-line @typescript-eslint/no-throw-literal
+    throw errors
   }
 
   let ttl = calculateTtl(resolveResult)
