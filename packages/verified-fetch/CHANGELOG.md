@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.4...@helia/verified-fetch-2.6.5) (2025-04-11)
+
+### Bug Fixes
+
+* ipns.resolve doesn't error in browsers ([#210](https://github.com/ipfs/helia-verified-fetch/issues/210)) ([abe2e5c](https://github.com/ipfs/helia-verified-fetch/commit/abe2e5ca4337ba11ace33620dc7cf963b94dd741))
+
 ## [@helia/verified-fetch-v2.6.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.3...@helia/verified-fetch-2.6.4) (2025-03-25)
 
 ### Bug Fixes
