@@ -1,3 +1,4 @@
+import { basename } from 'node:path'
 import { $ } from 'execa'
 import { glob } from 'glob'
 import { path as kuboPath } from 'kubo'
@@ -9,9 +10,15 @@ import { path as kuboPath } from 'kubo'
 export async function loadFixtures (IPFS_PATH = undefined): Promise<void> {
   const kuboBinary = process.env.KUBO_BINARY ?? kuboPath()
 
-  const files = await glob('**/fixtures/data/*.car', { cwd: process.cwd() })
+  const carFiles = await glob('**/fixtures/data/*.car', { cwd: process.cwd() })
+  const ipnsRecordFiles = await glob('**/fixtures/data/*.ipns-record', { cwd: process.cwd() })
 
-  await Promise.allSettled(files.map(async (carFile) => {
+  await Promise.allSettled(carFiles.map(async (carFile) => {
     await $({ env: { IPFS_PATH } })`${kuboBinary} dag import --pin-roots=false --offline ${carFile}`
   }))
+
+  for (const ipnsRecord of ipnsRecordFiles) {
+    const key = basename(ipnsRecord, '.ipns-record').split('_')[0]
+    await $({ env: { IPFS_PATH } })`${kuboBinary} routing put --allow-offline /ipns/${key} ${ipnsRecord}`
+  }
 }
