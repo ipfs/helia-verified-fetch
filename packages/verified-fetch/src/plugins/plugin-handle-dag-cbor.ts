@@ -2,7 +2,7 @@ import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { dagCborToSafeJSON } from '../utils/dag-cbor-to-safe-json.js'
 import { setIpfsRoots } from '../utils/response-headers.js'
-import { notAcceptableResponse, okResponse } from '../utils/responses.js'
+import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { isObjectNode } from '../utils/walk-path.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
@@ -14,7 +14,7 @@ import type { ObjectNode } from 'ipfs-unixfs-exporter'
 export class DagCborPlugin extends BasePlugin {
   readonly codes = [ipldDagCbor.code]
 
-  canHandle ({ cid, accept, pathDetails }: PluginContext): boolean {
+  canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
     if (pathDetails == null) {
       return false
@@ -25,17 +25,18 @@ export class DagCborPlugin extends BasePlugin {
     if (cid.code !== ipldDagCbor.code) {
       return false
     }
+    if (byteRangeContext == null) {
+      return false
+    }
 
     return isObjectNode(pathDetails.terminalElement)
   }
 
-  async handle (context: PluginContext): Promise<Response> {
+  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>): Promise<Response> {
     const { cid, path, resource, accept, pathDetails } = context
 
     this.log.trace('fetching %c/%s', cid, path)
-    if (pathDetails == null) {
-      throw new Error('pathDetails is null')
-    }
+
     const ipfsRoots = pathDetails.ipfsRoots
     const terminalElement = pathDetails.terminalElement as ObjectNode // checked in canHandle fn.
 
@@ -72,11 +73,17 @@ export class DagCborPlugin extends BasePlugin {
       }
     }
 
-    const response = okResponse(resource, body)
+    context.byteRangeContext.setBody(body)
 
     const responseContentType = accept ?? (body instanceof Uint8Array ? 'application/octet-stream' : 'application/json')
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody(responseContentType), { byteRangeContext: context.byteRangeContext, log: this.log })
 
-    response.headers.set('content-type', responseContentType)
+    // if (context.byteRangeContext.isMultiRangeRequest) {
+    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? responseContentType)
+    // } else {
+    // response.headers.set('content-type', responseContentType)
+    // }
+    this.log.trace('setting content type to "%s"', context.byteRangeContext.getContentType() ?? responseContentType)
     setIpfsRoots(response, ipfsRoots)
 
     return response

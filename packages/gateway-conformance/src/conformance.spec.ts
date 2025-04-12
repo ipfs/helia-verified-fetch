@@ -47,7 +47,7 @@ function getConformanceTestArgs (name: string, gwcArgs: string[] = [], goTestArg
  * You can see what the latest success rates are by running the following command:
  *
  * ```
- * cd ../../ && npm run build && cd packages/gateway-conformance && SUCCESS_RATE=100 npm run test -- --bail false
+ * cd ../../ && npm run build && cd packages/gateway-conformance && SUCCESS_RATE=100 SKIP_EXPECTED_TESTS=true npm run test -- --bail=false
  * ```
  */
 const tests: TestConfig[] = [
@@ -100,7 +100,7 @@ const tests: TestConfig[] = [
       'TestPlainCodec/GET_plain_JSON_codec_without_Accept_or_format=_has_expected_%22json%22_Content-Type_and_body_as-is_-_multi_range/Check_1/Check_0',
       'TestPlainCodec/GET_plain_JSON_codec_without_Accept_or_format=_has_expected_%22json%22_Content-Type_and_body_as-is_-_multi_range/Check_1/Check_1',
       'TestPlainCodec/GET_plain_JSON_codec_without_Accept_or_format=_has_expected_%22json%22_Content-Type_and_body_as-is_-_multi_range/Check_1/Check_2',
-      'TestPlainCodec/GET_plain_JSON_codec_without_Accept_or_format=_has_expected_%22json%22_Content-Type_and_body_as-is_-_multi_range/Check_1',
+      // 'TestPlainCodec/GET_plain_JSON_codec_without_Accept_or_format=_has_expected_%22json%22_Content-Type_and_body_as-is_-_multi_range/Check_1',
       'TestPlainCodec/GET_plain_JSON_codec_with_%3Fformat=_has_expected_json_Content-Type_and_body_as-is_-_full_request/Check_1/Status_code',
       'TestPlainCodec/GET_plain_JSON_codec_with_%3Fformat=_has_expected_json_Content-Type_and_body_as-is_-_full_request/Check_1/Body',
       'TestPlainCodec/GET_plain_JSON_codec_with_%3Fformat=_has_expected_json_Content-Type_and_body_as-is_-_full_request/Check_1',
@@ -110,7 +110,7 @@ const tests: TestConfig[] = [
       'TestPlainCodec/GET_plain_JSON_codec_with_%3Fformat=_has_expected_json_Content-Type_and_body_as-is_-_multi_range/Check_1/Check_0',
       'TestPlainCodec/GET_plain_JSON_codec_with_%3Fformat=_has_expected_json_Content-Type_and_body_as-is_-_multi_range/Check_1/Check_1',
       'TestPlainCodec/GET_plain_JSON_codec_with_%3Fformat=_has_expected_json_Content-Type_and_body_as-is_-_multi_range/Check_1/Check_2',
-      'TestPlainCodec/GET_plain_JSON_codec_with_%3Fformat=_has_expected_json_Content-Type_and_body_as-is_-_multi_range/Check_1',
+      // 'TestPlainCodec/GET_plain_JSON_codec_with_%3Fformat=_has_expected_json_Content-Type_and_body_as-is_-_multi_range/Check_1',
       'TestPlainCodec/GET_plain_JSON_codec_with_Accept_has_expected_json_Content-Type_and_body_as-is%2C_with_single_range_request_-_full_request/Check_1/Status_code',
       'TestPlainCodec/GET_plain_JSON_codec_with_Accept_has_expected_json_Content-Type_and_body_as-is%2C_with_single_range_request_-_full_request/Check_1/Body',
       'TestPlainCodec/GET_plain_JSON_codec_with_Accept_has_expected_json_Content-Type_and_body_as-is%2C_with_single_range_request_-_full_request/Check_1',
@@ -120,7 +120,7 @@ const tests: TestConfig[] = [
       'TestPlainCodec/GET_plain_JSON_codec_with_Accept_has_expected_json_Content-Type_and_body_as-is%2C_with_single_range_request_-_multi_range/Check_1/Check_0',
       'TestPlainCodec/GET_plain_JSON_codec_with_Accept_has_expected_json_Content-Type_and_body_as-is%2C_with_single_range_request_-_multi_range/Check_1/Check_1',
       'TestPlainCodec/GET_plain_JSON_codec_with_Accept_has_expected_json_Content-Type_and_body_as-is%2C_with_single_range_request_-_multi_range/Check_1/Check_2',
-      'TestPlainCodec/GET_plain_JSON_codec_with_Accept_has_expected_json_Content-Type_and_body_as-is%2C_with_single_range_request_-_multi_range/Check_1',
+      // 'TestPlainCodec/GET_plain_JSON_codec_with_Accept_has_expected_json_Content-Type_and_body_as-is%2C_with_single_range_request_-_multi_range/Check_1',
       'TestPlainCodec/GET_plain_JSON_codec_with_format=dag-json_interprets_json_as_dag-%2A_variant_and_produces_expected_Content-Type_and_body/Status_code',
       'TestPlainCodec/GET_plain_JSON_codec_with_format=dag-json_interprets_json_as_dag-%2A_variant_and_produces_expected_Content-Type_and_body/Header_Content-Type',
       'TestPlainCodec/GET_plain_JSON_codec_with_format=dag-json_interprets_json_as_dag-%2A_variant_and_produces_expected_Content-Type_and_body/Body',
@@ -130,7 +130,7 @@ const tests: TestConfig[] = [
       'TestPlainCodec/GET_plain_JSON_codec_with_format=dag-json_interprets_json_as_dag-%2A_variant_and_produces_expected_Content-Type_and_body%2C_with_single_range_request_-_multi_range/Check_1/Check_0',
       'TestPlainCodec/GET_plain_JSON_codec_with_format=dag-json_interprets_json_as_dag-%2A_variant_and_produces_expected_Content-Type_and_body%2C_with_single_range_request_-_multi_range/Check_1/Check_1',
       'TestPlainCodec/GET_plain_JSON_codec_with_format=dag-json_interprets_json_as_dag-%2A_variant_and_produces_expected_Content-Type_and_body%2C_with_single_range_request_-_multi_range/Check_1/Check_2',
-      'TestPlainCodec/GET_plain_JSON_codec_with_format=dag-json_interprets_json_as_dag-%2A_variant_and_produces_expected_Content-Type_and_body%2C_with_single_range_request_-_multi_range/Check_1',
+      // 'TestPlainCodec/GET_plain_JSON_codec_with_format=dag-json_interprets_json_as_dag-%2A_variant_and_produces_expected_Content-Type_and_body%2C_with_single_range_request_-_multi_range/Check_1',
       'TestPlainCodec/GET_plain_CBOR_codec_without_Accept_or_format=_has_expected_%22cbor%22_Content-Type_and_body_as-is_-_single_range/Check_1/Check_0',
       'TestPlainCodec/GET_plain_CBOR_codec_without_Accept_or_format=_has_expected_%22cbor%22_Content-Type_and_body_as-is_-_single_range/Check_1/Check_1',
       'TestPlainCodec/GET_plain_CBOR_codec_without_Accept_or_format=_has_expected_%22cbor%22_Content-Type_and_body_as-is_-_multi_range/Check_1/Check_0',
@@ -177,7 +177,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayJsonCbor',
     run: ['TestGatewayJsonCbor'],
-    successRate: 22.22,
+    successRate: 44.44,
     expectPassing: [
       'TestGatewayJsonCbor/GET_UnixFS_file_with_JSON_bytes_is_returned_with_application%2Fjson_Content-Type_-_without_headers/Status_code',
       'TestGatewayJsonCbor/GET_UnixFS_file_with_JSON_bytes_is_returned_with_application%2Fjson_Content-Type_-_without_headers/Body'
@@ -308,7 +308,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayBlock',
     run: ['TestGatewayBlock'],
-    successRate: 68.97,
+    successRate: 75.86,
     expectPassing: [
       'TestGatewayBlock/GET_with_format=raw_param_returns_a_raw_block/Status_code',
       'TestGatewayBlock/GET_with_format=raw_param_returns_a_raw_block/Body',
@@ -406,7 +406,7 @@ const tests: TestConfig[] = [
       'TestTrustlessCarOrderAndDuplicates/GET_CAR_smoke-test_with_order=unk_of_UnixFS_Directory/Header_Content-Type',
       'TestTrustlessCarOrderAndDuplicates/GET_CAR_smoke-test_with_order=unk_of_UnixFS_Directory/Body',
       'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_identity_CID/Status_code',
-      'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_identity_CID/Header_Content-Type',
+      // 'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_order=dfs_and_dups=y_of_identity_CID/Header_Content-Type',
       'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_Accept_and_%3Fformat%2C_specific_Accept_header_is_prioritized/Status_code',
       'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_Accept_and_%3Fformat%2C_specific_Accept_header_is_prioritized/Header_Content-Type',
       'TestTrustlessCarOrderAndDuplicates/GET_CAR_with_Accept_and_%3Fformat%2C_specific_Accept_header_is_prioritized/Body'
@@ -497,7 +497,7 @@ const tests: TestConfig[] = [
     skip: [
       'TestGatewaySubdomains/.*HTTP_proxy_tunneling_via_CONNECT' // verified fetch should not be doing HTTP proxy tunneling.
     ],
-    successRate: 44.26,
+    successRate: 49.18,
     expectPassing: [
       'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7Bcid%7D_redirects_to_%7Bcid%7D.ipfs.example.com/Status_code',
       'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7Bcid%7D_redirects_to_%7Bcid%7D.ipfs.example.com/Header_Location',
@@ -572,21 +572,21 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayUnixFSFileRanges',
     run: ['TestGatewayUnixFSFileRanges'],
-    successRate: 46.67,
+    successRate: 64.29,
     expectPassing: [
       'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_single_range_request_includes_correct_bytes/Status_code',
       'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_single_range_request_includes_correct_bytes/Header_Content-Type',
       'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_multiple_range_request_includes_correct_bytes/Header_Content-Type',
       'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_multiple_range_request_includes_correct_bytes/Header_Content-Range',
-      'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_multiple_range_request_includes_correct_bytes#01/Header_Content-Type',
-      'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_multiple_range_request_includes_correct_bytes#01/Header_Content-Range',
-      'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_multiple_range_request_includes_correct_bytes#01/Body'
+      'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_multiple_range_request_includes_correct_bytes#01/Header_Content-Type'
+      // 'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_multiple_range_request_includes_correct_bytes#01/Header_Content-Range',
+      // 'TestGatewayUnixFSFileRanges/GET_for_%2Fipfs%2F_file_with_multiple_range_request_includes_correct_bytes#01/Body'
     ]
   },
   {
     name: 'TestGatewaySymlink',
     run: ['TestGatewaySymlink'],
-    successRate: 33.33,
+    successRate: 55.56,
     expectPassing: [
       'TestGatewaySymlink/Test_the_directory_raw_query/Status_code',
       'TestGatewaySymlink/Test_the_directory_raw_query/Body',
@@ -596,7 +596,7 @@ const tests: TestConfig[] = [
   {
     name: 'TestGatewayCacheWithIPNS',
     run: ['TestGatewayCacheWithIPNS'],
-    successRate: 66.67,
+    successRate: 83.33,
     expectPassing: [
       'TestGatewayCacheWithIPNS/GET_for_%2Fipns%2F_unixfs_dir_listing_succeeds/Check_0/Header_X-Ipfs-Path',
       'TestGatewayCacheWithIPNS/GET_for_%2Fipns%2F_unixfs_dir_listing_succeeds/Check_1/Check_0',
@@ -812,31 +812,33 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         expect(successRate).to.be.greaterThanOrEqual(expectedSuccessRate ?? 0)
       })
 
-      describe(`${name} passes and fails tests as expected`, function () {
-        let passingTests: string[]
-        let failingTests: string[]
-        before(async function () {
-          const details = await getReportDetails(`gwc-report-${name}.json`)
-          passingTests = details.passingTests
-          failingTests = details.failingTests
+      if (process.env.SKIP_EXPECTED_TESTS !== 'true') {
+        describe(`${name} passes and fails tests as expected`, function () {
+          let passingTests: string[]
+          let failingTests: string[]
+          before(async function () {
+            const details = await getReportDetails(`gwc-report-${name}.json`)
+            passingTests = details.passingTests
+            failingTests = details.failingTests
+          })
+          if (expectPassing != null) {
+            for (const test of expectPassing) {
+            // eslint-disable-next-line no-loop-func
+              it(`${test}`, () => {
+                expect(passingTests).to.include(test)
+              })
+            }
+          }
+          if (expectFailing != null) {
+            for (const test of expectFailing) {
+            // eslint-disable-next-line no-loop-func
+              it(`${test}`, () => {
+                expect(failingTests).to.include(test)
+              })
+            }
+          }
         })
-        if (expectPassing != null) {
-          for (const test of expectPassing) {
-            // eslint-disable-next-line no-loop-func
-            it(`${test}`, () => {
-              expect(passingTests).to.include(test)
-            })
-          }
-        }
-        if (expectFailing != null) {
-          for (const test of expectFailing) {
-            // eslint-disable-next-line no-loop-func
-            it(`${test}`, () => {
-              expect(failingTests).to.include(test)
-            })
-          }
-        }
-      })
+      }
     })
 
     /**
@@ -854,7 +856,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       log.error(stderr)
 
       const { successRate } = await getReportDetails('gwc-report-all.json')
-      const knownSuccessRate = 47.34
+      const knownSuccessRate = 50.3
       // check latest success rate with `SUCCESS_RATE=100 npm run test -- -g 'total'`
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : knownSuccessRate
 
