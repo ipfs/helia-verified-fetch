@@ -153,7 +153,7 @@
     "@helia/interface": "^5.2.1",
     "@helia/ipns": "^8.2.0",
     "@helia/routers": "^3.0.1",
-    "@helia/unixfs": "^4.0.3",
+    "@helia/unixfs": "^5.0.0",
     "@ipld/dag-cbor": "^9.2.2",
     "@ipld/dag-json": "^10.2.3",
     "@ipld/dag-pb": "^4.1.3",
