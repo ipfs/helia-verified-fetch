@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.6](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.5...@helia/verified-fetch-2.6.6) (2025-04-16)
+
+### Bug Fixes
+
+* add content-length header when possible ([#189](https://github.com/ipfs/helia-verified-fetch/issues/189)) ([52859c5](https://github.com/ipfs/helia-verified-fetch/commit/52859c5ef52ab4b3f99b25b473456a7e16f4ef89))
+
 ## [@helia/verified-fetch-v2.6.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.4...@helia/verified-fetch-2.6.5) (2025-04-11)
 
 ### Bug Fixes
