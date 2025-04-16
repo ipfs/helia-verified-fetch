@@ -4,7 +4,7 @@ import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { getPeerIdFromString } from '../utils/get-peer-id-from-string.js'
-import { badRequestResponse, okResponse } from '../utils/responses.js'
+import { badRequestResponse, okRangeResponse } from '../utils/responses.js'
 import { PluginFatalError } from './errors.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
@@ -16,13 +16,16 @@ import type { PeerId } from '@libp2p/interface'
  */
 export class IpnsRecordPlugin extends BasePlugin {
   readonly codes = []
-  canHandle ({ cid, accept, query }: PluginContext): boolean {
+  canHandle ({ cid, accept, query, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
+    if (byteRangeContext == null) {
+      return false
+    }
 
     return accept === 'application/vnd.ipfs.ipns-record' || query.format === 'ipns-record'
   }
 
-  async handle (context: PluginContext): Promise<Response> {
+  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext'>>): Promise<Response> {
     const { resource, path, options } = context
     const { helia } = this.pluginOptions
     context.reqFormat = 'ipns-record'
@@ -61,7 +64,9 @@ export class IpnsRecordPlugin extends BasePlugin {
     const buf = await helia.datastore.get(datastoreKey, options)
     const record = DHTRecord.deserialize(buf)
 
-    const response = okResponse(resource, record.value)
+    context.byteRangeContext.setBody(record.value)
+
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
     response.headers.set('content-type', 'application/vnd.ipfs.ipns-record')
 
     return response
