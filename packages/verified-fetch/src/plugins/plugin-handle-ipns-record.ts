@@ -31,7 +31,7 @@ export class IpnsRecordPlugin extends BasePlugin {
     context.reqFormat = 'ipns-record'
     if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.') || resource.includes('/ipns/'))) {
       this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
-      throw new PluginFatalError('ERR_INVALID_IPNS_NAME', 'Invalid IPNS name', { response: badRequestResponse(resource, 'Invalid IPNS name') })
+      throw new PluginFatalError('ERR_INVALID_IPNS_NAME', 'Invalid IPNS name', { response: badRequestResponse(resource, new Error('Invalid IPNS name')) })
     }
     let peerId: PeerId
 

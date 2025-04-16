@@ -144,10 +144,12 @@ function dnsLinkLabelDecoder (linkLabel: string): string {
  * A function that parses ipfs:// and ipns:// URLs, returning an object with easily recognizable properties.
  *
  * After determining the protocol successfully, we process the cidOrPeerIdOrDnsLink:
- * * If it's ipfs, it parses the CID or throws an Aggregate error
- * * If it's ipns, it attempts to resolve the PeerId and then the DNSLink. If both fail, an Aggregate error is thrown.
+ * * If it's ipfs, it parses the CID or throws Error[]
+ * * If it's ipns, it attempts to resolve the PeerId and then the DNSLink. If both fail, Error[] is thrown.
  *
  * @todo we need to break out each step of this function (cid parsing, ipns resolving, dnslink resolving) into separate functions and then remove the eslint-disable comment
+ *
+ * @throws {Error[]}
  */
 // eslint-disable-next-line complexity
 export async function parseUrlString ({ urlString, ipns, logger, withServerTiming = false }: ParseUrlStringInput, options?: ParseUrlStringOptions): Promise<ParsedUrlStringResults> {
@@ -185,12 +187,16 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
         // try resolving as an IPNS name
 
         peerId = getPeerIdFromString(cidOrPeerIdOrDnsLink)
-        if (peerId.publicKey == null) {
+        const pubKey = peerId?.publicKey
+        if (pubKey == null) {
           throw new TypeError('cidOrPeerIdOrDnsLink contains no public key')
         }
 
         if (withServerTiming) {
-          const resolveResultWithServerTiming = await serverTiming('ipns.resolve', `Resolve IPNS name ${cidOrPeerIdOrDnsLink}`, ipns.resolve.bind(null, peerId.publicKey, options))
+          const resolveIpns = async (): Promise<IPNSResolveResult> => {
+            return ipns.resolve(pubKey, options)
+          }
+          const resolveResultWithServerTiming = await serverTiming('ipns.resolve', `Resolve IPNS name ${cidOrPeerIdOrDnsLink}`, resolveIpns)
           serverTimings.push(resolveResultWithServerTiming)
 
           // eslint-disable-next-line max-depth
@@ -199,7 +205,7 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
           }
           resolveResult = resolveResultWithServerTiming.result
         } else {
-          resolveResult = await ipns.resolve(peerId.publicKey, options)
+          resolveResult = await ipns.resolve(pubKey, options)
         }
         cid = resolveResult?.cid
         resolvedPath = resolveResult?.path
@@ -211,7 +217,7 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
           errors.push(new TypeError(`Could not parse PeerId in ipns url "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
         } else {
           log.error('could not resolve PeerId %c', peerId, err)
-          errors.push(new TypeError(`Could not resolve PeerId "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
+          errors.push(new TypeError(`Could not resolve PeerId "${cidOrPeerIdOrDnsLink}": ${(err as Error).message}`))
         }
       }
 
@@ -255,7 +261,10 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
       throw errors[0]
     }
 
-    throw new AggregateError(errors, `Invalid resource. Cannot determine CID from URL "${urlString}"`)
+    errors.push(new Error(`Invalid resource. Cannot determine CID from URL "${urlString}".`))
+
+    // eslint-disable-next-line @typescript-eslint/no-throw-literal
+    throw errors
   }
 
   let ttl = calculateTtl(resolveResult)
