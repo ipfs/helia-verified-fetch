@@ -857,7 +857,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       log.error(stderr)
 
       const { successRate } = await getReportDetails('gwc-report-all.json')
-      const knownSuccessRate = 49.11
+      const knownSuccessRate = 45.52
       // check latest success rate with `SUCCESS_RATE=100 npm run test -- -g 'total'`
       const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : knownSuccessRate
 

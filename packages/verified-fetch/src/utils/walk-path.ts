@@ -1,5 +1,6 @@
 import { DoesNotExistError } from '@helia/unixfs/errors'
 import { type Logger } from '@libp2p/interface'
+import { abortableSource } from 'abortable-iterator'
 import { type Blockstore } from 'interface-blockstore'
 import { walkPath as exporterWalk, type ExporterOptions, type ReadableStorage, type ObjectNode, type UnixFSEntry } from 'ipfs-unixfs-exporter'
 import { badGatewayResponse, notFoundResponse } from './responses.js'
@@ -22,7 +23,9 @@ async function walkPath (blockstore: ReadableStorage, path: string, options?: Pa
   const ipfsRoots: CID[] = []
   let terminalElement: UnixFSEntry | undefined
 
-  for await (const entry of exporterWalk(path, blockstore, options)) {
+  const iterator = options?.signal != null ? abortableSource(exporterWalk(path, blockstore, options), options.signal) : exporterWalk(path, blockstore, options)
+
+  for await (const entry of iterator) {
     ipfsRoots.push(entry.cid)
     terminalElement = entry
   }
