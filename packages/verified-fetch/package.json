@@ -164,6 +164,7 @@
     "@libp2p/webrtc": "^5.2.10",
     "@libp2p/websockets": "^9.2.9",
     "@multiformats/dns": "^1.0.6",
+    "abortable-iterator": "^5.1.0",
     "cborg": "^4.2.8",
     "file-type": "^20.4.0",
     "hashlru": "^2.3.0",
