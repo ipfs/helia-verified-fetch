@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.7](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.6...@helia/verified-fetch-2.6.7) (2025-04-21)
+
+### Bug Fixes
+
+* aborted signal is handled when walking path ([#214](https://github.com/ipfs/helia-verified-fetch/issues/214)) ([2cbb10d](https://github.com/ipfs/helia-verified-fetch/commit/2cbb10dc2668c885a0653420f7e33de371ef3ccb))
+
 ## [@helia/verified-fetch-v2.6.6](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.5...@helia/verified-fetch-2.6.6) (2025-04-16)
 
 ### Bug Fixes
