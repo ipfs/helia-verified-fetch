@@ -14,7 +14,13 @@ interface GetETagArg {
    * - TAR streamed with files in non-deterministic order
    */
   weak?: boolean
+
+  /**
+   * A custom prefix to use for the content of the etag. This is needed for some cases (like dir-index-html) where we need to use a custom prefix for the etag.
+   */
+  contentPrefix?: string
 }
+
 const getPrefix = ({ weak, reqFormat }: Partial<GetETagArg>): string => {
   if (reqFormat === 'tar' || reqFormat === 'car' || reqFormat === 'ipns-record' || weak === true) {
     return 'W/'
@@ -42,12 +48,12 @@ const getFormatSuffix = ({ reqFormat }: Partial<GetETagArg>): string => {
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#etag-response-header
  */
-export function getETag ({ cid, reqFormat, weak, rangeStart, rangeEnd }: GetETagArg): string {
+export function getETag ({ cid, reqFormat, weak, rangeStart, rangeEnd, contentPrefix }: GetETagArg): string {
   const prefix = getPrefix({ weak, reqFormat })
   let suffix = getFormatSuffix({ reqFormat })
   if (rangeStart != null || rangeEnd != null) {
     suffix += `.${rangeStart ?? '0'}-${rangeEnd ?? 'N'}`
   }
 
-  return `${prefix}"${cid.toString()}${suffix}"`
+  return `${prefix}"${contentPrefix ?? ''}${cid.toString()}${suffix}"`
 }

@@ -49,7 +49,8 @@
     "dep-check": "aegir dep-check",
     "doc-check": "aegir doc-check",
     "build": "aegir build",
-    "test": "aegir test -t node"
+    "test": "aegir test -t node",
+    "update": "npm run build && node dist/src/update-expected-tests.js"
   },
   "dependencies": {
     "@helia/block-brokers": "^4.0.2",
