@@ -143,7 +143,7 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         })
       }
 
-      const knownSuccessRate = 45.15
+      const knownSuccessRate = 46.01
       it(`has expected success rate of ${knownSuccessRate}%`, () => {
         // check latest success rate with `SUCCESS_RATE=100 npm run test -- -g 'total'`
         const expectedSuccessRate = process.env.SUCCESS_RATE != null ? Number.parseFloat(process.env.SUCCESS_RATE) : knownSuccessRate

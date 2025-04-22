@@ -34,7 +34,7 @@ export class DirIndexHtmlPlugin extends BasePlugin {
       return false
     }
 
-    if (directoryEntries?.length === 0) {
+    if (directoryEntries == null || directoryEntries.length === 0) {
       return false
     }
 
