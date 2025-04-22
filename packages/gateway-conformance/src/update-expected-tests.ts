@@ -20,7 +20,6 @@ import { getReportDetails } from './get-report-details.js'
  * Prompt the user with a yes / no question.
  *
  * @param {string} question - – The text to show.
- * @param {boolean|null} [defaultAnswer=null] - – true = Y is default, false = N is default, null = no default.
  * @returns {Promise<boolean>} Resolves to the user’s choice.
  */
 async function confirm (question: string): Promise<boolean> {

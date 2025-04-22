@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-import { readFile, access, constants } from 'node:fs/promises'
+import { access, constants } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { prefixLogger } from '@libp2p/logger'
