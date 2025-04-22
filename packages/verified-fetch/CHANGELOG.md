@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.9](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.8...@helia/verified-fetch-2.6.9) (2025-04-22)
+
+### Dependencies
+
+* update all deps ([#218](https://github.com/ipfs/helia-verified-fetch/issues/218)) ([121f361](https://github.com/ipfs/helia-verified-fetch/commit/121f3612d4e960e366b897bff970fb4a05b80639))
+
 ## [@helia/verified-fetch-v2.6.8](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.7...@helia/verified-fetch-2.6.8) (2025-04-22)
 
 ### Bug Fixes
