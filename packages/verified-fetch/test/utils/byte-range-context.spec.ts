@@ -133,14 +133,9 @@ describe('ByteRangeContext', () => {
     uint8arrayRangeTests.forEach(({ range, expected, body, contentRange }) => {
       it(`should correctly slice Stream with range ${range}`, async () => {
         const context = new ByteRangeContext(logger, { Range: range })
-        cid = await fs.addFile({
-          content: body
-        }, {
-          rawLeaves: false,
-          leafType: 'file'
-        })
+        cid = await fs.addBytes(body)
         const stat = await fs.stat(cid)
-        context.setFileSize(stat.fileSize)
+        context.setFileSize(stat.size)
         context.setBody(await getBodyStream(context.offset, context.length))
         const response = new Response(context.getBody())
         const bodyResult = await response.arrayBuffer()
