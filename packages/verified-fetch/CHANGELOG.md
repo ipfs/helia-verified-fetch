@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.8](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.7...@helia/verified-fetch-2.6.8) (2025-04-22)
+
+### Bug Fixes
+
+* dir-index-html plugin sets more expected headers ([#217](https://github.com/ipfs/helia-verified-fetch/issues/217)) ([90c98f5](https://github.com/ipfs/helia-verified-fetch/commit/90c98f5d463fd7ffcfec596b5064c8c1eb55f1ca))
+
 ## [@helia/verified-fetch-v2.6.7](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.6...@helia/verified-fetch-2.6.7) (2025-04-21)
 
 ### Bug Fixes
