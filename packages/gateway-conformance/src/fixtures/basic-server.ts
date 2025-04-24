@@ -77,11 +77,6 @@ interface CallVerifiedFetchOptions {
 
 async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverPort, useSessions, verifiedFetch }: CallVerifiedFetchOptions): Promise<void> {
   const log = logger('basic-server:request')
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200)
-    res.end()
-    return
-  }
   if (req.method === 'HEAD') {
     res.writeHead(200)
     res.end()
@@ -91,6 +86,9 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
   if (req.url == null) {
     // this should never happen
     log.error('No URL provided, returning 400 Bad Request')
+    log.trace('req.method: %s', req.method)
+    log.trace('req.url: %s', req.url)
+    log.trace('req.headers: %O', req.headers)
     res.writeHead(400)
     res.end('Bad Request')
     return
@@ -108,6 +106,8 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
 
   const urlLog = logger(`basic-server:request:${fullUrlHref}`)
   urlLog('configuring request')
+  urlLog.trace('req.method: %s', req.method)
+  urlLog.trace('req.url: %s', req.url)
   urlLog.trace('req.headers: %O', req.headers)
   let requestController: AbortController | null = new AbortController()
   // we need to abort the request if the client disconnects
@@ -137,7 +137,7 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
 
   try {
     urlLog.trace('calling verified-fetch')
-    const resp = await verifiedFetch(fullUrlHref.toString(), { redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: convertNodeJsHeadersToFetchHeaders(req.headers) })
+    const resp = await verifiedFetch(fullUrlHref.toString(), { method: req.method, redirect: 'manual', signal: requestController.signal, session: useSessions, allowInsecure: true, allowLocal: true, headers: convertNodeJsHeadersToFetchHeaders(req.headers) })
     urlLog.trace('verified-fetch response status: %d', resp.status)
 
     const headers = convertFetchHeadersToNodeJsHeaders({ resp, log: urlLog, fixingGwcAnnoyance, serverPort })

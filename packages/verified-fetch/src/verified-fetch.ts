@@ -320,6 +320,10 @@ export class VerifiedFetch {
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s', resource)
 
+    if (opts?.method === 'OPTIONS') {
+      return this.handleFinalResponse(new Response(null, { status: 200 }))
+    }
+
     const options = convertOptions(opts)
     const withServerTiming = options?.withServerTiming ?? this.withServerTiming
 
