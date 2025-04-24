@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.10](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.9...@helia/verified-fetch-2.6.10) (2025-04-24)
+
+### Bug Fixes
+
+* set CORS headers in verified-fetch ([#220](https://github.com/ipfs/helia-verified-fetch/issues/220)) ([852c7f8](https://github.com/ipfs/helia-verified-fetch/commit/852c7f8712acbc81818b9313c8a54c210d44a372))
+
 ## [@helia/verified-fetch-v2.6.9](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.8...@helia/verified-fetch-2.6.9) (2025-04-22)
 
 ### Dependencies
