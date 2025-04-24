@@ -211,6 +211,20 @@ export class VerifiedFetch {
       response.headers.set('X-Ipfs-Path', ipfsPath)
     }
 
+    // set CORS headers. If hosting your own gateway with verified-fetch behind the scenes, you can alter these before you send the response to the client.
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Range, X-Requested-With')
+    response.headers.set('Access-Control-Expose-Headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Stream-Output')
+
+    if (reqFormat !== 'car') {
+      // if we are not doing streaming responses, set the Accept-Ranges header to bytes to enable range requests
+      response.headers.set('Accept-Ranges', 'bytes')
+    } else {
+      // set accept-ranges to none to disable range requests for streaming responses
+      response.headers.set('Accept-Ranges', 'none')
+    }
+
     return response
   }
 

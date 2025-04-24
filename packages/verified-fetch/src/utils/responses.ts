@@ -40,7 +40,6 @@ export function okResponse (url: string, body?: SupportedBodyTypes, init?: Respo
 
   setType(response, 'basic')
   setUrl(response, url)
-  response.headers.set('Accept-Ranges', 'bytes')
 
   return response
 }
@@ -188,7 +187,6 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
 
   setType(response, 'basic')
   setUrl(response, url)
-  response.headers.set('Accept-Ranges', 'bytes')
 
   return response
 }
