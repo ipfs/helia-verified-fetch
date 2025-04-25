@@ -159,9 +159,10 @@ describe('parseUrlString', () => {
       ipns.resolveDNSLink.rejects(new Error('Unexpected failure from ipns dns query'))
 
       await expect(parseUrlString({ urlString: 'ipns://mydomain.com', ipns, logger })).to.eventually.be.rejected
-        .with.property('errors').that.deep.equals([
+        .and.deep.equal([
           new TypeError('Could not parse PeerId in ipns url "mydomain.com", To parse non base32, base36 or base58btc encoded CID multibase decoder must be provided'),
-          new Error('Unexpected failure from ipns dns query')
+          new Error('Unexpected failure from ipns dns query'),
+          new Error('Invalid resource. Cannot determine CID from URL "ipns://mydomain.com".')
         ])
     })
 
@@ -472,9 +473,10 @@ describe('parseUrlString', () => {
       ipns.resolveDNSLink.rejects(new Error('Unexpected failure from ipns dns query'))
 
       await expect(parseUrlString({ urlString: 'ipns://123PeerIdIsFake456', ipns, logger })).to.eventually.be.rejected
-        .with.property('errors').that.deep.equals([
+        .and.deep.equal([
           new TypeError('Could not parse PeerId in ipns url "123PeerIdIsFake456", Non-base58btc character'),
-          new Error('Unexpected failure from ipns dns query')
+          new Error('Unexpected failure from ipns dns query'),
+          new Error('Invalid resource. Cannot determine CID from URL "ipns://123PeerIdIsFake456".')
         ])
     })
 
@@ -483,9 +485,10 @@ describe('parseUrlString', () => {
       ipns.resolveDNSLink.rejects(new Error('Unexpected failure from ipns dns query'))
 
       await expect(parseUrlString({ urlString: `ipns://${testPeerId}`, ipns, logger })).to.eventually.be.rejected
-        .with.property('errors').that.deep.equals([
-          new TypeError(`Could not resolve PeerId "${testPeerId}", Unexpected failure from ipns resolve method`),
-          new Error('Unexpected failure from ipns dns query')
+        .and.deep.equal([
+          new TypeError(`Could not resolve PeerId "${testPeerId}": Unexpected failure from ipns resolve method`),
+          new Error('Unexpected failure from ipns dns query'),
+          new Error(`Invalid resource. Cannot determine CID from URL "ipns://${testPeerId}".`)
         ])
     })
 

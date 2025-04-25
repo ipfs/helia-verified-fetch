@@ -152,12 +152,7 @@ describe('range requests', () => {
 
   const testTuples = [
     ['unixfs', async () => {
-      return unixfs(helia).addFile({
-        content
-      }, {
-        rawLeaves: false,
-        leafType: 'file'
-      })
+      return unixfs(helia).addBytes(content)
     }],
     ['raw', async () => {
       const buf = raw.encode(content)

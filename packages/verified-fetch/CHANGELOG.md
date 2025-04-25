@@ -1,3 +1,45 @@
+## [@helia/verified-fetch-v2.6.11](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.10...@helia/verified-fetch-2.6.11) (2025-04-24)
+
+### Bug Fixes
+
+* verified-fetch handles OPTIONS method ([#221](https://github.com/ipfs/helia-verified-fetch/issues/221)) ([4db2ece](https://github.com/ipfs/helia-verified-fetch/commit/4db2ece43e07f7463f1d4456d6abed5b6d03537c))
+
+## [@helia/verified-fetch-v2.6.10](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.9...@helia/verified-fetch-2.6.10) (2025-04-24)
+
+### Bug Fixes
+
+* set CORS headers in verified-fetch ([#220](https://github.com/ipfs/helia-verified-fetch/issues/220)) ([852c7f8](https://github.com/ipfs/helia-verified-fetch/commit/852c7f8712acbc81818b9313c8a54c210d44a372))
+
+## [@helia/verified-fetch-v2.6.9](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.8...@helia/verified-fetch-2.6.9) (2025-04-22)
+
+### Dependencies
+
+* update all deps ([#218](https://github.com/ipfs/helia-verified-fetch/issues/218)) ([121f361](https://github.com/ipfs/helia-verified-fetch/commit/121f3612d4e960e366b897bff970fb4a05b80639))
+
+## [@helia/verified-fetch-v2.6.8](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.7...@helia/verified-fetch-2.6.8) (2025-04-22)
+
+### Bug Fixes
+
+* dir-index-html plugin sets more expected headers ([#217](https://github.com/ipfs/helia-verified-fetch/issues/217)) ([90c98f5](https://github.com/ipfs/helia-verified-fetch/commit/90c98f5d463fd7ffcfec596b5064c8c1eb55f1ca))
+
+## [@helia/verified-fetch-v2.6.7](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.6...@helia/verified-fetch-2.6.7) (2025-04-21)
+
+### Bug Fixes
+
+* aborted signal is handled when walking path ([#214](https://github.com/ipfs/helia-verified-fetch/issues/214)) ([2cbb10d](https://github.com/ipfs/helia-verified-fetch/commit/2cbb10dc2668c885a0653420f7e33de371ef3ccb))
+
+## [@helia/verified-fetch-v2.6.6](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.5...@helia/verified-fetch-2.6.6) (2025-04-16)
+
+### Bug Fixes
+
+* add content-length header when possible ([#189](https://github.com/ipfs/helia-verified-fetch/issues/189)) ([52859c5](https://github.com/ipfs/helia-verified-fetch/commit/52859c5ef52ab4b3f99b25b473456a7e16f4ef89))
+
+## [@helia/verified-fetch-v2.6.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.4...@helia/verified-fetch-2.6.5) (2025-04-11)
+
+### Bug Fixes
+
+* ipns.resolve doesn't error in browsers ([#210](https://github.com/ipfs/helia-verified-fetch/issues/210)) ([abe2e5c](https://github.com/ipfs/helia-verified-fetch/commit/abe2e5ca4337ba11ace33620dc7cf963b94dd741))
+
 ## [@helia/verified-fetch-v2.6.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.3...@helia/verified-fetch-2.6.4) (2025-03-25)
 
 ### Bug Fixes
