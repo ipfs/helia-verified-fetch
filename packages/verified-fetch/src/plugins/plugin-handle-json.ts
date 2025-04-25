@@ -53,6 +53,17 @@ export class JsonPlugin extends BasePlugin {
       body = block
     }
 
+    let contentType: string
+    if (accept == null) {
+      if (ipldDagJson.code === cid.code) {
+        contentType = 'application/vnd.ipld.dag-json'
+      } else {
+        contentType = 'application/json'
+      }
+    } else {
+      contentType = accept.split(';')[0]
+    }
+
     context.byteRangeContext.setBody(body)
 
     const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
