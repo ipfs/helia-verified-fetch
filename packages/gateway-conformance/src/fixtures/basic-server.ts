@@ -77,11 +77,6 @@ interface CallVerifiedFetchOptions {
 
 async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverPort, useSessions, verifiedFetch }: CallVerifiedFetchOptions): Promise<void> {
   const log = logger('basic-server:request')
-  if (req.method === 'HEAD') {
-    res.writeHead(200)
-    res.end()
-    return
-  }
 
   if (req.url == null) {
     // this should never happen
