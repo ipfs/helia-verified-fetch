@@ -223,6 +223,7 @@ export class ByteRangeContext {
    */
   public setFileSize (size: number | bigint | null): void {
     this._fileSize = size != null ? Number(size) : null
+    this._isValidRangeRequest = false // body has changed, so we need to re-validate the byte ranges
     this.log.trace('set _fileSize to %o', this._fileSize)
     // when fileSize changes, we need to recalculate the offset details
     this.setOffsetDetails()
@@ -285,9 +286,9 @@ export class ByteRangeContext {
    */
   public get isValidRangeRequest (): boolean {
     if (this._isValidRangeRequest) {
+      // prevent unnecessary re-validation of each byte range
       return true
     }
-
     if (!this.isRangeRequest) {
       return false
     }
