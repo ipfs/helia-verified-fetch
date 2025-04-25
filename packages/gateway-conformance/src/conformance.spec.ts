@@ -10,6 +10,9 @@ import { GWC_IMAGE } from './constants.js'
 import expectedFailingTests from './expected-failing-tests.json' with { type: 'json' }
 import expectedPassingTests from './expected-passing-tests.json' with { type: 'json' }
 import { getReportDetails } from './get-report-details.js'
+import { getTestsToRun } from './get-tests-to-run.js'
+import { getTestsToSkip } from './get-tests-to-skip.js'
+
 const logger = prefixLogger('gateway-conformance')
 
 function getGatewayConformanceBinaryPath (): string {
@@ -114,7 +117,15 @@ describe('@helia/verified-fetch - gateway conformance', function () {
       const log = logger.forComponent('output:all')
 
       before(async function () {
-        const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all', [], []), { reject: false, cancelSignal: AbortSignal.timeout(200000) })
+        const testsToSkip: string[] = getTestsToSkip()
+        const testsToRun: string[] = getTestsToRun()
+        const cancelSignal = AbortSignal.timeout(200000)
+        const { stderr, stdout } = await execa(binaryPath, getConformanceTestArgs('all', [], [
+          ...(testsToRun.length > 0 ? ['-run', `${testsToRun.join('|')}`] : []),
+          ...(testsToSkip.length > 0 ? ['-skip', `${testsToSkip.join('|')}`] : [])
+        ]), { reject: false, cancelSignal })
+
+        expect(cancelSignal.aborted).to.be.false()
 
         log(stdout)
         log.error(stderr)
