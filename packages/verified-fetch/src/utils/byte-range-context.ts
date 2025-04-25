@@ -87,6 +87,9 @@ export class ByteRangeContext {
   private byteRanges: ByteRange[] = []
   readonly isMultiRangeRequest: boolean = false
 
+  // to be set by isValidRangeRequest so that we don't need to re-check the byteRanges
+  private _isValidRangeRequest: boolean = false
+
   constructor (logger: ComponentLogger, private readonly headers?: HeadersInit) {
     this.log = logger.forComponent('helia:verified-fetch:byte-range-context')
     this.rangeRequestHeader = getHeader(this.headers, 'Range')
@@ -121,13 +124,18 @@ export class ByteRangeContext {
     return this.byteRanges
   }
 
+  /**
+   * You can pass a function when you need to support multi-range requests but have your own slicing logic, such as in the case of dag-pb/unixfs.
+   *
+   * @param bodyOrProvider - A supported body type or a function that returns a supported body type.
+   * @param contentType - The content type of the body.
+   */
   public setBody (
-    bodyOrProvider: SupportedBodyTypes | ((range: ByteRange) => Promise<SupportedBodyTypes>),
+    bodyOrProvider: SupportedBodyTypes | ((range: ByteRange) => AsyncGenerator<Uint8Array, void, unknown>),
     contentType: string = 'application/octet-stream'
   ): void {
     if (typeof bodyOrProvider === 'function') {
-      const stream = this.createRangeStream(bodyOrProvider, contentType)
-      this._body = stream
+      this._body = this.createRangeStream(bodyOrProvider, contentType)
     } else {
       this._body = bodyOrProvider
 
@@ -151,6 +159,9 @@ export class ByteRangeContext {
     }
 
     if (this.isMultiRangeRequest) {
+      if (this._body instanceof ReadableStream) {
+        return this._body
+      }
       return toBrowserReadableStream(this.getMultipartBody(responseContentType))
     }
 
@@ -273,6 +284,10 @@ export class ByteRangeContext {
    * so we need to calculate it when asked.
    */
   public get isValidRangeRequest (): boolean {
+    if (this._isValidRangeRequest) {
+      return true
+    }
+
     if (!this.isRangeRequest) {
       return false
     }
@@ -287,6 +302,8 @@ export class ByteRangeContext {
       this.log.trace('invalid range request, not all ranges are valid')
       return false
     }
+
+    this._isValidRangeRequest = true
 
     return true
   }
@@ -403,8 +420,9 @@ export class ByteRangeContext {
   private async * getMultipartBody (responseContentType: string = 'application/octet-stream'): AsyncIterable<Uint8Array> {
     const body = this._body
     if (body instanceof ReadableStream) {
-      // ReadableStream not supported for multi-range requests
-      throw new Error('ReadableStream is not supported for multi-range requests')
+      // in the case of unixfs, the body is a readable stream, and setBody is called with a function that returns a readable stream that generates the
+      // correct multipartBody.. so we just return that body.
+      return body
     }
 
     if (body === null) {
@@ -514,7 +532,7 @@ export class ByteRangeContext {
 
   // Unified method to create a stream for either single or multi-range requests
   private createRangeStream (
-    contentProvider: (range: ByteRange) => Promise<SupportedBodyTypes>,
+    contentProvider: ((range: ByteRange) => AsyncGenerator<Uint8Array, void, unknown>),
     contentType: string
   ): ReadableStream<Uint8Array> {
     const encoder = new TextEncoder()
@@ -523,7 +541,6 @@ export class ByteRangeContext {
     const fileSize = this._fileSize
     const log = this.log
     const isMultiRangeRequest = this.isMultiRangeRequest
-    const streamRangeContent = this.streamRangeContent
 
     if (byteRanges.length === 0) {
       // TODO: create a stream with a range of *
@@ -535,7 +552,6 @@ export class ByteRangeContext {
       async start (controller) {
         try {
           // For multi-range requests, we need to handle multiple parts with headers
-          // if (isMultiRangeRequest) {
           for (const range of byteRanges) {
             // Write part header for multipart responses
             if (isMultiRangeRequest) {
@@ -552,7 +568,16 @@ export class ByteRangeContext {
             }
 
             // Get and stream content for this range
-            await streamRangeContent(range, controller, contentProvider)
+            try {
+              // Get content for this range
+              const rangeContent = contentProvider(range)
+              for await (const chunk of rangeContent) {
+                controller.enqueue(chunk)
+              }
+            } catch (err) {
+              log.error('Error processing range %o: %o', range, err)
+              throw err // Re-throw to be caught by the outer try/catch
+            }
           }
 
           if (isMultiRangeRequest) {
@@ -567,38 +592,5 @@ export class ByteRangeContext {
         }
       }
     })
-  }
-
-  // Helper function to stream content for a single range
-  private async streamRangeContent (range: ByteRange, controller: ReadableStreamDefaultController, contentProvider: (range: ByteRange) => Promise<SupportedBodyTypes>): Promise<void> {
-    try {
-      // Get content for this range
-      const rangeContent = await contentProvider(range)
-
-      // Handle different content types
-      if (rangeContent instanceof ReadableStream) {
-        const reader = rangeContent.getReader()
-        try {
-          while (true) {
-            const { done, value } = await reader.read()
-            // eslint-disable-next-line max-depth
-            if (done) break
-            controller.enqueue(value)
-          }
-        } finally {
-          reader.releaseLock()
-        }
-      } else {
-        // Handle other body types by converting to Uint8Array
-        if (rangeContent === null) {
-          throw new Error('Range content is null')
-        }
-        const chunk = await this.convertToUint8Array(rangeContent)
-        controller.enqueue(chunk)
-      }
-    } catch (err) {
-      this.log.error('Error processing range %o: %o', range, err)
-      throw err // Re-throw to be caught by the outer try/catch
-    }
   }
 }

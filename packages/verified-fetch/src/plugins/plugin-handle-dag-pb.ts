@@ -1,6 +1,6 @@
 import { unixfs } from '@helia/unixfs'
 import { code as dagPbCode } from '@ipld/dag-pb'
-import { exporter } from 'ipfs-unixfs-exporter'
+import { exporter, type UnixFSEntry } from 'ipfs-unixfs-exporter'
 import { CustomProgressEvent } from 'progress-events'
 import { getContentType } from '../utils/get-content-type.js'
 import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-iterable.js'
@@ -52,7 +52,7 @@ export class DagPbPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>): Promise<Response | null> {
-    const { cid, options, withServerTiming = false, pathDetails } = context
+    const { cid, options, pathDetails, withServerTiming = false } = context
     const { handleServerTiming, contentTypeParser, helia, getBlockstore } = this.pluginOptions
     const log = this.log
     let resource = context.resource
@@ -64,6 +64,7 @@ export class DagPbPlugin extends BasePlugin {
     const ipfsRoots = pathDetails.ipfsRoots
     const terminalElement = pathDetails.terminalElement
     let resolvedCID = terminalElement.cid
+    const fs = unixfs({ ...helia, blockstore: getBlockstore(context.cid, context.resource, options?.session ?? true, options) })
 
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
@@ -104,7 +105,7 @@ export class DagPbPlugin extends BasePlugin {
         context.directoryEntries = []
         context.modified++
         this.log.trace('attempting to get directory entries because index.html was not found')
-        const fs = unixfs({ ...helia, blockstore: getBlockstore(context.cid, context.resource, options?.session ?? true, options) })
+        // const fs = unixfs({ ...helia, blockstore: getBlockstore(context.cid, context.resource, options?.session ?? true, options) })
         try {
           for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress })) {
             context.directoryEntries.push(dirItem)
@@ -120,15 +121,12 @@ export class DagPbPlugin extends BasePlugin {
       }
     }
 
-    // we have a validRangeRequest & terminalElement is a file, we know the size and should set it
-    if (byteRangeContext.isRangeRequest && byteRangeContext.isValidRangeRequest && terminalElement.type === 'file') {
-      byteRangeContext.setFileSize(terminalElement.unixfs.fileSize())
-
-      log.trace('fileSize for rangeRequest %d', byteRangeContext.getFileSize())
+    try {
+      const stat = await fs.stat(resolvedCID, { extended: true })
+      byteRangeContext.setFileSize(stat.size)
+    } catch (err: any) {
+      log.error('error getting file size for %c/%s', cid, path, err)
     }
-    // const offset = byteRangeContext.offset
-    // const length = byteRangeContext.length
-    // log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
     try {
       const entry = await handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, helia.blockstore, {
@@ -137,8 +135,9 @@ export class DagPbPlugin extends BasePlugin {
       }), withServerTiming)
 
       let firstChunk: Uint8Array
+      let contentType: string
       if (byteRangeContext.isValidRangeRequest) {
-        firstChunk = await this.handleRangeRequest(context, { entry, options, withServerTiming })
+        contentType = await this.handleRangeRequest(context, entry)
       } else {
         const asyncIter = entry.content({
           signal: options?.signal,
@@ -152,11 +151,11 @@ export class DagPbPlugin extends BasePlugin {
         }), withServerTiming)
         const stream = streamAndFirstChunk.stream
         firstChunk = streamAndFirstChunk.firstChunk
+        contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
 
         byteRangeContext.setBody(stream)
       }
 
-      const contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
       // if not a valid range request, okRangeRequest will call okResponse
       const response = okRangeResponse(resource, byteRangeContext.getBody(contentType), { byteRangeContext, log }, {
         redirected
@@ -177,16 +176,17 @@ export class DagPbPlugin extends BasePlugin {
     }
   }
 
-  private async handleRangeRequest (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>, { entry, options, withServerTiming }: { entry: any, options: any, withServerTiming: boolean }): Promise<Uint8Array> {
-    const { cid, path, byteRangeContext } = context
-    const { handleServerTiming } = this.pluginOptions
+  private async handleRangeRequest (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>, entry: UnixFSEntry): Promise<string> {
+    const { path, byteRangeContext, options, withServerTiming = false } = context
+    const { handleServerTiming, contentTypeParser } = this.pluginOptions
+    const log = this.log
 
     // get the first chunk in order to determine the content type
     const asyncIter = entry.content({
       signal: options?.signal,
       onProgress: options?.onProgress,
       offset: 0,
-      // 8kb in order to determine the content typ
+      // 8kb in order to determine the content type
       length: 8192
     })
 
@@ -194,25 +194,18 @@ export class DagPbPlugin extends BasePlugin {
       onProgress: options?.onProgress,
       signal: options?.signal
     })
+    const contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
 
-    byteRangeContext?.setBody(async (range) => {
+    byteRangeContext?.setBody((range): AsyncGenerator<Uint8Array, void, unknown> => {
       options?.signal?.throwIfAborted()
-      const asyncIter = entry.content({
+      return entry.content({
         signal: options?.signal,
         onProgress: options?.onProgress,
         offset: range.start ?? 0,
         length: byteRangeContext.getLength(range)
       })
-      this.log('got async iterator for %c/%s', cid, path)
+    }, contentType)
 
-      const { stream } = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
-        onProgress: options?.onProgress,
-        signal: options?.signal
-      }), withServerTiming)
-
-      return stream
-    })
-
-    return firstChunk
+    return contentType
   }
 }
