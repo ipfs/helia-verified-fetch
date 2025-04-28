@@ -72,7 +72,7 @@ if (failingTestAdditions.length > 0 || failingTestAdditions.length > 0) {
   console.warn('WARNING: There are previously passing tests that are now failing, is this expected?')
 }
 
-if (failingTestAdditions.length > 0 || passingTestAdditions.length > 0) {
+if (passingTestRemovals.length + failingTestRemovals.length + passingTestAdditions.length + failingTestAdditions.length > 0) {
   const answer = await confirm('Are you sure you want to update the expected-passing-tests.json and expected-failing-tests.json files with the latest test results?')
 
   if (!answer) {
