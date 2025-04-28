@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.11](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.10...@helia/verified-fetch-2.6.11) (2025-04-24)
+
+### Bug Fixes
+
+* verified-fetch handles OPTIONS method ([#221](https://github.com/ipfs/helia-verified-fetch/issues/221)) ([4db2ece](https://github.com/ipfs/helia-verified-fetch/commit/4db2ece43e07f7463f1d4456d6abed5b6d03537c))
+
 ## [@helia/verified-fetch-v2.6.10](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.9...@helia/verified-fetch-2.6.10) (2025-04-24)
 
 ### Bug Fixes
