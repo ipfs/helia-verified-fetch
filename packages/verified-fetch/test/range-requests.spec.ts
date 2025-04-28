@@ -129,24 +129,42 @@ describe('range requests', () => {
         }))
       })
 
-      // it('should return valid response when passed multiple ranges', async () => {
-      //   const response = await verifiedFetch.fetch(cid, {
-      //     headers: {
-      //       Range: 'bytes=0-2,3-5'
-      //     }
-      //   })
-      //   expect(response.status).to.equal(206)
-      //   expect(response.statusText).to.equal('Partial Content')
-      //   expect(response.headers.get('content-type')).to.include('multipart/byteranges; boundary=multipart_byteranges_')
-      //   const body = await response.clone().text()
-      //   expect(body).to.include('Content-Type: application/octet-stream')
-      //   expect(body).to.include('Content-Range: bytes 0-2/11')
-      //   expect(body).to.include('Content-Type: application/octet-stream')
-      //   expect(body).to.include('Content-Range: bytes 3-5/11')
-      //   // expect content to be the correct bytes
-      //   const content = await response.arrayBuffer()
-      //   expect(new Uint8Array(content)).to.deep.equal(new Uint8Array([0, 1, 2, 3, 4, 5]))
-      // })
+      it('should return valid response when passed multiple ranges', async () => {
+        const response = await verifiedFetch.fetch(cid, {
+          headers: {
+            Range: 'bytes=0-2,3-5'
+          }
+        })
+        expect(response.status).to.equal(206)
+        expect(response.statusText).to.equal('Partial Content')
+        expect(response.headers.get('content-type')).to.include('multipart/byteranges; boundary=multipart_byteranges_')
+        const boundary = response.headers.get('content-type')?.split('=')[1]
+        if (boundary == null) {
+          throw new Error('boundary not found')
+        }
+        const content = await response.blob()
+        const contentArray = await content.arrayBuffer()
+        const body = new TextDecoder().decode(contentArray)
+
+        // pull off the first line
+        const lines = body.split('\r\n') // first line is blank, then the boundary
+        expect(lines[1]).to.include(`--${boundary}`)
+        expect(lines[2]).to.include('Content-Type: text/plain; charset=utf-8')
+        expect(lines[3]).to.include('Content-Range: bytes 0-2/11')
+        // blank line and then the content:
+        expect(lines[4]).to.equal('')
+        // content of the first part
+        expect(new Uint8Array(new TextEncoder().encode(lines[5]))).to.deep.equal(new Uint8Array([0, 1, 2]))
+
+        expect(lines[6]).to.include(`--${boundary}`)
+        expect(lines[7]).to.include('Content-Type: text/plain; charset=utf-8')
+        expect(lines[8]).to.include('Content-Range: bytes 3-5/11')
+        expect(lines[9]).to.equal('')
+        expect(new Uint8Array(new TextEncoder().encode(lines[10]))).to.deep.equal(new Uint8Array([3, 4, 5]))
+
+        // final boundary
+        expect(lines[11]).to.include(`--${boundary}--`)
+      })
     })
   }
 
