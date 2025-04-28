@@ -105,7 +105,6 @@ export class DagPbPlugin extends BasePlugin {
         context.directoryEntries = []
         context.modified++
         this.log.trace('attempting to get directory entries because index.html was not found')
-        // const fs = unixfs({ ...helia, blockstore: getBlockstore(context.cid, context.resource, options?.session ?? true, options) })
         try {
           for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress })) {
             context.directoryEntries.push(dirItem)

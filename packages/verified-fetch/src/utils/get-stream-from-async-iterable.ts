@@ -46,6 +46,6 @@ export async function getStreamFromAsyncIterable (iterator: AsyncIterable<Uint8A
 
   return {
     stream,
-    firstChunk: firstChunk.slice(0, 8192)
+    firstChunk
   }
 }

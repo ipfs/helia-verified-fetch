@@ -139,8 +139,6 @@ describe('ByteRangeContext', () => {
           ['--multipart_byteranges_', 'Content-Type: application/octet-stream', `Content-Range: bytes ${start}-${end}/${(body as Uint8Array).length}`].forEach(part => {
             expect(header).to.include(part)
           })
-          // const expectedHeaderParts = ['--multipart_byteranges_', 'Content-Type: application/octet-stream', `Content-Range: bytes ${start}-${end}/${bodyAsUint8Array.length}`, '\r\n\r\n']
-          // expect(getContentHeaderForExpectedRange(index)).to.equal(`bytes ${start}-${end}/${(body as Uint8Array).length}`)
         })
       } else if (actualBody instanceof Blob || type === 'Blob') {
         const bodyAsUint8Array = new Uint8Array(await (actualBody as Blob).arrayBuffer())

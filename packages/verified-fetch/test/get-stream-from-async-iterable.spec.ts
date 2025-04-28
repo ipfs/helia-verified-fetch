@@ -1,7 +1,6 @@
 import { defaultLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import sinon from 'sinon'
-import { equals } from 'uint8arrays/equals'
 import { getStreamFromAsyncIterable } from '../src/utils/get-stream-from-async-iterable.js'
 
 describe('getStreamFromAsyncIterable', () => {
@@ -20,7 +19,7 @@ describe('getStreamFromAsyncIterable', () => {
     const chunks = new TextEncoder().encode('Hello, world!')
     const iterator = (async function * () { yield chunks })()
     const { firstChunk, stream } = await getStreamFromAsyncIterable(iterator, 'test.txt', defaultLogger(), { onProgress: onProgressSpy })
-    expect(equals(firstChunk, chunks)).to.equal(true)
+    expect(firstChunk).to.equal(chunks)
     const reader = stream.getReader()
     const { value } = await reader.read()
     expect(onProgressSpy.callCount).to.equal(1)
@@ -32,7 +31,7 @@ describe('getStreamFromAsyncIterable', () => {
     const chunks = ['Hello,', ' world!'].map((txt) => textEncoder.encode(txt))
     const iterator = (async function * () { yield chunks[0]; yield chunks[1] })()
     const { firstChunk, stream } = await getStreamFromAsyncIterable(iterator, 'test.txt', defaultLogger(), { onProgress: onProgressSpy })
-    expect(equals(firstChunk, chunks[0])).to.equal(true)
+    expect(firstChunk).to.equal(chunks[0])
     const reader = stream.getReader()
     let result = ''
     let chunk
@@ -62,7 +61,7 @@ describe('getStreamFromAsyncIterable', () => {
     }
     const { firstChunk, stream } = await getStreamFromAsyncIterable(iterator, 'test.txt', defaultLogger(), { onProgress: onProgressSpy })
     // @ts-expect-error - actualFirstChunk is not used before set, because the await above.
-    expect(equals(firstChunk, actualFirstChunk)).to.equal(true)
+    expect(firstChunk).to.equal(actualFirstChunk)
     const reader = stream.getReader()
     const result = []
     let chunk
