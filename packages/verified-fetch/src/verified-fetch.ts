@@ -153,7 +153,7 @@ export class VerifiedFetch {
    * Server-Timing header to the response if it has been collected. It should be used for any final processing of the
    * response before it is returned to the user.
    */
-  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath, pathDetails, byteRangeContext }: Partial<PluginContext> = {}): Response {
+  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath, pathDetails, byteRangeContext, options }: Partial<PluginContext> = {}): Response {
     if (this.serverTimingHeaders.length > 0) {
       const headerString = this.serverTimingHeaders.join(', ')
       response.headers.set('Server-Timing', headerString)
@@ -223,6 +223,12 @@ export class VerifiedFetch {
     } else {
       // set accept-ranges to none to disable range requests for streaming responses
       response.headers.set('Accept-Ranges', 'none')
+    }
+
+    if (options?.method === 'HEAD') {
+      // don't send the body for HEAD requests
+      const headers = response?.headers
+      return new Response(null, { status: 200, headers })
     }
 
     return response

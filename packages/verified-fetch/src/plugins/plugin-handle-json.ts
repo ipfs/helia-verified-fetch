@@ -53,10 +53,24 @@ export class JsonPlugin extends BasePlugin {
       body = block
     }
 
+    let contentType: string
+    if (accept == null) {
+      if (ipldDagJson.code === cid.code) {
+        contentType = 'application/vnd.ipld.dag-json'
+      } else {
+        contentType = 'application/json'
+      }
+    } else {
+      contentType = accept.split(';')[0]
+    }
+
     context.byteRangeContext.setBody(body)
 
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody(accept ?? 'application/json'), { byteRangeContext: context.byteRangeContext, log: this.log })
-    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? accept ?? 'application/json')
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody(contentType), { byteRangeContext: context.byteRangeContext, log: this.log })
+    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? contentType)
+    if (!context.byteRangeContext.isValidRangeRequest) {
+      response.headers.set('content-length', body.length.toString())
+    }
     return response
   }
 }

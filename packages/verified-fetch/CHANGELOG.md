@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.11...@helia/verified-fetch-2.6.12) (2025-04-28)
+
+### Bug Fixes
+
+* verified-fetch supports HEAD requests ([#222](https://github.com/ipfs/helia-verified-fetch/issues/222)) ([82b60ce](https://github.com/ipfs/helia-verified-fetch/commit/82b60ce5a124fd081355d24ef0aded0ab9d014c7))
+
 ## [@helia/verified-fetch-v2.6.11](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.10...@helia/verified-fetch-2.6.11) (2025-04-24)
 
 ### Bug Fixes
