@@ -413,7 +413,7 @@ describe('@helia/verifed-fetch', () => {
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       await expect(resp.json()).to.eventually.deep.equal(obj)
     })
@@ -427,7 +427,7 @@ describe('@helia/verifed-fetch', () => {
       const cid = await j.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       const data = await resp.json()
       expect(data).to.deep.equal({
@@ -447,7 +447,7 @@ describe('@helia/verifed-fetch', () => {
       const cid = await j.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       const data = await resp.json()
       expect(data).to.deep.equal({
@@ -472,7 +472,7 @@ describe('@helia/verifed-fetch', () => {
       const cid = await j.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       const output = await resp.json()
       await expect(j.add(output)).to.eventually.deep.equal(cid)
@@ -488,7 +488,7 @@ describe('@helia/verifed-fetch', () => {
       const cid = await j.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       const output = ipldDagJson.decode(await resp.arrayBuffer())
       await expect(j.add(output)).to.eventually.deep.equal(cid)

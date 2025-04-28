@@ -77,6 +77,16 @@ if (failingTestAdditions.length > 0 || passingTestAdditions.length > 0) {
 
   if (!answer) {
     console.log('Aborting.')
+
+    if (passingTestRemovals.length > 0) {
+      // to help with debugging, we can save the removed passing tests to a file to ensure that they do still pass with a command like:
+      // DEBUG="gateway-conformance*,gateway-conformance*:trace" RUN_TESTS="$(jq -r '.[]' removed-passing-tests.json | paste -sd ',' -)" npm run test
+      const shouldSaveRemovedPassingTests = await confirm('Should we save the removed passing tests to removed-passing-tests.json file?')
+      if (shouldSaveRemovedPassingTests) {
+        await writeFile('removed-passing-tests.json', JSON.stringify(passingTestRemovals, null, 2) + '\n')
+      }
+    }
+
     process.exit(0)
   }
   await writeFile(expectedPassingTestsPath, JSON.stringify(passingTests, null, 2) + '\n')
