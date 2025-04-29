@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.13](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.12...@helia/verified-fetch-2.6.13) (2025-04-29)
+
+### Bug Fixes
+
+* remove abortable-iterator ([#223](https://github.com/ipfs/helia-verified-fetch/issues/223)) ([f17056c](https://github.com/ipfs/helia-verified-fetch/commit/f17056caca65121b13bd012bfbc26ef4c3246226))
+
 ## [@helia/verified-fetch-v2.6.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.11...@helia/verified-fetch-2.6.12) (2025-04-28)
 
 ### Bug Fixes
