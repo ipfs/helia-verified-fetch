@@ -149,7 +149,7 @@
   "dependencies": {
     "@helia/block-brokers": "^4.1.0",
     "@helia/car": "^4.0.4",
-    "@helia/delegated-routing-v1-http-api-client": "^4.2.2",
+    "@helia/delegated-routing-v1-http-api-client": "^4.2.3",
     "@helia/interface": "^5.2.1",
     "@helia/ipns": "^8.2.0",
     "@helia/routers": "^3.0.1",
@@ -164,7 +164,6 @@
     "@libp2p/webrtc": "^5.2.12",
     "@libp2p/websockets": "^9.2.10",
     "@multiformats/dns": "^1.0.6",
-    "abortable-iterator": "^5.1.0",
     "cborg": "^4.2.10",
     "file-type": "^20.4.1",
     "hashlru": "^2.3.0",
