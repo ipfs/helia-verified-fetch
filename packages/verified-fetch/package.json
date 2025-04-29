@@ -149,7 +149,7 @@
   "dependencies": {
     "@helia/block-brokers": "^4.1.0",
     "@helia/car": "^4.0.4",
-    "@helia/delegated-routing-v1-http-api-client": "^4.2.2",
+    "@helia/delegated-routing-v1-http-api-client": "^4.2.3",
     "@helia/interface": "^5.2.1",
     "@helia/ipns": "^8.2.0",
     "@helia/routers": "^3.0.1",
