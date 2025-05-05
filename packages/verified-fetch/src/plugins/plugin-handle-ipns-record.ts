@@ -66,8 +66,8 @@ export class IpnsRecordPlugin extends BasePlugin {
 
     context.byteRangeContext.setBody(record.value)
 
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
-    response.headers.set('content-type', 'application/vnd.ipfs.ipns-record')
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody('application/vnd.ipfs.ipns-record'), { byteRangeContext: context.byteRangeContext, log: this.log })
+    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? 'application/vnd.ipfs.ipns-record')
 
     return response
   }

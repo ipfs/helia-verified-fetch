@@ -39,8 +39,8 @@ export class TarPlugin extends BasePlugin {
 
     context.byteRangeContext.setBody(stream)
 
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
-    response.headers.set('content-type', 'application/x-tar')
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody('application/x-tar'), { byteRangeContext: context.byteRangeContext, log: this.log })
+    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? 'application/x-tar')
 
     response.headers.set('etag', getETag({ cid: terminusElement, reqFormat: context.reqFormat, weak: true }))
 
