@@ -59,7 +59,7 @@
   "dependencies": {
     "@helia/delegated-routing-v1-http-api-server": "^4.0.4",
     "@helia/verified-fetch": "^2.6.8",
-    "aegir": "^45.2.0",
+    "aegir": "^46.0.0",
     "execa": "^9.5.2",
     "glob": "^11.0.1",
     "ipfsd-ctl": "^15.0.2",
