@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.14](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.13...@helia/verified-fetch-2.6.14) (2025-05-12)
+
+### Bug Fixes
+
+* ending path is not assumed to be filename ([#229](https://github.com/ipfs/helia-verified-fetch/issues/229)) ([6d24813](https://github.com/ipfs/helia-verified-fetch/commit/6d2481392c312de3a4ff2aee5ca6b686d31541ba)), closes [#228](https://github.com/ipfs/helia-verified-fetch/issues/228)
+
 ## [@helia/verified-fetch-v2.6.13](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.12...@helia/verified-fetch-2.6.13) (2025-04-29)
 
 ### Bug Fixes
