@@ -40,5 +40,18 @@ describe('@helia/verified-fetch - json', () => {
       expect(jsonObj).to.have.property('keywords').to.deep.equal(['uniswap', 'default'])
       expect(jsonObj.tokens).to.be.an('array').of.length(767)
     })
+
+    it('handles hamt-sharded directory with json file', async () => {
+      const resp = await verifiedFetch('ipfs://bafybeibc5sgo2plmjkq2tzmhrn54bk3crhnc23zd2msg4ea7a4pxrkgfna/371', {
+        allowLocal: true,
+        allowInsecure: true
+      })
+      expect(resp).to.be.ok()
+      expect(resp.status).to.equal(200)
+      expect(resp.headers.get('content-type')).to.equal('application/json')
+      const jsonObj = await resp.json()
+      expect(jsonObj).to.be.ok()
+      expect(jsonObj).to.have.property('name').equal('Pudgy Penguin #371')
+    })
   })
 })

@@ -86,7 +86,7 @@ export class RawPlugin extends BasePlugin {
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    await setContentType({ bytes: result, path, response, defaultContentType: getOverridenRawContentType({ headers: options?.headers, accept }), contentTypeParser, log })
+    await setContentType({ filename: query.filename, bytes: result, path, response, defaultContentType: getOverridenRawContentType({ headers: options?.headers, accept }), contentTypeParser, log })
 
     return response
   }

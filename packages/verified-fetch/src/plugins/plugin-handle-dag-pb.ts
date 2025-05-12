@@ -52,7 +52,7 @@ export class DagPbPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>): Promise<Response | null> {
-    const { cid, options, withServerTiming = false, pathDetails } = context
+    const { cid, options, withServerTiming = false, pathDetails, query } = context
     const { handleServerTiming, contentTypeParser, helia, getBlockstore } = this.pluginOptions
     const log = this.log
     let resource = context.resource
@@ -155,7 +155,7 @@ export class DagPbPlugin extends BasePlugin {
         redirected
       })
 
-      await handleServerTiming('set-content-type', '', async () => setContentType({ bytes: firstChunk, path, response, contentTypeParser, log }), withServerTiming)
+      await handleServerTiming('set-content-type', '', async () => setContentType({ filename: query.filename, bytes: firstChunk, path, response, contentTypeParser, log }), withServerTiming)
 
       setIpfsRoots(response, ipfsRoots)
 
