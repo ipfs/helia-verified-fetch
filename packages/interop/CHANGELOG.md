@@ -1,3 +1,26 @@
+## [@helia/verified-fetch-interop-v1.26.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.25.0...@helia/verified-fetch-interop-1.26.0) (2025-05-14)
+
+### Features
+
+* support p2p retrieval by default ([#130](https://github.com/ipfs/helia-verified-fetch/issues/130)) ([9d33f89](https://github.com/ipfs/helia-verified-fetch/commit/9d33f8996f555fdee73ad3b0b129560c4d5b6cb6))
+
+### Bug Fixes
+
+* correct all typos and add spell checker ([5db3eec](https://github.com/ipfs/helia-verified-fetch/commit/5db3eec25db10fc4b8d1ec58e2754eb5cf9e61d6))
+* ending path is not assumed to be filename ([#229](https://github.com/ipfs/helia-verified-fetch/issues/229)) ([6d24813](https://github.com/ipfs/helia-verified-fetch/commit/6d2481392c312de3a4ff2aee5ca6b686d31541ba)), closes [#228](https://github.com/ipfs/helia-verified-fetch/issues/228)
+* ipns.resolve doesn't error in browsers ([#210](https://github.com/ipfs/helia-verified-fetch/issues/210)) ([abe2e5c](https://github.com/ipfs/helia-verified-fetch/commit/abe2e5ca4337ba11ace33620dc7cf963b94dd741))
+* update readmes and bundle sizes ([cb920a5](https://github.com/ipfs/helia-verified-fetch/commit/cb920a57f347cff8e249671660c1fb522f89c8fa))
+
+### Dependencies
+
+* bump aegir from 42.2.11 to 44.1.4 ([#108](https://github.com/ipfs/helia-verified-fetch/issues/108)) ([e36fbff](https://github.com/ipfs/helia-verified-fetch/commit/e36fbffebee6af272b8fbf5cdcbbe1a46ea6b5c5))
+* bump aegir from 44.1.4 to 45.0.1 ([#127](https://github.com/ipfs/helia-verified-fetch/issues/127)) ([53299e0](https://github.com/ipfs/helia-verified-fetch/commit/53299e0d39256e4c8aff22bb4999b1ed36e686ad))
+* bump kubo from 0.28.0 to 0.32.0 ([#133](https://github.com/ipfs/helia-verified-fetch/issues/133)) ([f9606e0](https://github.com/ipfs/helia-verified-fetch/commit/f9606e0b1c2b614b4ceb4c748404e9174763df33))
+* bump the helia-deps group across 3 directories with 7 updates ([#141](https://github.com/ipfs/helia-verified-fetch/issues/141)) ([d867350](https://github.com/ipfs/helia-verified-fetch/commit/d8673505044e84cc69c36128dc2874f0713853ab))
+* bump the kubo-deps group across 3 directories with 2 updates ([#152](https://github.com/ipfs/helia-verified-fetch/issues/152)) ([e20be62](https://github.com/ipfs/helia-verified-fetch/commit/e20be62a16aa81c4728d98f163f7c1de38a943e6))
+* **dev:** bump aegir from 45.2.1 to 46.0.1 ([5825e4a](https://github.com/ipfs/helia-verified-fetch/commit/5825e4a43566f8c3fe059dbb9e952c4e1ce708a1))
+* update all deps ([#218](https://github.com/ipfs/helia-verified-fetch/issues/218)) ([121f361](https://github.com/ipfs/helia-verified-fetch/commit/121f3612d4e960e366b897bff970fb4a05b80639))
+
 ## @helia/verified-fetch-interop [1.25.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.24.1...@helia/verified-fetch-interop-1.25.0) (2024-06-13)
 
 
