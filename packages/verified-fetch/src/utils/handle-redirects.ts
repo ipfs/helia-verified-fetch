@@ -1,8 +1,8 @@
-import { type AbortOptions, type ComponentLogger } from '@libp2p/interface'
 import { SubdomainNotSupportedError } from '../errors.js'
-import { type VerifiedFetchInit, type Resource } from '../index.js'
 import { matchURLString } from './parse-url-string.js'
 import { movedPermanentlyResponse } from './responses.js'
+import type { VerifiedFetchInit, Resource } from '../index.js'
+import type { AbortOptions, ComponentLogger } from '@libp2p/interface'
 import type { CID } from 'multiformats/cid'
 
 interface GetRedirectResponse {

@@ -166,7 +166,7 @@ The function you provide will be called with the first chunk of bytes from the f
 
 ```typescript
 import { createVerifiedFetch } from '@helia/verified-fetch'
-import { fileTypeFromBuffer } from '@sgtpooki/file-type'
+import { fileTypeFromBuffer } from 'file-type'
 
 const fetch = await createVerifiedFetch({
   gateways: ['https://trustless-gateway.link'],
@@ -673,7 +673,7 @@ Each plugin must implement two methods:
 - **`handle(context: PluginContext): Promise<Response | null>`**
   Performs the plugin’s work. It may:
   - **Return a final `Response`**: This stops the pipeline immediately.
-  - **Return `undefined`**: This indicates that the plugin has only partially processed the request
+  - **Return `null`**: This indicates that the plugin has only partially processed the request
     (for example, by performing path walking or decoding) and the pipeline should continue.
   - **Throw a `PluginError`**: This logs a non-fatal error and continues the pipeline.
   - **Throw a `PluginFatalError`**: This logs a fatal error and stops the pipeline immediately.
@@ -693,8 +693,8 @@ Plugins are executed in a chain (a **plugin pipeline**):
      are invoked in sequence.
      - If a plugin returns a final `Response` or throws a `PluginFatalError`, the pipeline immediately
        stops and that response is returned.
-     - If a plugin returns `undefined`, it is assumed to have updated the context (for example, by
-       performing path walking), and the pipeline proceeds to a new pass where plugins are re‑evaluated.
+     - If a plugin returns `null`, it may have updated the context (for example, by
+       performing path walking), other plugins that said they `canHandle` will run.
    - If no plugin modifies the context (i.e. no change to `context.modified`) and no final response is
      produced after iterating through all plugins, the pipeline exits and a default “Not Supported”
      response is returned.
@@ -837,12 +837,12 @@ if (recoverable === false) {
 
 - **Iterative Processing:**
   The pipeline repeatedly checks which plugins can currently handle the request by calling `canHandle(context)`.
-  - Plugins that perform partial processing update the context and return `undefined`, allowing subsequent passes.
+  - Plugins that perform partial processing update the context and return `null`, allowing subsequent passes by other plugins.
   - Once a plugin is ready to finalize the response, it returns a final `Response` and the pipeline terminates.
 
 - **No Strict Ordering:**
   Plugins are invoked based solely on whether they can handle the current state of the context.
-  This means you do not have to specify a rigid order—each plugin simply checks the context and acts if appropriate.
+  This means you do not have to specify a rigid order, each plugin simply checks the context and acts if appropriate.
 
 - **Error Handling:**
   - A thrown `PluginError` is considered non‑fatal and is logged, allowing the pipeline to continue.
@@ -858,7 +858,7 @@ $ npm i @helia/verified-fetch
 
 ## Browser `<script>` tag
 
-Loading this module through a script tag will make it's exports available as `HeliaVerifiedFetch` in the global namespace.
+Loading this module through a script tag will make its exports available as `HeliaVerifiedFetch` in the global namespace.
 
 ```html
 <script src="https://unpkg.com/@helia/verified-fetch/dist/index.min.js"></script>
@@ -866,14 +866,14 @@ Loading this module through a script tag will make it's exports available as `He
 
 # API Docs
 
-- <https://ipfs.github.io/helia-verified-fetch/modules.html>
+- <https://ipfs.github.io/helia-verified-fetch/modules/_helia_verified_fetch.html>
 
 # License
 
 Licensed under either of
 
-- Apache 2.0, ([LICENSE-APACHE](LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT ([LICENSE-MIT](LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
+- Apache 2.0, ([LICENSE-APACHE](https://github.com/ipfs/helia-verified-fetch/blob/main/packages/verified-fetch/LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT ([LICENSE-MIT](https://github.com/ipfs/helia-verified-fetch/blob/main/packages/verified-fetch/LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
 
 # Contribute
 

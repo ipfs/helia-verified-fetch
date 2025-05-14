@@ -42,6 +42,99 @@
       "sourceType": "module"
     }
   },
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "plugins": [
+      [
+        "@semantic-release/commit-analyzer",
+        {
+          "preset": "conventionalcommits",
+          "releaseRules": [
+            {
+              "breaking": true,
+              "release": "major"
+            },
+            {
+              "revert": true,
+              "release": "patch"
+            },
+            {
+              "type": "feat",
+              "release": "minor"
+            },
+            {
+              "type": "fix",
+              "release": "patch"
+            },
+            {
+              "type": "docs",
+              "release": "patch"
+            },
+            {
+              "type": "test",
+              "release": "patch"
+            },
+            {
+              "type": "deps",
+              "release": "patch"
+            },
+            {
+              "scope": "no-release",
+              "release": false
+            }
+          ]
+        }
+      ],
+      [
+        "@semantic-release/release-notes-generator",
+        {
+          "preset": "conventionalcommits",
+          "presetConfig": {
+            "types": [
+              {
+                "type": "feat",
+                "section": "Features"
+              },
+              {
+                "type": "fix",
+                "section": "Bug Fixes"
+              },
+              {
+                "type": "chore",
+                "section": "Trivial Changes"
+              },
+              {
+                "type": "docs",
+                "section": "Documentation"
+              },
+              {
+                "type": "deps",
+                "section": "Dependencies"
+              },
+              {
+                "type": "test",
+                "section": "Tests"
+              }
+            ]
+          }
+        }
+      ],
+      "@semantic-release/changelog",
+      "@semantic-release/npm",
+      "@semantic-release/github",
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "CHANGELOG.md",
+            "package.json"
+          ]
+        }
+      ]
+    ]
+  },
   "scripts": {
     "clean": "aegir clean",
     "lint": "aegir lint",
@@ -54,19 +147,20 @@
     "test:firefox": "aegir test -t browser -- --browser firefox",
     "test:firefox-webworker": "aegir test -t webworker -- --browser firefox",
     "test:node": "aegir test -t node --cov",
-    "test:electron-main": "aegir test -t electron-main"
+    "test:electron-main": "aegir test -t electron-main",
+    "release": "aegir release"
   },
   "dependencies": {
-    "@helia/delegated-routing-v1-http-api-server": "^4.0.4",
-    "@helia/verified-fetch": "^2.6.8",
-    "aegir": "^45.2.0",
-    "execa": "^9.5.2",
-    "glob": "^11.0.1",
+    "@helia/delegated-routing-v1-http-api-server": "^4.0.6",
+    "@helia/verified-fetch": "^2.0.0",
+    "aegir": "^46.0.1",
+    "execa": "^9.5.3",
+    "glob": "^11.0.2",
     "ipfsd-ctl": "^15.0.2",
     "kubo": "^0.34.1",
     "kubo-rpc-client": "^5.1.0",
-    "magic-bytes.js": "^1.11.0",
-    "multiformats": "^13.3.2",
+    "magic-bytes.js": "^1.12.1",
+    "multiformats": "^13.3.3",
     "sinon-ts": "^2.0.0",
     "wherearewe": "^2.0.1"
   },

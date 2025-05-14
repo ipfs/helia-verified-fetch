@@ -1,10 +1,11 @@
-import { unixfs, type UnixFS } from '@helia/unixfs'
+import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { defaultLogger, prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import { ByteRangeContext } from '../../src/utils/byte-range-context.js'
 import { getStreamFromAsyncIterable } from '../../src/utils/get-stream-from-async-iterable.js'
 import { createHelia } from '../fixtures/create-offline-helia.js'
+import type { UnixFS } from '@helia/unixfs'
 import type { Helia } from 'helia'
 import type { CID } from 'multiformats/cid'
 

@@ -10,7 +10,6 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, relative, posix, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { type PeerId } from '@libp2p/interface'
 import { Record as DhtRecord } from '@libp2p/kad-dht'
 import { logger } from '@libp2p/logger'
 import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
@@ -24,6 +23,7 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { GWC_IMAGE } from '../constants.js'
 import { getIpnsRecordDatastore } from './ipns-record-datastore.js'
+import type { PeerId } from '@libp2p/interface'
 
 function getPeerIdFromString (peerIdString: string): PeerId {
   if (peerIdString.charAt(0) === '1' || peerIdString.charAt(0) === 'Q') {

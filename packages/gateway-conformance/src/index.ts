@@ -38,9 +38,9 @@
  * $ curl -v GET http://localhost:3442/ipfs/bafkqabtimvwgy3yk/  # in terminal 2
  * ```
  *
- * ### Troubleshooting
+ * # Troubleshooting
  *
- * #### Missing file in gateway-conformance-fixtures folder
+ * ## Missing file in gateway-conformance-fixtures folder
  *
  * If you see the following error:
  * > ENOENT: no such file or directory, open '[...]/helia-verified-fetch/packages/gateway-conformance/dist/src/fixtures/data/gateway-conformance-fixtures/dnslinks.json

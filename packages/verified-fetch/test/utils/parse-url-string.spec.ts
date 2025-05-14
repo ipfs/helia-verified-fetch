@@ -1,7 +1,6 @@
 import { generateKeyPair } from '@libp2p/crypto/keys'
 import { defaultLogger } from '@libp2p/logger'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
-import { type Answer } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
 import { base36 } from 'multiformats/bases/base36'
 import { CID } from 'multiformats/cid'
@@ -10,6 +9,7 @@ import { parseUrlString } from '../../src/utils/parse-url-string.js'
 import { ipnsRecordStub } from '../fixtures/ipns-stubs.js'
 import type { IPNS } from '@helia/ipns'
 import type { ComponentLogger, PeerId } from '@libp2p/interface'
+import type { Answer } from '@multiformats/dns'
 import type { StubbedInstance } from 'sinon-ts'
 
 const HTTP_PROTOCOLS = [

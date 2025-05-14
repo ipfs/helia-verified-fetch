@@ -37,7 +37,11 @@ export class CarPlugin extends BasePlugin {
     context.query.download = true
     context.query.filename = getFilename(context)
     const blockstore = getBlockstore(cid, context.resource, options?.session ?? true, options)
-    const c = car({ blockstore, getCodec: helia.getCodec })
+    const c = car({
+      blockstore,
+      getCodec: helia.getCodec,
+      logger: helia.logger
+    })
     const stream = toBrowserReadableStream(c.stream(pathDetails?.terminalElement.cid ?? cid, options))
     context.byteRangeContext.setBody(stream)
 
