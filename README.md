@@ -9,11 +9,19 @@
 [![ipfs.tech](https://img.shields.io/badge/project-IPFS-blue.svg?style=flat-square)](https://ipfs.tech)
 [![Discuss](https://img.shields.io/discourse/https/discuss.ipfs.tech/posts.svg?style=flat-square)](https://discuss.ipfs.tech)
 [![codecov](https://img.shields.io/codecov/c/github/ipfs/helia-verified-fetch.svg?style=flat-square)](https://codecov.io/gh/ipfs/helia-verified-fetch)
-[![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-verified-fetch/js-test-and-release.yml?branch=main&style=flat-square)](https://github.com/ipfs/helia-verified-fetch/actions/workflows/js-test-and-release.yml?query=branch%3Amain)
+[![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-verified-fetch/js-test-and-release.yml?branch=main\&style=flat-square)](https://github.com/ipfs/helia-verified-fetch/actions/workflows/js-test-and-release.yml?query=branch%3Amain)
+
+> A fetch-like API for obtaining verified & trustless IPFS content on the web
 
 ## About
 
 This monorepo contains the `@helia/verified-fetch` package and its corresponding interop tests.
+
+# Packages
+
+- [`packages/gateway-conformance`](https://github.com/ipfs/helia-verified-fetch/tree/main/packages/gateway-conformance) Gateway conformance tests for @helia/verified-fetch
+- [`packages/interop`](https://github.com/ipfs/helia-verified-fetch/tree/main/packages/interop) Interop tests for @helia/verified-fetch
+- [`packages/verified-fetch`](https://github.com/ipfs/helia-verified-fetch/tree/main/packages/verified-fetch) A fetch-like API for obtaining verified & trustless IPFS content on the web
 
 # Getting started
 
@@ -21,21 +29,16 @@ See the [**`@helia/verified-fetch`**](./packages/verified-fetch#readme) package 
 
 Learn more in the [announcement blog post](https://blog.ipfs.tech/verified-fetch/) and check out the [ready-to-run example](https://github.com/ipfs-examples/helia-examples/tree/main/examples/helia-browser-verified-fetch).
 
-# Packages
-
-- [`@helia/verified-fetch`](./packages/verified-fetch) A fetch-like API for obtaining verified & trustless IPFS content on the web
-- [`@helia/verified-fetch-interop`](./packages/interop) Interop tests for @helia/verified-fetch
-
 # API Docs
 
-- [https://ipfs.github.io/helia-verified-fetch/modules/\_helia_verified_fetch.html](https://ipfs.github.io/helia-verified-fetch/modules/_helia_verified_fetch.html)
+- <https://ipfs.github.io/helia-verified-fetch>
 
 # License
 
 Licensed under either of
 
-- Apache 2.0, ([LICENSE-APACHE](LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT ([LICENSE-MIT](LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
+- Apache 2.0, ([LICENSE-APACHE](https://github.com/ipfs/helia-verified-fetch/blob/main/LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT ([LICENSE-MIT](https://github.com/ipfs/helia-verified-fetch/blob/main/LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
 
 # Contribute
 

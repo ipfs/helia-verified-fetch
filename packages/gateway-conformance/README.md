@@ -11,7 +11,7 @@
 [![codecov](https://img.shields.io/codecov/c/github/ipfs/helia-verified-fetch.svg?style=flat-square)](https://codecov.io/gh/ipfs/helia-verified-fetch)
 [![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-verified-fetch/js-test-and-release.yml?branch=main\&style=flat-square)](https://github.com/ipfs/helia-verified-fetch/actions/workflows/js-test-and-release.yml?query=branch%3Amain)
 
-> [Gateway Conformance](https://github.com/ipfs/gateway-conformance) tests for @helia/verified-fetch
+> Gateway conformance tests for @helia/verified-fetch
 
 # About
 
@@ -30,20 +30,14 @@ $ KUBO_BINARY=/path/to/kubo verified-fetch-gateway-conformance
 $ npm i @helia/verified-fetch-gateway-conformance
 ```
 
-## Browser `<script>` tag
-
-Loading this module through a script tag will make it's exports available as `HeliaInterop` in the global namespace.
-
-```html
-<script src="https://unpkg.com/@helia/verified-fetch-gateway-conformance/dist/index.min.js"></script>
-```
+> [Gateway Conformance](https://github.com/ipfs/gateway-conformance) tests for @helia/verified-fetch
 
 # License
 
 Licensed under either of
 
-- Apache 2.0, ([LICENSE-APACHE](LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT ([LICENSE-MIT](LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
+- Apache 2.0, ([LICENSE-APACHE](https://github.com/ipfs/helia-verified-fetch/blob/main/packages/gateway-conformance/LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT ([LICENSE-MIT](https://github.com/ipfs/helia-verified-fetch/blob/main/packages/gateway-conformance/LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
 
 # Contribute
 

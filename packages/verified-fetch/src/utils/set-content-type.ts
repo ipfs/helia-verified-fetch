@@ -1,7 +1,7 @@
-import { type Logger } from '@libp2p/interface'
-import { type ContentTypeParser } from '../types.js'
 import { defaultMimeType } from './content-type-parser.js'
 import { isPromise } from './type-guards.js'
+import type { ContentTypeParser } from '../types.js'
+import type { Logger } from '@libp2p/interface'
 
 export interface SetContentTypeOptions {
   bytes: Uint8Array

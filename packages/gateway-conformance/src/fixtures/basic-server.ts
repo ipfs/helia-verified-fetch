@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { createServer } from 'node:http'
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
 import { httpGatewayRouting } from '@helia/routers'
@@ -14,6 +14,7 @@ import { getIpnsRecordDatastore } from './ipns-record-datastore.js'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { Blockstore } from 'interface-blockstore'
 import type { Datastore } from 'interface-datastore'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 
 const log = logger('basic-server')
 /**

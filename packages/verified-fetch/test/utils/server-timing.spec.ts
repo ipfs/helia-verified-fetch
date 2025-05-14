@@ -1,7 +1,9 @@
 import { expect } from 'aegir/chai'
-import { createVerifiedFetch, type VerifiedFetch } from '../../src/index.js'
-import { serverTiming, type ServerTimingResult } from '../../src/utils/server-timing.js'
+import { createVerifiedFetch } from '../../src/index.js'
+import { serverTiming } from '../../src/utils/server-timing.js'
 import { createHelia } from '../fixtures/create-offline-helia.js'
+import type { VerifiedFetch } from '../../src/index.js'
+import type { ServerTimingResult } from '../../src/utils/server-timing.js'
 
 describe('serverTiming', () => {
   it('should return a success object with the correct header and no error', async () => {

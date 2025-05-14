@@ -4,9 +4,10 @@ import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
 import sinon from 'sinon'
-import { stubInterface, type StubbedInstance } from 'sinon-ts'
+import { stubInterface } from 'sinon-ts'
 import { parseResource } from '../src/utils/parse-resource.js'
 import type { IPNS } from '@helia/ipns'
+import type { StubbedInstance } from 'sinon-ts'
 
 const testCID = CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
 const key = await generateKeyPair('Ed25519')

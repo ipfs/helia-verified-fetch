@@ -1,10 +1,12 @@
 import { NotUnixFSError } from '@helia/unixfs/errors'
-import { exporter, recursive, type UnixFSEntry } from 'ipfs-unixfs-exporter'
+import { exporter, recursive } from 'ipfs-unixfs-exporter'
 import map from 'it-map'
 import { pipe } from 'it-pipe'
-import { pack, type TarEntryHeader, type TarImportCandidate } from 'it-tar'
+import { pack } from 'it-tar'
 import type { AbortOptions } from '@libp2p/interface'
 import type { Blockstore } from 'interface-blockstore'
+import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { TarEntryHeader, TarImportCandidate } from 'it-tar'
 
 const EXPORTABLE = ['file', 'raw', 'directory']
 
