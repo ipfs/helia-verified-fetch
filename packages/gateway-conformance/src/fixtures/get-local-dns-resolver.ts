@@ -46,7 +46,7 @@ export function getLocalDnsResolver (ipfsNsMap: string, kuboGateway: string): DN
         name: domain,
         type: 16,
         TTL: 180,
-        data // should be in the format 'dnslink=/ipfs/bafkqac3imvwgy3zao5xxe3de'
+        data // should be in the format 'dnslink=/ipfs/bafyfoo'
       })
     }
 

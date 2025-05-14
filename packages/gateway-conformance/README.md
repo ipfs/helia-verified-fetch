@@ -73,7 +73,7 @@ $ curl -v GET http://localhost:3442/ipfs/bafkqabtimvwgy3yk/  # in terminal 2
 
 If you see the following error:
 
-> ENOENT: no such file or directory, open '\[...]/helia-verified-fetch/packages/gateway-conformance/dist/src/fixtures/data/gateway-conformance-fixtures/dnslinks.json
+> ENOENT: no such file or directory, open '[...]/helia-verified-fetch/packages/gateway-conformance/dist/src/...
 
 This likely means the docker container is not executing properly for some reason. You can try running the following command to see if there are any errors: `DEBUG="-mocha*,*,*:trace" npm run test`
 

@@ -368,7 +368,7 @@
  *
  * [DAG-CBOR](https://ipld.io/docs/codecs/known/dag-cbor/) uses the [Concise Binary Object Representation](https://cbor.io/) format for serialization instead of JSON.
  *
- * This supports more datatypes in a safer way than JSON and is smaller on the wire to boot so is usually preferable to JSON or DAG-JSON.
+ * This supports more data types in a safer way than JSON and is smaller on the wire to boot so is usually preferable to JSON or DAG-JSON.
  *
  * ##### Content-Type
  *
@@ -448,7 +448,7 @@
  * console.info(res.url) // ipfs://bafyfoo/path/to/dir/
  * ```
  *
- * It's possible to prevent this behaviour and/or handle a redirect manually
+ * It's possible to prevent this behavior and/or handle a redirect manually
  * through use of the [redirect](https://developer.mozilla.org/en-US/docs/Web/API/fetch#redirect)
  * option.
  *
@@ -627,7 +627,7 @@
  * 3. `TypeError` - If the options argument is passed and is malformed.
  * 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal. Note that this is a `AbortError` from `@libp2p/interface` and not the standard `AbortError` from the Fetch API.
  *
- * ## Pluggability and Extensibility
+ * ## Extensibility
  *
  * Verified‑fetch can now be extended to alter how it handles requests by using plugins.
  * Plugins are classes that extend the `BasePlugin` class and implement the `VerifiedFetchPlugin`
@@ -893,7 +893,7 @@ export interface CreateVerifiedFetchInit {
   /**
    * By default we will not connect to any HTTP Gateways providers over local or
    * loopback addresses, this is because they are typically running on remote
-   * peers that have published private addresses by mistate.
+   * peers that have published private addresses by mistake.
    *
    * Pass `true` here to connect to local Gateways as well, this may be useful
    * in testing environments.
@@ -904,7 +904,7 @@ export interface CreateVerifiedFetchInit {
 
   /**
    * By default we will not connect to any gateways over HTTP addresses,
-   * requring HTTPS connections instead. This is because it will cause
+   * requiring HTTPS connections instead. This is because it will cause
    * "mixed-content" errors to appear in the console when running in secure
    * browser contexts.
    *
@@ -1012,7 +1012,7 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
   /**
    * By default we will not connect to any HTTP Gateways providers over local or
    * loopback addresses, this is because they are typically running on remote
-   * peers that have published private addresses by mistate.
+   * peers that have published private addresses by mistake.
    *
    * Pass `true` here to connect to local Gateways as well, this may be useful
    * in testing environments.
@@ -1023,7 +1023,7 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
 
   /**
    * By default we will not connect to any gateways over HTTP addresses,
-   * requring HTTPS connections instead. This is because it will cause
+   * requiring HTTPS connections instead. This is because it will cause
    * "mixed-content" errors to appear in the console when running in secure
    * browser contexts.
    *

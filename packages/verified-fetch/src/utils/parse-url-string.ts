@@ -114,7 +114,7 @@ function calculateTtl (resolveResult?: IPNSResolveResult | DNSLinkResolveResult)
 }
 
 /**
- * For dnslinks see https://specs.ipfs.tech/http-gateways/subdomain-gateway/#host-request-header
+ * For DNSLink see https://specs.ipfs.tech/http-gateways/subdomain-gateway/#host-request-header
  * DNSLink names include . which means they must be inlined into a single DNS label to provide unique origin and work with wildcard TLS certificates.
  */
 
@@ -271,7 +271,7 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
   let ttl = calculateTtl(resolveResult)
 
   if (resolveResult != null) {
-    // use the ttl for the resolved resouce for the cache, but fallback to 2 minutes if not available
+    // use the ttl for the resolved resource for the cache, but fallback to 2 minutes if not available
     ttl = ttl ?? 60 * 2
     log.trace('caching %s resolved to %s with TTL: %s', cidOrPeerIdOrDnsLink, cid, ttl)
     // convert ttl from seconds to ms for the cache

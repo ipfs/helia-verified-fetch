@@ -306,7 +306,7 @@ When fetching `DAG-PB` data, the content type will be set to `application/octet-
 
 #### JSON
 
-The JSON codec is a very simple codec, a block parseable with this codec is a JSON string encoded into a `Uint8Array`.
+The JSON codec is a very simple codec, a block decodable with this codec is a JSON string encoded into a `Uint8Array`.
 
 ##### Using the JSON codec
 
@@ -399,7 +399,7 @@ console.info(obj.buf) // Uint8Array(5) [ 0, 1, 2, 3, 4 ]
 
 [DAG-CBOR](https://ipld.io/docs/codecs/known/dag-cbor/) uses the [Concise Binary Object Representation](https://cbor.io/) format for serialization instead of JSON.
 
-This supports more datatypes in a safer way than JSON and is smaller on the wire to boot so is usually preferable to JSON or DAG-JSON.
+This supports more data types in a safer way than JSON and is smaller on the wire to boot so is usually preferable to JSON or DAG-JSON.
 
 ##### Content-Type
 
@@ -479,7 +479,7 @@ const res = await verifiedFetch('ipfs://bafyfoo/path/to/dir')
 console.info(res.url) // ipfs://bafyfoo/path/to/dir/
 ```
 
-It's possible to prevent this behaviour and/or handle a redirect manually
+It's possible to prevent this behavior and/or handle a redirect manually
 through use of the [redirect](https://developer.mozilla.org/en-US/docs/Web/API/fetch#redirect)
 option.
 
@@ -554,7 +554,7 @@ This library supports the following methods of fetching web3 content from IPFS:
 2. IPNS protocol: `ipns://<peerId>` & `ipns://<publicKey>` & `ipns://<hostUri_Supporting_DnsLink_TxtRecords>`
 3. CID instances: An actual CID instance `CID.parse('bafy...')`
 
-As well as support for pathing & params for items 1 & 2 above according to [IPFS - Path Gateway Specification](https://specs.ipfs.tech/http-gateways/path-gateway) & [IPFS - Trustless Gateway Specification](https://specs.ipfs.tech/http-gateways/trustless-gateway/). Further refinement of those specifications specifically for web-based scenarios can be found in the [Web Pathing Specification IPIP](https://github.com/ipfs/specs/pull/453).
+As well as support for paths & params for items 1 & 2 above according to [IPFS - Path Gateway Specification](https://specs.ipfs.tech/http-gateways/path-gateway) & [IPFS - Trustless Gateway Specification](https://specs.ipfs.tech/http-gateways/trustless-gateway/). Further refinement of those specifications specifically for web-based scenarios can be found in the [Web Pathing Specification IPIP](https://github.com/ipfs/specs/pull/453).
 
 If you pass a CID instance, it assumes you want the content for that specific CID only, and does not support pathing or params for that CID.
 
@@ -658,7 +658,7 @@ Known Errors that can be thrown:
 3. `TypeError` - If the options argument is passed and is malformed.
 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal. Note that this is a `AbortError` from `@libp2p/interface` and not the standard `AbortError` from the Fetch API.
 
-## Pluggability and Extensibility
+## Extensibility
 
 Verified‑fetch can now be extended to alter how it handles requests by using plugins.
 Plugins are classes that extend the `BasePlugin` class and implement the `VerifiedFetchPlugin`

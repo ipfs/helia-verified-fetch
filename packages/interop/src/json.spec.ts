@@ -4,7 +4,7 @@ import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
 
 describe('@helia/verified-fetch - json', () => {
-  describe('unixfs - multiblock', () => {
+  describe('unixfs - multi-block', () => {
     let verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>
 
     before(async () => {

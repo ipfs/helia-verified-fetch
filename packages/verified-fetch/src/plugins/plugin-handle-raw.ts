@@ -22,7 +22,7 @@ const RAW_HEADERS = [
  * type. This avoids the user from receiving something different when they
  * signal that they want to `Accept` a specific mime type.
  */
-function getOverridenRawContentType ({ headers, accept }: { headers?: HeadersInit, accept?: string }): string | undefined {
+function getOverriddenRawContentType ({ headers, accept }: { headers?: HeadersInit, accept?: string }): string | undefined {
   // accept has already been resolved by getResolvedAcceptHeader, if we have it, use it.
   const acceptHeader = accept ?? new Headers(headers).get('accept') ?? ''
 
@@ -86,7 +86,7 @@ export class RawPlugin extends BasePlugin {
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    await setContentType({ filename: query.filename, bytes: result, path, response, defaultContentType: getOverridenRawContentType({ headers: options?.headers, accept }), contentTypeParser, log })
+    await setContentType({ filename: query.filename, bytes: result, path, response, defaultContentType: getOverriddenRawContentType({ headers: options?.headers, accept }), contentTypeParser, log })
 
     return response
   }
