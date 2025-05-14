@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.17](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.16...@helia/verified-fetch-2.6.17) (2025-05-14)
+
+### Bug Fixes
+
+* update readmes and bundle sizes ([cb920a5](https://github.com/ipfs/helia-verified-fetch/commit/cb920a57f347cff8e249671660c1fb522f89c8fa))
+
 ## [@helia/verified-fetch-v2.6.16](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.15...@helia/verified-fetch-2.6.16) (2025-05-14)
 
 ### Bug Fixes
