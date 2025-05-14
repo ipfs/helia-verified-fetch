@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.16](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.15...@helia/verified-fetch-2.6.16) (2025-05-14)
+
+### Bug Fixes
+
+* correct all typos and add spell checker ([5db3eec](https://github.com/ipfs/helia-verified-fetch/commit/5db3eec25db10fc4b8d1ec58e2754eb5cf9e61d6))
+
 ## [@helia/verified-fetch-v2.6.15](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.14...@helia/verified-fetch-2.6.15) (2025-05-14)
 
 ### Dependencies
