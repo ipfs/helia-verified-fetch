@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.15](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.14...@helia/verified-fetch-2.6.15) (2025-05-14)
+
+### Dependencies
+
+* **dev:** bump aegir from 45.2.1 to 46.0.1 ([5825e4a](https://github.com/ipfs/helia-verified-fetch/commit/5825e4a43566f8c3fe059dbb9e952c4e1ce708a1))
+
 ## [@helia/verified-fetch-v2.6.14](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.13...@helia/verified-fetch-2.6.14) (2025-05-12)
 
 ### Bug Fixes
