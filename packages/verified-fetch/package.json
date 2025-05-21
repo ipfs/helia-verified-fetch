@@ -206,7 +206,7 @@
     "@ipld/car": "^5.4.1",
     "@libp2p/crypto": "^5.1.3",
     "@types/sinon": "^17.0.4",
-    "aegir": "^47.0.7",
+    "aegir": "^47.0.10",
     "blockstore-core": "^5.0.2",
     "browser-readablestream-to-it": "^2.0.9",
     "datastore-core": "^10.0.2",
