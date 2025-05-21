@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-gateway-conformance-v1.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.3.0...@helia/verified-fetch-gateway-conformance-1.3.1) (2025-05-21)
+
+### Trivial Changes
+
+* update version ([d32c104](https://github.com/ipfs/helia-verified-fetch/commit/d32c104f9df4666c7d409c45d9c13e3e34a10cd3))
+
+### Dependencies
+
+* bump aegir from 46.0.5 to 47.0.6 ([#236](https://github.com/ipfs/helia-verified-fetch/issues/236)) ([bc3d557](https://github.com/ipfs/helia-verified-fetch/commit/bc3d5574ee6f19a194f9498652b2e354d38020d4))
+
 ## [@helia/verified-fetch-gateway-conformance-v1.3.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.2.0...@helia/verified-fetch-gateway-conformance-1.3.0) (2025-05-14)
 
 ### Features
