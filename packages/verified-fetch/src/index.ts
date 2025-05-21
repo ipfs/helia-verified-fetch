@@ -591,8 +591,8 @@
  *
  * #### Unsupported response types
  *
- * * Returning IPLD nodes or DAGs as JS objects is not supported, as there is no currently well-defined structure for representing this data in an [HTTP Response](https://developer.mozilla.org/en-US/docs/Web/API/Response). Instead, users should request `aplication/vnd.ipld.car` or use the [`helia`](https://github.com/ipfs/helia) library directly for this use case.
- * * Others? Open an issue or PR!
+ * - Returning IPLD nodes or DAGs as JS objects is not supported, as there is no currently well-defined structure for representing this data in an [HTTP Response](https://developer.mozilla.org/en-US/docs/Web/API/Response). Instead, users should request `aplication/vnd.ipld.car` or use the [`helia`](https://github.com/ipfs/helia) library directly for this use case.
+ * - Others? Open an issue or PR!
  *
  * ### Response headers
  *
@@ -600,9 +600,9 @@
  *
  * Some known header specifications:
  *
- * * https://specs.ipfs.tech/http-gateways/path-gateway/#response-headers
- * * https://specs.ipfs.tech/http-gateways/trustless-gateway/#response-headers
- * * https://specs.ipfs.tech/http-gateways/subdomain-gateway/#response-headers
+ * - https://specs.ipfs.tech/http-gateways/path-gateway/#response-headers
+ * - https://specs.ipfs.tech/http-gateways/trustless-gateway/#response-headers
+ * - https://specs.ipfs.tech/http-gateways/subdomain-gateway/#response-headers
  *
  * #### Server Timing headers
  *

@@ -65,9 +65,9 @@ interface MatchUrlGroups {
 
 function matchUrlGroupsGuard (groups?: null | { [key in string]: string; } | MatchUrlGroups): groups is MatchUrlGroups {
   const protocol = groups?.protocol
-  if (protocol == null) return false
+  if (protocol == null) { return false }
   const cidOrPeerIdOrDnsLink = groups?.cidOrPeerIdOrDnsLink
-  if (cidOrPeerIdOrDnsLink == null) return false
+  if (cidOrPeerIdOrDnsLink == null) { return false }
   const path = groups?.path
   const queryString = groups?.queryString
 
@@ -132,8 +132,8 @@ function isInlinedDnsLink (label: string): boolean {
 
 /**
  * DNSLink label decoding
- * * Every standalone - is replaced with .
- * * Every remaining -- is replaced with -
+ * - Every standalone - is replaced with .
+ * - Every remaining -- is replaced with -
  *
  * @example en-wikipedia--on--ipfs-org.ipns.example.net -> example.net/ipns/en.wikipedia-on-ipfs.org
  */
@@ -145,8 +145,8 @@ function dnsLinkLabelDecoder (linkLabel: string): string {
  * A function that parses ipfs:// and ipns:// URLs, returning an object with easily recognizable properties.
  *
  * After determining the protocol successfully, we process the cidOrPeerIdOrDnsLink:
- * * If it's ipfs, it parses the CID or throws Error[]
- * * If it's ipns, it attempts to resolve the PeerId and then the DNSLink. If both fail, Error[] is thrown.
+ * - If it's ipfs, it parses the CID or throws Error[]
+ * - If it's ipns, it attempts to resolve the PeerId and then the DNSLink. If both fail, Error[] is thrown.
  *
  * @todo we need to break out each step of this function (cid parsing, ipns resolving, dnslink resolving) into separate functions and then remove the eslint-disable comment
  *
@@ -264,7 +264,7 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
 
     errors.push(new Error(`Invalid resource. Cannot determine CID from URL "${urlString}".`))
 
-    // eslint-disable-next-line @typescript-eslint/no-throw-literal
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
     throw errors
   }
 

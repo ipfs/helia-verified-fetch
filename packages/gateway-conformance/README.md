@@ -86,8 +86,6 @@ errors: `DEBUG="-mocha*,*,*:trace" npm run test`
 $ npm i @helia/verified-fetch-gateway-conformance
 ```
 
-> [Gateway Conformance](https://github.com/ipfs/gateway-conformance) tests for @helia/verified-fetch
-
 # License
 
 Licensed under either of

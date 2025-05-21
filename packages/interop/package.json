@@ -35,13 +35,6 @@
       "import": "./dist/src/index.js"
     }
   },
-  "eslintConfig": {
-    "extends": "ipfs",
-    "parserOptions": {
-      "project": true,
-      "sourceType": "module"
-    }
-  },
   "release": {
     "branches": [
       "main"
@@ -153,14 +146,14 @@
   "dependencies": {
     "@helia/delegated-routing-v1-http-api-server": "^4.0.6",
     "@helia/verified-fetch": "^2.0.0",
-    "aegir": "^47.0.6",
+    "aegir": "^47.0.7",
     "execa": "^9.5.3",
     "glob": "^11.0.2",
     "ipfsd-ctl": "^15.0.2",
     "kubo": "^0.34.1",
     "kubo-rpc-client": "^5.1.0",
     "magic-bytes.js": "^1.12.1",
-    "multiformats": "^13.3.3",
+    "multiformats": "^13.3.6",
     "sinon-ts": "^2.0.0",
     "wherearewe": "^2.0.1"
   },

@@ -4,8 +4,8 @@ import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 /**
  * Types taken from:
  *
- * * https://github.com/ipfs/boxo/blob/09b0013e1c3e09468009b02dfc9b2b9041199d5d/gateway/assets/assets.go#L92C1-L96C2
- * * https://github.com/ipfs/boxo/blob/09b0013e1c3e09468009b02dfc9b2b9041199d5d/gateway/assets/assets.go#L114C1-L135C2
+ * - https://github.com/ipfs/boxo/blob/09b0013e1c3e09468009b02dfc9b2b9041199d5d/gateway/assets/assets.go#L92C1-L96C2
+ * - https://github.com/ipfs/boxo/blob/09b0013e1c3e09468009b02dfc9b2b9041199d5d/gateway/assets/assets.go#L114C1-L135C2
  */
 
 interface GlobalData {
