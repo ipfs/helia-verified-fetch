@@ -1,7 +1,7 @@
 import { ipns as heliaIpns } from '@helia/ipns'
 import { prefixLogger } from '@libp2p/logger'
-import { LRUCache } from 'lru-cache'
 import { CustomProgressEvent } from 'progress-events'
+import QuickLRU from 'quick-lru'
 import { ByteRangeContextPlugin } from './plugins/plugin-handle-byte-range-context.js'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { DagCborPlugin } from './plugins/plugin-handle-dag-cbor.js'
@@ -62,7 +62,7 @@ export class VerifiedFetch {
   private readonly ipns: IPNS
   private readonly log: Logger
   private readonly contentTypeParser: ContentTypeParser | undefined
-  private readonly blockstoreSessions: LRUCache<string, SessionBlockstore>
+  private readonly blockstoreSessions: QuickLRU<string, SessionBlockstore>
   private serverTimingHeaders: string[] = []
   private readonly withServerTiming: boolean
   private readonly plugins: VerifiedFetchPlugin[] = []
@@ -72,10 +72,10 @@ export class VerifiedFetch {
     this.log = helia.logger.forComponent('helia:verified-fetch')
     this.ipns = ipns ?? heliaIpns(helia)
     this.contentTypeParser = init?.contentTypeParser ?? contentTypeParser
-    this.blockstoreSessions = new LRUCache({
-      max: init?.sessionCacheSize ?? SESSION_CACHE_MAX_SIZE,
-      ttl: init?.sessionTTLms ?? SESSION_CACHE_TTL_MS,
-      dispose: (store) => {
+    this.blockstoreSessions = new QuickLRU({
+      maxSize: init?.sessionCacheSize ?? SESSION_CACHE_MAX_SIZE,
+      maxAge: init?.sessionTTLms ?? SESSION_CACHE_TTL_MS,
+      onEviction: (key, store) => {
         store.close()
       }
     })
