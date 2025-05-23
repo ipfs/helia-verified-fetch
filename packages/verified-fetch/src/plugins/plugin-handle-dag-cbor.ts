@@ -12,6 +12,7 @@ import type { ObjectNode } from 'ipfs-unixfs-exporter'
  * Handles `dag-cbor` content, including requests with Accept: `application/vnd.ipld.dag-json` and `application/json`.
  */
 export class DagCborPlugin extends BasePlugin {
+  readonly id = 'dag-cbor-plugin'
   readonly codes = [ipldDagCbor.code]
 
   canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {

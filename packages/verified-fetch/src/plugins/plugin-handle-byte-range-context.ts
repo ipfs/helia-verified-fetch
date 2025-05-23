@@ -6,6 +6,8 @@ import type { PluginContext } from './types.js'
  * This plugin simply adds the ByteRangeContext to the PluginContext.
  */
 export class ByteRangeContextPlugin extends BasePlugin {
+  readonly id = 'byte-range-context-plugin'
+
   /**
    * Return false if the ByteRangeContext has already been set, otherwise return true.
    */

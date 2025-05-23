@@ -19,6 +19,8 @@ function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'c
  * of the `DAG` referenced by the `CID`.
  */
 export class CarPlugin extends BasePlugin {
+  readonly id = 'car-plugin'
+
   canHandle (context: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', context.cid, context.accept)
     // if (context.pathDetails == null) {
