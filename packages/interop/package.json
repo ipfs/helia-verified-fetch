@@ -1,6 +1,6 @@
 {
   "name": "@helia/verified-fetch-interop",
-  "version": "1.26.1",
+  "version": "1.26.2",
   "description": "Interop tests for @helia/verified-fetch",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/interop#readme",
