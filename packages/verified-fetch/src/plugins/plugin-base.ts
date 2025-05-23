@@ -10,15 +10,15 @@ import type { Logger } from '@libp2p/interface'
  *
  * If your plugin adds/edits the context supplied in `handle`, you should increment the `context.modified` property.
  */
-export class BasePlugin implements Omit<VerifiedFetchPlugin, 'id'> {
+export class BasePlugin implements VerifiedFetchPlugin {
   readonly codes: number[] = []
   readonly log: Logger
   readonly pluginOptions: PluginOptions
-  readonly id?: string // should be overridden by subclasses
+  // @ts-expect-error - id is not initialized in the constructor for BasePlugin
+  readonly id: string // should be overridden by subclasses
   constructor (options: PluginOptions) {
-    // convert a CamelCase string to a kebab-case string for the logger name of subclasses
-    const loggerName = this.id ?? this.constructor.name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
-    this.log = options.logger.forComponent(loggerName)
+    // @ts-expect-error - id is not initialized in the constructor for BasePlugin
+    this.log = options.logger.forComponent(this.id)
     this.pluginOptions = options
   }
 
