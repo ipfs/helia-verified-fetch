@@ -1,3 +1,4 @@
+import { AbortError } from '@libp2p/interface'
 import { CID } from 'multiformats/cid'
 import { getPeerIdFromString } from './get-peer-id-from-string.js'
 import { serverTiming } from './server-timing.js'
@@ -212,7 +213,9 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
         resolvedPath = resolveResult?.path
         log.trace('resolved %s to %c', cidOrPeerIdOrDnsLink, cid)
       } catch (err) {
-        options?.signal?.throwIfAborted()
+        if (options?.signal?.aborted) {
+          throw new AbortError(options?.signal?.reason)
+        }
         if (peerId == null) {
           log.error('could not parse PeerId string "%s"', cidOrPeerIdOrDnsLink, err)
           errors.push(new TypeError(`Could not parse PeerId in ipns url "${cidOrPeerIdOrDnsLink}", ${(err as Error).message}`))
@@ -249,7 +252,10 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
           resolvedPath = resolveResult?.path
           log.trace('resolved %s to %c', decodedDnsLinkLabel, cid)
         } catch (err: any) {
-          options?.signal?.throwIfAborted()
+          // eslint-disable-next-line max-depth
+          if (options?.signal?.aborted) {
+            throw new AbortError(options?.signal?.reason)
+          }
           log.error('could not resolve DnsLink for "%s"', cidOrPeerIdOrDnsLink, err)
           errors.push(err)
         }

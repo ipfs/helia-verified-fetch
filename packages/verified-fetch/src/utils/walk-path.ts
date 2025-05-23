@@ -1,4 +1,5 @@
 import { DoesNotExistError } from '@helia/unixfs/errors'
+import { AbortError } from '@libp2p/interface'
 import { walkPath as exporterWalk } from 'ipfs-unixfs-exporter'
 import { badGatewayResponse, notFoundResponse } from './responses.js'
 import type { PluginContext } from '../plugins/types.js'
@@ -53,7 +54,10 @@ export async function handlePathWalking ({ cid, path, resource, options, blockst
   try {
     return await walkPath(blockstore, `${cid.toString()}/${path}`, options)
   } catch (err: any) {
-    options?.signal?.throwIfAborted()
+    if (options?.signal?.aborted) {
+      throw new AbortError(options?.signal?.reason)
+    }
+
     if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT', 'ERR_NOT_FOUND'].includes(err.code)) {
       return notFoundResponse(resource)
     }
