@@ -151,6 +151,60 @@ describe('parseUrlString', () => {
         }
       )
     })
+
+    it('can parse URL with CID+queryString where query string has providers', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        '/dns4/provider-server.io/tcp/8000'
+      ]
+      await assertMatchUrl(
+        `ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '',
+          query: {
+            format: 'tar',
+            provider: providers
+          }
+        }
+      )
+    })
+
+    it('can parse URL with CID+path+queryString where query string has providers', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        '/dns4/provider-server.io/tcp/8000'
+      ]
+      await assertMatchUrl(
+        `ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          query: {
+            format: 'tar',
+            provider: providers
+          }
+        }
+      )
+    })
+
+    it('can parse URL with CID+queryString where query string has providers, but one is not valid', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        'not-a-multiaddr'
+      ]
+      await assertMatchUrl(
+        `ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '',
+          query: {
+            format: 'tar',
+            provider: [providers[0]]
+          }
+        }
+      )
+    })
   })
 
   describe('ipns://<dnsLinkDomain> URLs', () => {
@@ -357,6 +411,42 @@ describe('parseUrlString', () => {
         }
       )
     })
+
+    it('can parse an IPFS path with CID+queryString where query string has providers', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        '/dns4/provider-server.io/tcp/8000'
+      ]
+      await assertMatchUrl(
+        `/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '',
+          query: {
+            format: 'tar',
+            provider: providers
+          }
+        }
+      )
+    })
+
+    it('can parse an IPFS path with CID+path+queryString where query string has providers', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        '/dns4/provider-server.io/tcp/8000'
+      ]
+      await assertMatchUrl(
+        `/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          query: {
+            format: 'tar',
+            provider: providers
+          }
+        }
+      )
+    })
   })
 
   describe('http://example.com/ipfs/<CID> URLs', () => {
@@ -407,6 +497,42 @@ describe('parseUrlString', () => {
         }
       )
     })
+
+    it('can parse an IPFS Gateway URL with CID+queryString where query string has providers', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        '/dns4/provider-server.io/tcp/8000'
+      ]
+      await assertMatchUrl(
+        `http://example.com/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '',
+          query: {
+            format: 'tar',
+            provider: providers
+          }
+        }
+      )
+    })
+
+    it('can parse an IPFS Gateway URL with CID+path+queryString where query string has providers', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        '/dns4/provider-server.io/tcp/8000'
+      ]
+      await assertMatchUrl(
+        `http://example.com/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          query: {
+            format: 'tar',
+            provider: providers
+          }
+        }
+      )
+    })
   })
 
   describe('http://<CID>.ipfs.example.com URLs', () => {
@@ -453,6 +579,42 @@ describe('parseUrlString', () => {
           path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
           query: {
             format: 'tar'
+          }
+        }
+      )
+    })
+
+    it('can parse an IPFS Subdomain Gateway URL with CID+queryString where query string has providers', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        '/dns4/provider-server.io/tcp/8000'
+      ]
+      await assertMatchUrl(
+        `http://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm.ipfs.example.com?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '',
+          query: {
+            format: 'tar',
+            provider: providers
+          }
+        }
+      )
+    })
+
+    it('can parse an IPFS Subdomain Gateway URL with CID+path+queryString where query string has providers', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        '/dns4/provider-server.io/tcp/8000'
+      ]
+      await assertMatchUrl(
+        `http://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm.ipfs.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          query: {
+            format: 'tar',
+            provider: providers
           }
         }
       )

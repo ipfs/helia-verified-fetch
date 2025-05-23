@@ -21,7 +21,9 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { dirIndexHtmlPluginFactory } from '../src/plugins/plugin-handle-dir-index-html.js'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
-import type { Helia } from '@helia/interface'
+import type { Helia, BlockBroker } from '@helia/interface'
+import type { DeferredPromise } from 'p-defer'
+import type { StubbedInstance } from 'sinon-ts'
 
 describe('@helia/verified-fetch', () => {
   let helia: Helia
@@ -780,6 +782,119 @@ describe('@helia/verified-fetch', () => {
       expect(resp.statusText).to.equal('OK')
       const data = await resp.arrayBuffer()
       expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
+    })
+  })
+
+  describe('?providers', () => {
+    // Mocked provider multiaddr
+    const provider = '/dns4/provider-server.io/tcp/443/https'
+    const sandbox = Sinon.createSandbox()
+    /**
+     * Used as promise to pass to guarantee block broker was called
+     * and its options included expected multiaddrs
+     */
+    let blockBrokerRetrieveCalledWithProviders: DeferredPromise<import('@multiformats/multiaddr').Multiaddr[]>
+    /**
+     * A block broker stub to check it is called with block request.
+     */
+    let blockRetriever: StubbedInstance<Required<Pick<BlockBroker, 'retrieve'>>>
+    /**
+     * Stubbed Helia to be used by verified fetch
+     */
+    let stubbedHelia: Helia
+    let stubbedVerifiedFetch: VerifiedFetch
+
+    beforeEach(async () => {
+      /**
+       * Stubbed networking components
+       */
+      blockBrokerRetrieveCalledWithProviders = pDefer()
+      blockRetriever = stubInterface<Required<Pick<BlockBroker, 'retrieve' | 'createSession'>>>({
+        retrieve: sandbox.stub().callsFake(async (cid, options) => {
+          blockBrokerRetrieveCalledWithProviders.resolve(options.providers)
+
+          // attempt to read from the provider
+          // eslint-disable-next-line
+          const stringProviders = options.providers.map((p: import('@multiformats/multiaddr').Multiaddr) => p.toString())
+          if (stringProviders.includes(provider)) {
+            return helia.blockstore.get(cid, options)
+          }
+          throw new Error('not found')
+        }),
+        createSession: () => {
+          return blockRetriever
+        }
+      })
+      // create stubbed helia instance
+      stubbedHelia = await createHelia({
+        blockBrokers: [() => blockRetriever]
+      })
+      // create verified fetch with stubbed helia underneath
+      stubbedVerifiedFetch = new VerifiedFetch({
+        helia: stubbedHelia
+      })
+    })
+
+    afterEach(async () => {
+      sandbox.restore()
+      await stubbedVerifiedFetch.stop()
+      await stop(stubbedHelia)
+    })
+
+    it('should return raw data from a provider', async () => {
+      const rawData = new Uint8Array([0x01, 0x02, 0x03])
+      const cid = CID.createV1(raw.code, await sha256.digest(rawData))
+      // Add raw data to helia (provider instance), which will be called by
+      // broker retriever
+      await helia.blockstore.put(cid, rawData)
+
+      const resp = await stubbedVerifiedFetch.fetch(`ipfs://${cid}?provider=${provider}`)
+      expect(resp).to.be.ok()
+      expect(resp.status).to.equal(200)
+      expect(resp.statusText).to.equal('OK')
+      const data = await resp.arrayBuffer()
+      expect(new Uint8Array(data)).to.equalBytes(rawData)
+
+      // Verify block broker is called with providers
+      const providerParams = await blockBrokerRetrieveCalledWithProviders.promise
+      expect(providerParams.length).to.equal(1)
+      expect(providerParams[0].toString()).to.equal(provider)
+    })
+
+    it('should return raw data from one of multiple providers', async () => {
+      const rawData = new Uint8Array([0x01, 0x02, 0x03])
+      const cid = CID.createV1(raw.code, await sha256.digest(rawData))
+      // Add raw data to helia (provider instance), which will be called by
+      // broker retriever
+      await helia.blockstore.put(cid, rawData)
+
+      // prepare URL
+      const providers = [
+        provider,
+        '/dns4/provider2.io/tcp/8000/ws'
+      ]
+      const query = providers
+        .map(p => `provider=${p}`)
+        .join('&')
+
+      const url = `ipfs://${cid}?${query}`
+
+      // Verify response expectations
+      const resp = await stubbedVerifiedFetch.fetch(url)
+
+      expect(resp).to.be.ok()
+      expect(resp.status).to.equal(200)
+      expect(resp.statusText).to.equal('OK')
+      const data = await resp.arrayBuffer()
+      expect(new Uint8Array(data)).to.equalBytes(rawData)
+
+      // Verify block broker is called with both providers
+      const providerParams = await blockBrokerRetrieveCalledWithProviders.promise
+      expect(providerParams.length).to.equal(providers.length)
+      const received = providerParams.map(p => p.toString())
+      for (const p of providers) {
+        expect(received).to.include(p)
+      }
     })
   })
 

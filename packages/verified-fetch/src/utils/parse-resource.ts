@@ -34,7 +34,8 @@ export async function parseResource (resource: Resource, { ipns, logger }: Parse
       query: {},
       ipfsPath: `/ipfs/${cid.toString()}`,
       ttl: 29030400, // 1 year for ipfs content
-      serverTimings: []
+      serverTimings: [],
+      providers: []
     } satisfies ParsedUrlStringResults
   }
 

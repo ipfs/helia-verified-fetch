@@ -26,7 +26,7 @@ import { serverTiming } from './utils/server-timing.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from './plugins/types.js'
 import type { ParsedUrlStringResults } from './utils/parse-url-string.js'
-import type { Helia, SessionBlockstore } from '@helia/interface'
+import type { Helia, SessionBlockstore, ProviderOptions } from '@helia/interface'
 import type { IPNS } from '@helia/ipns'
 import type { AbortOptions, Logger } from '@libp2p/interface'
 import type { Blockstore } from 'interface-blockstore'
@@ -121,7 +121,7 @@ export class VerifiedFetch {
     this.log.trace('created VerifiedFetch instance')
   }
 
-  private getBlockstore (root: CID, resource: string | CID, useSession: boolean = true, options: AbortOptions = {}): Blockstore {
+  private getBlockstore (root: CID, resource: string | CID, useSession: boolean = true, options: AbortOptions & ProviderOptions = {}): Blockstore {
     const key = resourceToSessionCacheKey(resource)
     if (!useSession) {
       return this.helia.blockstore
@@ -374,7 +374,10 @@ export class VerifiedFetch {
       ...parsedResult,
       resource: resource.toString(),
       accept,
-      options,
+      options: {
+        ...options,
+        providers: parsedResult.providers
+      },
       withServerTiming,
       onProgress: options?.onProgress,
       modified: 0
