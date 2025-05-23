@@ -13,9 +13,10 @@ export class BasePlugin implements VerifiedFetchPlugin {
   readonly codes: number[] = []
   readonly log: Logger
   readonly pluginOptions: PluginOptions
+  readonly loggerName?: string
   constructor (options: PluginOptions) {
     // convert a CamelCase string to a kebab-case string for the logger name of subclasses
-    const loggerName = this.constructor.name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+    const loggerName = this.loggerName ?? this.constructor.name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
     this.log = options.logger.forComponent(loggerName)
     this.pluginOptions = options
   }

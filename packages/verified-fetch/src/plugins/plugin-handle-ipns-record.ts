@@ -15,6 +15,7 @@ import type { PeerId } from '@libp2p/interface'
  * returns a `Response` containing a raw IPNS record.
  */
 export class IpnsRecordPlugin extends BasePlugin {
+  readonly loggerName = 'ipns-record-plugin'
   readonly codes = []
   canHandle ({ cid, accept, query, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)

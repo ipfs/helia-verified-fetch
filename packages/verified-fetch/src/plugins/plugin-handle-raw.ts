@@ -43,6 +43,7 @@ function getOverriddenRawContentType ({ headers, accept }: { headers?: HeadersIn
 }
 
 export class RawPlugin extends BasePlugin {
+  readonly loggerName = 'raw-plugin'
   codes: number[] = [rawCode, identity.code]
 
   canHandle ({ cid, accept, query, byteRangeContext }: PluginContext): boolean {

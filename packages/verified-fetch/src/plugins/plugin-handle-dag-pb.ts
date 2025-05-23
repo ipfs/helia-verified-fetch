@@ -14,6 +14,7 @@ import type { CIDDetail } from '../index.js'
  * Handles UnixFS and dag-pb content.
  */
 export class DagPbPlugin extends BasePlugin {
+  readonly loggerName = 'dag-pb-plugin'
   readonly codes = [dagPbCode]
   canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)

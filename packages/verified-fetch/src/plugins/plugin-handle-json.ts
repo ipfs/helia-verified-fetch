@@ -9,6 +9,7 @@ import type { PluginContext } from './types.js'
  * Handles `dag-json` content, including requests with Accept: `application/vnd.ipld.dag-cbor` and `application/cbor`.
  */
 export class JsonPlugin extends BasePlugin {
+  readonly loggerName = 'json-plugin'
   readonly codes = [ipldDagJson.code, jsonCode]
   canHandle ({ cid, accept, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)

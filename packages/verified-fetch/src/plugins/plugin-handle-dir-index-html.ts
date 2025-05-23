@@ -24,6 +24,7 @@ async function getAssetHash (directoryEntries: UnixFSEntry[]): Promise<string> {
 }
 
 export class DirIndexHtmlPlugin extends BasePlugin {
+  readonly loggerName = 'dir-index-html-plugin'
   readonly codes = [dagPbCode]
   canHandle (context: PluginContext): boolean {
     const { cid, pathDetails, directoryEntries } = context
