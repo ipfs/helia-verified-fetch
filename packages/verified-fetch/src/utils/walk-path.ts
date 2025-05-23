@@ -54,7 +54,7 @@ export async function handlePathWalking ({ cid, path, resource, options, blockst
   try {
     return await walkPath(blockstore, `${cid.toString()}/${path}`, options)
   } catch (err: any) {
-    if (options?.signal?.aborted === true) {
+    if (options?.signal?.aborted) {
       throw new AbortError(options?.signal?.reason)
     }
 
