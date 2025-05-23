@@ -5,13 +5,13 @@ import { getETag } from '../utils/get-e-tag.js'
 import { tarStream } from '../utils/get-tar-stream.js'
 import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext, VerifiedFetchPlugin } from './types.js'
+import type { PluginContext } from './types.js'
 
 /**
  * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
  * directory structure referenced by the `CID`.
  */
-export class TarPlugin extends BasePlugin implements VerifiedFetchPlugin {
+export class TarPlugin extends BasePlugin {
   readonly id = 'tar-plugin'
   readonly codes = []
   canHandle ({ cid, accept, query, byteRangeContext }: PluginContext): boolean {

@@ -5,28 +5,30 @@ import type { Logger } from '@libp2p/interface'
  * Base class for verified-fetch plugins. This class provides a basic implementation of the `FetchHandlerPlugin`
  * interface.
  *
- * Subclasses should implement the `canHandle` and `handle` methods and should set a unique `id` property.
+ * Subclasses must implement the `id` property and the `canHandle` and `handle` methods.
  * Subclasses may override the `codes` and `log` properties.
  *
  * If your plugin adds/edits the context supplied in `handle`, you should increment the `context.modified` property.
  */
-export class BasePlugin implements VerifiedFetchPlugin {
+export abstract class BasePlugin implements VerifiedFetchPlugin {
   readonly codes: number[] = []
-  readonly log: Logger
   readonly pluginOptions: PluginOptions
-  // @ts-expect-error - id is not initialized in the constructor for BasePlugin
-  readonly id: string // should be overridden by subclasses
+  abstract readonly id: string
+  protected _log?: Logger
+
+  get log (): Logger {
+    // instantiate the logger lazily because it depends on the id, which is not set until after the constructor is called
+    if (this._log == null) {
+      this._log = this.pluginOptions.logger.forComponent(this.id)
+    }
+    return this._log
+  }
+
   constructor (options: PluginOptions) {
-    // @ts-expect-error - id is not initialized in the constructor for BasePlugin
-    this.log = options.logger.forComponent(this.id)
     this.pluginOptions = options
   }
 
-  canHandle (context: PluginContext): boolean {
-    throw new Error('Not implemented')
-  }
+  abstract canHandle (context: PluginContext): boolean
 
-  async handle (context: PluginContext): Promise<Response | null> {
-    throw new Error('Not implemented')
-  }
+  abstract handle (context: PluginContext): Promise<Response | null>
 }

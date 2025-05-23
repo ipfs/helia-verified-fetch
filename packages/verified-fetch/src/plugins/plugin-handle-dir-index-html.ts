@@ -6,7 +6,7 @@ import { getETag } from '../utils/get-e-tag.js'
 import { getIpfsRoots } from '../utils/response-headers.js'
 import { okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext, VerifiedFetchPlugin, VerifiedFetchPluginFactory } from './types.js'
+import type { PluginContext, VerifiedFetchPluginFactory } from './types.js'
 import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 
 /**
@@ -23,7 +23,7 @@ async function getAssetHash (directoryEntries: UnixFSEntry[]): Promise<string> {
   return base32.encode(hashBytes)
 }
 
-export class DirIndexHtmlPlugin extends BasePlugin implements VerifiedFetchPlugin {
+export class DirIndexHtmlPlugin extends BasePlugin {
   readonly id = 'dir-index-html-plugin'
   readonly codes = [dagPbCode]
   canHandle (context: PluginContext): boolean {

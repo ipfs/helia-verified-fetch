@@ -1,5 +1,5 @@
 import { BasePlugin } from '../../src/plugins/plugin-base.js'
-import type { PluginContext, PluginOptions } from '../../src/plugins/types.js'
+import type { PluginContext, PluginOptions, VerifiedFetchPluginFactory } from '../../src/plugins/types.js'
 
 export interface PluginFixtureOptions {
   codes?: number[]
@@ -9,7 +9,7 @@ export interface PluginFixtureOptions {
   handle?(context: PluginContext): Promise<Response | null>
 }
 
-export const getCustomPluginFactory = (options: PluginFixtureOptions) => {
+export const getCustomPluginFactory = (options: PluginFixtureOptions): VerifiedFetchPluginFactory => {
   const className = options.constructorName ?? 'CustomPlugin'
 
   const classes = {

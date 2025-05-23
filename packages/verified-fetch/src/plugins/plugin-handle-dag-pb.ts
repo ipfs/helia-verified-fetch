@@ -8,13 +8,13 @@ import { setIpfsRoots } from '../utils/response-headers.js'
 import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, notSupportedResponse, okRangeResponse } from '../utils/responses.js'
 import { setContentType } from '../utils/set-content-type.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext, VerifiedFetchPlugin } from './types.js'
+import type { PluginContext } from './types.js'
 import type { CIDDetail } from '../index.js'
 
 /**
  * Handles UnixFS and dag-pb content.
  */
-export class DagPbPlugin extends BasePlugin implements VerifiedFetchPlugin {
+export class DagPbPlugin extends BasePlugin {
   readonly id = 'dag-pb-plugin'
   readonly codes = [dagPbCode]
   canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {

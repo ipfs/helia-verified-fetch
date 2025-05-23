@@ -2,7 +2,7 @@ import { car } from '@helia/car'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext, VerifiedFetchPlugin } from './types.js'
+import type { PluginContext } from './types.js'
 
 function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'cid' | 'ipfsPath'>): string {
   if (query.filename != null) {
@@ -18,7 +18,7 @@ function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'c
  * Accepts a `CID` and returns a `Response` with a body stream that is a CAR
  * of the `DAG` referenced by the `CID`.
  */
-export class CarPlugin extends BasePlugin implements VerifiedFetchPlugin {
+export class CarPlugin extends BasePlugin {
   readonly id = 'car-plugin'
 
   canHandle (context: PluginContext): boolean {

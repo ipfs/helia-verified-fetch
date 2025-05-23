@@ -707,10 +707,9 @@
  *
  *    ```typescript
  *    import { BasePlugin } from '@helia/verified-fetch'
- *    import { okResponse } from './dist/src/utils/responses.js'
- *    import type { PluginContext, VerifiedFetchPluginFactory, PluginOptions, VerifiedFetchPlugin } from '@helia/verified-fetch'
+ *    import type { PluginContext, VerifiedFetchPluginFactory, PluginOptions } from '@helia/verified-fetch'
  *
- *    export class MyCustomPlugin extends BasePlugin implements VerifiedFetchPlugin {
+ *    export class MyCustomPlugin extends BasePlugin {
  *      id = 'my-custom-plugin' // Required: must be unique unless you want to override one of the default plugins.
  *
  *      // Optionally, list any codec codes your plugin supports:

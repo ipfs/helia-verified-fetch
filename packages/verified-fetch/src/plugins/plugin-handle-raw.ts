@@ -4,7 +4,7 @@ import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
 import { setContentType } from '../utils/set-content-type.js'
 import { PluginFatalError } from './errors.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext, VerifiedFetchPlugin } from './types.js'
+import type { PluginContext } from './types.js'
 
 /**
  * These are Accept header values that will cause content type sniffing to be
@@ -42,7 +42,7 @@ function getOverriddenRawContentType ({ headers, accept }: { headers?: HeadersIn
   }
 }
 
-export class RawPlugin extends BasePlugin implements VerifiedFetchPlugin {
+export class RawPlugin extends BasePlugin {
   readonly id = 'raw-plugin'
   codes: number[] = [rawCode, identity.code]
 

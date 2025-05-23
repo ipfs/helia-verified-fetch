@@ -5,13 +5,13 @@ import { setIpfsRoots } from '../utils/response-headers.js'
 import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { isObjectNode } from '../utils/walk-path.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext, VerifiedFetchPlugin } from './types.js'
+import type { PluginContext } from './types.js'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
 
 /**
  * Handles `dag-cbor` content, including requests with Accept: `application/vnd.ipld.dag-json` and `application/json`.
  */
-export class DagCborPlugin extends BasePlugin implements VerifiedFetchPlugin {
+export class DagCborPlugin extends BasePlugin {
   readonly id = 'dag-cbor-plugin'
   readonly codes = [ipldDagCbor.code]
 
