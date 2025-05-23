@@ -1,12 +1,12 @@
 import { ByteRangeContext } from '../utils/byte-range-context.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from './types.js'
+import type { PluginContext, VerifiedFetchPlugin } from './types.js'
 
 /**
  * This plugin simply adds the ByteRangeContext to the PluginContext.
  */
-export class ByteRangeContextPlugin extends BasePlugin {
-  readonly loggerName = 'byte-range-context-plugin'
+export class ByteRangeContextPlugin extends BasePlugin implements VerifiedFetchPlugin {
+  readonly id = 'byte-range-context-plugin'
 
   /**
    * Return false if the ByteRangeContext has already been set, otherwise return true.

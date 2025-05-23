@@ -3,13 +3,13 @@ import * as ipldDagJson from '@ipld/dag-json'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from './types.js'
+import type { PluginContext, VerifiedFetchPlugin } from './types.js'
 
 /**
  * Handles `dag-json` content, including requests with Accept: `application/vnd.ipld.dag-cbor` and `application/cbor`.
  */
-export class JsonPlugin extends BasePlugin {
-  readonly loggerName = 'json-plugin'
+export class JsonPlugin extends BasePlugin implements VerifiedFetchPlugin {
+  readonly id = 'json-plugin'
   readonly codes = [ipldDagJson.code, jsonCode]
   canHandle ({ cid, accept, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)

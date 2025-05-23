@@ -106,13 +106,13 @@ export class VerifiedFetch {
 
     if (customPlugins.length > 0) {
       // allow custom plugins to replace default plugins
-      const defaultPluginMap = new Map(defaultPlugins.map(plugin => [plugin.constructor.name, plugin]))
-      const customPluginMap = new Map(customPlugins.map(plugin => [plugin.constructor.name, plugin]))
+      const defaultPluginMap = new Map(defaultPlugins.map(plugin => [plugin.id, plugin]))
+      const customPluginMap = new Map(customPlugins.map(plugin => [plugin.id, plugin]))
 
-      this.plugins = defaultPlugins.map(plugin => customPluginMap.get(plugin.constructor.name) ?? plugin)
+      this.plugins = defaultPlugins.map(plugin => customPluginMap.get(plugin.id) ?? plugin)
 
       // Add any remaining custom plugins that don't replace a default plugin
-      this.plugins.push(...customPlugins.filter(plugin => !defaultPluginMap.has(plugin.constructor.name)))
+      this.plugins.push(...customPlugins.filter(plugin => !defaultPluginMap.has(plugin.id)))
     } else {
       this.plugins = defaultPlugins
     }
@@ -251,7 +251,7 @@ export class VerifiedFetch {
       passCount++
 
       // gather plugins that say they can handle the *current* context, but haven't been used yet
-      const readyPlugins = this.plugins.filter(p => !pluginsUsed.has(p.constructor.name)).filter(p => p.canHandle(context))
+      const readyPlugins = this.plugins.filter(p => !pluginsUsed.has(p.id)).filter(p => p.canHandle(context))
       if (readyPlugins.length === 0) {
         this.log.trace('No plugins can handle the current context.. checking by CID code')
         const plugins = this.plugins.filter(p => p.codes.includes(context.cid.code))
@@ -263,7 +263,7 @@ export class VerifiedFetch {
         }
       }
 
-      this.log.trace('Plugins ready to handle request: ', readyPlugins.map(p => p.constructor.name).join(', '))
+      this.log.trace('Plugins ready to handle request: ', readyPlugins.map(p => p.id).join(', '))
 
       // track if any plugin changed the context or returned a response
       let contextChanged = false
@@ -271,8 +271,8 @@ export class VerifiedFetch {
 
       for (const plugin of readyPlugins) {
         try {
-          this.log.trace('Invoking plugin:', plugin.constructor.name)
-          pluginsUsed.add(plugin.constructor.name)
+          this.log.trace('Invoking plugin:', plugin.id)
+          pluginsUsed.add(plugin.id)
 
           const maybeResponse = await plugin.handle(context)
           if (maybeResponse != null) {
@@ -283,7 +283,7 @@ export class VerifiedFetch {
           }
         } catch (err: any) {
           context.options?.signal?.throwIfAborted()
-          this.log.error('Error in plugin:', plugin.constructor.name, err)
+          this.log.error('Error in plugin:', plugin.id, err)
           // if fatal, short-circuit the pipeline
           if (err.name === 'PluginFatalError') {
             // if plugin provides a custom error response, return it
@@ -299,7 +299,7 @@ export class VerifiedFetch {
         }
 
         if (finalResponse != null) {
-          this.log.trace('Plugin produced final response:', plugin.constructor.name)
+          this.log.trace('Plugin produced final response:', plugin.id)
           break
         }
       }

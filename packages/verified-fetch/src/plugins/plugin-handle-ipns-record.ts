@@ -7,15 +7,15 @@ import { getPeerIdFromString } from '../utils/get-peer-id-from-string.js'
 import { badRequestResponse, okRangeResponse } from '../utils/responses.js'
 import { PluginFatalError } from './errors.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from './types.js'
+import type { PluginContext, VerifiedFetchPlugin } from './types.js'
 import type { PeerId } from '@libp2p/interface'
 
 /**
  * Accepts an `ipns://...`, `https?://<ipnsname>.ipns.<domain>`, or `https?://<domain>/ipns/...` URL as a string and
  * returns a `Response` containing a raw IPNS record.
  */
-export class IpnsRecordPlugin extends BasePlugin {
-  readonly loggerName = 'ipns-record-plugin'
+export class IpnsRecordPlugin extends BasePlugin implements VerifiedFetchPlugin {
+  readonly id = 'ipns-record-plugin'
   readonly codes = []
   canHandle ({ cid, accept, query, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
