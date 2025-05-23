@@ -1,5 +1,6 @@
 import { unixfs } from '@helia/unixfs'
 import { code as dagPbCode } from '@ipld/dag-pb'
+import { AbortError } from '@libp2p/interface'
 import { exporter } from 'ipfs-unixfs-exporter'
 import { CustomProgressEvent } from 'progress-events'
 import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-iterable.js'
@@ -98,8 +99,10 @@ export class DagPbPlugin extends BasePlugin {
         path = rootFilePath
         resolvedCID = entry.cid
       } catch (err: any) {
+        if (options?.signal?.aborted) {
+          throw new AbortError(options?.signal?.reason)
+        }
         this.log.error('error loading path %c/%s', dirCid, rootFilePath, err)
-        options?.signal?.throwIfAborted()
         context.isDirectory = true
         context.directoryEntries = []
         context.modified++
@@ -161,7 +164,9 @@ export class DagPbPlugin extends BasePlugin {
 
       return response
     } catch (err: any) {
-      options?.signal?.throwIfAborted()
+      if (options?.signal?.aborted) {
+        throw new AbortError(options?.signal?.reason)
+      }
       log.error('error streaming %c/%s', cid, path, err)
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
