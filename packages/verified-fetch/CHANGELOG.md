@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v2.6.19](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.18...@helia/verified-fetch-2.6.19) (2025-05-23)
+
+### Bug Fixes
+
+* handle aborted requests properly ([#241](https://github.com/ipfs/helia-verified-fetch/issues/241)) ([af4b426](https://github.com/ipfs/helia-verified-fetch/commit/af4b4261b3660f71e5831b9d5ed5e73f5aaebeac))
+
 ## [@helia/verified-fetch-v2.6.18](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.17...@helia/verified-fetch-2.6.18) (2025-05-21)
 
 ### Trivial Changes

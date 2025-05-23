@@ -1,4 +1,5 @@
 import { ipns as heliaIpns } from '@helia/ipns'
+import { AbortError } from '@libp2p/interface'
 import { prefixLogger } from '@libp2p/logger'
 import { CustomProgressEvent } from 'progress-events'
 import QuickLRU from 'quick-lru'
@@ -282,8 +283,10 @@ export class VerifiedFetch {
             break
           }
         } catch (err: any) {
-          context.options?.signal?.throwIfAborted()
-          this.log.error('Error in plugin:', plugin.id, err)
+          if (context.options?.signal?.aborted) {
+            throw new AbortError(context.options?.signal?.reason)
+          }
+          this.log.error('Error in plugin:', plugin.constructor.name, err)
           // if fatal, short-circuit the pipeline
           if (err.name === 'PluginFatalError') {
             // if plugin provides a custom error response, return it
@@ -341,7 +344,9 @@ export class VerifiedFetch {
       parsedResult = await this.handleServerTiming('parse-resource', '', async () => parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, { withServerTiming, ...options }), withServerTiming)
       this.serverTimingHeaders.push(...parsedResult.serverTimings.map(({ header }) => header))
     } catch (err: any) {
-      options?.signal?.throwIfAborted()
+      if (options?.signal?.aborted) {
+        throw new AbortError(options?.signal?.reason)
+      }
       this.log.error('error parsing resource %s', resource, err)
 
       return this.handleFinalResponse(badRequestResponse(resource.toString(), err))

@@ -30,10 +30,10 @@ export class DagWalkPlugin extends BasePlugin implements VerifiedFetchPlugin {
     const { cid, resource, options, withServerTiming = false } = context
     const { getBlockstore, handleServerTiming } = this.pluginOptions
     const blockstore = getBlockstore(cid, resource, options?.session ?? true, options)
+
     // TODO: migrate handlePathWalking into this plugin
     const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log: this.log }), withServerTiming)
 
-    context.modified++
     if (pathDetails instanceof Response) {
       this.log.trace('path walking failed')
 
@@ -43,10 +43,11 @@ export class DagWalkPlugin extends BasePlugin implements VerifiedFetchPlugin {
         return pathDetails
       }
 
-      // some error walking the path
+      // some other error walking the path (codec doesn't support pathing, etc..), let the next plugin try to handle it
       return null
     }
 
+    context.modified++
     context.pathDetails = pathDetails
 
     return null
