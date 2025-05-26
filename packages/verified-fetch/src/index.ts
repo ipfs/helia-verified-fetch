@@ -1035,6 +1035,18 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
   allowInsecure?: boolean
 
   /**
+   * By default we will not parse provider query parameters, and will not
+   * connect to any hosts over their multiaddresses. Instead, we will use the
+   * default discovery mechanism to find providers for the content.
+   * This is an experimental feature, and may become the default in the future.
+   * If you pass `true` here, we will parse the `provider` query parameter and
+   * connect to the provider specified in the query parameter to retrieve the content.
+   *
+   * @default false
+   */
+  allowProviderParameter?: boolean
+
+  /**
    * Whether to include server-timing headers in the response for an individual request.
    *
    * @default false

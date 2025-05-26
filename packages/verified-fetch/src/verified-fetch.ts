@@ -376,7 +376,7 @@ export class VerifiedFetch {
       accept,
       options: {
         ...options,
-        providers: parsedResult.providers
+        providers: options?.allowProviderParameter ? parsedResult.providers : undefined
       },
       withServerTiming,
       onProgress: options?.onProgress,
