@@ -60,6 +60,7 @@ export interface PluginContext extends ParsedUrlStringResults {
 }
 
 export interface VerifiedFetchPlugin {
+  readonly id: string
   readonly codes: number[]
   readonly log: Logger
   canHandle (context: PluginContext): boolean

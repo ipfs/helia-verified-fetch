@@ -11,6 +11,7 @@ import type { PluginContext } from './types.js'
  * Once this plugin has run, the PluginContext will be updated and then this plugin will return false for canHandle, so it won't run again.
  */
 export class DagWalkPlugin extends BasePlugin {
+  readonly id = 'dag-walk-plugin'
   /**
    * Return false if the path has already been walked, otherwise return true if the CID is encoded with a codec that supports pathing.
    */
