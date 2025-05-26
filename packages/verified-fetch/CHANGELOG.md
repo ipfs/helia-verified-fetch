@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-v3.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.19...@helia/verified-fetch-3.0.0) (2025-05-26)
+
+### ⚠ BREAKING CHANGES
+
+* plugins require a unique id (#244)
+
+### Bug Fixes
+
+* plugins require a unique id ([#244](https://github.com/ipfs/helia-verified-fetch/issues/244)) ([73aabdf](https://github.com/ipfs/helia-verified-fetch/commit/73aabdf4ea4890972396571e34467d4a315e1613))
+
 ## [@helia/verified-fetch-v2.6.19](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.18...@helia/verified-fetch-2.6.19) (2025-05-23)
 
 ### Bug Fixes
