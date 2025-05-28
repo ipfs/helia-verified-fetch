@@ -1,9 +1,10 @@
-import { BlockExporter, car, CIDPath, SubgraphExporter, UnixFSExporter, type ExportCarOptions } from '@helia/car'
+import { BlockExporter, car, CIDPath, SubgraphExporter, UnixFSExporter } from '@helia/car'
+import { code as dagPbCode } from '@ipld/dag-pb'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
-import { code as dagPbCode } from '@ipld/dag-pb'
+import type { ExportCarOptions } from '@helia/car'
 
 function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'cid' | 'ipfsPath'>): string {
   if (query.filename != null) {
