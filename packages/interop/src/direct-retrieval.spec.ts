@@ -1,6 +1,7 @@
-import { createVerifiedFetch, type CreateVerifiedFetchInit } from '@helia/verified-fetch'
+import { createVerifiedFetch } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
 import { isNode, isBrowser } from 'wherearewe'
+import type { CreateVerifiedFetchInit } from '@helia/verified-fetch'
 
 /**
  * Currently only testing browser and node

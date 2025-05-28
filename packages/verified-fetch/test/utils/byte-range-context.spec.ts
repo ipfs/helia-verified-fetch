@@ -1,10 +1,11 @@
-import { unixfs, type UnixFS } from '@helia/unixfs'
+import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { defaultLogger, prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import { ByteRangeContext } from '../../src/utils/byte-range-context.js'
 import { getStreamFromAsyncIterable } from '../../src/utils/get-stream-from-async-iterable.js'
 import { createHelia } from '../fixtures/create-offline-helia.js'
+import type { UnixFS } from '@helia/unixfs'
 import type { Helia } from 'helia'
 import type { CID } from 'multiformats/cid'
 
@@ -133,14 +134,9 @@ describe('ByteRangeContext', () => {
     uint8arrayRangeTests.forEach(({ range, expected, body, contentRange }) => {
       it(`should correctly slice Stream with range ${range}`, async () => {
         const context = new ByteRangeContext(logger, { Range: range })
-        cid = await fs.addFile({
-          content: body
-        }, {
-          rawLeaves: false,
-          leafType: 'file'
-        })
+        cid = await fs.addBytes(body)
         const stat = await fs.stat(cid)
-        context.setFileSize(stat.fileSize)
+        context.setFileSize(stat.size)
         context.setBody(await getBodyStream(context.offset, context.length))
         const response = new Response(context.getBody())
         const bodyResult = await response.arrayBuffer()

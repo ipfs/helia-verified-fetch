@@ -1,6 +1,6 @@
 import { car } from '@helia/car'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
-import { okResponse } from '../utils/responses.js'
+import { okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 
@@ -19,8 +19,16 @@ function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'c
  * of the `DAG` referenced by the `CID`.
  */
 export class CarPlugin extends BasePlugin {
+  readonly id = 'car-plugin'
+
   canHandle (context: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', context.cid, context.accept)
+    // if (context.pathDetails == null) {
+    //   return false
+    // }
+    if (context.byteRangeContext == null) {
+      return false
+    }
     return context.accept?.startsWith('application/vnd.ipld.car') === true || context.query.format === 'car' // application/vnd.ipld.car
   }
 
@@ -34,7 +42,7 @@ export class CarPlugin extends BasePlugin {
     const c = car({ blockstore, getCodec: helia.getCodec })
     const stream = toBrowserReadableStream(c.stream(pathDetails?.terminalElement.cid ?? cid, options))
 
-    const response = okResponse(context.resource, stream)
+    const response = okRangeResponse(context.resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
     response.headers.set('content-type', 'application/vnd.ipld.car; version=1')
 
     return response

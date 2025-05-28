@@ -1,4 +1,4 @@
-import type { ByteRangeContext } from './byte-range-context'
+import type { ByteRangeContext } from './byte-range-context.js'
 import type { SupportedBodyTypes } from '../types.js'
 import type { Logger } from '@libp2p/interface'
 
@@ -40,7 +40,6 @@ export function okResponse (url: string, body?: SupportedBodyTypes, init?: Respo
 
   setType(response, 'basic')
   setUrl(response, url)
-  response.headers.set('Accept-Ranges', 'bytes')
 
   return response
 }
@@ -98,17 +97,35 @@ export function notFoundResponse (url: string, body?: SupportedBodyTypes, init?:
   return response
 }
 
-/**
- * if body is an Error, it will be converted to a string containing the error message.
- */
-export function badRequestResponse (url: string, body?: SupportedBodyTypes | Error, init?: ResponseInit): Response {
-  if (body instanceof Error) {
-    body = body.message
+function isArrayOfErrors (body: unknown | Error | Error[]): body is Error[] {
+  return Array.isArray(body) && body.every(e => e instanceof Error)
+}
+
+export function badRequestResponse (url: string, errors: Error | Error[], init?: ResponseInit): Response {
+  // stacktrace of the single error, or the stacktrace of the last error in the array
+  let stack: string | undefined
+  let convertedErrors: Array<{ message: string, stack: string }> | undefined
+  if (isArrayOfErrors(errors)) {
+    stack = errors[errors.length - 1].stack
+    convertedErrors = errors.map(e => ({ message: e.message, stack: e.stack ?? '' }))
+  } else if (errors instanceof Error) {
+    stack = errors.stack
+    convertedErrors = [{ message: errors.message, stack: errors.stack ?? '' }]
   }
-  const response = new Response(body, {
-    ...(init ?? {}),
+
+  const bodyJson = JSON.stringify({
+    stack,
+    errors: convertedErrors
+  })
+
+  const response = new Response(bodyJson, {
     status: 400,
-    statusText: 'Bad Request'
+    statusText: 'Bad Request',
+    ...(init ?? {}),
+    headers: {
+      ...(init?.headers ?? {}),
+      'Content-Type': 'application/json'
+    }
   })
 
   setType(response, 'basic')
@@ -170,16 +187,15 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
 
   setType(response, 'basic')
   setUrl(response, url)
-  response.headers.set('Accept-Ranges', 'bytes')
 
   return response
 }
 
 /**
  * We likely need to catch errors handled by upstream helia libraries if range-request throws an error. Some examples:
- * * The range is out of bounds
- * * The range is invalid
- * * The range is not supported for the given type
+ * - The range is out of bounds
+ * - The range is invalid
+ * - The range is not supported for the given type
  */
 export function badRangeResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {

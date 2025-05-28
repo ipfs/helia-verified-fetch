@@ -1,6 +1,6 @@
 export type RequestFormatShorthand = 'raw' | 'car' | 'tar' | 'ipns-record' | 'dag-json' | 'dag-cbor' | 'json' | 'cbor'
 
-export type SupportedBodyTypes = string | ArrayBuffer | Blob | ReadableStream<Uint8Array> | null
+export type SupportedBodyTypes = string | Uint8Array | ArrayBuffer | Blob | ReadableStream<Uint8Array> | null
 
 /**
  * A ContentTypeParser attempts to return the mime type of a given file. It

@@ -1,8 +1,8 @@
 import { unixfs } from '@helia/unixfs'
 import { code as dagPbCode } from '@ipld/dag-pb'
+import { AbortError } from '@libp2p/interface'
 import { exporter } from 'ipfs-unixfs-exporter'
 import { CustomProgressEvent } from 'progress-events'
-import { ByteRangeContext } from '../utils/byte-range-context.js'
 import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-iterable.js'
 import { setIpfsRoots } from '../utils/response-headers.js'
 import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, notSupportedResponse, okRangeResponse } from '../utils/responses.js'
@@ -15,10 +15,14 @@ import type { CIDDetail } from '../index.js'
  * Handles UnixFS and dag-pb content.
  */
 export class DagPbPlugin extends BasePlugin {
+  readonly id = 'dag-pb-plugin'
   readonly codes = [dagPbCode]
-  canHandle ({ cid, accept, pathDetails }: PluginContext): boolean {
+  canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
     if (pathDetails == null) {
+      return false
+    }
+    if (byteRangeContext == null) {
       return false
     }
 
@@ -49,19 +53,16 @@ export class DagPbPlugin extends BasePlugin {
     return null
   }
 
-  async handle (context: PluginContext): Promise<Response | null> {
-    const { cid, options, withServerTiming = false, pathDetails } = context
+  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>): Promise<Response | null> {
+    const { cid, options, withServerTiming = false, pathDetails, query } = context
     const { handleServerTiming, contentTypeParser, helia, getBlockstore } = this.pluginOptions
     const log = this.log
     let resource = context.resource
     let path = context.path
 
     let redirected = false
-    const byteRangeContext = new ByteRangeContext(this.pluginOptions.logger, options?.headers)
 
-    if (pathDetails == null) {
-      throw new TypeError('Path details are required')
-    }
+    const byteRangeContext = context.byteRangeContext
     const ipfsRoots = pathDetails.ipfsRoots
     const terminalElement = pathDetails.terminalElement
     let resolvedCID = terminalElement.cid
@@ -99,10 +100,13 @@ export class DagPbPlugin extends BasePlugin {
         path = rootFilePath
         resolvedCID = entry.cid
       } catch (err: any) {
+        if (options?.signal?.aborted) {
+          throw new AbortError(options?.signal?.reason)
+        }
         this.log.error('error loading path %c/%s', dirCid, rootFilePath, err)
-        options?.signal?.throwIfAborted()
         context.isDirectory = true
         context.directoryEntries = []
+        context.modified++
         this.log.trace('attempting to get directory entries because index.html was not found')
         const fs = unixfs({ ...helia, blockstore: getBlockstore(context.cid, context.resource, options?.session ?? true, options) })
         try {
@@ -155,13 +159,15 @@ export class DagPbPlugin extends BasePlugin {
         redirected
       })
 
-      await handleServerTiming('set-content-type', '', async () => setContentType({ bytes: firstChunk, path, response, contentTypeParser, log }), withServerTiming)
+      await handleServerTiming('set-content-type', '', async () => setContentType({ filename: query.filename, bytes: firstChunk, path, response, contentTypeParser, log }), withServerTiming)
 
       setIpfsRoots(response, ipfsRoots)
 
       return response
     } catch (err: any) {
-      options?.signal?.throwIfAborted()
+      if (options?.signal?.aborted) {
+        throw new AbortError(options?.signal?.reason)
+      }
       log.error('error streaming %c/%s', cid, path, err)
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)

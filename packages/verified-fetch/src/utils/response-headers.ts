@@ -91,6 +91,10 @@ export function getContentRangeHeader ({ byteStart, byteEnd, byteSize }: { byteS
  */
 export function setIpfsRoots (response: Response, ipfsRoots?: CID[]): void {
   if (ipfsRoots != null) {
-    response.headers.set('X-Ipfs-Roots', ipfsRoots.map(cid => cid.toV1().toString()).join(','))
+    response.headers.set('X-Ipfs-Roots', getIpfsRoots(ipfsRoots))
   }
+}
+
+export function getIpfsRoots (ipfsRoots: CID[]): string {
+  return ipfsRoots.map(cid => cid.toV1().toString()).join(',')
 }

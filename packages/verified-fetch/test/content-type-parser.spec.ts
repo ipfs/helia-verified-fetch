@@ -28,7 +28,7 @@ describe('content-type-parser', () => {
     await stop(verifiedFetch)
   })
 
-  it('can be overriden by passing a custom contentTypeParser', async () => {
+  it('can be overridden by passing a custom contentTypeParser', async () => {
     let called = false
     const contentTypeParser = Sinon.stub().callsFake(() => {
       called = true
@@ -83,7 +83,7 @@ describe('content-type-parser', () => {
     const fs = unixfs(helia)
 
     let barDir = await fs.addDirectory({ path: './bar' })
-    const aFileHtml = await fs.addFile({ path: './bar/a-file.html', content: uint8ArrayFromString('<html><body>Hello world</body></html>') })
+    const aFileHtml = await fs.addBytes(uint8ArrayFromString('<html><body>Hello world</body></html>'))
     barDir = await fs.cp(aFileHtml, barDir, 'a-file.html')
     let fooDir = await fs.addDirectory({ path: './foo' })
     fooDir = await fs.cp(barDir, fooDir, 'bar')

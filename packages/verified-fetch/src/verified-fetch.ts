@@ -1,9 +1,9 @@
-import { ipns as heliaIpns, type IPNS } from '@helia/ipns'
-import { type AbortOptions, type Logger } from '@libp2p/interface'
+import { ipns as heliaIpns } from '@helia/ipns'
+import { AbortError } from '@libp2p/interface'
 import { prefixLogger } from '@libp2p/logger'
-import { LRUCache } from 'lru-cache'
-import { type CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
+import QuickLRU from 'quick-lru'
+import { ByteRangeContextPlugin } from './plugins/plugin-handle-byte-range-context.js'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { DagCborPlugin } from './plugins/plugin-handle-dag-cbor.js'
 import { DagPbPlugin } from './plugins/plugin-handle-dag-pb.js'
@@ -18,7 +18,6 @@ import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
 import { getRedirectResponse } from './utils/handle-redirects.js'
 import { parseResource } from './utils/parse-resource.js'
-import { type ParsedUrlStringResults } from './utils/parse-url-string.js'
 import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
 import { setCacheControlHeader } from './utils/response-headers.js'
 import { badRequestResponse, notAcceptableResponse, notSupportedResponse, badGatewayResponse } from './utils/responses.js'
@@ -26,8 +25,12 @@ import { selectOutputType } from './utils/select-output-type.js'
 import { serverTiming } from './utils/server-timing.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from './plugins/types.js'
+import type { ParsedUrlStringResults } from './utils/parse-url-string.js'
 import type { Helia, SessionBlockstore } from '@helia/interface'
+import type { IPNS } from '@helia/ipns'
+import type { AbortOptions, Logger } from '@libp2p/interface'
 import type { Blockstore } from 'interface-blockstore'
+import type { CID } from 'multiformats/cid'
 
 const SESSION_CACHE_MAX_SIZE = 100
 const SESSION_CACHE_TTL_MS = 60 * 1000
@@ -60,7 +63,7 @@ export class VerifiedFetch {
   private readonly ipns: IPNS
   private readonly log: Logger
   private readonly contentTypeParser: ContentTypeParser | undefined
-  private readonly blockstoreSessions: LRUCache<string, SessionBlockstore>
+  private readonly blockstoreSessions: QuickLRU<string, SessionBlockstore>
   private serverTimingHeaders: string[] = []
   private readonly withServerTiming: boolean
   private readonly plugins: VerifiedFetchPlugin[] = []
@@ -70,10 +73,10 @@ export class VerifiedFetch {
     this.log = helia.logger.forComponent('helia:verified-fetch')
     this.ipns = ipns ?? heliaIpns(helia)
     this.contentTypeParser = init?.contentTypeParser ?? contentTypeParser
-    this.blockstoreSessions = new LRUCache({
-      max: init?.sessionCacheSize ?? SESSION_CACHE_MAX_SIZE,
-      ttl: init?.sessionTTLms ?? SESSION_CACHE_TTL_MS,
-      dispose: (store) => {
+    this.blockstoreSessions = new QuickLRU({
+      maxSize: init?.sessionCacheSize ?? SESSION_CACHE_MAX_SIZE,
+      maxAge: init?.sessionTTLms ?? SESSION_CACHE_TTL_MS,
+      onEviction: (key, store) => {
         store.close()
       }
     })
@@ -90,6 +93,7 @@ export class VerifiedFetch {
 
     const defaultPlugins = [
       new DagWalkPlugin(pluginOptions),
+      new ByteRangeContextPlugin(pluginOptions),
       new IpnsRecordPlugin(pluginOptions),
       new CarPlugin(pluginOptions),
       new RawPlugin(pluginOptions),
@@ -103,13 +107,13 @@ export class VerifiedFetch {
 
     if (customPlugins.length > 0) {
       // allow custom plugins to replace default plugins
-      const defaultPluginMap = new Map(defaultPlugins.map(plugin => [plugin.constructor.name, plugin]))
-      const customPluginMap = new Map(customPlugins.map(plugin => [plugin.constructor.name, plugin]))
+      const defaultPluginMap = new Map(defaultPlugins.map(plugin => [plugin.id, plugin]))
+      const customPluginMap = new Map(customPlugins.map(plugin => [plugin.id, plugin]))
 
-      this.plugins = defaultPlugins.map(plugin => customPluginMap.get(plugin.constructor.name) ?? plugin)
+      this.plugins = defaultPlugins.map(plugin => customPluginMap.get(plugin.id) ?? plugin)
 
       // Add any remaining custom plugins that don't replace a default plugin
-      this.plugins.push(...customPlugins.filter(plugin => !defaultPluginMap.has(plugin.constructor.name)))
+      this.plugins.push(...customPlugins.filter(plugin => !defaultPluginMap.has(plugin.id)))
     } else {
       this.plugins = defaultPlugins
     }
@@ -151,11 +155,22 @@ export class VerifiedFetch {
    * Server-Timing header to the response if it has been collected. It should be used for any final processing of the
    * response before it is returned to the user.
    */
-  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath, pathDetails }: Partial<PluginContext> = {}): Response {
+  private handleFinalResponse (response: Response, { query, cid, reqFormat, ttl, protocol, ipfsPath, pathDetails, byteRangeContext, options }: Partial<PluginContext> = {}): Response {
     if (this.serverTimingHeaders.length > 0) {
       const headerString = this.serverTimingHeaders.join(', ')
       response.headers.set('Server-Timing', headerString)
       this.serverTimingHeaders = []
+    }
+
+    // if there are multiple ranges, we should omit the content-length header. see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Transfer-Encoding
+    if (response.headers.get('Transfer-Encoding') !== 'chunked') {
+      if (byteRangeContext != null) {
+        const contentLength = byteRangeContext.length
+        if (contentLength != null) {
+          this.log.trace('Setting Content-Length from byteRangeContext: %d', contentLength)
+          response.headers.set('Content-Length', contentLength.toString())
+        }
+      }
     }
 
     // set Content-Disposition header
@@ -198,6 +213,26 @@ export class VerifiedFetch {
       response.headers.set('X-Ipfs-Path', ipfsPath)
     }
 
+    // set CORS headers. If hosting your own gateway with verified-fetch behind the scenes, you can alter these before you send the response to the client.
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Range, X-Requested-With')
+    response.headers.set('Access-Control-Expose-Headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Stream-Output')
+
+    if (reqFormat !== 'car') {
+      // if we are not doing streaming responses, set the Accept-Ranges header to bytes to enable range requests
+      response.headers.set('Accept-Ranges', 'bytes')
+    } else {
+      // set accept-ranges to none to disable range requests for streaming responses
+      response.headers.set('Accept-Ranges', 'none')
+    }
+
+    if (options?.method === 'HEAD') {
+      // don't send the body for HEAD requests
+      const headers = response?.headers
+      return new Response(null, { status: 200, headers })
+    }
+
     return response
   }
 
@@ -217,7 +252,7 @@ export class VerifiedFetch {
       passCount++
 
       // gather plugins that say they can handle the *current* context, but haven't been used yet
-      const readyPlugins = this.plugins.filter(p => !pluginsUsed.has(p.constructor.name)).filter(p => p.canHandle(context))
+      const readyPlugins = this.plugins.filter(p => !pluginsUsed.has(p.id)).filter(p => p.canHandle(context))
       if (readyPlugins.length === 0) {
         this.log.trace('No plugins can handle the current context.. checking by CID code')
         const plugins = this.plugins.filter(p => p.codes.includes(context.cid.code))
@@ -229,7 +264,7 @@ export class VerifiedFetch {
         }
       }
 
-      this.log.trace('Plugins ready to handle request: ', readyPlugins.map(p => p.constructor.name).join(', '))
+      this.log.trace('Plugins ready to handle request: ', readyPlugins.map(p => p.id).join(', '))
 
       // track if any plugin changed the context or returned a response
       let contextChanged = false
@@ -237,8 +272,8 @@ export class VerifiedFetch {
 
       for (const plugin of readyPlugins) {
         try {
-          this.log.trace('Invoking plugin:', plugin.constructor.name)
-          pluginsUsed.add(plugin.constructor.name)
+          this.log.trace('Invoking plugin:', plugin.id)
+          pluginsUsed.add(plugin.id)
 
           const maybeResponse = await plugin.handle(context)
           if (maybeResponse != null) {
@@ -248,7 +283,9 @@ export class VerifiedFetch {
             break
           }
         } catch (err: any) {
-          context.options?.signal?.throwIfAborted()
+          if (context.options?.signal?.aborted) {
+            throw new AbortError(context.options?.signal?.reason)
+          }
           this.log.error('Error in plugin:', plugin.constructor.name, err)
           // if fatal, short-circuit the pipeline
           if (err.name === 'PluginFatalError') {
@@ -265,7 +302,7 @@ export class VerifiedFetch {
         }
 
         if (finalResponse != null) {
-          this.log.trace('Plugin produced final response:', plugin.constructor.name)
+          this.log.trace('Plugin produced final response:', plugin.id)
           break
         }
       }
@@ -293,6 +330,10 @@ export class VerifiedFetch {
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s', resource)
 
+    if (opts?.method === 'OPTIONS') {
+      return this.handleFinalResponse(new Response(null, { status: 200 }))
+    }
+
     const options = convertOptions(opts)
     const withServerTiming = options?.withServerTiming ?? this.withServerTiming
 
@@ -303,7 +344,9 @@ export class VerifiedFetch {
       parsedResult = await this.handleServerTiming('parse-resource', '', async () => parseResource(resource, { ipns: this.ipns, logger: this.helia.logger }, { withServerTiming, ...options }), withServerTiming)
       this.serverTimingHeaders.push(...parsedResult.serverTimings.map(({ header }) => header))
     } catch (err: any) {
-      options?.signal?.throwIfAborted()
+      if (options?.signal?.aborted) {
+        throw new AbortError(options?.signal?.reason)
+      }
       this.log.error('error parsing resource %s', resource, err)
 
       return this.handleFinalResponse(badRequestResponse(resource.toString(), err))

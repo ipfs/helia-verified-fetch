@@ -1,7 +1,7 @@
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { code as jsonCode } from 'multiformats/codecs/json'
-import { notAcceptableResponse, okResponse } from '../utils/responses.js'
+import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 
@@ -9,9 +9,13 @@ import type { PluginContext } from './types.js'
  * Handles `dag-json` content, including requests with Accept: `application/vnd.ipld.dag-cbor` and `application/cbor`.
  */
 export class JsonPlugin extends BasePlugin {
+  readonly id = 'json-plugin'
   readonly codes = [ipldDagJson.code, jsonCode]
-  canHandle ({ cid, accept }: PluginContext): boolean {
+  canHandle ({ cid, accept, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
+    if (byteRangeContext == null) {
+      return false
+    }
 
     if (accept === 'application/vnd.ipld.dag-json' && cid.code !== ipldDagCbor.code) {
       // we can handle application/vnd.ipld.dag-json, but if the CID codec is ipldDagCbor, DagCborPlugin should handle it
@@ -22,7 +26,7 @@ export class JsonPlugin extends BasePlugin {
     return ipldDagJson.code === cid.code || jsonCode === cid.code
   }
 
-  async handle (context: PluginContext): Promise<Response> {
+  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext'>>): Promise<Response> {
     const { path, resource, cid, accept, options } = context
     const { getBlockstore } = this.pluginOptions
     const session = options?.session ?? true
@@ -50,8 +54,25 @@ export class JsonPlugin extends BasePlugin {
       body = block
     }
 
-    const response = okResponse(resource, body)
-    response.headers.set('content-type', accept ?? 'application/json')
+    let contentType: string
+    if (accept == null) {
+      if (ipldDagJson.code === cid.code) {
+        contentType = 'application/vnd.ipld.dag-json'
+      } else {
+        contentType = 'application/json'
+      }
+    } else {
+      contentType = accept.split(';')[0]
+    }
+
+    context.byteRangeContext.setBody(body)
+
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
+    this.log.trace('setting content-type to %s', contentType)
+    response.headers.set('content-type', contentType)
+    if (!context.byteRangeContext.isValidRangeRequest) {
+      response.headers.set('content-length', body.length.toString())
+    }
     return response
   }
 }

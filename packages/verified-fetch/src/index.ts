@@ -368,7 +368,7 @@
  *
  * [DAG-CBOR](https://ipld.io/docs/codecs/known/dag-cbor/) uses the [Concise Binary Object Representation](https://cbor.io/) format for serialization instead of JSON.
  *
- * This supports more datatypes in a safer way than JSON and is smaller on the wire to boot so is usually preferable to JSON or DAG-JSON.
+ * This supports more data types in a safer way than JSON and is smaller on the wire to boot so is usually preferable to JSON or DAG-JSON.
  *
  * ##### Content-Type
  *
@@ -448,7 +448,7 @@
  * console.info(res.url) // ipfs://bafyfoo/path/to/dir/
  * ```
  *
- * It's possible to prevent this behaviour and/or handle a redirect manually
+ * It's possible to prevent this behavior and/or handle a redirect manually
  * through use of the [redirect](https://developer.mozilla.org/en-US/docs/Web/API/fetch#redirect)
  * option.
  *
@@ -591,8 +591,8 @@
  *
  * #### Unsupported response types
  *
- * * Returning IPLD nodes or DAGs as JS objects is not supported, as there is no currently well-defined structure for representing this data in an [HTTP Response](https://developer.mozilla.org/en-US/docs/Web/API/Response). Instead, users should request `aplication/vnd.ipld.car` or use the [`helia`](https://github.com/ipfs/helia) library directly for this use case.
- * * Others? Open an issue or PR!
+ * - Returning IPLD nodes or DAGs as JS objects is not supported, as there is no currently well-defined structure for representing this data in an [HTTP Response](https://developer.mozilla.org/en-US/docs/Web/API/Response). Instead, users should request `aplication/vnd.ipld.car` or use the [`helia`](https://github.com/ipfs/helia) library directly for this use case.
+ * - Others? Open an issue or PR!
  *
  * ### Response headers
  *
@@ -600,9 +600,9 @@
  *
  * Some known header specifications:
  *
- * * https://specs.ipfs.tech/http-gateways/path-gateway/#response-headers
- * * https://specs.ipfs.tech/http-gateways/trustless-gateway/#response-headers
- * * https://specs.ipfs.tech/http-gateways/subdomain-gateway/#response-headers
+ * - https://specs.ipfs.tech/http-gateways/path-gateway/#response-headers
+ * - https://specs.ipfs.tech/http-gateways/trustless-gateway/#response-headers
+ * - https://specs.ipfs.tech/http-gateways/subdomain-gateway/#response-headers
  *
  * #### Server Timing headers
  *
@@ -627,7 +627,7 @@
  * 3. `TypeError` - If the options argument is passed and is malformed.
  * 4. `AbortError` - If the content request is aborted due to user aborting provided AbortSignal. Note that this is a `AbortError` from `@libp2p/interface` and not the standard `AbortError` from the Fetch API.
  *
- * ## Pluggability and Extensibility
+ * ## Extensibility
  *
  * Verified‑fetch can now be extended to alter how it handles requests by using plugins.
  * Plugins are classes that extend the `BasePlugin` class and implement the `VerifiedFetchPlugin`
@@ -706,10 +706,12 @@
  * @example custom plugin
  *
  *    ```typescript
- *    import { BasePlugin, type PluginContext, type VerifiedFetchPluginFactory, type PluginOptions } from '@helia/verified-fetch'
- *    import { okResponse } from './dist/src/utils/responses.js'
+ *    import { BasePlugin } from '@helia/verified-fetch'
+ *    import type { PluginContext, VerifiedFetchPluginFactory, PluginOptions } from '@helia/verified-fetch'
  *
  *    export class MyCustomPlugin extends BasePlugin {
+ *      id = 'my-custom-plugin' // Required: must be unique unless you want to override one of the default plugins.
+ *
  *      // Optionally, list any codec codes your plugin supports:
  *      codes = [] //
  *
@@ -729,7 +731,7 @@
  *          headers: {
  *            'Content-Type': 'text/plain'
  *          }
-          });
+ *        });
  *
  *        // Or, if further processing is needed by another plugin, simply return null.
  *      }
@@ -821,20 +823,22 @@
 
 import { bitswap, trustlessGateway } from '@helia/block-brokers'
 import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
-import { type ResolveDNSLinkProgressEvents } from '@helia/ipns'
 import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
-import { type Libp2p, type ServiceMap } from '@libp2p/interface'
 import { dns } from '@multiformats/dns'
-import { createHelia, type HeliaInit } from 'helia'
-import { createLibp2p, type Libp2pOptions } from 'libp2p'
-import { type ContentTypeParser } from './types.js'
+import { createHelia } from 'helia'
+import { createLibp2p } from 'libp2p'
 import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { VerifiedFetchPluginFactory } from './plugins/types.js'
+import type { ContentTypeParser } from './types.js'
 import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
+import type { ResolveDNSLinkProgressEvents } from '@helia/ipns'
+import type { Libp2p, ServiceMap } from '@libp2p/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
+import type { HeliaInit } from 'helia'
 import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
+import type { Libp2pOptions } from 'libp2p'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
 /**
@@ -891,7 +895,7 @@ export interface CreateVerifiedFetchInit {
   /**
    * By default we will not connect to any HTTP Gateways providers over local or
    * loopback addresses, this is because they are typically running on remote
-   * peers that have published private addresses by mistate.
+   * peers that have published private addresses by mistake.
    *
    * Pass `true` here to connect to local Gateways as well, this may be useful
    * in testing environments.
@@ -902,7 +906,7 @@ export interface CreateVerifiedFetchInit {
 
   /**
    * By default we will not connect to any gateways over HTTP addresses,
-   * requring HTTPS connections instead. This is because it will cause
+   * requiring HTTPS connections instead. This is because it will cause
    * "mixed-content" errors to appear in the console when running in secure
    * browser contexts.
    *
@@ -1010,7 +1014,7 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
   /**
    * By default we will not connect to any HTTP Gateways providers over local or
    * loopback addresses, this is because they are typically running on remote
-   * peers that have published private addresses by mistate.
+   * peers that have published private addresses by mistake.
    *
    * Pass `true` here to connect to local Gateways as well, this may be useful
    * in testing environments.
@@ -1021,7 +1025,7 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
 
   /**
    * By default we will not connect to any gateways over HTTP addresses,
-   * requring HTTPS connections instead. This is because it will cause
+   * requiring HTTPS connections instead. This is because it will cause
    * "mixed-content" errors to appear in the console when running in secure
    * browser contexts.
    *

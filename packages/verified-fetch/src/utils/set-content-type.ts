@@ -1,7 +1,7 @@
-import { type Logger } from '@libp2p/interface'
-import { type ContentTypeParser } from '../types.js'
 import { defaultMimeType } from './content-type-parser.js'
 import { isPromise } from './type-guards.js'
+import type { ContentTypeParser } from '../types.js'
+import type { Logger } from '@libp2p/interface'
 
 export interface SetContentTypeOptions {
   bytes: Uint8Array
@@ -10,15 +10,27 @@ export interface SetContentTypeOptions {
   defaultContentType?: string
   contentTypeParser: ContentTypeParser | undefined
   log: Logger
+
+  /**
+   * This should be set to the `filename` query parameter for the given request.
+   *
+   * @see https://specs.ipfs.tech/http-gateways/path-gateway/#filename-request-query-parameter
+   */
+  filename?: string
 }
 
-export async function setContentType ({ bytes, path, response, contentTypeParser, log, defaultContentType = 'application/octet-stream' }: SetContentTypeOptions): Promise<void> {
+export async function setContentType ({ bytes, path, response, contentTypeParser, log, defaultContentType = 'application/octet-stream', filename: filenameParam }: SetContentTypeOptions): Promise<void> {
   let contentType: string | undefined
 
   if (contentTypeParser != null) {
     try {
-      let fileName = path.split('/').pop()?.trim()
-      fileName = fileName === '' ? undefined : fileName
+      let fileName
+      if (filenameParam == null) {
+        fileName = path.split('/').pop()?.trim()
+        fileName = (fileName === '' || fileName?.split('.').length === 1) ? undefined : fileName
+      } else {
+        fileName = filenameParam
+      }
       const parsed = contentTypeParser(bytes, fileName)
 
       if (isPromise(parsed)) {

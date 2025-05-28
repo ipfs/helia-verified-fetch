@@ -1,7 +1,8 @@
 /**
  * @packageDocumentation
  *
- * Runs Gateway Conformance tests against @helia/verified-fetch using Kubo as a backing trustless-gateway.
+ * Runs Gateway Conformance tests against @helia/verified-fetch using Kubo as a
+ * backing trustless-gateway.
  *
  * @example Testing a new @helia/verified-fetch release
  *
@@ -38,14 +39,16 @@
  * $ curl -v GET http://localhost:3442/ipfs/bafkqabtimvwgy3yk/  # in terminal 2
  * ```
  *
- * ### Troubleshooting
+ * ## Troubleshooting
  *
- * #### Missing file in gateway-conformance-fixtures folder
+ * ### Missing file in gateway-conformance-fixtures folder
  *
  * If you see the following error:
- * > ENOENT: no such file or directory, open '[...]/helia-verified-fetch/packages/gateway-conformance/dist/src/fixtures/data/gateway-conformance-fixtures/dnslinks.json
+ * > ENOENT: no such file or directory, open '[...]/helia-verified-fetch/packages/gateway-conformance/dist/src/...
  *
- * This likely means the docker container is not executing properly for some reason. You can try running the following command to see if there are any errors: `DEBUG="-mocha*,*,*:trace" npm run test`
+ * This likely means the docker container is not executing properly for some
+ * reason. You can try running the following command to see if there are any
+ * errors: `DEBUG="-mocha*,*,*:trace" npm run test`
  */
 
 export {}

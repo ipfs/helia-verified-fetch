@@ -5,6 +5,9 @@ const log = logger('aegir')
 
 /** @type {import('aegir').PartialOptions} */
 export default {
+  build: {
+    bundlesizeMax: '1KB'
+  },
   test: {
     files: ['./dist/src/*.spec.js'],
     before: async (options) => {

@@ -39,7 +39,7 @@ describe('plugins', () => {
         constructorName: 'Whatever',
         canHandle: () => true,
         handle: async () => {
-          throw new PluginFatalError('UNKOWN_ERROR', 'Something went wrong', { response: new Response('Some custom response', { status: 500 }) })
+          throw new PluginFatalError('UNKNOWN_ERROR', 'Something went wrong', { response: new Response('Some custom response', { status: 500 }) })
         }
       })]
     })

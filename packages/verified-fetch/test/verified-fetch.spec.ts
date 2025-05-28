@@ -23,7 +23,7 @@ import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
 
-describe('@helia/verifed-fetch', () => {
+describe('@helia/verified-fetch', () => {
   let helia: Helia
 
   beforeEach(async () => {
@@ -413,7 +413,7 @@ describe('@helia/verifed-fetch', () => {
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       await expect(resp.json()).to.eventually.deep.equal(obj)
     })
@@ -427,7 +427,7 @@ describe('@helia/verifed-fetch', () => {
       const cid = await j.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       const data = await resp.json()
       expect(data).to.deep.equal({
@@ -447,7 +447,7 @@ describe('@helia/verifed-fetch', () => {
       const cid = await j.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       const data = await resp.json()
       expect(data).to.deep.equal({
@@ -472,7 +472,7 @@ describe('@helia/verifed-fetch', () => {
       const cid = await j.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       const output = await resp.json()
       await expect(j.add(output)).to.eventually.deep.equal(cid)
@@ -488,7 +488,7 @@ describe('@helia/verifed-fetch', () => {
       const cid = await j.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/json')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
 
       const output = ipldDagJson.decode(await resp.arrayBuffer())
       await expect(j.add(output)).to.eventually.deep.equal(cid)
@@ -763,6 +763,7 @@ describe('@helia/verifed-fetch', () => {
 
       const fs = unixfs(helia)
       const res = await last(fs.addAll([{
+        // spell-checker: disable-next-line
         path: "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp",
         content: finalRootFileContent
       }], {
