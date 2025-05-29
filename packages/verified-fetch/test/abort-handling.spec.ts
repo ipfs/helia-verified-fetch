@@ -5,9 +5,7 @@ import { stop } from '@libp2p/interface'
 import { prefixLogger, logger as libp2pLogger } from '@libp2p/logger'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
-import browserReadableStreamToIt from 'browser-readablestream-to-it'
 import { fixedSize } from 'ipfs-unixfs-importer/chunker'
-import drain from 'it-drain'
 import { CID } from 'multiformats/cid'
 import pDefer from 'p-defer'
 import Sinon from 'sinon'
@@ -234,14 +232,7 @@ describe('abort-handling', function () {
       return b
     })
 
-    const response = await makeAbortedRequest(verifiedFetch, [cid], leaf1Got.promise)
-
-    if (response.body == null) {
-      throw new Error('Body was not set')
-    }
-
-    // error occurs during streaming response
-    await expect(drain(browserReadableStreamToIt(response.body)))
+    await expect(makeAbortedRequest(verifiedFetch, [cid], leaf1Got.promise))
       .to.eventually.be.rejectedWith('aborted')
 
     // not called because parseResource never passes the resource to
