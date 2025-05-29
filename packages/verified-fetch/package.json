@@ -213,7 +213,6 @@
     "helia": "^5.4.1",
     "ipfs-unixfs-importer": "^15.3.2",
     "it-all": "^3.0.8",
-    "it-drain": "^3.0.9",
     "it-last": "^3.0.8",
     "it-to-buffer": "^4.0.9",
     "magic-bytes.js": "^1.12.1",
