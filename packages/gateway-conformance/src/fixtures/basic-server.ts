@@ -122,7 +122,7 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
      */
     urlLog.error('timing out request')
     requestController?.abort()
-  }, 2000)
+  }, 10000)
   reqTimeout.unref() // don't keep the process alive just for this timeout
 
   const onResFinish = (): void => {
