@@ -182,7 +182,7 @@
     "@libp2p/websockets": "^9.2.12",
     "@multiformats/dns": "^1.0.6",
     "cborg": "^4.2.11",
-    "file-type": "^20.5.0",
+    "file-type": "^21.0.0",
     "helia": "^5.4.1",
     "interface-blockstore": "^5.3.1",
     "interface-datastore": "^8.3.1",
