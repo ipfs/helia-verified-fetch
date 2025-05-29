@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v3.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.0.0...@helia/verified-fetch-3.0.1) (2025-05-29)
+
+### Tests
+
+* fix flaky dns and abort tests ([#247](https://github.com/ipfs/helia-verified-fetch/issues/247)) ([3826086](https://github.com/ipfs/helia-verified-fetch/commit/38260865ccecb2d8f8514d96c7d2aa0828fabe67))
+
 ## [@helia/verified-fetch-v3.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.19...@helia/verified-fetch-3.0.0) (2025-05-26)
 
 ### ⚠ BREAKING CHANGES
