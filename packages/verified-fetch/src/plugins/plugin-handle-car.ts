@@ -24,7 +24,7 @@ function getDagScope ({ query }: Pick<PluginContext, 'query'>): DagScope | null 
   if (dagScope === 'all' || dagScope === 'entity' || dagScope === 'block') {
     return dagScope
   }
-  return null
+  return 'all'
 }
 
 /**
@@ -72,8 +72,6 @@ export class CarPlugin extends BasePlugin {
     const dagScope = getDagScope(context)
     if (dagScope === 'block') {
       carExportOptions.exporter = new BlockExporter()
-    } else if (dagScope === 'all') {
-      carExportOptions.exporter = new SubgraphExporter()
     } else if (dagScope === 'entity') {
       // if its unixFS, we need to enumerate a directory, or get all blocks for the entity, otherwise, use blockExporter
       if (pathDetails.terminalElement.cid.code === dagPbCode) {
@@ -81,6 +79,8 @@ export class CarPlugin extends BasePlugin {
       } else {
         carExportOptions.exporter = new BlockExporter()
       }
+    } else {
+      carExportOptions.exporter = new SubgraphExporter()
     }
     const stream = toBrowserReadableStream(c.stream(pathDetails?.terminalElement.cid ?? cid, carExportOptions))
     context.byteRangeContext.setBody(stream)
