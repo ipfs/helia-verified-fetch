@@ -9,7 +9,7 @@ import type { DNSLinkResolveResult, IPNS, IPNSResolveResult, IPNSRoutingEvents, 
 import type { AbortOptions, ComponentLogger, PeerId } from '@libp2p/interface'
 import type { ProgressOptions } from 'progress-events'
 
-const ipnsCache = new TLRU<DNSLinkResolveResult | IPNSResolveResult>(1000)
+export const ipnsCache = new TLRU<DNSLinkResolveResult | IPNSResolveResult>(1000)
 
 export interface ParseUrlStringInput {
   urlString: string
