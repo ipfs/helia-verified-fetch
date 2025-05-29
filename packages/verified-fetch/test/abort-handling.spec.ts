@@ -234,14 +234,7 @@ describe('abort-handling', function () {
       return b
     })
 
-    const response = await makeAbortedRequest(verifiedFetch, [cid], leaf1Got.promise)
-
-    if (response.body == null) {
-      throw new Error('Body was not set')
-    }
-
-    // error occurs during streaming response
-    await expect(drain(browserReadableStreamToIt(response.body)))
+    await expect(makeAbortedRequest(verifiedFetch, [cid], leaf1Got.promise))
       .to.eventually.be.rejectedWith('aborted')
 
     // not called because parseResource never passes the resource to
