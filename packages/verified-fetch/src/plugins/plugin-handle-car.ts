@@ -68,11 +68,13 @@ export class CarPlugin extends BasePlugin {
       traversal: new CIDPath(pathDetails.ipfsRoots)
     }
     const dagScope = getDagScope(context)
+    // root should be the terminal element if it exists, otherwise the root cid.. because of this, we can't use the @helia/car stream() method.
+    const root = pathDetails.terminalElement.cid ?? cid
     if (dagScope === 'block') {
       carExportOptions.exporter = new BlockExporter()
     } else if (dagScope === 'entity') {
       // if its unixFS, we need to enumerate a directory, or get all blocks for the entity, otherwise, use blockExporter
-      if (pathDetails.terminalElement.cid.code === dagPbCode) {
+      if (root.code === dagPbCode) {
         carExportOptions.exporter = new UnixFSExporter()
       } else {
         carExportOptions.exporter = new BlockExporter()
@@ -80,8 +82,6 @@ export class CarPlugin extends BasePlugin {
     } else {
       carExportOptions.exporter = new SubgraphExporter()
     }
-    // root should be the terminal element if it exists, otherwise the root cid.. because of this, we can't use the @helia/car stream() method.
-    const root = pathDetails.terminalElement.cid ?? cid
     const { writer, out } = CarWriter.create(root)
     const iter = async function * (): AsyncIterable<Uint8Array> {
       for await (const buf of out) {
