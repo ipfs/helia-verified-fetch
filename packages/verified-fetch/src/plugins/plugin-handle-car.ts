@@ -1,4 +1,5 @@
 import { BlockExporter, car, CIDPath, SubgraphExporter, UnixFSExporter } from '@helia/car'
+import { CarWriter } from '@ipld/car'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { okRangeResponse } from '../utils/responses.js'
@@ -36,9 +37,6 @@ export class CarPlugin extends BasePlugin {
 
   canHandle (context: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', context.cid, context.accept)
-    // if (context.pathDetails == null) {
-    //   return false
-    // }
     if (context.byteRangeContext == null) {
       return false
     }
@@ -82,8 +80,23 @@ export class CarPlugin extends BasePlugin {
     } else {
       carExportOptions.exporter = new SubgraphExporter()
     }
-    const stream = toBrowserReadableStream(c.stream(pathDetails?.terminalElement.cid ?? cid, carExportOptions))
-    context.byteRangeContext.setBody(stream)
+    // root should be the terminal element if it exists, otherwise the root cid.. because of this, we can't use the @helia/car stream() method.
+    const root = pathDetails.terminalElement.cid ?? cid
+    const { writer, out } = CarWriter.create(root)
+    const iter = async function * (): AsyncIterable<Uint8Array> {
+      for await (const buf of out) {
+        yield buf
+      }
+    }
+
+    // the root passed to export should be the root CID of the DAG, not the terminal element.
+    c.export(cid, writer, carExportOptions)
+      .catch((err) => {
+        this.log.error('error exporting car - %e', err)
+      })
+    // export will close the writer when it's done, no finally needed.
+
+    context.byteRangeContext.setBody(toBrowserReadableStream(iter()))
 
     const response = okRangeResponse(context.resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
     response.headers.set('content-type', 'application/vnd.ipld.car; version=1')
