@@ -3,9 +3,9 @@ import { dns, RecordType } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
 import Sinon from 'sinon'
 import { createVerifiedFetch } from '../src/index.js'
+import { ipnsCache } from '../src/utils/parse-url-string.js'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
-import { ipnsCache } from '../src/utils/parse-url-string.js'
 
 describe('custom dns-resolvers', () => {
   beforeEach(() => {
