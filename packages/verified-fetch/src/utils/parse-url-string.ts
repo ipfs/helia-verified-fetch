@@ -25,6 +25,7 @@ export interface ParsedUrlQuery extends Record<string, string | unknown> {
   format?: RequestFormatShorthand
   download?: boolean
   filename?: string
+  'dag-scope'?: string
 }
 
 export interface ParsedUrlStringResults extends ResolveResult {

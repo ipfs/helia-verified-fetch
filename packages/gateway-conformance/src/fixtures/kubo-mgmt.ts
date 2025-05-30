@@ -34,7 +34,6 @@ function getPeerIdFromString (peerIdString: string): PeerId {
   return peerIdFromCID(CID.parse(peerIdString))
 }
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const log = logger('kubo-mgmt')
