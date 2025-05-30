@@ -181,6 +181,7 @@
     "@libp2p/webrtc": "^5.2.14",
     "@libp2p/websockets": "^9.2.12",
     "@multiformats/dns": "^1.0.6",
+    "@multiformats/multiaddr": "^12.4.0",
     "cborg": "^4.2.11",
     "file-type": "^20.5.0",
     "helia": "^5.4.1",
