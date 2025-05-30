@@ -30,7 +30,7 @@ export function createRandomDataChunks (numberOfChunks: number, sizeInBytes: num
   combined: Uint8Array
 } {
   if (numberOfChunks * sizeInBytes <= 1024 * 1024) {
-    throw new Error('NumberOfChunks * sizeInBytes must be greater than 1MB, otherwise, you dont need to use this function.')
+    throw new Error('NumberOfChunks * sizeInBytes must be greater than 1MB, otherwise, you don\'t need to use this function.')
   }
 
   const chunks = Array.from({ length: numberOfChunks }, () => createRandomData(sizeInBytes))
