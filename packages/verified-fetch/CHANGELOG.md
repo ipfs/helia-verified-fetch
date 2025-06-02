@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v3.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.0.1...@helia/verified-fetch-3.0.2) (2025-06-02)
+
+### Bug Fixes
+
+* format=car filename and content ([#198](https://github.com/ipfs/helia-verified-fetch/issues/198)) ([432b5f8](https://github.com/ipfs/helia-verified-fetch/commit/432b5f8c42ced9af08b7606fb05ccbadf753144c))
+
 ## [@helia/verified-fetch-v3.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.0.0...@helia/verified-fetch-3.0.1) (2025-05-29)
 
 ### Tests
