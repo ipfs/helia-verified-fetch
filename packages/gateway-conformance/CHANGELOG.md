@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-gateway-conformance-v1.3.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.3.1...@helia/verified-fetch-gateway-conformance-1.3.2) (2025-06-02)
+
+### Bug Fixes
+
+* format=car filename and content ([#198](https://github.com/ipfs/helia-verified-fetch/issues/198)) ([432b5f8](https://github.com/ipfs/helia-verified-fetch/commit/432b5f8c42ced9af08b7606fb05ccbadf753144c))
+
+### Tests
+
+* update gateway conformance version and expectations ([#248](https://github.com/ipfs/helia-verified-fetch/issues/248)) ([47b7679](https://github.com/ipfs/helia-verified-fetch/commit/47b76798603649172dae3e13cd47917481d32f77))
+
 ## [@helia/verified-fetch-gateway-conformance-v1.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.3.0...@helia/verified-fetch-gateway-conformance-1.3.1) (2025-05-21)
 
 ### Trivial Changes
