@@ -28,7 +28,7 @@ jobs:
       # 3. Download the gateway-conformance fixtures using ipfs/gateway-conformance action
       # This will prevent us from needing to install `docker` on the github runner
       - name: Download gateway-conformance fixtures
-        uses: ipfs/gateway-conformance/.github/actions/extract-fixtures@v0.7
+        uses: ipfs/gateway-conformance/.github/actions/extract-fixtures@v0.8
         # working-directory: ./packages/gateway-conformance
         with:
           output: ./packages/gateway-conformance/dist/src/fixtures/data/gateway-conformance-fixtures
