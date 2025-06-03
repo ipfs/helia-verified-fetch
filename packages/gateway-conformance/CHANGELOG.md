@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-gateway-conformance-v1.4.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.3.2...@helia/verified-fetch-gateway-conformance-1.4.0) (2025-06-03)
+
+### Features
+
+* support multiple byte-ranges ([#207](https://github.com/ipfs/helia-verified-fetch/issues/207)) ([04aeb5d](https://github.com/ipfs/helia-verified-fetch/commit/04aeb5d693a1fbf4c7de2768c70025500260b063))
+
 ## [@helia/verified-fetch-gateway-conformance-v1.3.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.3.1...@helia/verified-fetch-gateway-conformance-1.3.2) (2025-06-02)
 
 ### Bug Fixes
