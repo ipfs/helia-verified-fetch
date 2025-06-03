@@ -98,8 +98,8 @@ export class CarPlugin extends BasePlugin {
 
     context.byteRangeContext.setBody(toBrowserReadableStream(iter()))
 
-    const response = okRangeResponse(context.resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log })
-    response.headers.set('content-type', 'application/vnd.ipld.car; version=1')
+    const response = okRangeResponse(context.resource, context.byteRangeContext.getBody('application/vnd.ipld.car; version=1'), { byteRangeContext: context.byteRangeContext, log: this.log })
+    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? 'application/vnd.ipld.car; version=1')
 
     return response
   }

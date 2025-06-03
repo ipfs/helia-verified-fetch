@@ -1,7 +1,7 @@
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
+import { getContentType } from '../utils/get-content-type.js'
 import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
-import { setContentType } from '../utils/set-content-type.js'
 import { PluginFatalError } from './errors.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
@@ -80,14 +80,16 @@ export class RawPlugin extends BasePlugin {
     const blockstore = getBlockstore(terminalCid, resource, session, options)
     const result = await blockstore.get(terminalCid, options)
     context.byteRangeContext.setBody(result)
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log }, {
-      redirected: false
-    })
 
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    await setContentType({ filename: query.filename, bytes: result, path, response, defaultContentType: getOverriddenRawContentType({ headers: options?.headers, accept }), contentTypeParser, log })
+    const contentType = await getContentType({ filename: query.filename, bytes: result, path, defaultContentType: getOverriddenRawContentType({ headers: options?.headers, accept }), contentTypeParser, log })
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody(contentType), { byteRangeContext: context.byteRangeContext, log }, {
+      redirected: false
+    })
+
+    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? contentType)
 
     return response
   }

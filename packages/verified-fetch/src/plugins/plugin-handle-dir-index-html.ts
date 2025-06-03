@@ -54,9 +54,9 @@ export class DirIndexHtmlPlugin extends BasePlugin {
 
     const etagPrefix = `DirIndex-${await getAssetHash(directoryEntries)}_CID-`
 
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody(), { byteRangeContext: context.byteRangeContext, log: this.log }, {
+    const response = okRangeResponse(resource, context.byteRangeContext.getBody('text/html'), { byteRangeContext: context.byteRangeContext, log: this.log }, {
       headers: {
-        'Content-Type': 'text/html',
+        'Content-Type': context.byteRangeContext.getContentType() ?? 'text/html',
         // see https://github.com/ipfs/gateway-conformance/pull/219
         'Cache-Control': 'public, max-age=604800, stale-while-revalidate=2678400',
         'X-Ipfs-Roots': getIpfsRoots(ipfsRoots),
