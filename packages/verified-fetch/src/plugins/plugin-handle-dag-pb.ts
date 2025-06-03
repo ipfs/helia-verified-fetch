@@ -1,8 +1,7 @@
 import { unixfs } from '@helia/unixfs'
 import { code as dagPbCode } from '@ipld/dag-pb'
-import { exporter } from 'ipfs-unixfs-exporter'
 import { AbortError } from '@libp2p/interface'
-import { type UnixFSEntry } from 'ipfs-unixfs-exporter'
+import { exporter } from 'ipfs-unixfs-exporter'
 import { CustomProgressEvent } from 'progress-events'
 import { getContentType } from '../utils/get-content-type.js'
 import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-iterable.js'
@@ -11,6 +10,7 @@ import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, notSupp
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 import type { CIDDetail } from '../index.js'
+import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 
 /**
  * Handles UnixFS and dag-pb content.
@@ -206,7 +206,9 @@ export class DagPbPlugin extends BasePlugin {
     const contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
 
     byteRangeContext?.setBody((range): AsyncGenerator<Uint8Array, void, unknown> => {
-      options?.signal?.throwIfAborted()
+      if (options?.signal?.aborted) {
+        throw new AbortError(options?.signal?.reason ?? 'aborted while streaming')
+      }
       return entry.content({
         signal: options?.signal,
         onProgress: options?.onProgress,
