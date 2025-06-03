@@ -63,7 +63,7 @@ describe('cache-control header', () => {
     const key = await generateKeyPair('Ed25519')
     const peerId = peerIdFromPrivateKey(key)
 
-    // ipns currently only allows customising the lifetime which is also used as the TTL
+    // ipns currently only allows customizing the lifetime which is also used as the TTL
     await name.publish(key, cid, { lifetime: oneHourInMs })
 
     const resp = await verifiedFetch.fetch(`ipns://${peerId}`)
@@ -88,7 +88,7 @@ describe('cache-control header', () => {
     const peerId = peerIdFromPrivateKey(key)
 
     /**
-     * ipns currently only allows customising the lifetime which is also used as the TTL
+     * ipns currently only allows customizing the lifetime which is also used as the TTL
      *
      * lifetime is coming back as 100000 times larger than expected
      *

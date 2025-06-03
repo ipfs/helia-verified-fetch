@@ -51,7 +51,7 @@ describe('@helia/verified-fetch - unixfs directory', () => {
       expect(resp.status).to.equal(501) // TODO: we should do a directory listing instead
     })
 
-    it('can return a string for unixfs pathed data', async () => {
+    it('can return a string for deep-linked unixfs data', async () => {
       const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR/1 - Barrel - Part 1 - alt.txt', {
         allowLocal: true,
         allowInsecure: true
@@ -61,7 +61,7 @@ describe('@helia/verified-fetch - unixfs directory', () => {
       expect(text).to.equal('Don\'t we all.')
     })
 
-    it('can return an image for unixfs pathed data', async () => {
+    it('can return an image for deep-linked unixfs data', async () => {
       const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR/1 - Barrel - Part 1.png', {
         allowLocal: true,
         allowInsecure: true
@@ -88,7 +88,7 @@ describe('@helia/verified-fetch - unixfs directory', () => {
       })
     })
 
-    it('can return an image content-type for unixfs pathed data', async () => {
+    it('can return an image content-type for deep-linked unixfs data', async () => {
       const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR/1 - Barrel - Part 1.png', {
         allowLocal: true,
         allowInsecure: true
@@ -108,9 +108,11 @@ describe('@helia/verified-fetch - unixfs directory', () => {
       expect(resp).to.be.ok()
       const text = await resp.text()
       // npx kubo@0.25.0 cat '/ipfs/bafybeidbclfqleg2uojchspzd4bob56dqetqjsj27gy2cq3klkkgxtpn4i/685.txt'
+      // spell-checker: disable
       expect(text).to.equal(`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc non imperdiet nunc. Proin ac quam ut nibh eleifend aliquet. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Sed ligula dolor, imperdiet sagittis arcu et, semper tincidunt urna. Donec et tempor augue, quis sollicitudin metus. Curabitur semper ullamcorper aliquet. Mauris hendrerit sodales lectus eget fermentum. Proin sollicitudin vestibulum commodo. Vivamus nec lectus eu augue aliquet dignissim nec condimentum justo. In hac habitasse platea dictumst. Mauris vel sem neque.
 
 Vivamus finibus, enim at lacinia semper, arcu erat gravida lacus, sit amet gravida magna orci sit amet est. Sed non leo lacus. Nullam viverra ipsum a tincidunt dapibus. Nulla pulvinar ligula sit amet ante ultrices tempus. Proin purus urna, semper sed lobortis quis, gravida vitae ipsum. Aliquam mi urna, pulvinar eu bibendum quis, convallis ac dolor. In gravida justo sed risus ullamcorper, vitae luctus massa hendrerit. Pellentesque habitant amet.`)
+      // spell-checker: enable
     })
   })
 })

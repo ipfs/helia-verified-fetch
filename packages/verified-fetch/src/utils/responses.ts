@@ -1,4 +1,4 @@
-import type { ByteRangeContext } from './byte-range-context'
+import type { ByteRangeContext } from './byte-range-context.js'
 import type { SupportedBodyTypes } from '../types.js'
 import type { Logger } from '@libp2p/interface'
 
@@ -206,9 +206,9 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
 
 /**
  * We likely need to catch errors handled by upstream helia libraries if range-request throws an error. Some examples:
- * * The range is out of bounds
- * * The range is invalid
- * * The range is not supported for the given type
+ * - The range is out of bounds
+ * - The range is invalid
+ * - The range is not supported for the given type
  */
 export function badRangeResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {

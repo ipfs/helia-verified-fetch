@@ -1,4 +1,4 @@
-import hashlru from 'hashlru'
+import QuickLRU from 'quick-lru'
 
 /**
  * Time Aware Least Recent Used Cache
@@ -6,30 +6,20 @@ import hashlru from 'hashlru'
  * @see https://arxiv.org/pdf/1801.00390
  */
 export class TLRU<T> {
-  private readonly lru: ReturnType<typeof hashlru>
+  private readonly lru: QuickLRU<string, T>
 
   constructor (maxSize: number) {
-    this.lru = hashlru(maxSize)
+    this.lru = new QuickLRU({ maxSize })
   }
 
   get (key: string): T | undefined {
-    const value = this.lru.get(key)
-
-    if (value != null) {
-      if (value.expire != null && value.expire < Date.now()) {
-        this.lru.remove(key)
-
-        return undefined
-      }
-
-      return value.value
-    }
-
-    return undefined
+    return this.lru.get(key)
   }
 
   set (key: string, value: T, ttlMs: number): void {
-    this.lru.set(key, { value, expire: Date.now() + ttlMs })
+    this.lru.set(key, value, {
+      maxAge: Date.now() + ttlMs
+    })
   }
 
   has (key: string): boolean {
@@ -43,7 +33,7 @@ export class TLRU<T> {
   }
 
   remove (key: string): void {
-    this.lru.remove(key)
+    this.lru.delete(key)
   }
 
   clear (): void {

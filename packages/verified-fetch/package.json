@@ -1,6 +1,6 @@
 {
   "name": "@helia/verified-fetch",
-  "version": "2.6.12",
+  "version": "3.0.2",
   "description": "A fetch-like API for obtaining verified & trustless IPFS content on the web",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/verified-fetch#readme",
@@ -22,6 +22,22 @@
   ],
   "type": "module",
   "types": "./dist/src/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "*",
+        "dist/*",
+        "dist/src/*",
+        "dist/src/*/index"
+      ],
+      "src/*": [
+        "*",
+        "dist/*",
+        "dist/src/*",
+        "dist/src/*/index"
+      ]
+    }
+  },
   "files": [
     "src",
     "dist",
@@ -36,13 +52,6 @@
     "./plugins": {
       "types": "./dist/src/plugins/plugins.d.ts",
       "import": "./dist/src/plugins/plugins.js"
-    }
-  },
-  "eslintConfig": {
-    "extends": "ipfs",
-    "parserOptions": {
-      "project": true,
-      "sourceType": "module"
     }
   },
   "release": {
@@ -127,7 +136,15 @@
       "@semantic-release/changelog",
       "@semantic-release/npm",
       "@semantic-release/github",
-      "@semantic-release/git"
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "CHANGELOG.md",
+            "package.json"
+          ]
+        }
+      ]
     ]
   },
   "scripts": {
@@ -147,61 +164,58 @@
     "release": "aegir release"
   },
   "dependencies": {
-    "@helia/block-brokers": "^4.1.0",
-    "@helia/car": "^4.0.4",
-    "@helia/delegated-routing-v1-http-api-client": "^4.2.2",
-    "@helia/interface": "^5.2.1",
-    "@helia/ipns": "^8.2.0",
-    "@helia/routers": "^3.0.1",
-    "@helia/unixfs": "^5.0.0",
-    "@ipld/dag-cbor": "^9.2.2",
-    "@ipld/dag-json": "^10.2.3",
-    "@ipld/dag-pb": "^4.1.3",
-    "@libp2p/interface": "^2.9.0",
-    "@libp2p/kad-dht": "^15.0.2",
-    "@libp2p/logger": "^5.1.15",
-    "@libp2p/peer-id": "^5.1.2",
-    "@libp2p/webrtc": "^5.2.12",
-    "@libp2p/websockets": "^9.2.10",
+    "@helia/block-brokers": "^4.2.1",
+    "@helia/car": "^4.1.1",
+    "@helia/delegated-routing-v1-http-api-client": "^4.2.5",
+    "@helia/interface": "^5.3.1",
+    "@helia/ipns": "^8.2.2",
+    "@helia/routers": "^3.1.1",
+    "@helia/unixfs": "^5.0.2",
+    "@ipld/car": "^5.4.2",
+    "@ipld/dag-cbor": "^9.2.3",
+    "@ipld/dag-json": "^10.2.4",
+    "@ipld/dag-pb": "^4.1.5",
+    "@libp2p/interface": "^2.10.1",
+    "@libp2p/kad-dht": "^15.1.1",
+    "@libp2p/logger": "^5.1.17",
+    "@libp2p/peer-id": "^5.1.4",
+    "@libp2p/webrtc": "^5.2.14",
+    "@libp2p/websockets": "^9.2.12",
     "@multiformats/dns": "^1.0.6",
-    "abortable-iterator": "^5.1.0",
-    "cborg": "^4.2.10",
-    "file-type": "^20.4.1",
-    "hashlru": "^2.3.0",
-    "helia": "^5.3.0",
+    "cborg": "^4.2.11",
+    "file-type": "^20.5.0",
+    "helia": "^5.4.1",
     "interface-blockstore": "^5.3.1",
     "interface-datastore": "^8.3.1",
     "ipfs-unixfs-exporter": "^13.6.2",
     "ipns": "^10.0.2",
-    "it-map": "^3.1.2",
+    "it-map": "^3.1.3",
     "it-pipe": "^3.0.1",
     "it-tar": "^6.0.5",
-    "it-to-browser-readablestream": "^2.0.10",
-    "libp2p": "^2.8.5",
-    "lru-cache": "^11.1.0",
-    "multiformats": "^13.3.2",
+    "it-to-browser-readablestream": "^2.0.11",
+    "libp2p": "^2.8.7",
+    "multiformats": "^13.3.6",
     "progress-events": "^1.0.1",
+    "quick-lru": "^7.0.1",
     "uint8arrays": "^5.1.0"
   },
   "devDependencies": {
-    "@helia/dag-cbor": "^4.0.3",
-    "@helia/dag-json": "^4.0.3",
-    "@helia/http": "^2.0.5",
-    "@helia/json": "^4.0.3",
-    "@ipld/car": "^5.4.0",
-    "@libp2p/crypto": "^5.1.1",
+    "@helia/dag-cbor": "^4.0.5",
+    "@helia/dag-json": "^4.0.5",
+    "@helia/http": "^2.1.1",
+    "@helia/json": "^4.0.5",
+    "@libp2p/crypto": "^5.1.3",
     "@types/sinon": "^17.0.4",
-    "aegir": "^45.2.0",
+    "aegir": "^47.0.11",
     "blockstore-core": "^5.0.2",
-    "browser-readablestream-to-it": "^2.0.8",
+    "browser-readablestream-to-it": "^2.0.9",
     "datastore-core": "^10.0.2",
-    "helia": "^5.3.0",
+    "helia": "^5.4.1",
     "ipfs-unixfs-importer": "^15.3.2",
-    "it-all": "^3.0.7",
-    "it-drain": "^3.0.8",
-    "it-last": "^3.0.7",
-    "it-to-buffer": "^4.0.8",
-    "magic-bytes.js": "^1.11.0",
+    "it-all": "^3.0.8",
+    "it-last": "^3.0.8",
+    "it-to-buffer": "^4.0.9",
+    "magic-bytes.js": "^1.12.1",
     "p-defer": "^4.0.1",
     "sinon": "^20.0.0",
     "sinon-ts": "^2.0.0"

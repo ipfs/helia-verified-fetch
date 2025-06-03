@@ -1,6 +1,8 @@
 import { unixfs } from '@helia/unixfs'
 import { code as dagPbCode } from '@ipld/dag-pb'
-import { exporter, type UnixFSEntry } from 'ipfs-unixfs-exporter'
+import { exporter } from 'ipfs-unixfs-exporter'
+import { AbortError } from '@libp2p/interface'
+import { type UnixFSEntry } from 'ipfs-unixfs-exporter'
 import { CustomProgressEvent } from 'progress-events'
 import { getContentType } from '../utils/get-content-type.js'
 import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-iterable.js'
@@ -14,6 +16,7 @@ import type { CIDDetail } from '../index.js'
  * Handles UnixFS and dag-pb content.
  */
 export class DagPbPlugin extends BasePlugin {
+  readonly id = 'dag-pb-plugin'
   readonly codes = [dagPbCode]
   canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
@@ -52,7 +55,7 @@ export class DagPbPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>): Promise<Response | null> {
-    const { cid, options, pathDetails, withServerTiming = false } = context
+    const { cid, options, withServerTiming = false, pathDetails, query } = context
     const { handleServerTiming, contentTypeParser, helia, getBlockstore } = this.pluginOptions
     const log = this.log
     let resource = context.resource
@@ -99,8 +102,10 @@ export class DagPbPlugin extends BasePlugin {
         path = rootFilePath
         resolvedCID = entry.cid
       } catch (err: any) {
+        if (options?.signal?.aborted) {
+          throw new AbortError(options?.signal?.reason)
+        }
         this.log.error('error loading path %c/%s', dirCid, rootFilePath, err)
-        options?.signal?.throwIfAborted()
         context.isDirectory = true
         context.directoryEntries = []
         context.modified++
@@ -121,10 +126,13 @@ export class DagPbPlugin extends BasePlugin {
     }
 
     try {
-      const stat = await fs.stat(resolvedCID, { extended: true })
+      // attempt to get the exact file size, but timeout quickly.
+      const stat = await fs.stat(resolvedCID, { extended: true, signal: AbortSignal.timeout(500) })
       byteRangeContext.setFileSize(stat.size)
     } catch (err: any) {
-      log.error('error getting file size for %c/%s', cid, path, err)
+      log.error('error getting exact file size for %c/%s - %e', cid, path, err)
+      byteRangeContext.setFileSize(pathDetails.terminalElement.size)
+      log.trace('using terminal element size of %d for %c/%s', pathDetails.terminalElement.size, cid, path)
     }
 
     try {
@@ -150,7 +158,7 @@ export class DagPbPlugin extends BasePlugin {
         }), withServerTiming)
         const stream = streamAndFirstChunk.stream
         firstChunk = streamAndFirstChunk.firstChunk
-        contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
+        contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ filename: query.filename, bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
 
         byteRangeContext.setBody(stream)
       }
@@ -166,7 +174,9 @@ export class DagPbPlugin extends BasePlugin {
 
       return response
     } catch (err: any) {
-      options?.signal?.throwIfAborted()
+      if (options?.signal?.aborted) {
+        throw new AbortError(options?.signal?.reason)
+      }
       log.error('error streaming %c/%s', cid, path, err)
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)

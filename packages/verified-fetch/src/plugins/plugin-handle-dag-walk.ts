@@ -11,6 +11,7 @@ import type { PluginContext } from './types.js'
  * Once this plugin has run, the PluginContext will be updated and then this plugin will return false for canHandle, so it won't run again.
  */
 export class DagWalkPlugin extends BasePlugin {
+  readonly id = 'dag-walk-plugin'
   /**
    * Return false if the path has already been walked, otherwise return true if the CID is encoded with a codec that supports pathing.
    */
@@ -29,10 +30,10 @@ export class DagWalkPlugin extends BasePlugin {
     const { cid, resource, options, withServerTiming = false } = context
     const { getBlockstore, handleServerTiming } = this.pluginOptions
     const blockstore = getBlockstore(cid, resource, options?.session ?? true, options)
+
     // TODO: migrate handlePathWalking into this plugin
     const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log: this.log }), withServerTiming)
 
-    context.modified++
     if (pathDetails instanceof Response) {
       this.log.trace('path walking failed')
 
@@ -42,10 +43,11 @@ export class DagWalkPlugin extends BasePlugin {
         return pathDetails
       }
 
-      // some error walking the path
+      // some other error walking the path (codec doesn't support pathing, etc..), let the next plugin try to handle it
       return null
     }
 
+    context.modified++
     context.pathDetails = pathDetails
 
     return null

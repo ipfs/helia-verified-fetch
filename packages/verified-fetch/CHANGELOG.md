@@ -1,3 +1,71 @@
+## [@helia/verified-fetch-v3.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.0.1...@helia/verified-fetch-3.0.2) (2025-06-02)
+
+### Bug Fixes
+
+* format=car filename and content ([#198](https://github.com/ipfs/helia-verified-fetch/issues/198)) ([432b5f8](https://github.com/ipfs/helia-verified-fetch/commit/432b5f8c42ced9af08b7606fb05ccbadf753144c))
+
+## [@helia/verified-fetch-v3.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.0.0...@helia/verified-fetch-3.0.1) (2025-05-29)
+
+### Tests
+
+* fix flaky dns and abort tests ([#247](https://github.com/ipfs/helia-verified-fetch/issues/247)) ([3826086](https://github.com/ipfs/helia-verified-fetch/commit/38260865ccecb2d8f8514d96c7d2aa0828fabe67))
+
+## [@helia/verified-fetch-v3.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.19...@helia/verified-fetch-3.0.0) (2025-05-26)
+
+### ⚠ BREAKING CHANGES
+
+* plugins require a unique id (#244)
+
+### Bug Fixes
+
+* plugins require a unique id ([#244](https://github.com/ipfs/helia-verified-fetch/issues/244)) ([73aabdf](https://github.com/ipfs/helia-verified-fetch/commit/73aabdf4ea4890972396571e34467d4a315e1613))
+
+## [@helia/verified-fetch-v2.6.19](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.18...@helia/verified-fetch-2.6.19) (2025-05-23)
+
+### Bug Fixes
+
+* handle aborted requests properly ([#241](https://github.com/ipfs/helia-verified-fetch/issues/241)) ([af4b426](https://github.com/ipfs/helia-verified-fetch/commit/af4b4261b3660f71e5831b9d5ed5e73f5aaebeac))
+
+## [@helia/verified-fetch-v2.6.18](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.17...@helia/verified-fetch-2.6.18) (2025-05-21)
+
+### Trivial Changes
+
+* update version ([d32c104](https://github.com/ipfs/helia-verified-fetch/commit/d32c104f9df4666c7d409c45d9c13e3e34a10cd3))
+
+### Dependencies
+
+* bump aegir from 46.0.5 to 47.0.6 ([#236](https://github.com/ipfs/helia-verified-fetch/issues/236)) ([bc3d557](https://github.com/ipfs/helia-verified-fetch/commit/bc3d5574ee6f19a194f9498652b2e354d38020d4))
+
+## [@helia/verified-fetch-v2.6.17](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.16...@helia/verified-fetch-2.6.17) (2025-05-14)
+
+### Bug Fixes
+
+* update readmes and bundle sizes ([cb920a5](https://github.com/ipfs/helia-verified-fetch/commit/cb920a57f347cff8e249671660c1fb522f89c8fa))
+
+## [@helia/verified-fetch-v2.6.16](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.15...@helia/verified-fetch-2.6.16) (2025-05-14)
+
+### Bug Fixes
+
+* correct all typos and add spell checker ([5db3eec](https://github.com/ipfs/helia-verified-fetch/commit/5db3eec25db10fc4b8d1ec58e2754eb5cf9e61d6))
+
+## [@helia/verified-fetch-v2.6.15](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.14...@helia/verified-fetch-2.6.15) (2025-05-14)
+
+### Dependencies
+
+* **dev:** bump aegir from 45.2.1 to 46.0.1 ([5825e4a](https://github.com/ipfs/helia-verified-fetch/commit/5825e4a43566f8c3fe059dbb9e952c4e1ce708a1))
+
+## [@helia/verified-fetch-v2.6.14](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.13...@helia/verified-fetch-2.6.14) (2025-05-12)
+
+### Bug Fixes
+
+* ending path is not assumed to be filename ([#229](https://github.com/ipfs/helia-verified-fetch/issues/229)) ([6d24813](https://github.com/ipfs/helia-verified-fetch/commit/6d2481392c312de3a4ff2aee5ca6b686d31541ba)), closes [#228](https://github.com/ipfs/helia-verified-fetch/issues/228)
+
+## [@helia/verified-fetch-v2.6.13](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.12...@helia/verified-fetch-2.6.13) (2025-04-29)
+
+### Bug Fixes
+
+* remove abortable-iterator ([#223](https://github.com/ipfs/helia-verified-fetch/issues/223)) ([f17056c](https://github.com/ipfs/helia-verified-fetch/commit/f17056caca65121b13bd012bfbc26ef4c3246226))
+
 ## [@helia/verified-fetch-v2.6.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-2.6.11...@helia/verified-fetch-2.6.12) (2025-04-28)
 
 ### Bug Fixes

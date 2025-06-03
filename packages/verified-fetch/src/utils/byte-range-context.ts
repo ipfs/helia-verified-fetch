@@ -109,7 +109,7 @@ export class ByteRangeContext {
 
         this.multiPartBoundary = `multipart_byteranges_${Math.floor(Math.random() * 1000000000)}`
       } catch (e) {
-        this.log.error('error parsing range request header: %o', e)
+        this.log.error('error parsing range request header - %e', e)
         this.requestRanges = []
       }
 

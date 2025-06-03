@@ -1,6 +1,6 @@
 import { logger } from '@libp2p/logger'
-import { type Answer, type Question } from '@multiformats/dns'
-import { type DNSResolver } from '@multiformats/dns/resolvers'
+import type { Answer, Question } from '@multiformats/dns'
+import type { DNSResolver } from '@multiformats/dns/resolvers'
 
 export function getLocalDnsResolver (ipfsNsMap: string, kuboGateway: string): DNSResolver {
   const log = logger('basic-server:dns')
@@ -46,7 +46,7 @@ export function getLocalDnsResolver (ipfsNsMap: string, kuboGateway: string): DN
         name: domain,
         type: 16,
         TTL: 180,
-        data // should be in the format 'dnslink=/ipfs/bafkqac3imvwgy3zao5xxe3de'
+        data // should be in the format 'dnslink=/ipfs/bafyfoo'
       })
     }
 

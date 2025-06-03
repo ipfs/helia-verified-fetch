@@ -27,23 +27,23 @@ $ KUBO_BINARY=/path/to/kubo helia-interop
 # Install
 
 ```console
-$ npm i @helia/interop
+$ npm i @helia/verified-fetch-interop
 ```
 
 ## Browser `<script>` tag
 
-Loading this module through a script tag will make it's exports available as `HeliaInterop` in the global namespace.
+Loading this module through a script tag will make its exports available as `HeliaVerifiedFetchInterop` in the global namespace.
 
 ```html
-<script src="https://unpkg.com/@helia/interop/dist/index.min.js"></script>
+<script src="https://unpkg.com/@helia/verified-fetch-interop/dist/index.min.js"></script>
 ```
 
 # License
 
 Licensed under either of
 
-- Apache 2.0, ([LICENSE-APACHE](LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT ([LICENSE-MIT](LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
+- Apache 2.0, ([LICENSE-APACHE](https://github.com/ipfs/helia-verified-fetch/blob/main/packages/interop/LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT ([LICENSE-MIT](https://github.com/ipfs/helia-verified-fetch/blob/main/packages/interop/LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
 
 # Contribute
 

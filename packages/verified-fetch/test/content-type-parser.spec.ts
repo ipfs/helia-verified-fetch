@@ -28,7 +28,7 @@ describe('content-type-parser', () => {
     await stop(verifiedFetch)
   })
 
-  it('can be overriden by passing a custom contentTypeParser', async () => {
+  it('can be overridden by passing a custom contentTypeParser', async () => {
     let called = false
     const contentTypeParser = Sinon.stub().callsFake(() => {
       called = true

@@ -1,8 +1,8 @@
-import { type AbortOptions, type ComponentLogger } from '@libp2p/interface'
 import { SubdomainNotSupportedError } from '../errors.js'
-import { type VerifiedFetchInit, type Resource } from '../index.js'
 import { matchURLString } from './parse-url-string.js'
 import { movedPermanentlyResponse } from './responses.js'
+import type { VerifiedFetchInit, Resource } from '../index.js'
+import type { AbortOptions, ComponentLogger } from '@libp2p/interface'
 import type { CID } from 'multiformats/cid'
 
 interface GetRedirectResponse {
@@ -17,7 +17,7 @@ interface GetRedirectResponse {
   fetch?: typeof globalThis.fetch
 }
 
-function maybeAddTraillingSlash (path: string): string {
+function maybeAddTrailingSlash (path: string): string {
   // if it has an extension-like ending, don't add a trailing slash
   if (path.match(/\.[a-zA-Z0-9]{1,4}$/) != null) {
     return path
@@ -70,10 +70,10 @@ export async function getRedirectResponse ({ resource, options, logger, cid, fet
       return null
     }
 
-    subdomainUrl.pathname = maybeAddTraillingSlash(reqUrl.pathname.replace(`/${urlParts.cidOrPeerIdOrDnsLink}`, '').replace(`/${urlParts.protocol}`, ''))
+    subdomainUrl.pathname = maybeAddTrailingSlash(reqUrl.pathname.replace(`/${urlParts.cidOrPeerIdOrDnsLink}`, '').replace(`/${urlParts.protocol}`, ''))
     log.trace('subdomain url %s', subdomainUrl.href)
     const pathUrl = new URL(reqUrl, `${reqUrl.protocol}//${actualHost}`)
-    pathUrl.pathname = maybeAddTraillingSlash(reqUrl.pathname)
+    pathUrl.pathname = maybeAddTrailingSlash(reqUrl.pathname)
     log.trace('path url %s', pathUrl.href)
     // try to query subdomain with HEAD request to see if it's supported
     try {

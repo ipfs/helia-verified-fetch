@@ -10,6 +10,7 @@ describe('get-content-disposition-filename', () => {
 
   it('should remove non-ascii characters from filenames', () => {
     expect(
+      // spell-checker: disable-next-line
       getContentDispositionFilename('testтест.jpg')
     ).to.equal('filename="test____.jpg"; filename*=UTF-8\'\'test%D1%82%D0%B5%D1%81%D1%82.jpg')
   })

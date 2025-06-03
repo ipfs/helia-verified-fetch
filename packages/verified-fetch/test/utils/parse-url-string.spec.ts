@@ -1,7 +1,6 @@
 import { generateKeyPair } from '@libp2p/crypto/keys'
 import { defaultLogger } from '@libp2p/logger'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
-import { type Answer } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
 import { base36 } from 'multiformats/bases/base36'
 import { CID } from 'multiformats/cid'
@@ -10,6 +9,7 @@ import { parseUrlString } from '../../src/utils/parse-url-string.js'
 import { ipnsRecordStub } from '../fixtures/ipns-stubs.js'
 import type { IPNS } from '@helia/ipns'
 import type { ComponentLogger, PeerId } from '@libp2p/interface'
+import type { Answer } from '@multiformats/dns'
 import type { StubbedInstance } from 'sinon-ts'
 
 const HTTP_PROTOCOLS = [
@@ -263,6 +263,7 @@ describe('parseUrlString', () => {
     const oneHourInNanoseconds = BigInt(3600 * 1e9)
 
     it('should return the correct TTL from the DNS Answer ', async () => {
+      // spell-checker: disable-next-line
       ipns.resolveDNSLink.withArgs('newdomain.com').resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
@@ -344,6 +345,7 @@ describe('parseUrlString', () => {
 
     // tests for https://github.com/ipfs-shipyard/service-worker-gateway/issues/83 issue
     it('can parse an IPFS path with encodedURIComponents', async () => {
+      // spell-checker: disable-next-line
       const rawPathLabel = "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp"
       await assertMatchUrl(
         `/ipfs/QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr/I/${encodeURIComponent(rawPathLabel)}`, {

@@ -1,23 +1,24 @@
 import { dagCbor } from '@helia/dag-cbor'
-import { type DNSLinkResolveResult, type IPNS, type IPNSResolveResult } from '@helia/ipns'
 import { unixfs } from '@helia/unixfs'
 import { generateKeyPair } from '@libp2p/crypto/keys'
-import { stop, type ComponentLogger, type Logger } from '@libp2p/interface'
+import { stop } from '@libp2p/interface'
 import { prefixLogger, logger as libp2pLogger } from '@libp2p/logger'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
-import browserReadableStreamToIt from 'browser-readablestream-to-it'
 import { fixedSize } from 'ipfs-unixfs-importer/chunker'
-import drain from 'it-drain'
 import { CID } from 'multiformats/cid'
-import pDefer, { type DeferredPromise } from 'p-defer'
+import pDefer from 'p-defer'
 import Sinon from 'sinon'
-import { stubInterface, type StubbedInstance } from 'sinon-ts'
+import { stubInterface } from 'sinon-ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import { getAbortablePromise } from './fixtures/get-abortable-promise.js'
 import { makeAbortedRequest } from './fixtures/make-aborted-request.js'
 import type { BlockBroker, Helia } from '@helia/interface'
+import type { DNSLinkResolveResult, IPNS, IPNSResolveResult } from '@helia/ipns'
+import type { ComponentLogger, Logger } from '@libp2p/interface'
+import type { DeferredPromise } from 'p-defer'
+import type { StubbedInstance } from 'sinon-ts'
 
 describe('abort-handling', function () {
   this.timeout(500) // these tests should all fail extremely quickly. if they don't, they're not aborting properly, or they're being ran on an extremely slow machine.
@@ -231,14 +232,7 @@ describe('abort-handling', function () {
       return b
     })
 
-    const response = await makeAbortedRequest(verifiedFetch, [cid], leaf1Got.promise)
-
-    if (response.body == null) {
-      throw new Error('Body was not set')
-    }
-
-    // error occurs during streaming response
-    await expect(drain(browserReadableStreamToIt(response.body)))
+    await expect(makeAbortedRequest(verifiedFetch, [cid], leaf1Got.promise))
       .to.eventually.be.rejectedWith('aborted')
 
     // not called because parseResource never passes the resource to

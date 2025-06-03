@@ -23,7 +23,7 @@ import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
 
-describe('@helia/verifed-fetch', () => {
+describe('@helia/verified-fetch', () => {
   let helia: Helia
 
   beforeEach(async () => {
@@ -763,6 +763,7 @@ describe('@helia/verifed-fetch', () => {
 
       const fs = unixfs(helia)
       const res = await last(fs.addAll([{
+        // spell-checker: disable-next-line
         path: "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp",
         content: finalRootFileContent
       }], {

@@ -1,8 +1,9 @@
 import { kadDHT } from '@libp2p/kad-dht'
-import { libp2pDefaults, type DefaultLibp2pServices } from 'helia'
+import { libp2pDefaults } from 'helia'
 import { ipnsSelector } from 'ipns/selector'
 import { ipnsValidator } from 'ipns/validator'
-import type { ServiceFactoryMap } from './libp2p-types'
+import type { ServiceFactoryMap } from './libp2p-types.js'
+import type { DefaultLibp2pServices } from 'helia'
 import type { Libp2pOptions } from 'libp2p'
 
 type ServiceMap = Pick<DefaultLibp2pServices, 'autoNAT' | 'dcutr' | 'dht' | 'identify' | 'keychain' | 'ping' | 'upnp'>

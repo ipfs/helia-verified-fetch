@@ -1,6 +1,7 @@
-import { stubInterface, type StubbedInstance } from 'sinon-ts'
+import { stubInterface } from 'sinon-ts'
 import type { PeerId } from '@libp2p/interface'
 import type { IPNSRecord } from 'ipns'
+import type { StubbedInstance } from 'sinon-ts'
 
 export interface IpnsRecordStubOptions {
   peerId: PeerId
