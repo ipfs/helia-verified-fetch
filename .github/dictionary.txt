@@ -16,3 +16,4 @@ Cantarell
 Noto
 Consolas
 filev
+byteranges
