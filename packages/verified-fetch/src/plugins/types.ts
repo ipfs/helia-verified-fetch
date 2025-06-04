@@ -4,6 +4,7 @@ import type { ContentTypeParser, RequestFormatShorthand } from '../types.js'
 import type { ByteRangeContext } from '../utils/byte-range-context.js'
 import type { ParsedUrlStringResults } from '../utils/parse-url-string.js'
 import type { PathWalkerResponse } from '../utils/walk-path.js'
+import type { ProviderOptions } from '@helia/interface'
 import type { AbortOptions, ComponentLogger, Logger } from '@libp2p/interface'
 import type { Helia } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
@@ -18,7 +19,7 @@ import type { CustomProgressEvent } from 'progress-events'
  */
 export interface PluginOptions {
   logger: ComponentLogger
-  getBlockstore(cid: CID, resource: string | CID, useSession?: boolean, options?: AbortOptions): Blockstore
+  getBlockstore(cid: CID, resource: string | CID, useSession?: boolean, options?: AbortOptions & ProviderOptions): Blockstore
   handleServerTiming<T>(name: string, description: string, fn: () => Promise<T>, withServerTiming: boolean): Promise<T>
   contentTypeParser?: ContentTypeParser
   helia: Helia
@@ -42,7 +43,7 @@ export interface PluginContext extends ParsedUrlStringResults {
   modified: number
   withServerTiming?: boolean
   onProgress?(evt: CustomProgressEvent<any>): void
-  options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
+  options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions & ProviderOptions
   isDirectory?: boolean
   directoryEntries?: UnixFSEntry[]
   errors?: PluginError[]
