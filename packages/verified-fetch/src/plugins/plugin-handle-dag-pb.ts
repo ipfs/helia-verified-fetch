@@ -66,6 +66,7 @@ export class DagPbPlugin extends BasePlugin {
     const terminalElement = pathDetails.terminalElement
     let resolvedCID = terminalElement.cid
 
+    const blockstore = getBlockstore(context.cid, context.resource, options?.session ?? true, options)
     if (terminalElement?.type === 'directory') {
       const dirCid = terminalElement.cid
       const redirectUrl = this.getRedirectUrl(context)
@@ -107,7 +108,7 @@ export class DagPbPlugin extends BasePlugin {
         context.directoryEntries = []
         context.modified++
         this.log.trace('attempting to get directory entries because index.html was not found')
-        const fs = unixfs({ ...helia, blockstore: getBlockstore(context.cid, context.resource, options?.session ?? true, options) })
+        const fs = unixfs({ ...helia, blockstore })
         try {
           for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress })) {
             context.directoryEntries.push(dirItem)
@@ -134,7 +135,7 @@ export class DagPbPlugin extends BasePlugin {
     log.trace('calling exporter for %c/%s with offset=%o & length=%o', resolvedCID, path, offset, length)
 
     try {
-      const entry = await handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, helia.blockstore, {
+      const entry = await handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, blockstore, {
         signal: options?.signal,
         onProgress: options?.onProgress
       }), withServerTiming)
