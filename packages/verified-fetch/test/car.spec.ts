@@ -48,7 +48,10 @@ describe('car files', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
     expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${cid.toString()}.car"`)
     const buf = new Uint8Array(await resp.arrayBuffer())
-
+    const reader = await CarReader.fromBytes(buf)
+    expect(await reader.getRoots()).to.deep.equal([cid])
+    expect(await itAll(reader.cids())).to.deep.equal([cid])
+    expect(await itAll(reader.blocks())).to.have.lengthOf(1)
     expect(buf).to.equalBytes(await writer.bytes())
   })
 
@@ -145,8 +148,8 @@ describe('car files', () => {
 
       expect(await reader.getRoots()).to.deep.equal([nestedCid2])
       // duplicates are not removed
-      expect(await itAll(reader.cids())).to.deep.equal([cid, cid, nestedCid2])
-      expect(await itAll(reader.blocks())).to.have.lengthOf(3)
+      expect(await itAll(reader.cids())).to.deep.equal([cid, nestedCid2])
+      expect(await itAll(reader.blocks())).to.have.lengthOf(2)
     })
 
     it('dag-scope=entity returns only the root block', async () => {
@@ -243,8 +246,8 @@ describe('car files', () => {
       const reader = await CarReader.fromBytes(buf)
 
       expect(await reader.getRoots()).to.deep.equal([fileCid])
-      // contains root and file blocks, duplicate root block
-      expect(await itAll(reader.cids())).to.deep.equal([rootCid, rootCid, fileCid])
+      // contains root and file blocks
+      expect(await itAll(reader.cids())).to.deep.equal([rootCid, fileCid])
     })
 
     it('dag-scope=entity for multi-block file returns all blocks for that entity', async () => {
@@ -259,7 +262,7 @@ describe('car files', () => {
 
       expect(await reader.getRoots()).to.deep.equal([fileCid])
       // contains root and all large file blocks
-      expect(await itAll(reader.cids())).to.deep.equal([rootCid, rootCid, fileCid, ...fileChunkCids])
+      expect(await itAll(reader.cids())).to.deep.equal([rootCid, fileCid, ...fileChunkCids])
     })
 
     it('dag-scope=entity returns a directory and its content', async () => {
@@ -274,7 +277,7 @@ describe('car files', () => {
 
       expect(await reader.getRoots()).to.deep.equal([nestedFolderCid])
       // contains verification blocks and full entity contents for the directory
-      expect(await itAll(reader.cids())).to.deep.equal([rootCid, rootCid, nestedFolderCid, nestedFileCid])
+      expect(await itAll(reader.cids())).to.deep.equal([rootCid, nestedFolderCid, nestedFileCid])
     })
   })
 })
