@@ -147,7 +147,6 @@ describe('car files', () => {
       const reader = await CarReader.fromBytes(buf)
 
       expect(await reader.getRoots()).to.deep.equal([nestedCid2])
-      // duplicates are not removed
       expect(await itAll(reader.cids())).to.deep.equal([cid, nestedCid2])
       expect(await itAll(reader.blocks())).to.have.lengthOf(2)
     })
