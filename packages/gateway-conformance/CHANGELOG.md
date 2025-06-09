@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-gateway-conformance-v1.4.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.4.0...@helia/verified-fetch-gateway-conformance-1.4.1) (2025-06-09)
+
+### Bug Fixes
+
+* do not duplicate root block in car files ([#252](https://github.com/ipfs/helia-verified-fetch/issues/252)) ([2ca5a04](https://github.com/ipfs/helia-verified-fetch/commit/2ca5a04403338681ce89be4eb9b085ed1c369519))
+
 ## [@helia/verified-fetch-gateway-conformance-v1.4.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.3.2...@helia/verified-fetch-gateway-conformance-1.4.0) (2025-06-03)
 
 ### Features
