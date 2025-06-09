@@ -65,7 +65,7 @@ export class CarPlugin extends BasePlugin {
     })
     const ipfsRootsWithoutDagRoot = pathDetails.ipfsRoots.filter(pathCid => !pathCid.equals(cid))
     const carExportOptions: ExportCarOptions = {
-      ...options,
+      ...options
     }
     if (ipfsRootsWithoutDagRoot.length > 0) {
       carExportOptions.traversal = new CIDPath(ipfsRootsWithoutDagRoot)
