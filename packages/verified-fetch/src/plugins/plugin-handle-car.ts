@@ -63,9 +63,12 @@ export class CarPlugin extends BasePlugin {
       getCodec: helia.getCodec,
       logger: helia.logger
     })
+    const ipfsRootsWithoutDagRoot = pathDetails.ipfsRoots.filter(pathCid => !pathCid.equals(cid))
     const carExportOptions: ExportCarOptions = {
-      ...options,
-      traversal: new CIDPath(pathDetails.ipfsRoots)
+      ...options
+    }
+    if (ipfsRootsWithoutDagRoot.length > 0) {
+      carExportOptions.traversal = new CIDPath(ipfsRootsWithoutDagRoot)
     }
     const dagScope = getDagScope(context)
     // root should be the terminal element if it exists, otherwise the root cid.. because of this, we can't use the @helia/car stream() method.
