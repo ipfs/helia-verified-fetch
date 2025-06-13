@@ -220,6 +220,7 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
   })
 
   server.listen(serverPort, () => {
+    // eslint-disable-next-line no-console
     console.log(`Basic server listening on port ${serverPort}`)
   })
 

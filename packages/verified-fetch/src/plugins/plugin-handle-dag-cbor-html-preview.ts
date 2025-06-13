@@ -1,15 +1,12 @@
 import * as ipldDagCbor from '@ipld/dag-cbor'
-import * as ipldDagJson from '@ipld/dag-json'
-import { dagCborToSafeJSON } from '../utils/dag-cbor-to-safe-json.js'
-import { getIpfsRoots, setIpfsRoots } from '../utils/response-headers.js'
-import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
+import { CID } from 'multiformats/cid'
+import { isLink } from 'multiformats/link'
+import { getETag } from '../utils/get-e-tag.js'
+import { getIpfsRoots } from '../utils/response-headers.js'
 import { isObjectNode } from '../utils/walk-path.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext, VerifiedFetchPluginFactory } from './types.js'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
-import { getETag } from '../utils/get-e-tag.js'
-import { CID } from 'multiformats/cid'
-import { isLink } from 'multiformats/link'
 
 /**
  * Handles `dag-cbor` content where the Accept: `text/html` header is present.
@@ -38,7 +35,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>> & { pathDetails: { terminalElement: ObjectNode } }): Promise<Response> {
-    const { cid, path, resource, accept, pathDetails: { terminalElement, ipfsRoots } } = context
+    const { cid, path, pathDetails: { terminalElement, ipfsRoots } } = context
     this.log.trace('generating html preview for %c/%s', cid, path)
 
     const block = terminalElement.node
@@ -60,12 +57,12 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
         'Content-Type': 'text/html',
         'X-Ipfs-Roots': getIpfsRoots(ipfsRoots),
         'Cache-Control': 'public, max-age=604800, stale-while-revalidate=2678400',
-        'Etag': getETag({ cid, reqFormat: context.reqFormat, contentPrefix: 'DirIndex-' })
-      },
+        Etag: getETag({ cid, reqFormat: context.reqFormat, contentPrefix: 'DirIndex-' })
+      }
     })
   }
 
-  getHtml({ path, obj, cid }: { path: string, obj: Record<string, any>, cid: CID }): string {
+  getHtml ({ path, obj, cid }: { path: string, obj: Record<string, any>, cid: CID }): string {
     const style = `
       :root {
         --sans-serif: "Plex", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
@@ -209,7 +206,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
   </html>`
   }
 
-  valueHTML(value: any, link: string | null): string {
+  valueHTML (value: any, link: string | null): string {
     let valueString: string
     const isALinkObject = isLink(value)
     if (!isALinkObject && typeof value !== 'string') {
@@ -226,34 +223,40 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
     return valueCodeBlock
   }
 
-  private isPrimitive(value: unknown): boolean {
+  private isPrimitive (value: unknown): boolean {
     return value === null ||
-           value === undefined ||
-           typeof value === 'string' ||
-           typeof value === 'number' ||
-           typeof value === 'boolean' ||
-           typeof value === 'bigint' ||
-           typeof value === 'symbol'
+      value === undefined ||
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      typeof value === 'bigint' ||
+      typeof value === 'symbol'
   }
 
-  renderRows(obj: Record<string, any>, currentPath: string = ''): string {
+  private renderValue (key: string, value: any, currentPath: string): string {
+    let rows = ''
+    value.forEach((item: any, idx: number) => {
+      const itemPath = currentPath ? `${currentPath}/${key}/${idx}` : `${key}/${idx}`
+      rows += `<div>${this.valueHTML(idx, null)}</div>`
+      if (this.isPrimitive(item)) {
+        rows += `<div>${this.valueHTML(item, itemPath)}</div>`
+      } else {
+        rows += '<div class="grid dag">'
+        rows += this.renderRows(item, itemPath)
+        rows += '</div>'
+      }
+    })
+    return rows
+  }
+
+  renderRows (obj: Record<string, any>, currentPath: string = ''): string {
     let rows = ''
     for (const [key, value] of Object.entries(obj)) {
       if (Array.isArray(value)) {
         rows += `<div>${key}</div>`
-        rows += `<div class="grid dag">`
-        value.forEach((item, idx) => {
-            const itemPath = currentPath ? `${currentPath}/${key}/${idx}` : `${key}/${idx}`
-            rows += `<div>${this.valueHTML(idx, null)}</div>`
-            if (this.isPrimitive(item)) {
-              rows += `<div>${this.valueHTML(item, itemPath)}</div>`
-            } else {
-              rows += `<div class="grid dag">`
-              rows += this.renderRows(item, itemPath)
-              rows += `</div>`
-            }
-        })
-        rows += `</div>`
+        rows += '<div class="grid dag">'
+        rows += this.renderValue(key, value, currentPath)
+        rows += '</div>'
       } else {
         const valuePath = currentPath ? `${currentPath}/${key}` : key
         rows += `<div>${key}</div><div>${this.valueHTML(value, valuePath)}</div>`
