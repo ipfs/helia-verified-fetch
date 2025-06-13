@@ -706,7 +706,7 @@
  *
  * This plugin is used to serve the requested dag-cbor object as HTML when the Accept header includes `text/html`.
  *
- * @example - Using the plugins
+ * @example Using the plugins
  *
  * ```typescript
  * import { createVerifiedFetch } from '@helia/verified-fetch'

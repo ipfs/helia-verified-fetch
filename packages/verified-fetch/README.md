@@ -738,7 +738,7 @@ This plugin is used to serve dag-pb/unixfs without an `index.html` child as HTML
 
 This plugin is used to serve the requested dag-cbor object as HTML when the Accept header includes `text/html`.
 
-## Example - - Using the plugins
+## Example - Using the plugins
 
 ```typescript
 import { createVerifiedFetch } from '@helia/verified-fetch'
