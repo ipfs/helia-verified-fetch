@@ -7,6 +7,36 @@ import { isObjectNode } from '../utils/walk-path.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext, VerifiedFetchPluginFactory } from './types.js'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
+import { base32 } from 'multiformats/bases/base32'
+import { sha256 } from 'multiformats/hashes/sha2'
+
+
+function isPrimitive (value: unknown): boolean {
+  return value === null ||
+    value === undefined ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint' ||
+    typeof value === 'symbol'
+}
+
+/**
+ * Converts a cborObject and it's children into a small hash that can be used in the etag header.
+ *
+ * @see https://github.com/ipfs/boxo/blob/dc60fe747c375c631a92fcfd6c7456f44a760d24/gateway/assets/assets.go#L84
+ * @see https://github.com/ipfs/boxo/blob/dc60fe747c375c631a92fcfd6c7456f44a760d24/gateway/handler_unixfs_dir.go#L233-L235
+ */
+async function getAssetHash (cborObject: Record<string, any>): Promise<string> {
+  const entryDetails = Object.entries(cborObject).reduce((acc, [key, value]) => {
+    if (isPrimitive(value)) {
+      return `${acc}${key}${value}`
+    }
+    return `${acc}${key}${getAssetHash(value)}`
+  }, '')
+  const hashBytes = await sha256.encode(new TextEncoder().encode(entryDetails))
+  return base32.encode(hashBytes)
+}
 
 /**
  * Handles `dag-cbor` content where the Accept: `text/html` header is present.
@@ -57,7 +87,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
         'Content-Type': 'text/html',
         'X-Ipfs-Roots': getIpfsRoots(ipfsRoots),
         'Cache-Control': 'public, max-age=604800, stale-while-revalidate=2678400',
-        Etag: getETag({ cid, reqFormat: context.reqFormat, contentPrefix: 'DirIndex-' })
+        Etag: getETag({ cid, reqFormat: context.reqFormat, contentPrefix: `DirIndex-${await getAssetHash(obj)}_CID-`, weak: true })
       }
     })
   }
@@ -223,22 +253,12 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
     return valueCodeBlock
   }
 
-  private isPrimitive (value: unknown): boolean {
-    return value === null ||
-      value === undefined ||
-      typeof value === 'string' ||
-      typeof value === 'number' ||
-      typeof value === 'boolean' ||
-      typeof value === 'bigint' ||
-      typeof value === 'symbol'
-  }
-
   private renderValue (key: string, value: any, currentPath: string): string {
     let rows = ''
     value.forEach((item: any, idx: number) => {
       const itemPath = currentPath ? `${currentPath}/${key}/${idx}` : `${key}/${idx}`
       rows += `<div>${this.valueHTML(idx, null)}</div>`
-      if (this.isPrimitive(item)) {
+      if (isPrimitive(item)) {
         rows += `<div>${this.valueHTML(item, itemPath)}</div>`
       } else {
         rows += '<div class="grid dag">'
