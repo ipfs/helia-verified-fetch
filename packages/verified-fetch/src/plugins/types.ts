@@ -35,6 +35,11 @@ export interface PluginContext extends ParsedUrlStringResults {
   readonly path: string
   readonly resource: string
   readonly accept?: string
+
+  /**
+   * An array of plugin IDs that are all enabled. You can use this to check if a plugin is enabled and respond accordingly.
+   */
+  plugins: string[]
   /**
    * The last time the context is modified, so we know whether a plugin has modified it.
    * A plugin should increment this value if it modifies the context.
