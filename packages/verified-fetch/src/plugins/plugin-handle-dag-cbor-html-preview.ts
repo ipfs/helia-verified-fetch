@@ -1,5 +1,7 @@
 import * as ipldDagCbor from '@ipld/dag-cbor'
+import { base32 } from 'multiformats/bases/base32'
 import { CID } from 'multiformats/cid'
+import { sha256 } from 'multiformats/hashes/sha2'
 import { isLink } from 'multiformats/link'
 import { getETag } from '../utils/get-e-tag.js'
 import { getIpfsRoots } from '../utils/response-headers.js'
@@ -7,9 +9,6 @@ import { isObjectNode } from '../utils/walk-path.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext, VerifiedFetchPluginFactory } from './types.js'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
-import { base32 } from 'multiformats/bases/base32'
-import { sha256 } from 'multiformats/hashes/sha2'
-
 
 function isPrimitive (value: unknown): boolean {
   return value === null ||
