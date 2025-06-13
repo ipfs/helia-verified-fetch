@@ -15,7 +15,7 @@ export class DagCborPlugin extends BasePlugin {
   readonly id = 'dag-cbor-plugin'
   readonly codes = [ipldDagCbor.code]
 
-  canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {
+  canHandle ({ cid, accept, pathDetails, byteRangeContext, plugins }: PluginContext): boolean {
     this.log('checking if we can handle %c with accept %s', cid, accept)
     if (pathDetails == null) {
       return false
@@ -30,16 +30,18 @@ export class DagCborPlugin extends BasePlugin {
       return false
     }
 
+    if (accept != null && accept.includes('text/html') && plugins.includes('dag-cbor-plugin-html-preview')) {
+      // let the dag-cbor-html-preview plugin handle it
+      return false
+    }
+
     return isObjectNode(pathDetails.terminalElement)
   }
 
-  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>): Promise<Response> {
-    const { cid, path, resource, accept, pathDetails } = context
+  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>> & { pathDetails: { terminalElement: ObjectNode } }): Promise<Response> {
+    const { cid, path, resource, accept, pathDetails: { terminalElement, ipfsRoots } } = context
 
     this.log.trace('fetching %c/%s', cid, path)
-
-    const ipfsRoots = pathDetails.ipfsRoots
-    const terminalElement = pathDetails.terminalElement as ObjectNode // checked in canHandle fn.
 
     const block = terminalElement.node
 

@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 import { trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
 import { httpGatewayRouting } from '@helia/routers'
-import { dirIndexHtmlPluginFactory } from '@helia/verified-fetch/plugins'
+import { dagCborHtmlPreviewPluginFactory, dirIndexHtmlPluginFactory } from '@helia/verified-fetch/plugins'
 import { logger } from '@libp2p/logger'
 import { dns } from '@multiformats/dns'
 import { MemoryBlockstore } from 'blockstore-core'
@@ -196,7 +196,7 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
   const helia = await createHelia({ gateways: [kuboGateway], dnsResolvers: [localDnsResolver], blockstore, datastore })
 
   const verifiedFetch = await createVerifiedFetch(helia, {
-    plugins: [dirIndexHtmlPluginFactory]
+    plugins: [dirIndexHtmlPluginFactory, dagCborHtmlPreviewPluginFactory]
   })
 
   const server = createServer((req, res) => {
@@ -220,7 +220,8 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
   })
 
   server.listen(serverPort, () => {
-    log(`Basic server listening on port ${serverPort}`)
+    // eslint-disable-next-line no-console
+    console.log(`Basic server listening on port ${serverPort}`)
   })
 
   return async () => {
