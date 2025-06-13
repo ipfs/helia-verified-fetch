@@ -181,7 +181,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
       <meta name="description" content="Content-addressed dag-cbor document hosted on IPFS.">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlo89/56ZQ/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACUjDu1lo89/6mhTP+zrVP/nplD/5+aRK8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHNiIS6Wjz3/ubFY/761W/+vp1D/urRZ/8vDZf/GvmH/nplD/1BNIm8AAAAAAAAAAAAAAAAAAAAAAAAAAJaPPf+knEj/vrVb/761W/++tVv/r6dQ/7q0Wf/Lw2X/y8Nl/8vDZf+tpk7/nplD/wAAAAAAAAAAAAAAAJaPPf+2rVX/vrVb/761W/++tVv/vrVb/6+nUP+6tFn/y8Nl/8vDZf/Lw2X/y8Nl/8G6Xv+emUP/AAAAAAAAAACWjz3/vrVb/761W/++tVv/vrVb/761W/+vp1D/urRZ/8vDZf/Lw2X/y8Nl/8vDZf/Lw2X/nplD/wAAAAAAAAAAlo89/761W/++tVv/vrVb/761W/++tVv/r6dQ/7q0Wf/Lw2X/y8Nl/8vDZf/Lw2X/y8Nl/56ZQ/8AAAAAAAAAAJaPPf++tVv/vrVb/761W/++tVv/vbRa/5aPPf+emUP/y8Nl/8vDZf/Lw2X/y8Nl/8vDZf+emUP/AAAAAAAAAACWjz3/vrVb/761W/++tVv/vrVb/5qTQP+inkb/op5G/6KdRv/Lw2X/y8Nl/8vDZf/Lw2X/nplD/wAAAAAAAAAAlo89/761W/++tVv/sqlS/56ZQ//LxWb/0Mlp/9DJaf/Kw2X/oJtE/7+3XP/Lw2X/y8Nl/56ZQ/8AAAAAAAAAAJaPPf+9tFr/mJE+/7GsUv/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav+xrFL/nplD/8vDZf+emUP/AAAAAAAAAACWjz3/op5G/9HKav/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav+inkb/nplD/wAAAAAAAAAAAAAAAKKeRv+3slb/0cpq/9HKav/Rymr/0cpq/9HKav/Rymr/0cpq/9HKav+1sFX/op5G/wAAAAAAAAAAAAAAAAAAAAAAAAAAop5GUKKeRv/Nxmf/0cpq/9HKav/Rymr/0cpq/83GZ/+inkb/op5GSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAop5G16KeRv/LxWb/y8Vm/6KeRv+inkaPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAop5G/6KeRtcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/n8AAPgfAADwDwAAwAMAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAIABAACAAQAAwAMAAPAPAAD4HwAA/n8AAA==">
-      <title>${path}</title>
+      <title>${cid.toString()} DAG-CBOR Preview</title>
       <style>${style}</style>
     </head>
     <body>
@@ -201,7 +201,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
         <section>
           <header><strong>DAG-CBOR Preview</strong></header>
           <div class="grid dag">
-            ${this.renderRows(obj)}
+            ${this.renderRows(obj, path)}
           </div>
         </section>
       </main>
@@ -210,33 +210,57 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
   }
 
   valueHTML(value: any, link: string | null): string {
-    const valueCodeBlock = `<code class="nowrap">${value}</code>`
-    if (isLink(value) && link != null) {
-      return `<a class="ipfs-hash" href="${link}">${valueCodeBlock}</a>`
+    let valueString: string
+    const isALinkObject = isLink(value)
+    if (!isALinkObject && typeof value !== 'string') {
+      valueString = JSON.stringify(value)
+    } else {
+      // it can be a string or a link object.. call .toString() on it
+      valueString = value.toString()
+    }
+    const valueCodeBlock = `<code class="nowrap">${valueString}</code>`
+    if (isALinkObject && link != null) {
+      return `<a class="ipfs-hash" href="/${link}">${valueCodeBlock}</a>`
     }
 
     return valueCodeBlock
   }
 
-  renderRows(obj: Record<string, any>): string {
-      let rows = ''
-      for (const [key, value] of Object.entries(obj)) {
-        if (Array.isArray(value)) {
-          rows += `<div>${key}</div>`
-          rows += `<div class="grid dag">`
-          value.forEach((item, idx) => {
-            rows += `
-              <div>${this.valueHTML(idx, null)}</div>
-              <div>${this.valueHTML(item, `${key}/${idx}`)}</div>
-              `
-          })
-          rows += `</div>`
-        } else {
-          rows += `<div>${key}</div><div>${this.valueHTML(value, key)}</div>`
-        }
+  private isPrimitive(value: unknown): boolean {
+    return value === null ||
+           value === undefined ||
+           typeof value === 'string' ||
+           typeof value === 'number' ||
+           typeof value === 'boolean' ||
+           typeof value === 'bigint' ||
+           typeof value === 'symbol'
+  }
+
+  renderRows(obj: Record<string, any>, currentPath: string = ''): string {
+    let rows = ''
+    for (const [key, value] of Object.entries(obj)) {
+      if (Array.isArray(value)) {
+        rows += `<div>${key}</div>`
+        rows += `<div class="grid dag">`
+        value.forEach((item, idx) => {
+            const itemPath = currentPath ? `${currentPath}/${key}/${idx}` : `${key}/${idx}`
+            rows += `<div>${this.valueHTML(idx, null)}</div>`
+            if (this.isPrimitive(item)) {
+              rows += `<div>${this.valueHTML(item, itemPath)}</div>`
+            } else {
+              rows += `<div class="grid dag">`
+              rows += this.renderRows(item, itemPath)
+              rows += `</div>`
+            }
+        })
+        rows += `</div>`
+      } else {
+        const valuePath = currentPath ? `${currentPath}/${key}` : key
+        rows += `<div>${key}</div><div>${this.valueHTML(value, valuePath)}</div>`
       }
-      return rows
     }
+    return rows
+  }
 }
 
 export const dagCborHtmlPreviewPluginFactory: VerifiedFetchPluginFactory = (opts) => new DagCborHtmlPreviewPlugin(opts)
