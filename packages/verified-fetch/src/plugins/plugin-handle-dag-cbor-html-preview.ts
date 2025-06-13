@@ -28,13 +28,19 @@ function isPrimitive (value: unknown): boolean {
  * @see https://github.com/ipfs/boxo/blob/dc60fe747c375c631a92fcfd6c7456f44a760d24/gateway/handler_unixfs_dir.go#L233-L235
  */
 async function getAssetHash (cborObject: Record<string, any>): Promise<string> {
+  /**
+   * Plugin Version represents a "version of gateway implementation" that allows for cache busting if necessary.
+   *
+   * @see https://specs.ipfs.tech/http-gateways/path-gateway/#etag-response-header
+   */
+  const pluginVersion = '0.0.1'
   const entryDetails = Object.entries(cborObject).reduce((acc, [key, value]) => {
     if (isPrimitive(value)) {
       return `${acc}${key}${value}`
     }
     return `${acc}${key}${getAssetHash(value)}`
   }, '')
-  const hashBytes = await sha256.encode(new TextEncoder().encode(entryDetails))
+  const hashBytes = await sha256.encode(new TextEncoder().encode(pluginVersion + entryDetails))
   return base32.encode(hashBytes)
 }
 
@@ -87,7 +93,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
         'Content-Type': 'text/html',
         'X-Ipfs-Roots': getIpfsRoots(ipfsRoots),
         'Cache-Control': 'public, max-age=604800, stale-while-revalidate=2678400',
-        Etag: getETag({ cid, reqFormat: context.reqFormat, contentPrefix: `DirIndex-${await getAssetHash(obj)}_CID-`, weak: true })
+        Etag: getETag({ cid, reqFormat: context.reqFormat, contentPrefix: `DirIndex-${await getAssetHash(obj)}_CID-` })
       }
     })
   }
