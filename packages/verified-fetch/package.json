@@ -217,7 +217,7 @@
     "it-to-buffer": "^4.0.9",
     "magic-bytes.js": "^1.12.1",
     "p-defer": "^4.0.1",
-    "sinon": "^20.0.0",
+    "sinon": "^21.0.0",
     "sinon-ts": "^2.0.0"
   },
   "browser": {
