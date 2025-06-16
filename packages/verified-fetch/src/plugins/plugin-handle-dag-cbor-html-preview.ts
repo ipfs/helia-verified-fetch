@@ -92,7 +92,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
         'Content-Type': 'text/html',
         'X-Ipfs-Roots': getIpfsRoots(ipfsRoots),
         'Cache-Control': 'public, max-age=604800, stale-while-revalidate=2678400',
-        Etag: getETag({ cid, reqFormat: context.reqFormat, contentPrefix: `DirIndex-${await getAssetHash(obj)}_CID-` })
+        Etag: getETag({ cid, reqFormat: context.reqFormat, contentPrefix: `DagIndex-${await getAssetHash(obj)}_CID-` })
       }
     })
   }
