@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v3.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.1.1...@helia/verified-fetch-3.2.0) (2025-06-17)
+
+### Features
+
+* add dag-cbor HTML preview plugin ([#256](https://github.com/ipfs/helia-verified-fetch/issues/256)) ([8761a3a](https://github.com/ipfs/helia-verified-fetch/commit/8761a3a2e451da3c58d71ac3c22ac1bd390bb884))
+
 ## [@helia/verified-fetch-v3.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.1.0...@helia/verified-fetch-3.1.1) (2025-06-09)
 
 ### Bug Fixes
