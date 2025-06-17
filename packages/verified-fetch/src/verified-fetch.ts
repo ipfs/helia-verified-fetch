@@ -377,7 +377,8 @@ export class VerifiedFetch {
       options,
       withServerTiming,
       onProgress: options?.onProgress,
-      modified: 0
+      modified: 0,
+      plugins: this.plugins.map(p => p.id)
     }
 
     this.log.trace('finding handler for cid code "%s" and response content type "%s"', parsedResult.cid.code, responseContentType)

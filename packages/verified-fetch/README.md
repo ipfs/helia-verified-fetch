@@ -664,6 +664,8 @@ Verified‑fetch can now be extended to alter how it handles requests by using p
 Plugins are classes that extend the `BasePlugin` class and implement the `VerifiedFetchPlugin`
 interface. They are instantiated with `PluginOptions` when the `VerifiedFetch` class is created.
 
+### Plugin Interface
+
 Each plugin must implement two methods:
 
 - **`canHandle(context: PluginContext): boolean`**
@@ -677,6 +679,8 @@ Each plugin must implement two methods:
     (for example, by performing path walking or decoding) and the pipeline should continue.
   - **Throw a `PluginError`**: This logs a non-fatal error and continues the pipeline.
   - **Throw a `PluginFatalError`**: This logs a fatal error and stops the pipeline immediately.
+
+### Plugin Pipeline
 
 Plugins are executed in a chain (a **plugin pipeline**):
 
@@ -723,6 +727,29 @@ flowchart TD
 Please see the original discussion on extensibility in [Issue #167](https://github.com/ipfs/helia-verified-fetch/issues/167).
 
 ***
+
+### Non-default plugins provided by this library
+
+#### `dir-index-html-plugin`
+
+This plugin is used to serve dag-pb/unixfs without an `index.html` child as HTML directory listing of the content requested.
+
+#### `dag-cbor-html-preview-plugin`
+
+This plugin is used to serve the requested dag-cbor object as HTML when the Accept header includes `text/html`.
+
+## Example - Using the plugins
+
+```typescript
+import { createVerifiedFetch } from '@helia/verified-fetch'
+import { dagCborHtmlPreviewPluginFactory, dirIndexHtmlPluginFactory } from '@helia/verified-fetch/plugins'
+import { createHelia } from 'helia'
+
+const helia = await createHelia()
+const fetch = await createVerifiedFetch(helia, {
+  plugins: [dagCborHtmlPreviewPluginFactory, dirIndexHtmlPluginFactory, ]
+})
+```
 
 ### Extending Verified‑Fetch with Custom Plugins
 
