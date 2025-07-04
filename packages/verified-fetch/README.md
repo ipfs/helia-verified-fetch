@@ -537,6 +537,26 @@ console.info(res.redirected) // false
 console.info(res.headers.get('location')) // ipfs://bafyfoo/path/to/dir/
 ```
 
+## Example - Provider Hints
+
+**Experimental Feature behind Flag**
+
+Provider hints allow the client to attempt these hints as potential content providers as an extension of the content discovery systems in use.
+
+This feature is currently behind a flag and experimental while its wide adoption is discussed in [IPIP-504](https://github.com/ipfs/specs/pull/504).
+
+```typescript
+
+import { verifiedFetch } from '@helia/verified-fetch'
+
+const provider = '/dns/provider-server.io/tcp/443/https'
+const res = await verifiedFetch(`ipfs://bafyfoo?provider=${provider}`, {
+  redirect: 'manual',
+  allowProviderParameter: true
+})
+console.info(res.status) // 200
+```
+
 ## Comparison to fetch
 
 This module attempts to act as similarly to the `fetch()` API as possible.
