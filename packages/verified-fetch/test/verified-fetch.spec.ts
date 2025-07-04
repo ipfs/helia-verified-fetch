@@ -787,7 +787,9 @@ describe('@helia/verified-fetch', () => {
 
   describe('?providers', () => {
     // Mocked provider multiaddr
-    const provider = '/dns4/provider-server.io/tcp/443/https'
+    const provider = '/dns/provider-server.io/tcp/443/https'
+    const httpProvider = 'https://provider-server.io'
+
     const sandbox = Sinon.createSandbox()
     /**
      * Used as promise to pass to guarantee block broker was called
@@ -809,17 +811,21 @@ describe('@helia/verified-fetch', () => {
        * Stubbed networking components
        */
       blockBrokerRetrieveCalledWithProviders = pDefer()
-      blockRetriever = stubInterface<Required<Pick<BlockBroker, 'retrieve' | 'createSession'>>>({
-        retrieve: sandbox.stub().callsFake(async (cid, options) => {
-          blockBrokerRetrieveCalledWithProviders.resolve(options.providers || [])
 
-          // attempt to read from the provider
-          // eslint-disable-next-line
-          const stringProviders = options.providers.map((p: import('@multiformats/multiaddr').Multiaddr) => p.toString())
-          if (stringProviders.includes(provider)) {
-            return helia.blockstore.get(cid, options)
-          }
-        }),
+      // Stubbed retrieve function
+      async function retrieve (cid: CID, options: { providers: import('@multiformats/multiaddr').Multiaddr[] }): Promise<Uint8Array> {
+        blockBrokerRetrieveCalledWithProviders.resolve(options.providers || [])
+
+        // attempt to read from the provider
+        const stringProviders = options.providers?.map((p: import('@multiformats/multiaddr').Multiaddr) => p.toString()) || []
+        if (!stringProviders.includes(provider)) {
+          throw new Error(`No provider found for ${cid} in ${stringProviders.join(', ')}`)
+        }
+        return helia.blockstore.get(cid, options)
+      }
+
+      blockRetriever = stubInterface<Required<Pick<BlockBroker, 'retrieve' | 'createSession'>>>({
+        retrieve,
         createSession: () => {
           return blockRetriever
         }
@@ -898,6 +904,28 @@ describe('@helia/verified-fetch', () => {
       for (const p of providers) {
         expect(received).to.include(p)
       }
+    })
+
+    it('should return raw data from a HTTP provider', async () => {
+      const rawData = new Uint8Array([0x01, 0x02, 0x03])
+      const cid = CID.createV1(raw.code, await sha256.digest(rawData))
+      // Add raw data to helia (provider instance), which will be called by
+      // broker retriever
+      await helia.blockstore.put(cid, rawData)
+
+      const resp = await stubbedVerifiedFetch.fetch(`ipfs://${cid}?provider=${httpProvider}`, {
+        allowProviderParameter: true
+      })
+      expect(resp).to.be.ok()
+      expect(resp.status).to.equal(200)
+      expect(resp.statusText).to.equal('OK')
+      const data = await resp.arrayBuffer()
+      expect(new Uint8Array(data)).to.equalBytes(rawData)
+
+      // Verify block broker is called with providers
+      const providerParams = await blockBrokerRetrieveCalledWithProviders.promise
+      expect(providerParams.length).to.equal(1)
+      expect(providerParams[0].toString()).to.equal(provider)
     })
 
     it('should not pass providers unless allowProviderParameter option is set', async () => {

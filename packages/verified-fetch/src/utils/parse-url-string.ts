@@ -299,21 +299,38 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
     const queryParts = queryString.split('&')
     for (const part of queryParts) {
       const [key, value] = part.split('=')
-      // see https://github.com/vasco-santos/provider-hinted-uri
+      // see https://github.com/ipfs/specs/pull/504
       // provider is a special case, the parameter MAY be repeated
-      if (key === 'provider') {
-        if (query[key] == null) {
-          query[key] = []
-        }
-        const decodedValue = decodeURIComponent(value)
+      // if not provider just decode the value and keep iterating
+      if (key !== 'provider') {
+        query[key] = decodeURIComponent(value)
+
+        continue
+      }
+      if (query[key] == null) {
+        query[key] = []
+      }
+      const decodedValue = decodeURIComponent(value)
+      // if the provider value starts with /, it is a multiaddr
+      // otherwise it is a HTTP URL string
+      if (decodedValue.startsWith('/')) {
         try {
           // Must be a multiaddr to be used as Hint
           const m = multiaddr(decodedValue)
           providers.push(m)
           ;(query[key] as string[]).push(decodedValue)
-        } catch {}
+        } catch {
+          // Ignore invalid multiaddr
+        }
       } else {
-        query[key] = decodeURIComponent(value)
+        try {
+          const url = new URL(decodedValue)
+          const m = multiaddr(`/dns/${url.hostname}/tcp/${url.port || 443}/${url.protocol.replace(':', '')}`)
+          providers.push(m)
+          ;(query[key] as string[]).push(decodedValue)
+        } catch {
+          // Ignore invalid URL
+        }
       }
     }
 

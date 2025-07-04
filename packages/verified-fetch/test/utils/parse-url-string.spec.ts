@@ -205,6 +205,24 @@ describe('parseUrlString', () => {
         }
       )
     })
+
+    it('can parse URL with CID+queryString where query string has providers, and one is http url string', async () => {
+      const providers = [
+        '/dns4/provider-server.io/tcp/443/https',
+        'https://provider2-server.io'
+      ]
+      await assertMatchUrl(
+        `ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm?format=tar&provider=${providers[0]}&provider=${providers[1]}`, {
+          protocol: 'ipfs',
+          cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
+          path: '',
+          query: {
+            format: 'tar',
+            provider: [providers[0], providers[1]]
+          }
+        }
+      )
+    })
   })
 
   describe('ipns://<dnsLinkDomain> URLs', () => {
