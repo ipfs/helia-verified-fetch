@@ -165,7 +165,7 @@ export const dirIndexHtml = (dir: UnixFSEntry, items: UnixFSEntry[], { gatewayUR
     },
     listing: items.map((item) => {
       return {
-        size: item.size.toString(),
+        size: item.size?.toString() ?? '?',
         name: item.name,
         path: getItemPath(item),
         hash: item.cid.toString(),

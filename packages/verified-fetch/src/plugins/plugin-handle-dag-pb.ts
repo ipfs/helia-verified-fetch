@@ -95,7 +95,8 @@ export class DagPbPlugin extends BasePlugin {
 
         const entry = await handleServerTiming('exporter-dir', '', async () => exporter(`/ipfs/${dirCid}/${rootFilePath}`, helia.blockstore, {
           signal: options?.signal,
-          onProgress: options?.onProgress
+          onProgress: options?.onProgress,
+          // extended: false
         }), withServerTiming)
 
         log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
@@ -111,7 +112,7 @@ export class DagPbPlugin extends BasePlugin {
         context.modified++
         this.log.trace('attempting to get directory entries because index.html was not found')
         try {
-          for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress })) {
+          for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress, extended: false })) {
             context.directoryEntries.push(dirItem)
           }
           // dir-index-html plugin or dir-index-json (future idea?) plugin should handle this
@@ -138,7 +139,8 @@ export class DagPbPlugin extends BasePlugin {
     try {
       const entry = await handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, helia.blockstore, {
         signal: options?.signal,
-        onProgress: options?.onProgress
+        onProgress: options?.onProgress,
+        // extended: false
       }), withServerTiming)
 
       let firstChunk: Uint8Array
