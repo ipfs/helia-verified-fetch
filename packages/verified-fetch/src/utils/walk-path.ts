@@ -25,8 +25,7 @@ async function walkPath (blockstore: ReadableStorage, path: string, options?: Pa
   let terminalElement: UnixFSEntry | undefined
 
   for await (const entry of exporterWalk(path, blockstore, {
-    ...options,
-    // extended: false
+    ...options
   })) {
     ipfsRoots.push(entry.cid)
     terminalElement = entry

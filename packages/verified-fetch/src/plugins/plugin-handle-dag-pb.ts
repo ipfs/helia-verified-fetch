@@ -139,8 +139,7 @@ export class DagPbPlugin extends BasePlugin {
     try {
       const entry = await handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, helia.blockstore, {
         signal: options?.signal,
-        onProgress: options?.onProgress,
-        // extended: false
+        onProgress: options?.onProgress
       }), withServerTiming)
 
       let firstChunk: Uint8Array
