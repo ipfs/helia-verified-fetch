@@ -96,7 +96,6 @@ export class DagPbPlugin extends BasePlugin {
         const entry = await handleServerTiming('exporter-dir', '', async () => exporter(`/ipfs/${dirCid}/${rootFilePath}`, helia.blockstore, {
           signal: options?.signal,
           onProgress: options?.onProgress
-          // extended: false
         }), withServerTiming)
 
         log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
