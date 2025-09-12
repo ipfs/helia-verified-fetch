@@ -9,7 +9,6 @@ import { getReportDetails } from './get-report-details.js'
 const logger = prefixLogger('gateway-conformance')
 
 describe('@helia/verified-fetch - gateway conformance', function () {
-
   describe('conformance testing', () => {
     /**
      * You can see what the latest success rate, passing tests, and failing tests are by running the following command:
@@ -32,9 +31,13 @@ describe('@helia/verified-fetch - gateway conformance', function () {
         passingTests = results.passingTests
 
         log.trace('Passing tests:')
-        passingTests.forEach((test) => { log.trace(`PASS: ${test}`) })
+        for (const test of passingTests) {
+          log.trace(`PASS: ${test}`)
+        }
         log.trace('Failing tests:')
-        failingTests.forEach((test) => { log.trace(`FAIL: ${test}`) })
+        for (const test of failingTests) {
+          log.trace(`FAIL: ${test}`)
+        }
       })
 
       for (const test of expectedPassingTests) {

@@ -3,15 +3,15 @@ import { access, constants } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { prefixLogger } from '@libp2p/logger'
+import getPort from 'aegir/get-port'
 import { execa } from 'execa'
+import { Agent, setGlobalDispatcher } from 'undici'
 import { GWC_IMAGE } from './constants.ts'
+import { startVerifiedFetchGateway } from './fixtures/basic-server.ts'
+import { createKuboNode } from './fixtures/create-kubo.ts'
+import { loadKuboFixtures } from './fixtures/kubo-mgmt.ts'
 import { getTestsToRun } from './get-tests-to-run.ts'
 import { getTestsToSkip } from './get-tests-to-skip.ts'
-import getPort from 'aegir/get-port'
-import {createKuboNode} from './fixtures/create-kubo.ts'
-import {loadKuboFixtures} from './fixtures/kubo-mgmt.ts'
-import {startVerifiedFetchGateway} from './fixtures/basic-server.ts'
-import { Agent, setGlobalDispatcher } from 'undici'
 
 const logger = prefixLogger('gateway-conformance')
 const log = logger.forComponent('generate-conformance-report')
@@ -20,7 +20,6 @@ process.env.KUBO_PORT = `${KUBO_PORT}`
 const SERVER_PORT = await getPort(3441)
 process.env.SERVER_PORT = `${SERVER_PORT}`
 process.env.CONFORMANCE_HOST = 'localhost'
-
 
 async function runSmokeTests (): Promise<void> {
   const log = logger.forComponent('smoke-tests')
