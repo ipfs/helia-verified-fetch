@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-interop-v1.26.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.26.2...@helia/verified-fetch-interop-1.26.3) (2025-09-12)
+
+### Tests
+
+* conformance testing more modular, no hangs ([#266](https://github.com/ipfs/helia-verified-fetch/issues/266)) ([ae6e463](https://github.com/ipfs/helia-verified-fetch/commit/ae6e4631c4569dde88ce77f90fb05b05fdc82630))
+
 ## [@helia/verified-fetch-interop-v1.26.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.26.1...@helia/verified-fetch-interop-1.26.2) (2025-05-23)
 
 ### Bug Fixes
