@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v3.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.2.0...@helia/verified-fetch-3.2.1) (2025-09-12)
+
+### Tests
+
+* conformance testing more modular, no hangs ([#266](https://github.com/ipfs/helia-verified-fetch/issues/266)) ([ae6e463](https://github.com/ipfs/helia-verified-fetch/commit/ae6e4631c4569dde88ce77f90fb05b05fdc82630))
+
 ## [@helia/verified-fetch-v3.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.1.1...@helia/verified-fetch-3.2.0) (2025-06-17)
 
 ### Features
