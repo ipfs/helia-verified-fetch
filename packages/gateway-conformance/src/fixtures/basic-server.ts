@@ -6,7 +6,6 @@ import { dagCborHtmlPreviewPluginFactory, dirIndexHtmlPluginFactory } from '@hel
 import { logger } from '@libp2p/logger'
 import { dns } from '@multiformats/dns'
 import { MemoryBlockstore } from 'blockstore-core'
-import { Agent, setGlobalDispatcher } from 'undici'
 import { createVerifiedFetch } from './create-verified-fetch.js'
 import { getLocalDnsResolver } from './get-local-dns-resolver.js'
 import { convertFetchHeadersToNodeJsHeaders, convertNodeJsHeadersToFetchHeaders } from './header-utils.js'
@@ -174,12 +173,6 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
 }
 
 export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS_NS_MAP }: BasicServerOptions): Promise<() => Promise<void>> {
-  const staticDnsAgent = new Agent({
-    connect: {
-      lookup: (_hostname, _options, callback) => { callback(null, [{ address: '0.0.0.0', family: 4 }]) }
-    }
-  })
-  setGlobalDispatcher(staticDnsAgent)
   kuboGateway = kuboGateway ?? process.env.KUBO_GATEWAY
   const useSessions = process.env.USE_SESSIONS !== 'false'
 
@@ -224,16 +217,18 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
     console.log(`Basic server listening on port ${serverPort}`)
   })
 
-  return async () => {
-    log('Stopping...')
+  return async function cleanup () {
+    log('Stopping basic server...')
     await new Promise<void>((resolve, reject) => {
       // no matter what happens, we need to kill the server
       server.closeAllConnections()
       log('Closed all connections')
       server.close((err: any) => {
         if (err != null) {
+          log.error('Error closing server - %e', err)
           reject(err instanceof Error ? err : new Error(err))
         } else {
+          log('Server closed successfully')
           resolve()
         }
       })
