@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-gateway-conformance-v1.5.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.5.0...@helia/verified-fetch-gateway-conformance-1.5.1) (2025-09-12)
+
+### Tests
+
+* conformance testing more modular, no hangs ([#266](https://github.com/ipfs/helia-verified-fetch/issues/266)) ([ae6e463](https://github.com/ipfs/helia-verified-fetch/commit/ae6e4631c4569dde88ce77f90fb05b05fdc82630))
+
 ## [@helia/verified-fetch-gateway-conformance-v1.5.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.4.1...@helia/verified-fetch-gateway-conformance-1.5.0) (2025-06-17)
 
 ### Features
