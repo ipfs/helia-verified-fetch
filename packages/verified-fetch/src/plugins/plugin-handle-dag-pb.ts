@@ -111,7 +111,7 @@ export class DagPbPlugin extends BasePlugin {
         context.modified++
         this.log.trace('attempting to get directory entries because index.html was not found')
         try {
-          for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress })) {
+          for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress, extended: false })) {
             context.directoryEntries.push(dirItem)
           }
           // dir-index-html plugin or dir-index-json (future idea?) plugin should handle this
