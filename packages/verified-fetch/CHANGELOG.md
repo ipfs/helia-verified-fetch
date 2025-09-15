@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v3.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.2.1...@helia/verified-fetch-3.2.2) (2025-09-15)
+
+### Bug Fixes
+
+* do not download all blocks when listing dir ([#261](https://github.com/ipfs/helia-verified-fetch/issues/261)) ([356e62c](https://github.com/ipfs/helia-verified-fetch/commit/356e62c9f9535a15f5903c9e346f7a836441cd14))
+
 ## [@helia/verified-fetch-v3.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.2.0...@helia/verified-fetch-3.2.1) (2025-09-12)
 
 ### Tests
