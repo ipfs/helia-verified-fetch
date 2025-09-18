@@ -40,6 +40,9 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
   const detectedType = (await fileTypeFromBuffer(bytes))?.mime
   if (detectedType != null) {
     log('detectedType: %s', detectedType)
+    if (detectedType === 'application/xml' && fileName?.toLowerCase().endsWith('.svg')) {
+      return 'image/svg+xml'
+    }
     return detectedType
   }
   log('no detectedType')
