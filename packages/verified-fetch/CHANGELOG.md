@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v3.2.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.2.2...@helia/verified-fetch-3.2.3) (2025-09-18)
+
+### Bug Fixes
+
+* svg content type recognition ([#269](https://github.com/ipfs/helia-verified-fetch/issues/269)) ([84532bc](https://github.com/ipfs/helia-verified-fetch/commit/84532bc743c1126d39677a85aac5a8bc2ce24914))
+
 ## [@helia/verified-fetch-v3.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.2.1...@helia/verified-fetch-3.2.2) (2025-09-15)
 
 ### Bug Fixes
