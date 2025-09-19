@@ -160,7 +160,7 @@
     "interface-blockstore": "^5.3.1",
     "interface-datastore": "^8.3.1",
     "ipfsd-ctl": "^15.0.2",
-    "kubo": "^0.34.1",
+    "kubo": "^0.37.0",
     "kubo-rpc-client": "^5.1.0",
     "multiformats": "^13.3.6",
     "uint8arrays": "^5.1.0",
