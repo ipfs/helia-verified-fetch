@@ -1,4 +1,5 @@
 import { AbortError } from '@libp2p/interface'
+import { multiaddr } from '@multiformats/multiaddr'
 import { CID } from 'multiformats/cid'
 import { getPeerIdFromString } from './get-peer-id-from-string.js'
 import { serverTiming } from './server-timing.js'
@@ -7,6 +8,7 @@ import type { ServerTimingResult } from './server-timing.js'
 import type { RequestFormatShorthand } from '../types.js'
 import type { DNSLinkResolveResult, IPNS, IPNSResolveResult, IPNSRoutingEvents, ResolveDNSLinkProgressEvents, ResolveProgressEvents, ResolveResult } from '@helia/ipns'
 import type { AbortOptions, ComponentLogger, PeerId } from '@libp2p/interface'
+import type { Multiaddr } from '@multiformats/multiaddr'
 import type { ProgressOptions } from 'progress-events'
 
 export const ipnsCache = new TLRU<DNSLinkResolveResult | IPNSResolveResult>(1000)
@@ -51,6 +53,11 @@ export interface ParsedUrlStringResults extends ResolveResult {
    * serverTiming items
    */
   serverTimings: Array<ServerTimingResult<any>>
+
+  /**
+   * The providers hinted in the URL.
+   */
+  providers: Array<Multiaddr>
 }
 
 const URL_REGEX = /^(?<protocol>ip[fn]s):\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\/?(?<path>[^?]*)\??(?<queryString>.*)$/
@@ -287,12 +294,45 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
 
   // parse query string
   const query: Record<string, any> = {}
+  const providers: Array<Multiaddr> = []
 
   if (queryString != null && queryString.length > 0) {
     const queryParts = queryString.split('&')
     for (const part of queryParts) {
       const [key, value] = part.split('=')
-      query[key] = decodeURIComponent(value)
+      // see https://github.com/ipfs/specs/pull/504
+      // provider is a special case, the parameter MAY be repeated
+      // if not provider just decode the value and keep iterating
+      if (key !== 'provider') {
+        query[key] = decodeURIComponent(value)
+
+        continue
+      }
+      if (query[key] == null) {
+        query[key] = []
+      }
+      const decodedValue = decodeURIComponent(value)
+      // if the provider value starts with /, it is a multiaddr
+      // otherwise it is a HTTP URL string
+      if (decodedValue.startsWith('/')) {
+        try {
+          // Must be a multiaddr to be used as Hint
+          const m = multiaddr(decodedValue)
+          providers.push(m)
+          ;(query[key] as string[]).push(decodedValue)
+        } catch {
+          // Ignore invalid multiaddr
+        }
+      } else {
+        try {
+          const url = new URL(decodedValue)
+          const m = multiaddr(`/dns/${url.hostname}/tcp/${url.port || 443}/${url.protocol.replace(':', '')}`)
+          providers.push(m)
+          ;(query[key] as string[]).push(decodedValue)
+        } catch {
+          // Ignore invalid URL
+        }
+      }
     }
 
     if (query.download != null) {
@@ -311,6 +351,7 @@ export async function parseUrlString ({ urlString, ipns, logger, withServerTimin
     query,
     ttl,
     ipfsPath: `/${protocol}/${cidOrPeerIdOrDnsLink}${urlPath != null && urlPath !== '' ? `/${urlPath}` : ''}`,
+    providers,
     serverTimings
   } satisfies ParsedUrlStringResults
 }
