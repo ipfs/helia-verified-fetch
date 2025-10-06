@@ -211,7 +211,7 @@
     "browser-readablestream-to-it": "^2.0.9",
     "datastore-core": "^10.0.2",
     "helia": "^5.4.1",
-    "ipfs-unixfs-importer": "^15.4.0",
+    "ipfs-unixfs-importer": "^16.0.1",
     "it-all": "^3.0.8",
     "it-last": "^3.0.8",
     "it-to-buffer": "^4.0.9",
