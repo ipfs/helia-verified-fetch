@@ -144,7 +144,7 @@
     "release": "aegir release"
   },
   "dependencies": {
-    "@helia/delegated-routing-v1-http-api-server": "^4.0.6",
+    "@helia/delegated-routing-v1-http-api-server": "^5.0.0",
     "@helia/verified-fetch": "^2.0.0",
     "aegir": "^47.0.21",
     "execa": "^9.5.3",
