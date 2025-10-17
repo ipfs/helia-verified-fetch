@@ -1,4 +1,4 @@
-import type { RequestFormatShorthand } from '../types.js'
+import type { RequestFormatShorthand } from '../index.js'
 import type { CID } from 'multiformats/cid'
 
 interface GetETagArg {

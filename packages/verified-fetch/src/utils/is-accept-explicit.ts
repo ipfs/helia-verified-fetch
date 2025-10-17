@@ -1,8 +1,8 @@
 import { FORMAT_TO_MIME_TYPE } from './select-output-type.js'
-import type { ParsedUrlStringResults } from './parse-url-string.js'
+import type { UrlQuery } from '../index.ts'
 
 export interface IsAcceptExplicitOptions {
-  query?: ParsedUrlStringResults['query']
+  query?: UrlQuery
   headers: Headers
 }
 
@@ -14,7 +14,7 @@ export function isExplicitAcceptHeader (headers: Headers): boolean {
   return false
 }
 
-export function isExplicitFormatQuery (query?: ParsedUrlStringResults['query']): boolean {
+export function isExplicitFormatQuery (query?: UrlQuery): boolean {
   const formatQuery = query?.format
   if (formatQuery != null && Object.keys(FORMAT_TO_MIME_TYPE).includes(formatQuery)) {
     return true

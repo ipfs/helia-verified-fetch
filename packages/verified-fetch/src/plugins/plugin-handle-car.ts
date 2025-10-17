@@ -1,5 +1,4 @@
 import { BlockExporter, car, CIDPath, SubgraphExporter, UnixFSExporter } from '@helia/car'
-import { CarWriter } from '@ipld/car'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { okRangeResponse } from '../utils/responses.js'
@@ -13,7 +12,10 @@ function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'c
   }
 
   // convert context.ipfsPath to a filename. replace all / with _, replace prefix protocol with empty string
-  const filename = ipfsPath.replace(/\/ipfs\//, '').replace(/\/ipns\//, '').replace(/\//g, '_')
+  const filename = ipfsPath
+    .replace(/\/ipfs\//, '')
+    .replace(/\/ipns\//, '')
+    .replace(/\//g, '_')
 
   return `${filename}.car`
 }
@@ -63,21 +65,24 @@ export class CarPlugin extends BasePlugin {
       getCodec: helia.getCodec,
       logger: helia.logger
     })
-    const ipfsRootsWithoutDagRoot = pathDetails.ipfsRoots.filter(pathCid => !pathCid.equals(cid))
+
     const carExportOptions: ExportCarOptions = {
-      ...options
+      ...options,
+      includeTraversalBlocks: true
     }
-    if (ipfsRootsWithoutDagRoot.length > 0) {
-      carExportOptions.traversal = new CIDPath(ipfsRootsWithoutDagRoot)
+
+    if (pathDetails.ipfsRoots.length > 1) {
+      carExportOptions.traversal = new CIDPath(pathDetails.ipfsRoots)
     }
+
     const dagScope = getDagScope(context)
-    // root should be the terminal element if it exists, otherwise the root cid.. because of this, we can't use the @helia/car stream() method.
-    const root = pathDetails.terminalElement.cid ?? cid
+    const target = pathDetails.terminalElement.cid ?? cid
+
     if (dagScope === 'block') {
       carExportOptions.exporter = new BlockExporter()
     } else if (dagScope === 'entity') {
       // if its unixFS, we need to enumerate a directory, or get all blocks for the entity, otherwise, use blockExporter
-      if (root.code === dagPbCode) {
+      if (target.code === dagPbCode) {
         carExportOptions.exporter = new UnixFSExporter()
       } else {
         carExportOptions.exporter = new BlockExporter()
@@ -85,21 +90,8 @@ export class CarPlugin extends BasePlugin {
     } else {
       carExportOptions.exporter = new SubgraphExporter()
     }
-    const { writer, out } = CarWriter.create(root)
-    const iter = async function * (): AsyncIterable<Uint8Array> {
-      for await (const buf of out) {
-        yield buf
-      }
-    }
 
-    // the root passed to export should be the root CID of the DAG, not the terminal element.
-    c.export(cid, writer, carExportOptions)
-      .catch((err) => {
-        this.log.error('error exporting car - %e', err)
-      })
-    // export will close the writer when it's done, no finally needed.
-
-    context.byteRangeContext.setBody(toBrowserReadableStream(iter()))
+    context.byteRangeContext.setBody(toBrowserReadableStream(c.export(target, carExportOptions)))
 
     const response = okRangeResponse(context.resource, context.byteRangeContext.getBody('application/vnd.ipld.car; version=1'), { byteRangeContext: context.byteRangeContext, log: this.log })
     response.headers.set('content-type', context.byteRangeContext.getContentType() ?? 'application/vnd.ipld.car; version=1')

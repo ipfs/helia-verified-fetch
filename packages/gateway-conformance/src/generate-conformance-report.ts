@@ -2,6 +2,7 @@
 import { access, constants } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { existsSync } from 'node:fs'
 import { prefixLogger } from '@libp2p/logger'
 import getPort from 'aegir/get-port'
 import { execa } from 'execa'
@@ -145,7 +146,7 @@ export async function generateConformanceResults (
 
   try {
     // install binary if requested
-    if (shouldInstall) {
+    if (shouldInstall && !existsSync(binaryPath)) {
       await installBinary(binaryPath)
     }
 

@@ -1,14 +1,15 @@
 import { generateKeyPair } from '@libp2p/crypto/keys'
-import { defaultLogger } from '@libp2p/logger'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import { base36 } from 'multiformats/bases/base36'
 import { CID } from 'multiformats/cid'
 import { stubInterface } from 'sinon-ts'
-import { parseUrlString } from '../../src/utils/parse-url-string.js'
-import { ipnsRecordStub } from '../fixtures/ipns-stubs.js'
-import type { IPNS } from '@helia/ipns'
-import type { ComponentLogger, PeerId } from '@libp2p/interface'
+import { URLResolver } from '../src/url-resolver.js'
+import { ipnsRecordStub } from './fixtures/ipns-stubs.js'
+import type { ServerTiming } from '../src/utils/server-timing.ts'
+import type { DNSLink } from '@helia/dnslink'
+import type { IPNSResolver } from '@helia/ipns'
+import type { PeerId } from '@libp2p/interface'
 import type { Answer } from '@multiformats/dns'
 import type { StubbedInstance } from 'sinon-ts'
 
@@ -17,19 +18,17 @@ const HTTP_PROTOCOLS = [
   'https'
 ]
 
-describe('parseUrlString', () => {
-  let logger: ComponentLogger
-  let ipns: StubbedInstance<IPNS>
+describe('url-resolver', () => {
+  let ipnsResolver: StubbedInstance<IPNSResolver>
+  let dnsLink: StubbedInstance<DNSLink>
+  let timing: StubbedInstance<ServerTiming>
+  let resolver: URLResolver
 
   /**
    * Assert that the passed url is matched to the passed protocol, cid, etc
    */
   async function assertMatchUrl (urlString: string, match: { protocol: string, cid: string, path: string, query: any }): Promise<void> {
-    const result = await parseUrlString({
-      urlString,
-      ipns,
-      logger
-    })
+    const result = await resolver.resolve(urlString)
 
     expect(result.protocol).to.equal(match.protocol)
     expect(result.cid.toString()).to.equal(match.cid)
@@ -38,57 +37,48 @@ describe('parseUrlString', () => {
   }
 
   beforeEach(() => {
-    logger = defaultLogger()
-    ipns = stubInterface<IPNS>()
+    ipnsResolver = stubInterface()
+    dnsLink = stubInterface()
+    timing = stubInterface()
+    timing.time.callsFake((name, desc, p) => p)
+
+    resolver = new URLResolver({
+      ipnsResolver,
+      dnsLink,
+      timing
+    })
   })
 
   describe('invalid URLs', () => {
     it('throws for invalid URLs', async () => {
       await expect(
-        parseUrlString({
-          urlString: 'invalid',
-          ipns,
-          logger
-        })
+        resolver.resolve('invalid')
       ).to.eventually.be.rejected
         .with.property('message', 'Invalid URL: invalid, please use ipfs://, ipns://, or gateway URLs only')
     })
 
     it('throws for invalid protocols', async () => {
       await expect(
-        parseUrlString({
-          urlString: 'invalid',
-          ipns,
-          logger
-        })
+        resolver.resolve('invalid')
       ).to.eventually.be.rejected
         .with.property('message', 'Invalid URL: invalid, please use ipfs://, ipns://, or gateway URLs only')
     })
 
     it('throws an error if resulting CID is invalid', async () => {
-      // @ts-expect-error - purposefully invalid response
-      ipns.resolveDns.returns(null)
+      dnsLink.resolve.resolves(undefined)
 
       await expect(
-        parseUrlString({
-          urlString: 'ipns://mydomain.com',
-          ipns,
-          logger
-        })
-      ).to.eventually.be.rejected.with.property('message', 'Could not parse PeerId in ipns url "mydomain.com", To parse non base32, base36 or base58btc encoded CID multibase decoder must be provided')
+        resolver.resolve('ipns://mydomain.com')
+      ).to.eventually.be.rejected.with.property('message', 'Invalid resource. Cannot resolve DNSLink from domain: mydomain.com')
     })
   })
 
   describe('ipfs://<CID> URLs', () => {
     it('handles invalid CIDs', async () => {
       await expect(
-        parseUrlString({
-          urlString: 'ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4i',
-          ipns,
-          logger
-        })
+        resolver.resolve('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4i')
       ).to.eventually.be.rejected
-        .with.property('message', 'Invalid CID for ipfs://<cid> URL')
+        .with.property('message', 'Invalid CID version 26')
     })
 
     it('can parse a URL with CID only', async () => {
@@ -155,23 +145,20 @@ describe('parseUrlString', () => {
 
   describe('ipns://<dnsLinkDomain> URLs', () => {
     it('handles invalid DNSLinkDomains', async () => {
-      ipns.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
-      ipns.resolveDNSLink.rejects(new Error('Unexpected failure from ipns dns query'))
+      ipnsResolver.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
+      dnsLink.resolve.rejects(new Error('Unexpected failure from ipns dns query'))
 
-      await expect(parseUrlString({ urlString: 'ipns://mydomain.com', ipns, logger })).to.eventually.be.rejected
-        .and.deep.equal([
-          new TypeError('Could not parse PeerId in ipns url "mydomain.com", To parse non base32, base36 or base58btc encoded CID multibase decoder must be provided'),
-          new Error('Unexpected failure from ipns dns query'),
-          new Error('Invalid resource. Cannot determine CID from URL "ipns://mydomain.com".')
-        ])
+      await expect(resolver.resolve('ipns://mydomain.com')).to.eventually.be.rejected
+        .with.property('message', 'Unexpected failure from ipns dns query')
     })
 
     it('can parse a URL with DNSLinkDomain only', async () => {
-      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
+      dnsLink.resolve.withArgs('mydomain.com').resolves([{
+        namespace: 'ipfs',
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         answer: stubInterface<Answer>()
-      })
+      }])
 
       await assertMatchUrl(
         'ipns://mydomain.com', {
@@ -184,11 +171,12 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with DNSLinkDomain+path', async () => {
-      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
+      dnsLink.resolve.withArgs('mydomain.com').resolves([{
+        namespace: 'ipfs',
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         answer: stubInterface<Answer>()
-      })
+      }])
 
       await assertMatchUrl(
         'ipns://mydomain.com/some/path/to/file.txt', {
@@ -201,11 +189,12 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with DNSLinkDomain+queryString', async () => {
-      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
+      dnsLink.resolve.withArgs('mydomain.com').resolves([{
+        namespace: 'ipfs',
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         answer: stubInterface<Answer>()
-      })
+      }])
 
       await assertMatchUrl(
         'ipns://mydomain.com?format=json', {
@@ -220,11 +209,12 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with DNSLinkDomain+path+queryString', async () => {
-      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
+      dnsLink.resolve.withArgs('mydomain.com').resolves([{
+        namespace: 'ipfs',
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         answer: stubInterface<Answer>()
-      })
+      }])
 
       await assertMatchUrl(
         'ipns://mydomain.com/some/path/to/file.txt?format=json', {
@@ -239,11 +229,12 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with DNSLinkDomain+directoryPath+queryString', async () => {
-      ipns.resolveDNSLink.withArgs('mydomain.com').resolves({
+      dnsLink.resolve.withArgs('mydomain.com').resolves([{
+        namespace: 'ipfs',
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         answer: stubInterface<Answer>()
-      })
+      }])
 
       await assertMatchUrl(
         'ipns://mydomain.com/some/path/to/dir/?format=json', {
@@ -264,7 +255,8 @@ describe('parseUrlString', () => {
 
     it('should return the correct TTL from the DNS Answer ', async () => {
       // spell-checker: disable-next-line
-      ipns.resolveDNSLink.withArgs('newdomain.com').resolves({
+      dnsLink.resolve.withArgs('newdomain.com').resolves([{
+        namespace: 'ipfs',
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         answer: {
@@ -273,9 +265,9 @@ describe('parseUrlString', () => {
           name: 'n/a',
           data: 'n/a'
         }
-      })
+      }])
 
-      const result = await parseUrlString({ urlString: 'ipns://newdomain.com/', ipns, logger })
+      const result = await resolver.resolve('ipns://newdomain.com/')
       expect(result.ttl).to.equal(oneHourInSeconds)
     })
 
@@ -283,13 +275,16 @@ describe('parseUrlString', () => {
       const key = await generateKeyPair('Ed25519')
       const testPeerId = peerIdFromPrivateKey(key)
 
-      ipns.resolve.withArgs(key.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(testPeerId).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
-        record: ipnsRecordStub({ peerId: testPeerId, ttl: oneHourInNanoseconds })
+        record: ipnsRecordStub({
+          peerId: testPeerId,
+          ttl: oneHourInNanoseconds
+        })
       })
 
-      const result = await parseUrlString({ urlString: `ipns://${testPeerId}`, ipns, logger })
+      const result = await resolver.resolve(`ipns://${testPeerId}`)
       expect(result.ttl).to.equal(oneHourInSeconds)
     })
   })
@@ -471,31 +466,23 @@ describe('parseUrlString', () => {
     })
 
     it('handles invalid PeerIds', async () => {
-      ipns.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
-      ipns.resolveDNSLink.rejects(new Error('Unexpected failure from ipns dns query'))
+      ipnsResolver.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
+      dnsLink.resolve.rejects(new Error('Unexpected failure from ipns dns query'))
 
-      await expect(parseUrlString({ urlString: 'ipns://123PeerIdIsFake456', ipns, logger })).to.eventually.be.rejected
-        .and.deep.equal([
-          new TypeError('Could not parse PeerId in ipns url "123PeerIdIsFake456", Non-base58btc character'),
-          new Error('Unexpected failure from ipns dns query'),
-          new Error('Invalid resource. Cannot determine CID from URL "ipns://123PeerIdIsFake456".')
-        ])
+      await expect(resolver.resolve('ipns://123PeerIdIsFake456')).to.eventually.be.rejected
+        .with.property('message', 'Unexpected failure from ipns dns query')
     })
 
     it('handles valid PeerId resolve failures', async () => {
-      ipns.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
-      ipns.resolveDNSLink.rejects(new Error('Unexpected failure from ipns dns query'))
+      ipnsResolver.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
+      dnsLink.resolve.rejects(new Error('Unexpected failure from ipns dns query'))
 
-      await expect(parseUrlString({ urlString: `ipns://${testPeerId}`, ipns, logger })).to.eventually.be.rejected
-        .and.deep.equal([
-          new TypeError(`Could not resolve PeerId "${testPeerId}": Unexpected failure from ipns resolve method`),
-          new Error('Unexpected failure from ipns dns query'),
-          new Error(`Invalid resource. Cannot determine CID from URL "ipns://${testPeerId}".`)
-        ])
+      await expect(resolver.resolve(`ipns://${testPeerId}`)).to.eventually.be.rejected
+        .with.property('message', 'Unexpected failure from ipns resolve method')
     })
 
     it('can parse a URL with PeerId only', async () => {
-      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(testPeerId).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -512,7 +499,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a base36 PeerId CID', async () => {
-      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(testPeerId).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -529,7 +516,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with PeerId+path', async () => {
-      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(testPeerId).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -546,7 +533,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with PeerId+path with a trailing slash', async () => {
-      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(testPeerId).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -563,7 +550,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with PeerId+queryString', async () => {
-      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(testPeerId).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -582,7 +569,7 @@ describe('parseUrlString', () => {
     })
 
     it('can parse a URL with PeerId+path+queryString', async () => {
-      ipns.resolve.withArgs(testPeerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(testPeerId).resolves({
         cid: CID.parse('QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr'),
         path: '',
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -607,7 +594,7 @@ describe('parseUrlString', () => {
       const recordPath = 'foo'
       const requestPath = 'bar/baz.txt'
 
-      ipns.resolve.withArgs(peerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(peerId).resolves({
         cid,
         path: recordPath,
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -630,7 +617,7 @@ describe('parseUrlString', () => {
       const recordPath = 'foo/'
       const requestPath = 'bar/baz.txt'
 
-      ipns.resolve.withArgs(peerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(peerId).resolves({
         cid,
         path: recordPath,
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -653,7 +640,7 @@ describe('parseUrlString', () => {
       const recordPath = '/foo/////bar//'
       const requestPath = '///baz///qux.txt'
 
-      ipns.resolve.withArgs(peerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(peerId).resolves({
         cid,
         path: recordPath,
         record: ipnsRecordStub({ peerId: testPeerId })
@@ -678,7 +665,7 @@ describe('parseUrlString', () => {
       const key = await generateKeyPair('Ed25519')
       peerId = peerIdFromPrivateKey(key)
       cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
-      ipns.resolve.withArgs(peerId.publicKey).resolves({
+      ipnsResolver.resolve.withArgs(peerId).resolves({
         cid,
         path: '',
         record: ipnsRecordStub({ peerId })
@@ -767,7 +754,7 @@ describe('parseUrlString', () => {
         const key = await generateKeyPair('Ed25519')
         peerId = peerIdFromPrivateKey(key)
         cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
-        ipns.resolve.withArgs(peerId.publicKey).resolves({
+        ipnsResolver.resolve.withArgs(peerId).resolves({
           cid,
           path: '',
           record: ipnsRecordStub({ peerId })
@@ -872,23 +859,25 @@ describe('parseUrlString', () => {
         value = await getVal(i++)
         cid = CID.parse('QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm')
         if (type === 'peerid') {
-          ipns.resolve.withArgs((value as PeerId).publicKey).resolves({
+          ipnsResolver.resolve.withArgs((value as PeerId)).resolves({
             cid,
             path: '',
             record: ipnsRecordStub({ peerId: value as PeerId })
           })
         } else if (type === 'dnslink-encoded') {
-          ipns.resolveDNSLink.withArgs(value.toString().replace(/-/g, '.')).resolves({
+          dnsLink.resolve.withArgs(value.toString()).resolves([{
+            namespace: 'ipfs',
             cid,
             path: '',
             answer: stubInterface<Answer>()
-          })
+          }])
         } else {
-          ipns.resolveDNSLink.withArgs(value.toString()).resolves({
+          dnsLink.resolve.withArgs(value.toString()).resolves([{
+            namespace: 'ipfs',
             cid,
             path: '',
             answer: stubInterface<Answer>()
-          })
+          }])
         }
       })
 

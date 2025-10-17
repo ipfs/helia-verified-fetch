@@ -38,9 +38,7 @@ describe('@helia/verified-fetch', () => {
     const helia = stubInterface<Helia>({
       logger: defaultLogger()
     })
-    const verifiedFetch = new VerifiedFetch({
-      helia
-    })
+    const verifiedFetch = new VerifiedFetch(helia)
 
     expect(helia.stop.callCount).to.equal(0)
     expect(helia.start.callCount).to.equal(0)
@@ -58,9 +56,7 @@ describe('@helia/verified-fetch', () => {
     let verifiedFetch: VerifiedFetch
 
     beforeEach(async () => {
-      verifiedFetch = new VerifiedFetch({
-        helia
-      })
+      verifiedFetch = new VerifiedFetch(helia)
     })
 
     afterEach(async () => {
@@ -295,6 +291,19 @@ describe('@helia/verified-fetch', () => {
       expect(ipfsResponse.url).to.equal(`ipfs://${res.cid}/foo/`)
     })
 
+    it.skip('should redirect to a libp2p-key CID when a base36 CIDv1 dag-pb IPNS name is requested', async () => {
+      const base36str = 'k50rm9yjlt0jey4fqg6wafvqprktgbkpgkqdg27tpqje6iimzxewnhvtin9hhq'
+      // const cid = CID.parse('k50rm9yjlt0jey4fqg6wafvqprktgbkpgkqdg27tpqje6iimzxewnhvtin9hhq')
+
+      const ipfsResponse = await verifiedFetch.fetch(`https://${base36str}.ipns.local`, {
+        redirect: 'manual'
+      })
+      expect(ipfsResponse).to.be.ok()
+      expect(ipfsResponse.status).to.equal(301)
+      expect(ipfsResponse.headers.get('location')).to.equal(`https://${base36str}.ipfs.local`)
+      expect(ipfsResponse.url).to.equal(`https://${base36str}.ipfs.local`)
+    })
+
     it('should allow use as a stream', async () => {
       const content = new Uint8Array([0x01, 0x02, 0x03])
 
@@ -347,9 +356,7 @@ describe('@helia/verified-fetch', () => {
     it('should return html directory listing if index file is not found and dir-index-html plugin is used', async () => {
       const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
 
-      const verifiedFetch = new VerifiedFetch({
-        helia
-      }, { plugins: [dirIndexHtmlPluginFactory] })
+      const verifiedFetch = new VerifiedFetch(helia, { plugins: [dirIndexHtmlPluginFactory] })
 
       const fs = unixfs(helia)
       const res = await last(fs.addAll([{
@@ -667,9 +674,7 @@ describe('@helia/verified-fetch', () => {
     beforeEach(async () => {
       contentTypeParser = Sinon.stub()
       helia = await createHelia()
-      verifiedFetch = new VerifiedFetch({
-        helia
-      }, {
+      verifiedFetch = new VerifiedFetch(helia, {
         contentTypeParser
       })
     })
@@ -748,9 +753,7 @@ describe('@helia/verified-fetch', () => {
     let verifiedFetch: VerifiedFetch
 
     beforeEach(async () => {
-      verifiedFetch = new VerifiedFetch({
-        helia
-      })
+      verifiedFetch = new VerifiedFetch(helia)
     })
 
     afterEach(async () => {
@@ -791,9 +794,7 @@ describe('@helia/verified-fetch', () => {
     beforeEach(async () => {
       contentTypeParser = Sinon.stub()
       helia = await createHelia()
-      verifiedFetch = new VerifiedFetch({
-        helia
-      }, {
+      verifiedFetch = new VerifiedFetch(helia, {
         contentTypeParser
       })
     })
@@ -850,9 +851,7 @@ describe('@helia/verified-fetch', () => {
     beforeEach(async () => {
       contentTypeParser = Sinon.stub()
       helia = await createHelia()
-      verifiedFetch = new VerifiedFetch({
-        helia
-      }, {
+      verifiedFetch = new VerifiedFetch(helia, {
         contentTypeParser
       })
     })
@@ -897,9 +896,7 @@ describe('@helia/verified-fetch', () => {
 
     beforeEach(async () => {
       helia = await createHelia()
-      verifiedFetch = new VerifiedFetch({
-        helia
-      })
+      verifiedFetch = new VerifiedFetch(helia)
     })
 
     afterEach(async () => {

@@ -3,7 +3,7 @@ import { code as dagJsonCode } from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
-import type { RequestFormatShorthand } from '../types.js'
+import type { RequestFormatShorthand } from '../index.js'
 import type { CID } from 'multiformats/cid'
 
 /**

@@ -97,7 +97,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
     })
   }
 
-  getHtml ({ path, obj, cid }: { path: string, obj: Record<string, any>, cid: CID }): string {
+  getHtml ({ path, obj, cid }: { path?: string, obj: Record<string, any>, cid: CID }): string {
     const style = `
       :root {
         --sans-serif: "Plex", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;

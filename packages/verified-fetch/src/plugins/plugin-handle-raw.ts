@@ -1,3 +1,4 @@
+import toBuffer from 'it-to-buffer'
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
 import { getContentType } from '../utils/get-content-type.js'
@@ -78,13 +79,20 @@ export class RawPlugin extends BasePlugin {
 
     const terminalCid = context.pathDetails?.terminalElement.cid ?? context.cid
     const blockstore = getBlockstore(terminalCid, resource, session, options)
-    const result = await blockstore.get(terminalCid, options)
+    const result = await toBuffer(blockstore.get(terminalCid, options))
     context.byteRangeContext.setBody(result)
 
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    const contentType = await getContentType({ filename: query.filename, bytes: result, path, defaultContentType: getOverriddenRawContentType({ headers: options?.headers, accept }), contentTypeParser, log })
+    const contentType = await getContentType({
+      filename: query.filename,
+      bytes: result,
+      path,
+      defaultContentType: getOverriddenRawContentType({ headers: options?.headers, accept }),
+      contentTypeParser,
+      log
+    })
     const response = okRangeResponse(resource, context.byteRangeContext.getBody(contentType), { byteRangeContext: context.byteRangeContext, log }, {
       redirected: false
     })

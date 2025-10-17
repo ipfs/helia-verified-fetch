@@ -10,5 +10,6 @@ export async function makeAbortedRequest (verifiedFetch: VerifiedFetch, [resourc
   void promise.then(() => {
     controller.abort()
   })
+
   return resultPromise
 }

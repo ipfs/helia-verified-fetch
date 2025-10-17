@@ -857,10 +857,10 @@ import { createLibp2p } from 'libp2p'
 import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { VerifiedFetchPluginFactory } from './plugins/types.js'
-import type { ContentTypeParser } from './types.js'
+import type { DNSLink, ResolveProgressEvents as ResolveDNSLinkProgressEvents } from '@helia/dnslink'
 import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
-import type { ResolveDNSLinkProgressEvents } from '@helia/ipns'
-import type { Libp2p, ServiceMap } from '@libp2p/interface'
+import type { IPNSResolver } from '@helia/ipns'
+import type { AbortOptions, Libp2p, ServiceMap } from '@libp2p/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { HeliaInit } from 'helia'
@@ -868,6 +868,25 @@ import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
 import type { Libp2pOptions } from 'libp2p'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
+
+export type RequestFormatShorthand = 'raw' | 'car' | 'tar' | 'ipns-record' | 'dag-json' | 'dag-cbor' | 'json' | 'cbor'
+
+export type SupportedBodyTypes = string | Uint8Array | ArrayBuffer | Blob | ReadableStream<Uint8Array> | null
+
+/**
+ * A ContentTypeParser attempts to return the mime type of a given file. It
+ * receives the first chunk of the file data and the file name, if it is
+ * available.  The function can be sync or async and if it returns/resolves to
+ * `undefined`, `application/octet-stream` will be used.
+ */
+export interface ContentTypeParser {
+  /**
+   * Attempt to determine a mime type, either via of the passed bytes or the
+   * filename if it is available.
+   */
+  (bytes: Uint8Array, fileName?: string): Promise<string | undefined> | string | undefined
+}
+
 /**
  * The types for the first argument of the `verifiedFetch` function.
  */
@@ -879,7 +898,7 @@ export interface ResourceDetail {
 
 export interface CIDDetail {
   cid: CID
-  path: string
+  path?: string
 }
 
 export interface CIDDetailError extends CIDDetail {
@@ -995,24 +1014,32 @@ export interface CreateVerifiedFetchOptions {
    * If you want to replace one of the default plugins, you can do so by passing a plugin with the same name.
    */
   plugins?: VerifiedFetchPluginFactory[]
+
+  /**
+   * Used to resolve IPNS names
+   */
+  ipnsResolver?: IPNSResolver
+
+  /**
+   * Used to resolve DNSLink entries to IPNS names or CIDs
+   */
+  dnsLink?: DNSLink
+
+  /**
+   * Used to turn URLs into CIDs/paths
+   */
+  urlResolver?: URLResolver
 }
-
-export type { ContentTypeParser } from './types.js'
-
-export type BubbledProgressEvents =
-  // unixfs-exporter
-  ExporterProgressEvents |
-  // helia blockstore
-  GetBlockProgressEvents |
-  // ipns
-  ResolveDNSLinkProgressEvents
 
 export type VerifiedFetchProgressEvents =
   ProgressEvent<'verified-fetch:request:start', CIDDetail> |
   ProgressEvent<'verified-fetch:request:info', string> |
-  ProgressEvent<'verified-fetch:request:progress:chunk', CIDDetail> |
+  ProgressEvent<'verified-fetch:request:progress:chunk'> |
   ProgressEvent<'verified-fetch:request:end', CIDDetail> |
-  ProgressEvent<'verified-fetch:request:error', CIDDetailError>
+  ProgressEvent<'verified-fetch:request:error', CIDDetailError> |
+  ExporterProgressEvents |
+  GetBlockProgressEvents |
+  ResolveDNSLinkProgressEvents
 
 /**
  * Options for the `fetch` function returned by `createVerifiedFetch`.
@@ -1021,7 +1048,7 @@ export type VerifiedFetchProgressEvents =
  * passed to `fetch` in browsers, plus an `onProgress` option to listen for
  * progress events.
  */
-export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledProgressEvents | VerifiedFetchProgressEvents> {
+export interface VerifiedFetchInit extends RequestInit, ProgressOptions<VerifiedFetchProgressEvents> {
   /**
    * If true, try to create a blockstore session - this can reduce overall
    * network traffic by first querying for a set of peers that have the data we
@@ -1072,6 +1099,30 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<BubbledP
   withServerTiming?: boolean
 }
 
+export interface ResolveURLOptions extends ProgressOptions<VerifiedFetchProgressEvents>, AbortOptions {
+
+}
+
+export interface UrlQuery extends Record<string, string | unknown> {
+  format?: RequestFormatShorthand
+  download?: boolean
+  filename?: string
+  'dag-scope'?: string
+}
+
+export interface ResolveURLResult {
+  cid: CID
+  protocol: string
+  ttl: number
+  path: string
+  query: UrlQuery
+  ipfsPath: string
+}
+
+export interface URLResolver {
+  resolve (resource: Resource, options?: ResolveURLOptions): Promise<ResolveURLResult>
+}
+
 /**
  * Create and return a Helia node
  */
@@ -1116,7 +1167,7 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
     init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config: %j', libp2pConfig)
   }
 
-  const verifiedFetchInstance = new VerifiedFetchClass({ helia: init }, options)
+  const verifiedFetchInstance = new VerifiedFetchClass(init, options)
   async function verifiedFetch (resource: Resource, options?: VerifiedFetchInit): Promise<Response> {
     return verifiedFetchInstance.fetch(resource, options)
   }

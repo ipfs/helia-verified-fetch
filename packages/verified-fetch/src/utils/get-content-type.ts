@@ -1,13 +1,13 @@
 import { defaultMimeType } from './content-type-parser.js'
 import { isPromise } from './type-guards.js'
-import type { ContentTypeParser } from '../types.js'
+import type { ContentTypeParser } from '../index.js'
 import type { Logger } from '@libp2p/interface'
 
 export interface GetContentTypeOptions {
   bytes: Uint8Array
-  path: string
+  path?: string
   defaultContentType?: string
-  contentTypeParser: ContentTypeParser | undefined
+  contentTypeParser?: ContentTypeParser
   log: Logger
 
   /**
@@ -25,7 +25,7 @@ export async function getContentType ({ bytes, path, contentTypeParser, log, def
     try {
       let fileName
       if (filenameParam == null) {
-        fileName = path.split('/').pop()?.trim()
+        fileName = path?.split('/').pop()?.trim()
         fileName = (fileName === '' || fileName?.split('.').length === 1) ? undefined : fileName
       } else {
         fileName = filenameParam
@@ -46,6 +46,7 @@ export async function getContentType ({ bytes, path, contentTypeParser, log, def
       log.error('error parsing content type', err)
     }
   }
+
   if (contentType === defaultMimeType) {
     // if the content type is the default in our content-type-parser, instead, set it to the default content type provided to this function.
     contentType = defaultContentType

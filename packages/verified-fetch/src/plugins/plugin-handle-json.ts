@@ -1,5 +1,6 @@
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
+import toBuffer from 'it-to-buffer'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
@@ -35,7 +36,7 @@ export class JsonPlugin extends BasePlugin {
 
     const terminalCid = context.pathDetails?.terminalElement.cid ?? context.cid
     const blockstore = getBlockstore(terminalCid, resource, session, options)
-    const block = await blockstore.get(terminalCid, options)
+    const block = await toBuffer(blockstore.get(terminalCid, options))
     let body: string | Uint8Array
 
     if (accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {

@@ -1,11 +1,18 @@
+import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import { createVerifiedFetch } from '../../src/index.js'
-import { serverTiming } from '../../src/utils/server-timing.js'
+import { ServerTiming } from '../../src/utils/server-timing.js'
 import { createHelia } from '../fixtures/create-offline-helia.js'
 import type { VerifiedFetch } from '../../src/index.js'
-import type { ServerTimingResult } from '../../src/utils/server-timing.js'
+import type { Helia } from 'helia'
 
 describe('serverTiming', () => {
+  let serverTiming: ServerTiming
+
+  beforeEach(() => {
+    serverTiming = new ServerTiming()
+  })
+
   it('should return a success object with the correct header and no error', async () => {
     const name = 'testSuccess'
     const description = 'Testing success case'
@@ -15,13 +22,10 @@ describe('serverTiming', () => {
       return mockValue
     }
 
-    const result: ServerTimingResult<number> = await serverTiming(name, description, fn)
+    const result = await serverTiming.time(name, description, fn())
+    expect(result).to.equal(mockValue)
 
-    expect(result.error).to.be.null()
-    expect(result.result).to.equal(mockValue)
-    expect(result.header).to.be.a('string')
-
-    const [timingName, timingDuration, timingDesc] = result.header.split(';')
+    const [timingName, timingDuration, timingDesc] = serverTiming.getHeader().split(';')
     expect(timingName).to.equal(name)
     expect(timingDuration).to.match(/^dur=\d+(\.\d)?$/)
     expect(timingDesc).to.equal(`desc="${description}"`)
@@ -35,13 +39,9 @@ describe('serverTiming', () => {
       throw testError
     }
 
-    const result: ServerTimingResult<never> = await serverTiming(name, description, fn)
+    await expect(serverTiming.time(name, description, fn())).to.eventually.be.rejectedWith(testError)
 
-    expect(result.result).to.be.null()
-    expect(result.error).to.equal(testError)
-    expect(result.header).to.be.a('string')
-
-    const [timingName, timingDuration, timingDesc] = result.header.split(';')
+    const [timingName, timingDuration, timingDesc] = serverTiming.getHeader().split(';')
     expect(timingName).to.equal(name)
     expect(timingDuration).to.match(/^dur=\d+(\.\d)?$/)
     expect(timingDesc).to.equal(`desc="${description}"`)
@@ -59,11 +59,10 @@ describe('serverTiming', () => {
       return 'timing-check'
     }
 
-    const result: ServerTimingResult<string> = await serverTiming(name, description, fn)
-    expect(result.error).to.be.null()
-    expect(result.result).to.equal('timing-check')
+    const result = await serverTiming.time(name, description, fn())
+    expect(result).to.equal('timing-check')
 
-    const [, timingDuration] = result.header.split(';')
+    const [, timingDuration] = serverTiming.getHeader().split(';')
     const durationValue = Number(timingDuration.replace('dur=', ''))
     // round durationValue to nearest 10ms. On windows and firefox, a delay of 20ms returns ~19.x ms.
     expect(Math.round(durationValue / 10) * 10).to.be.greaterThanOrEqual(20).and.lessThanOrEqual(30)
@@ -71,8 +70,15 @@ describe('serverTiming', () => {
 
   describe('serverTiming with verified-fetch', () => {
     let vFetch: VerifiedFetch
-    before(async () => {
-      vFetch = await createVerifiedFetch(await createHelia())
+    let helia: Helia
+
+    beforeEach(async () => {
+      helia = await createHelia()
+      vFetch = await createVerifiedFetch(helia)
+    })
+
+    afterEach(async () => {
+      await stop(helia)
     })
 
     it('response does not include server timing by default', async () => {
@@ -81,7 +87,7 @@ describe('serverTiming', () => {
     })
 
     it('can include one-off server timing headers in response', async () => {
-      const response = await vFetch('https://example.com', {
+      const response = await vFetch('ipfs://bafyaaaa', {
         withServerTiming: true
       })
       expect(response.headers.get('Server-Timing')).to.be.a('string')

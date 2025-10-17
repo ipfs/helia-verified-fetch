@@ -55,7 +55,7 @@ describe('getEtagRequest', () => {
 
   beforeEach(async () => {
     helia = await createHelia()
-    verifiedFetch = new VerifiedFetch({ helia })
+    verifiedFetch = new VerifiedFetch(helia)
   })
 
   afterEach(async () => {

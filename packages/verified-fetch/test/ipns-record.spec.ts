@@ -1,25 +1,31 @@
 import { dagCbor } from '@helia/dag-cbor'
-import { ipns } from '@helia/ipns'
 import { generateKeyPair } from '@libp2p/crypto/keys'
 import { stop } from '@libp2p/interface'
+import { Record as DHTRecord } from '@libp2p/kad-dht'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
-import { marshalIPNSRecord, unmarshalIPNSRecord } from 'ipns'
+import { Key } from 'interface-datastore'
+import { createIPNSRecord, marshalIPNSRecord, unmarshalIPNSRecord } from 'ipns'
+import { stubInterface } from 'sinon-ts'
+import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
-import type { IPNS } from '@helia/ipns'
+import type { IPNSResolver } from '@helia/ipns'
+import type { StubbedInstance } from 'sinon-ts'
 
 describe('ipns records', () => {
   let helia: Helia
-  let name: IPNS
+  let ipnsResolver: StubbedInstance<IPNSResolver>
   let verifiedFetch: VerifiedFetch
 
   beforeEach(async () => {
     helia = await createHelia()
-    name = ipns(helia)
-    verifiedFetch = new VerifiedFetch({
-      helia
+    ipnsResolver = stubInterface()
+    verifiedFetch = new VerifiedFetch(helia, {
+      ipnsResolver
     })
   })
 
@@ -34,9 +40,23 @@ describe('ipns records', () => {
     const c = dagCbor(helia)
     const cid = await c.add(obj)
 
-    const key = await generateKeyPair('Ed25519')
-    const peerId = peerIdFromPrivateKey(key)
-    const record = await name.publish(key, cid)
+    const privateKey = await generateKeyPair('Ed25519')
+    const record = await createIPNSRecord(privateKey, cid, 1, 10_000)
+    const peerId = peerIdFromPrivateKey(privateKey)
+
+    ipnsResolver.resolve.withArgs(peerId).resolves({
+      cid,
+      record
+    })
+
+    // store the record in the datastore
+    const routingKey = uint8ArrayConcat([
+      uint8ArrayFromString('/ipns/'),
+      peerId.toMultihash().bytes
+    ])
+    const datastoreKey = new Key('/dht/record/' + uint8ArrayToString(routingKey, 'base32'), false)
+    const dhtRecord = new DHTRecord(routingKey, marshalIPNSRecord(record), new Date())
+    await helia.datastore.put(datastoreKey, dhtRecord.serialize())
 
     const resp = await verifiedFetch.fetch(`ipns://${peerId}`, {
       headers: {
@@ -71,18 +91,8 @@ describe('ipns records', () => {
     expect(resp.status).to.equal(400)
   })
 
-  it('should reject a request for a url with a path component', async () => {
-    const obj = {
-      hello: 'world'
-    }
-    const c = dagCbor(helia)
-    const cid = await c.add(obj)
-
-    const key = await generateKeyPair('Ed25519')
-    const peerId = peerIdFromPrivateKey(key)
-    await name.publish(key, cid)
-
-    const resp = await verifiedFetch.fetch(`ipns://${peerId}/hello`, {
+  it('should reject a request for an IPNS url with a path component', async () => {
+    const resp = await verifiedFetch.fetch('ipns://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv/hello', {
       headers: {
         accept: 'application/vnd.ipfs.ipns-record'
       }
