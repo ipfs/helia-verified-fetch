@@ -750,7 +750,7 @@
  *
  *      async handle(context: PluginContext): Promise<Response | null> {
  *        // Perform any partial processing here, e.g., modify the context:
- *        context.customProcessed = true;
+ *        context.customProcessed = true
  *
  *        // If you are ready to finalize the response:
  *        return new Response('Hello, world!', {
@@ -758,7 +758,7 @@
  *          headers: {
  *            'Content-Type': 'text/plain'
  *          }
- *        });
+ *        })
  *
  *        // Or, if further processing is needed by another plugin, simply return null.
  *      }
@@ -812,13 +812,13 @@
  *     details: {
  *       someKey: 'Additional details here'
  *     }
- *   });
+ *   })
  * }
  *
  * if (recoverable === false) {
  *   throw new PluginFatalError('MY_CUSTOM_FATAL', 'A critical error occurred', {
  *     response: new Response('Something happened', { status: 500 })  // Required: supply your own error response
- *   });
+ *   })
  * }
  *
  *   // Otherwise, continue processing...

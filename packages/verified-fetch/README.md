@@ -844,13 +844,13 @@ if (recoverable === true) {
     details: {
       someKey: 'Additional details here'
     }
-  });
+  })
 }
 
 if (recoverable === false) {
   throw new PluginFatalError('MY_CUSTOM_FATAL', 'A critical error occurred', {
     response: new Response('Something happened', { status: 500 })  // Required: supply your own error response
-  });
+  })
 }
 
   // Otherwise, continue processing...
