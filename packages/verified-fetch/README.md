@@ -782,7 +782,7 @@ To add your own plugin:
 
      async handle(context: PluginContext): Promise<Response | null> {
        // Perform any partial processing here, e.g., modify the context:
-       context.customProcessed = true;
+       context.customProcessed = true
 
        // If you are ready to finalize the response:
        return new Response('Hello, world!', {
@@ -790,7 +790,7 @@ To add your own plugin:
          headers: {
            'Content-Type': 'text/plain'
          }
-       });
+       })
 
        // Or, if further processing is needed by another plugin, simply return null.
      }

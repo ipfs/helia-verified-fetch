@@ -60,7 +60,7 @@ $ DEBUG="-mocha*,*,*:trace" npm run test # very verbose output
 $ DEBUG="conformance-tests*,conformance-tests*:trace" npm run test # only gateway-conformance test output
 ```
 
-## Example - querying the gateway-conformance server directly
+## Example - Querying the gateway-conformance server directly
 
 ```console
 $ npm run build
@@ -81,12 +81,12 @@ $ npm run gen:gwc-report -- my-test --cleanup
 
 # Use the results in your own code
 $ node -e "
-import { generateConformanceResults } from './dist/src/generate-conformance-report.js';
-import { getReportDetails } from './dist/src/get-report-details.js';
-const result = await generateConformanceResults('custom', { cleanupBinary: true });
-console.log('Report saved to:', result.reportPath);
-const details = await getReportDetails(result.reportPath);
-console.log('Success rate:', details.successRate);
+import { generateConformanceResults } from './dist/src/generate-conformance-report.js'
+import { getReportDetails } from './dist/src/get-report-details.js'
+const result = await generateConformanceResults('custom', { cleanupBinary: true })
+console.log('Report saved to:', result.reportPath)
+const details = await getReportDetails(result.reportPath)
+console.log('Success rate:', details.successRate)
 "
 ```
 
