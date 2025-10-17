@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+import { existsSync } from 'node:fs'
 import { access, constants } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { existsSync } from 'node:fs'
 import { prefixLogger } from '@libp2p/logger'
 import getPort from 'aegir/get-port'
 import { execa } from 'execa'
