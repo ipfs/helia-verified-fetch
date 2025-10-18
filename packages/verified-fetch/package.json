@@ -168,7 +168,6 @@
     "@helia/car": "^5.1.1",
     "@helia/delegated-routing-v1-http-api-client": "^5.0.0",
     "@helia/dnslink": "^1.0.1",
-    "@helia/http": "^3.0.4",
     "@helia/interface": "^6.0.0",
     "@helia/ipns": "^9.0.0",
     "@helia/routers": "^4.0.0",
@@ -182,7 +181,6 @@
     "@libp2p/peer-id": "^6.0.0",
     "@libp2p/webrtc": "^6.0.0",
     "@libp2p/websockets": "^10.0.0",
-    "@multiformats/blake2": "^2.0.2",
     "@multiformats/dns": "^1.0.6",
     "cborg": "^4.2.11",
     "file-type": "^21.0.0",
@@ -205,6 +203,7 @@
   "devDependencies": {
     "@helia/dag-cbor": "^5.0.0",
     "@helia/dag-json": "^5.0.0",
+    "@helia/http": "^3.0.4",
     "@helia/json": "^5.0.0",
     "@ipld/car": "^5.4.2",
     "@libp2p/crypto": "^5.1.3",
