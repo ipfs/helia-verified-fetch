@@ -292,6 +292,7 @@ describe('@helia/verified-fetch', () => {
     })
 
     it.skip('should redirect to a libp2p-key CID when a base36 CIDv1 dag-pb IPNS name is requested', async () => {
+      // spell-checker: disable-next-line
       const base36str = 'k50rm9yjlt0jey4fqg6wafvqprktgbkpgkqdg27tpqje6iimzxewnhvtin9hhq'
       // const cid = CID.parse('k50rm9yjlt0jey4fqg6wafvqprktgbkpgkqdg27tpqje6iimzxewnhvtin9hhq')
 
