@@ -157,6 +157,20 @@ function dnsLinkLabelDecoder (linkLabel: string): string {
 // eslint-disable-next-line complexity
 export async function parseUrlString ({ urlString, ipns, logger, withServerTiming = false }: ParseUrlStringInput, options?: ParseUrlStringOptions): Promise<ParsedUrlStringResults> {
   const log = logger.forComponent('helia:verified-fetch:parse-url-string')
+  /**
+   * Remove hash fragment from URL before processing.
+   * Hash fragments are client-side only and cause issues with:
+   * 1. Regex URL parsing (hash gets captured as part of query string)
+   * 2. IPFS path resolution (hash is not part of the content path)
+   * 
+   * @see https://github.com/ipfs/service-worker-gateway/issues/859
+   */
+  const hashIndex = urlString.indexOf('#')
+  if (hashIndex !== -1) {
+    urlString = urlString.substring(0, hashIndex)
+    log.trace('stripped hash fragment from URL')
+  }
+  
   const { protocol, cidOrPeerIdOrDnsLink, path: urlPath, queryString } = matchURLString(urlString)
 
   let cid: CID | undefined
