@@ -1,11 +1,9 @@
-import { dagCbor } from '@helia/dag-cbor'
 import { unixfs } from '@helia/unixfs'
 import { generateKeyPair } from '@libp2p/crypto/keys'
 import { stop } from '@libp2p/interface'
-import { prefixLogger, logger as libp2pLogger } from '@libp2p/logger'
-import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import { fixedSize } from 'ipfs-unixfs-importer/chunker'
+import all from 'it-all'
 import { CID } from 'multiformats/cid'
 import pDefer from 'p-defer'
 import Sinon from 'sinon'
@@ -14,10 +12,9 @@ import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import { getAbortablePromise } from './fixtures/get-abortable-promise.js'
 import { makeAbortedRequest } from './fixtures/make-aborted-request.js'
+import type { DNSLink, DNSLinkIPFSResult, DNSLinkIPNSResult } from '@helia/dnslink'
 import type { BlockBroker, Helia } from '@helia/interface'
-import type { DNSLinkResolveResult, IPNS, IPNSResolveResult } from '@helia/ipns'
-import type { ComponentLogger, Logger } from '@libp2p/interface'
-import type { DeferredPromise } from 'p-defer'
+import type { IPNSResolver, IPNSResolveResult } from '@helia/ipns'
 import type { StubbedInstance } from 'sinon-ts'
 
 describe('abort-handling', function () {
@@ -28,31 +25,30 @@ describe('abort-handling', function () {
    */
   const notPublishedCid = CID.parse('bafybeichqiz32cw5c3vdpvh2xtfgl42veqbsr6sw2g6c7ffz6atvh2vise')
   let helia: Helia
-  let name: StubbedInstance<IPNS>
-  let logger: ComponentLogger
-  let componentLoggers: Logger[] = []
+  let ipnsResolver: StubbedInstance<IPNSResolver>
+  let dnsLink: StubbedInstance<DNSLink>
   let verifiedFetch: VerifiedFetch
 
   /**
    * Stubbed networking components
    */
   let blockRetriever: StubbedInstance<Required<Pick<BlockBroker, 'retrieve'>>>
-  let dnsLinkResolver: Sinon.SinonStub<any[], Promise<DNSLinkResolveResult>>
+  let dnsLinkResolver: Sinon.SinonStub<any[], Promise<Array<DNSLinkIPFSResult | DNSLinkIPNSResult>>>
   let peerIdResolver: Sinon.SinonStub<any[], Promise<IPNSResolveResult>>
 
   /**
    * used as promises to pass to makeAbortedRequest that will abort the request as soon as it's resolved.
    */
-  let blockBrokerRetrieveCalled: DeferredPromise<void>
-  let dnsLinkResolverCalled: DeferredPromise<void>
-  let peerIdResolverCalled: DeferredPromise<void>
+  let blockBrokerRetrieveCalled: PromiseWithResolvers<void>
+  let dnsLinkResolverCalled: PromiseWithResolvers<void>
+  let peerIdResolverCalled: PromiseWithResolvers<void>
 
   beforeEach(async () => {
     peerIdResolver = sandbox.stub()
     dnsLinkResolver = sandbox.stub()
-    peerIdResolverCalled = pDefer()
-    dnsLinkResolverCalled = pDefer()
-    blockBrokerRetrieveCalled = pDefer()
+    peerIdResolverCalled = Promise.withResolvers()
+    dnsLinkResolverCalled = Promise.withResolvers()
+    blockBrokerRetrieveCalled = Promise.withResolvers()
 
     dnsLinkResolver.withArgs('timeout-5000-example.com', Sinon.match.any).callsFake(async (_domain, options) => {
       dnsLinkResolverCalled.resolve()
@@ -72,44 +68,30 @@ describe('abort-handling', function () {
       }
     })
 
-    logger = prefixLogger('test:abort-handling')
-    sandbox.stub(logger, 'forComponent').callsFake((name) => {
-      const newLogger = libp2pLogger(`test:abort-handling:child-logger-${componentLoggers.length}:${name}`)
-      componentLoggers.push(sandbox.stub(newLogger))
-      return newLogger
-    })
     helia = await createHelia({
-      logger,
       blockBrokers: [() => blockRetriever]
     })
-    name = stubInterface<IPNS>({
-      resolveDNSLink: dnsLinkResolver,
+    ipnsResolver = stubInterface<IPNSResolver>({
       resolve: peerIdResolver
     })
-    verifiedFetch = new VerifiedFetch({
-      helia,
-      ipns: name
+    dnsLink = stubInterface<DNSLink>({
+      resolve: dnsLinkResolver
+    })
+    verifiedFetch = new VerifiedFetch(helia, {
+      ipnsResolver,
+      dnsLink
     })
   })
 
   afterEach(async () => {
-    await stop(helia, verifiedFetch, name)
-    componentLoggers = []
+    await stop(helia, verifiedFetch, ipnsResolver)
     sandbox.restore()
   })
 
   it('should abort a request before peerId resolution', async function () {
-    const c = dagCbor(helia)
-    const cid = await c.add({
-      hello: 'world'
-    })
+    const privateKey = await generateKeyPair('Ed25519')
 
-    const key = await generateKeyPair('Ed25519')
-    const peerId = peerIdFromPrivateKey(key)
-
-    await name.publish(key, cid, { lifetime: 1000 * 60 * 60 })
-
-    await expect(makeAbortedRequest(verifiedFetch, [`ipns://${peerId.toString()}`], peerIdResolverCalled.promise)).to.eventually.be.rejectedWith('aborted')
+    await expect(makeAbortedRequest(verifiedFetch, [`ipns://${privateKey.publicKey.toString()}`], peerIdResolverCalled.promise)).to.eventually.be.rejectedWith('aborted')
     expect(peerIdResolver.callCount).to.equal(1)
     expect(dnsLinkResolver.callCount).to.equal(0) // not called because signal abort was detected
     expect(blockRetriever.retrieve.callCount).to.equal(0) // not called because we never got the cid
@@ -157,12 +139,12 @@ describe('abort-handling', function () {
 
     const fileRootGot = pDefer()
     const blockstoreGetSpy = Sinon.stub(helia.blockstore, 'get')
-    blockstoreGetSpy.callsFake(async (cid, options) => {
+    blockstoreGetSpy.callsFake(async function * (cid, options) {
       if (cid.equals(fileCid)) {
         fileRootGot.resolve()
       }
 
-      return blockstoreGetSpy.wrappedMethod.call(helia.blockstore, cid, options)
+      yield * blockstoreGetSpy.wrappedMethod.call(helia.blockstore, cid, options)
     })
 
     await expect(makeAbortedRequest(verifiedFetch, [cid], fileRootGot.promise))
@@ -218,18 +200,18 @@ describe('abort-handling', function () {
     const leaf1Got = pDefer()
     let leaf2Loaded = false
     const blockstoreGetSpy = Sinon.stub(helia.blockstore, 'get')
-    blockstoreGetSpy.callsFake(async (cid, options) => {
+    blockstoreGetSpy.callsFake(async function * (cid, options) {
       if (cid.equals(leaf1)) {
         leaf1Got.resolve()
       }
 
-      const b = await blockstoreGetSpy.wrappedMethod.call(helia.blockstore, cid, options)
+      const b = await all(blockstoreGetSpy.wrappedMethod.call(helia.blockstore, cid, options))
 
       if (cid.equals(leaf2)) {
         leaf2Loaded = true
       }
 
-      return b
+      yield * b
     })
 
     await expect(makeAbortedRequest(verifiedFetch, [cid], leaf1Got.promise))

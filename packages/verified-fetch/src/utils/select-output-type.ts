@@ -3,7 +3,7 @@ import { code as dagJsonCode } from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
-import type { RequestFormatShorthand } from '../types.js'
+import type { RequestFormatShorthand } from '../index.js'
 import type { CID } from 'multiformats/cid'
 
 /**
@@ -62,10 +62,15 @@ const CID_TYPE_MAP: Record<number, string[]> = {
   ]
 }
 
+export interface AcceptHeader {
+  mimeType: string
+  options: Record<string, string>
+}
+
 /**
  * Selects an output mime-type based on the CID and a passed `Accept` header
  */
-export function selectOutputType (cid: CID, accept?: string): string | undefined {
+export function selectOutputType (cid: CID, accept?: string): AcceptHeader | undefined {
   const cidMimeTypes = CID_TYPE_MAP[cid.code]
 
   if (accept != null) {
@@ -73,78 +78,67 @@ export function selectOutputType (cid: CID, accept?: string): string | undefined
   }
 }
 
-function chooseMimeType (accept: string, validMimeTypes: string[]): string | undefined {
+function chooseMimeType (accept: string, validMimeTypes: string[]): AcceptHeader | undefined {
   const requestedMimeTypes = accept
     .split(',')
     .map(s => {
       const parts = s.trim().split(';')
 
+      const options: Record<string, string> = {
+        q: '0'
+      }
+
+      for (let i = 1; i < parts.length; i++) {
+        const [key, value] = parts[i].split('=').map(s => s.trim())
+
+        options[key] = value
+      }
+
       return {
         mimeType: `${parts[0]}`.trim(),
-        weight: parseQFactor(parts[1])
+        options
       }
     })
     .sort((a, b) => {
-      if (a.weight === b.weight) {
+      if (a.options.q === b.options.q) {
         return 0
       }
 
-      if (a.weight > b.weight) {
+      if (a.options.q > b.options.q) {
         return -1
       }
 
       return 1
     })
-    .map(s => s.mimeType)
 
   for (const headerFormat of requestedMimeTypes) {
     for (const mimeType of validMimeTypes) {
-      if (headerFormat.includes(mimeType)) {
-        return mimeType
+      if (headerFormat.mimeType.includes(mimeType)) {
+        return headerFormat
       }
 
-      if (headerFormat === '*/*') {
-        return mimeType
+      if (headerFormat.mimeType === '*/*') {
+        return {
+          mimeType,
+          options: headerFormat.options
+        }
       }
 
-      if (headerFormat.startsWith('*/') && mimeType.split('/')[1] === headerFormat.split('/')[1]) {
-        return mimeType
+      if (headerFormat.mimeType.startsWith('*/') && mimeType.split('/')[1] === headerFormat.mimeType.split('/')[1]) {
+        return {
+          mimeType,
+          options: headerFormat.options
+        }
       }
 
-      if (headerFormat.endsWith('/*') && mimeType.split('/')[0] === headerFormat.split('/')[0]) {
-        return mimeType
+      if (headerFormat.mimeType.endsWith('/*') && mimeType.split('/')[0] === headerFormat.mimeType.split('/')[0]) {
+        return {
+          mimeType,
+          options: headerFormat.options
+        }
       }
     }
   }
-}
-
-/**
- * Parses q-factor weighting from the accept header to allow letting some mime
- * types take precedence over others.
- *
- * If the q-factor for an acceptable mime representation is omitted it defaults
- * to `1`.
- *
- * All specified values should be in the range 0-1.
- *
- * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept#q
- */
-function parseQFactor (str?: string): number {
-  if (str != null) {
-    str = str.trim()
-  }
-
-  if (str?.startsWith('q=') !== true) {
-    return 1
-  }
-
-  const factor = parseFloat(str.replace('q=', ''))
-
-  if (isNaN(factor)) {
-    return 0
-  }
-
-  return factor
 }
 
 export const FORMAT_TO_MIME_TYPE: Record<RequestFormatShorthand, string> = {

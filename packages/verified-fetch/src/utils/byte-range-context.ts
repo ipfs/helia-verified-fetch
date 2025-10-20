@@ -2,7 +2,7 @@ import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { InvalidRangeError } from '../errors.js'
 import { calculateByteRangeIndexes, getHeader } from './request-headers.js'
 import { getContentRangeHeader } from './response-headers.js'
-import type { SupportedBodyTypes } from '../types.js'
+import type { SupportedBodyTypes } from '../index.js'
 import type { ComponentLogger, Logger } from '@libp2p/interface'
 
 type SliceableBody = Exclude<SupportedBodyTypes, ReadableStream<Uint8Array> | null>

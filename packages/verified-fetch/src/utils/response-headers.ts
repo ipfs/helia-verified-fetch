@@ -8,7 +8,7 @@ interface CacheControlHeaderOptions {
    * See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#response_directives
    */
   ttl?: number
-  protocol: 'ipfs' | 'ipns'
+  protocol: string
   response: Response
 }
 

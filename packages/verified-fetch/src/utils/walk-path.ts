@@ -62,7 +62,7 @@ export async function handlePathWalking ({ cid, path, resource, options, blockst
       return notFoundResponse(resource)
     }
 
-    log.error('error walking path %s', path, err)
+    log.error('error walking path "%s" - %e', path, err)
     return badGatewayResponse(resource, 'Error walking path')
   }
 }

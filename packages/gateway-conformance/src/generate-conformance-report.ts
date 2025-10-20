@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync } from 'node:fs'
 import { access, constants } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -145,7 +146,7 @@ export async function generateConformanceResults (
 
   try {
     // install binary if requested
-    if (shouldInstall) {
+    if (shouldInstall && !existsSync(binaryPath)) {
       await installBinary(binaryPath)
     }
 
@@ -232,6 +233,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     })
     .catch((error) => {
       log.error('Failed to generate conformance results - %e', error)
+      // eslint-disable-next-line no-console
+      console.error(error)
       process.exit(1)
     }).finally(() => {
       setTimeout(() => {

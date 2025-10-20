@@ -19,7 +19,7 @@ export class TarPlugin extends BasePlugin {
     if (byteRangeContext == null) {
       return false
     }
-    return accept === 'application/x-tar' || query.format === 'tar'
+    return accept?.mimeType === 'application/x-tar' || query.format === 'tar'
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext'>>): Promise<Response> {

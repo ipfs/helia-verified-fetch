@@ -55,8 +55,8 @@ export class DagPbPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>): Promise<Response | null> {
-    const { cid, options, withServerTiming = false, pathDetails, query } = context
-    const { handleServerTiming, contentTypeParser, helia, getBlockstore } = this.pluginOptions
+    const { cid, options, pathDetails, query } = context
+    const { contentTypeParser, helia, getBlockstore } = this.pluginOptions
     const log = this.log
     let resource = context.resource
     let path = context.path
@@ -93,10 +93,10 @@ export class DagPbPlugin extends BasePlugin {
       try {
         log.trace('found directory at %c/%s, looking for index.html', cid, path)
 
-        const entry = await handleServerTiming('exporter-dir', '', async () => exporter(`/ipfs/${dirCid}/${rootFilePath}`, helia.blockstore, {
+        const entry = await context.serverTiming.time('exporter-dir', '', exporter(`/ipfs/${dirCid}/${rootFilePath}`, helia.blockstore, {
           signal: options?.signal,
           onProgress: options?.onProgress
-        }), withServerTiming)
+        }))
 
         log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
         path = rootFilePath
@@ -136,10 +136,10 @@ export class DagPbPlugin extends BasePlugin {
     }
 
     try {
-      const entry = await handleServerTiming('exporter-file', '', async () => exporter(resolvedCID, helia.blockstore, {
+      const entry = await context.serverTiming.time('exporter-file', '', exporter(resolvedCID, helia.blockstore, {
         signal: options?.signal,
         onProgress: options?.onProgress
-      }), withServerTiming)
+      }))
 
       let firstChunk: Uint8Array
       let contentType: string
@@ -152,13 +152,13 @@ export class DagPbPlugin extends BasePlugin {
         })
         log('got async iterator for %c/%s', cid, path)
 
-        const streamAndFirstChunk = await handleServerTiming('stream-and-chunk', '', async () => getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
+        const streamAndFirstChunk = await context.serverTiming.time('stream-and-chunk', '', getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
           onProgress: options?.onProgress,
           signal: options?.signal
-        }), withServerTiming)
+        }))
         const stream = streamAndFirstChunk.stream
         firstChunk = streamAndFirstChunk.firstChunk
-        contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ filename: query.filename, bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
+        contentType = await context.serverTiming.time('get-content-type', '', getContentType({ filename: query.filename, bytes: firstChunk, path, contentTypeParser, log }))
 
         byteRangeContext.setBody(stream)
       }
@@ -186,8 +186,8 @@ export class DagPbPlugin extends BasePlugin {
   }
 
   private async handleRangeRequest (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>>, entry: UnixFSEntry): Promise<string> {
-    const { path, byteRangeContext, options, withServerTiming = false } = context
-    const { handleServerTiming, contentTypeParser } = this.pluginOptions
+    const { path, byteRangeContext, options } = context
+    const { contentTypeParser } = this.pluginOptions
     const log = this.log
 
     // get the first chunk in order to determine the content type
@@ -203,7 +203,7 @@ export class DagPbPlugin extends BasePlugin {
       onProgress: options?.onProgress,
       signal: options?.signal
     })
-    const contentType = await handleServerTiming('get-content-type', '', async () => getContentType({ bytes: firstChunk, path, contentTypeParser, log }), withServerTiming)
+    const contentType = await context.serverTiming.time('get-content-type', '', getContentType({ bytes: firstChunk, path, contentTypeParser, log }))
 
     byteRangeContext?.setBody((range): AsyncGenerator<Uint8Array, void, unknown> => {
       if (options?.signal?.aborted) {

@@ -31,12 +31,34 @@
  * $ DEBUG="conformance-tests*,conformance-tests*:trace" npm run test # only gateway-conformance test output
  * ```
  *
- * @example querying the gateway-conformance server directly
+ * @example Querying the gateway-conformance server directly
  *
  * ```console
  * $ npm run build
  * $ node dist/src/demo-server.js # in terminal 1
  * $ curl -v GET http://localhost:3442/ipfs/bafkqabtimvwgy3yk/  # in terminal 2
+ * ```
+ *
+ * @example Generating conformance results standalone
+ *
+ * You can generate conformance results independently of the test suite for analysis or reuse:
+ *
+ * ```console
+ * # Generate results and keep binary for reuse
+ * $ npm run gen:gwc-report
+ *
+ * # Generate results with custom name and cleanup binary
+ * $ npm run gen:gwc-report -- my-test --cleanup
+ *
+ * # Use the results in your own code
+ * $ node -e "
+ * import { generateConformanceResults } from './dist/src/generate-conformance-report.js'
+ * import { getReportDetails } from './dist/src/get-report-details.js'
+ * const result = await generateConformanceResults('custom', { cleanupBinary: true })
+ * console.log('Report saved to:', result.reportPath)
+ * const details = await getReportDetails(result.reportPath)
+ * console.log('Success rate:', details.successRate)
+ * "
  * ```
  *
  * ## Troubleshooting

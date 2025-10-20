@@ -1,37 +1,24 @@
-export interface ServerTimingSuccess<T> {
-  error: null
-  result: T
-  header: string
-}
-export interface ServerTimingError {
-  result: null
-  error: Error
-  header: string
-}
-export type ServerTimingResult<T> = ServerTimingSuccess<T> | ServerTimingError
+export class ServerTiming {
+  private headers: string[]
 
-export async function serverTiming<T> (
-  name: string,
-  description: string,
-  fn: () => Promise<T>
-): Promise<ServerTimingResult<T>> {
-  const startTime = performance.now()
+  constructor () {
+    this.headers = []
+  }
 
-  try {
-    const result = await fn() // Execute the function
-    const endTime = performance.now()
+  getHeader (): string {
+    return this.headers.join(',')
+  }
 
-    const duration = (endTime - startTime).toFixed(1) // Duration in milliseconds
+  async time <T> (name: string, description: string, promise: Promise<T>): Promise<T> {
+    const startTime = performance.now()
 
-    // Create the Server-Timing header string
-    const header = `${name};dur=${duration};desc="${description}"`
-    return { result, header, error: null }
-  } catch (error: any) {
-    const endTime = performance.now()
-    const duration = (endTime - startTime).toFixed(1)
+    try {
+      return await promise // Execute the function
+    } finally {
+      const endTime = performance.now()
+      const duration = (endTime - startTime).toFixed(1) // Duration in milliseconds
 
-    // Still return a timing header even on error
-    const header = `${name};dur=${duration};desc="${description}"`
-    return { result: null, error, header } // Pass error with timing info
+      this.headers.push(`${name};dur=${duration};desc="${description}"`)
+    }
   }
 }

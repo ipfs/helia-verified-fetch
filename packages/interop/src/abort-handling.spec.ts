@@ -5,7 +5,8 @@ import type { VerifiedFetch } from '@helia/verified-fetch'
 
 describe('verified-fetch abort handling', () => {
   let verifiedFetch: VerifiedFetch
-  before(async () => {
+
+  beforeEach(async () => {
     if (process.env.KUBO_DIRECT_RETRIEVAL_ROUTER == null || process.env.KUBO_DIRECT_RETRIEVAL_ROUTER === '') {
       throw new Error('KUBO_DIRECT_RETRIEVAL_ROUTER environment variable is required')
     }
@@ -18,8 +19,8 @@ describe('verified-fetch abort handling', () => {
     })
   })
 
-  after(async () => {
-    await verifiedFetch.stop()
+  afterEach(async () => {
+    await verifiedFetch?.stop()
   })
 
   it('should handle aborts properly', async function () {
