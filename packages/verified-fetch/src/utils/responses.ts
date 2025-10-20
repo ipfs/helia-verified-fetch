@@ -1,5 +1,5 @@
 import type { ByteRangeContext } from './byte-range-context.js'
-import type { SupportedBodyTypes } from '../types.js'
+import type { SupportedBodyTypes } from '../index.js'
 import type { Logger } from '@libp2p/interface'
 
 function setField (response: Response, name: string, value: string | boolean): void {

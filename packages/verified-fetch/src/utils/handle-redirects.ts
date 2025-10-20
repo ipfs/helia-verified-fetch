@@ -37,19 +37,21 @@ export async function getRedirectResponse ({ resource, options, logger, cid, fet
   const forwardedHost = headers.get('x-forwarded-host')
   const headerHost = headers.get('host')
   const forwardedFor = headers.get('x-forwarded-for')
+
   if (forwardedFor == null && forwardedHost == null && headerHost == null) {
     log.trace('no redirect info found in headers')
     return null
   }
 
   log.trace('checking for redirect info')
-  // if x-forwarded-host is passed, we need to set the location header to the subdomain
-  // so that the browser can redirect to the correct subdomain
+  // if x-forwarded-host is passed, we need to set the location header to the
+  // subdomain so that the browser can redirect to the correct subdomain
   try {
     const urlParts = matchURLString(resource)
     const reqUrl = new URL(resource)
     const actualHost = forwardedHost ?? reqUrl.host
     const subdomainUrl = new URL(reqUrl)
+
     if (urlParts.protocol === 'ipfs' && cid.version === 0) {
       subdomainUrl.host = `${cid.toV1()}.ipfs.${actualHost}`
     } else {
@@ -65,6 +67,7 @@ export async function getRedirectResponse ({ resource, options, logger, cid, fet
       log.trace('host header is not the same as the subdomain url host, not setting location header')
       return null
     }
+
     if (reqUrl.host === subdomainUrl.host) {
       log.trace('req url is the same as the subdomain url, not setting location header')
       return null
@@ -75,6 +78,7 @@ export async function getRedirectResponse ({ resource, options, logger, cid, fet
     const pathUrl = new URL(reqUrl, `${reqUrl.protocol}//${actualHost}`)
     pathUrl.pathname = maybeAddTrailingSlash(reqUrl.pathname)
     log.trace('path url %s', pathUrl.href)
+
     // try to query subdomain with HEAD request to see if it's supported
     try {
       const subdomainTest = await fetch(subdomainUrl, { method: 'HEAD' })
@@ -86,11 +90,14 @@ export async function getRedirectResponse ({ resource, options, logger, cid, fet
         throw new SubdomainNotSupportedError('subdomain not supported')
       }
     } catch (err: any) {
-      log('subdomain not supported', err)
+      log('subdomain not supported - %e', err)
+
       if (pathUrl.href === reqUrl.href) {
         log('path url is the same as the request url, not setting location header')
+
         return null
       }
+
       // pathUrl is different from request URL (maybe even with just a trailing slash)
       return movedPermanentlyResponse(resource.toString(), pathUrl.href)
     }

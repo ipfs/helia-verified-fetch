@@ -6,6 +6,7 @@ export function getLocalDnsResolver (ipfsNsMap: string, kuboGateway: string): DN
   const log = logger('basic-server:dns')
   const nsMap = new Map<string, string>()
   const keyVals = ipfsNsMap.split(',')
+
   for (const keyVal of keyVals) {
     const [key, val] = keyVal.split(':')
     log('Setting entry: %s="%s"', key, val)
@@ -39,7 +40,7 @@ export function getLocalDnsResolver (ipfsNsMap: string, kuboGateway: string): DN
       if (nsValue == null) {
         log.error('No IPFS_NS_MAP entry for domain "%s"', actualDomainKey)
 
-        throw new Error('No IPFS_NS_MAP entry for domain')
+        throw new Error('No IPFS_NS_MAP entry for domain ' + actualDomainKey)
       }
       const data = `dnslink=${nsValue}`
       answers.push({

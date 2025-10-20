@@ -1,10 +1,10 @@
 import { isExplicitAcceptHeader, isExplicitFormatQuery, isExplicitIpldAcceptRequest } from './is-accept-explicit.js'
 import { queryFormatToAcceptHeader } from './select-output-type.js'
-import type { ParsedUrlStringResults } from './parse-url-string.js'
+import type { UrlQuery } from '../index.ts'
 import type { ComponentLogger } from '@libp2p/interface'
 
 export interface ResolvedAcceptHeaderOptions {
-  query?: ParsedUrlStringResults['query']
+  query?: UrlQuery
   headers?: RequestInit['headers']
   logger: ComponentLogger
 }

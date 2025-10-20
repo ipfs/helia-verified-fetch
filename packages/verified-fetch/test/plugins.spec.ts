@@ -19,9 +19,7 @@ describe('plugins', () => {
   })
 
   it('can override existing plugins', async () => {
-    verifiedFetch = new VerifiedFetch({
-      helia
-    }, {
+    verifiedFetch = new VerifiedFetch(helia, {
       plugins: [getCustomPluginFactory({ constructorName: 'DagWalkPlugin', canHandle: () => true, handle: async () => new Response('Hello, world!') })]
     })
 
@@ -32,9 +30,7 @@ describe('plugins', () => {
   })
 
   it('can shortcut the request pipeline with a PluginFatalError', async () => {
-    verifiedFetch = new VerifiedFetch({
-      helia
-    }, {
+    verifiedFetch = new VerifiedFetch(helia, {
       plugins: [getCustomPluginFactory({
         constructorName: 'Whatever',
         canHandle: () => true,
@@ -66,7 +62,7 @@ describe('plugins', () => {
       handle: async () => new Response('Final result', { status: 200 })
     })
 
-    verifiedFetch = new VerifiedFetch({ helia }, { plugins: [errorPlugin, finalPlugin] })
+    verifiedFetch = new VerifiedFetch(helia, { plugins: [errorPlugin, finalPlugin] })
 
     const response = await verifiedFetch.fetch('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
     expect(response).to.be.instanceOf(Response)
@@ -94,7 +90,7 @@ describe('plugins', () => {
       handle: async (context) => new Response('Processed!', { status: 200 })
     })
 
-    verifiedFetch = new VerifiedFetch({ helia }, { plugins: [updaterPlugin, finalPlugin] })
+    verifiedFetch = new VerifiedFetch(helia, { plugins: [updaterPlugin, finalPlugin] })
 
     const response = await verifiedFetch.fetch('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
     expect(response).to.be.instanceOf(Response)
@@ -115,7 +111,7 @@ describe('plugins', () => {
       }
     })
 
-    verifiedFetch = new VerifiedFetch({ helia }, { plugins: [singleCallPlugin] })
+    verifiedFetch = new VerifiedFetch(helia, { plugins: [singleCallPlugin] })
 
     // Call fetch. The runPluginPipeline should add the plugin's name to the used set,
     // ensuring it is not invoked more than once.
@@ -138,7 +134,7 @@ describe('plugins', () => {
       }
     }))
 
-    verifiedFetch = new VerifiedFetch({ helia }, { plugins: loopingPlugins })
+    verifiedFetch = new VerifiedFetch(helia, { plugins: loopingPlugins })
 
     // With no final response produced after max passes, the fetch method should return a
     // notSupportedResponse (or similar). The content we're requesting here is dag-pb and a dag-cbor accept header, which we don't currently support

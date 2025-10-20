@@ -3,9 +3,7 @@ import { dagJson } from '@helia/dag-json'
 import { ipns } from '@helia/ipns'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
-import { generateKeyPair } from '@libp2p/crypto/keys'
 import { stop } from '@libp2p/interface'
-import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import * as cborg from 'cborg'
 import { marshalIPNSRecord } from 'ipns'
@@ -15,7 +13,6 @@ import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
-import type { Helia } from '@helia/interface'
 
 interface Codec {
   encode(obj: any): Uint8Array
@@ -29,7 +26,7 @@ interface AcceptCborTestArgs {
 }
 
 describe('accept header', () => {
-  let helia: Helia
+  let helia: Awaited<ReturnType<typeof createHelia>>
   let verifiedFetch: VerifiedFetch
 
   function shouldNotAcceptCborWith ({ obj, type, codec = ipldDagCbor }: AcceptCborTestArgs): void {
@@ -63,9 +60,7 @@ describe('accept header', () => {
 
   beforeEach(async () => {
     helia = await createHelia()
-    verifiedFetch = new VerifiedFetch({
-      helia
-    })
+    verifiedFetch = new VerifiedFetch(helia)
   })
 
   afterEach(async () => {
@@ -271,9 +266,6 @@ describe('accept header', () => {
   })
 
   it('should support fetching IPNS records', async () => {
-    const key = await generateKeyPair('Ed25519')
-    const peerId = peerIdFromPrivateKey(key)
-
     const obj = {
       hello: 'world'
     }
@@ -281,9 +273,9 @@ describe('accept header', () => {
     const cid = await c.add(obj)
 
     const i = ipns(helia)
-    const record = await i.publish(key, cid)
+    const record = await i.publish('record-to-fetch', cid)
 
-    const resp = await verifiedFetch.fetch(`ipns://${peerId}`, {
+    const resp = await verifiedFetch.fetch(`ipns://${record.publicKey.toString()}`, {
       headers: {
         accept: 'application/vnd.ipfs.ipns-record'
       }
@@ -292,13 +284,10 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
     const buf = await resp.arrayBuffer()
 
-    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record))
+    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
   })
 
   it('should support fetching IPNS records for a ipns subdomain', async () => {
-    const key = await generateKeyPair('Ed25519')
-    const peerId = peerIdFromPrivateKey(key)
-
     const obj = {
       hello: 'world'
     }
@@ -306,31 +295,31 @@ describe('accept header', () => {
     const cid = await c.add(obj)
 
     const i = ipns(helia)
-    const record = await i.publish(key, cid)
+    const record = await i.publish('subdomain-record-to-fetch', cid)
 
     /**
      * Works with k51... peerIds
      */
-    let resp = await verifiedFetch.fetch(`http://${peerId.toCID().toString(base36)}.ipns.example.com`, {
+    let resp = await verifiedFetch.fetch(`http://${record.publicKey.toCID().toString(base36)}.ipns.example.com`, {
       headers: {
         accept: 'application/vnd.ipfs.ipns-record'
       }
     })
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
-    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(marshalIPNSRecord(record))
+    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(marshalIPNSRecord(record.record))
 
     /**
      * Works with default CID peerIds
      */
-    resp = await verifiedFetch.fetch(`http://${peerId.toCID().toString()}.ipns.example.com`, {
+    resp = await verifiedFetch.fetch(`http://${record.publicKey.toCID().toString()}.ipns.example.com`, {
       headers: {
         accept: 'application/vnd.ipfs.ipns-record'
       }
     })
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
-    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(marshalIPNSRecord(record))
+    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(marshalIPNSRecord(record.record))
   })
 
   shouldNotAcceptCborWith({

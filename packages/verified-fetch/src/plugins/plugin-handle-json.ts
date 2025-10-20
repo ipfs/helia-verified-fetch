@@ -1,5 +1,6 @@
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
+import toBuffer from 'it-to-buffer'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
@@ -17,7 +18,7 @@ export class JsonPlugin extends BasePlugin {
       return false
     }
 
-    if (accept === 'application/vnd.ipld.dag-json' && cid.code !== ipldDagCbor.code) {
+    if (accept?.mimeType === 'application/vnd.ipld.dag-json' && cid.code !== ipldDagCbor.code) {
       // we can handle application/vnd.ipld.dag-json, but if the CID codec is ipldDagCbor, DagCborPlugin should handle it
       // TODO: remove the need for deny-listing cases in plugins
       return true
@@ -35,10 +36,10 @@ export class JsonPlugin extends BasePlugin {
 
     const terminalCid = context.pathDetails?.terminalElement.cid ?? context.cid
     const blockstore = getBlockstore(terminalCid, resource, session, options)
-    const block = await blockstore.get(terminalCid, options)
+    const block = await toBuffer(blockstore.get(terminalCid, options))
     let body: string | Uint8Array
 
-    if (accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {
+    if (accept?.mimeType === 'application/vnd.ipld.dag-cbor' || accept?.mimeType === 'application/cbor') {
       try {
         // if vnd.ipld.dag-cbor has been specified, convert to the format - note
         // that this supports more data types than regular JSON, the content-type
@@ -62,7 +63,7 @@ export class JsonPlugin extends BasePlugin {
         contentType = 'application/json'
       }
     } else {
-      contentType = accept.split(';')[0]
+      contentType = accept?.mimeType.split(';')[0]
     }
 
     context.byteRangeContext.setBody(body)

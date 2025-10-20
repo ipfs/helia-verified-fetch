@@ -777,12 +777,12 @@ To add your own plugin:
      canHandle(context: PluginContext): boolean {
        // Only handle requests if the Accept header matches your custom type
        // Or check context for pathDetails, custom values, etc...
-       return context.accept === 'application/vnd.my-custom-type'
+       return context.accept?.mimeType === 'application/vnd.my-custom-type'
      }
 
      async handle(context: PluginContext): Promise<Response | null> {
        // Perform any partial processing here, e.g., modify the context:
-       context.customProcessed = true;
+       context.customProcessed = true
 
        // If you are ready to finalize the response:
        return new Response('Hello, world!', {
@@ -790,7 +790,7 @@ To add your own plugin:
          headers: {
            'Content-Type': 'text/plain'
          }
-       });
+       })
 
        // Or, if further processing is needed by another plugin, simply return null.
      }
@@ -844,13 +844,13 @@ if (recoverable === true) {
     details: {
       someKey: 'Additional details here'
     }
-  });
+  })
 }
 
 if (recoverable === false) {
   throw new PluginFatalError('MY_CUSTOM_FATAL', 'A critical error occurred', {
     response: new Response('Something happened', { status: 500 })  // Required: supply your own error response
-  });
+  })
 }
 
   // Otherwise, continue processing...
