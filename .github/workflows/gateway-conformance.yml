@@ -23,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
 
       # 3. Download the gateway-conformance fixtures using ipfs/gateway-conformance action
       # This will prevent us from needing to install `docker` on the github runner
