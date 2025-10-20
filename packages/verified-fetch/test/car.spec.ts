@@ -7,13 +7,13 @@ import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import { importer } from 'ipfs-unixfs-importer'
 import { fixedSize } from 'ipfs-unixfs-importer/chunker'
-import itAll from 'it-all'
+import all from 'it-all'
 import toBuffer from 'it-to-buffer'
+import { CID } from 'multiformats/cid'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import { createRandomDataChunks } from './fixtures/create-random-data-chunks.js'
 import type { Helia } from '@helia/interface'
-import type { CID } from 'multiformats/cid'
 
 describe('car files', () => {
   let helia: Helia
@@ -44,13 +44,14 @@ describe('car files', () => {
       }
     })
     expect(resp.status).to.equal(200)
-    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
+    expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
     expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${cid.toString()}.car"`)
+
     const buf = new Uint8Array(await resp.arrayBuffer())
     const reader = await CarReader.fromBytes(buf)
     expect(await reader.getRoots()).to.deep.equal([cid])
-    expect(await itAll(reader.cids())).to.deep.equal([cid])
-    expect(await itAll(reader.blocks())).to.have.lengthOf(1)
+    expect(await all(reader.cids())).to.deep.equal([cid])
+    expect(await all(reader.blocks())).to.have.lengthOf(1)
     expect(buf).to.equalBytes(carFile)
   })
 
@@ -67,8 +68,100 @@ describe('car files', () => {
       }
     })
     expect(resp.status).to.equal(200)
-    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
+    expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
     expect(resp.headers.get('content-disposition')).to.equal('attachment; filename="foo.bar"')
+  })
+
+  it('should default to duplicates for a CAR file', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}?filename=foo.bar`, {
+      headers: {
+        accept: 'application/vnd.ipld.car'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.include('dups=y')
+  })
+
+  it('should support specifying no duplicates for a CAR file', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}?filename=foo.bar`, {
+      headers: {
+        accept: 'application/vnd.ipld.car; dups=n'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.include('dups=n')
+  })
+
+  it('should default to unknown order for a CAR file', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}?filename=foo.bar`, {
+      headers: {
+        accept: 'application/vnd.ipld.car'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.include('order=unk')
+  })
+
+  it('should support specifying order for a CAR file', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}?filename=foo.bar`, {
+      headers: {
+        accept: 'application/vnd.ipld.car; order=dfs'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.include('order=dfs')
+  })
+
+  it('should skip identity CIDs in a CAR file', async () => {
+    const cid = CID.parse('bafkqaf3imvwgy3zaneqgc3janfxgy2lomvscay3jmqfa')
+
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}`, {
+      headers: {
+        accept: 'application/vnd.ipld.car; dups=y'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car')
+  })
+
+  it('should use options from accept header when format is also passed', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}?format=car`, {
+      headers: {
+        accept: 'application/vnd.ipld.car; order=dfs; dups=y'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1; order=dfs; dups=y')
   })
 
   describe('dag-scope cbor', () => {
@@ -114,15 +207,15 @@ describe('car files', () => {
       const resp = await verifiedFetch.fetch(`ipfs://${cid}?format=car&dag-scope=all`)
 
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${cid.toString()}.car"`)
       const buf = new Uint8Array(await resp.arrayBuffer())
 
       const reader = await CarReader.fromBytes(buf)
 
       expect(await reader.getRoots()).to.deep.equal([cid])
-      expect(await itAll(reader.cids())).to.deep.equal([cid, nestedCid1, nestedCid2])
-      expect(await itAll(reader.blocks())).to.have.lengthOf(3)
+      expect(await all(reader.cids())).to.deep.equal([cid, nestedCid1, nestedCid2])
+      expect(await all(reader.blocks())).to.have.lengthOf(3)
 
       expect(buf).to.equalBytes(carFile)
     })
@@ -131,29 +224,29 @@ describe('car files', () => {
       const resp = await verifiedFetch.fetch(`ipfs://${cid}/z/a?format=car&dag-scope=block`)
 
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${cid.toString()}_z_a.car"`)
       const buf = new Uint8Array(await resp.arrayBuffer())
 
       const reader = await CarReader.fromBytes(buf)
 
       expect(await reader.getRoots()).to.deep.equal([nestedCid2])
-      expect(await itAll(reader.cids())).to.deep.equal([cid, nestedCid2])
-      expect(await itAll(reader.blocks())).to.have.lengthOf(2)
+      expect(await all(reader.cids())).to.deep.equal([cid, nestedCid2])
+      expect(await all(reader.blocks())).to.have.lengthOf(2)
     })
 
     it('dag-scope=entity returns only the root block', async () => {
       const resp = await verifiedFetch.fetch(`ipfs://${cid}/z?format=car&dag-scope=entity`)
 
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${cid.toString()}_z.car"`)
 
       const buf = new Uint8Array(await resp.arrayBuffer())
       const reader = await CarReader.fromBytes(buf)
 
       expect(await reader.getRoots()).to.deep.equal([cid])
-      expect(await itAll(reader.cids())).to.deep.equal([cid])
+      expect(await all(reader.cids())).to.deep.equal([cid])
     })
   })
 
@@ -188,7 +281,7 @@ describe('car files', () => {
         content: new Uint8Array([1, 2, 3, 4, 5])
       }]
 
-      const result = await itAll(fs.addAll(files, {
+      const result = await all(fs.addAll(files, {
         wrapWithDirectory: true
       }))
 
@@ -211,55 +304,55 @@ describe('car files', () => {
     it('dag-scope=all returns all blocks', async () => {
       const resp = await verifiedFetch.fetch(`ipfs://${rootCid}?format=car&dag-scope=all`)
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}.car"`)
 
       const buf = new Uint8Array(await resp.arrayBuffer())
       const reader = await CarReader.fromBytes(buf)
       expect(await reader.getRoots()).to.deep.equal([rootCid])
-      expect(await itAll(reader.cids())).to.deep.equal([rootCid, fileCid, nestedFolderCid, ...fileChunkCids, nestedFileCid])
-      expect(await itAll(reader.blocks())).to.have.lengthOf(4 + fileChunkCids.length)
+      expect(await all(reader.cids())).to.deep.equal([rootCid, fileCid, nestedFolderCid, ...fileChunkCids, nestedFileCid])
+      expect(await all(reader.blocks())).to.have.lengthOf(4 + fileChunkCids.length)
     })
 
     it('dag-scope=block returns only the requested block', async () => {
       const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/large-file.txt?format=car&dag-scope=block`)
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}_large-file.txt.car"`)
 
       const buf = new Uint8Array(await resp.arrayBuffer())
       const reader = await CarReader.fromBytes(buf)
       expect(await reader.getRoots()).to.deep.equal([fileCid])
-      expect(await itAll(reader.cids())).to.deep.equal([rootCid, fileCid], 'did not contain root and file blocks')
+      expect(await all(reader.cids())).to.deep.equal([rootCid, fileCid], 'did not contain root and file blocks')
     })
 
     it('dag-scope=entity for multi-block file returns all blocks for that entity', async () => {
       const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/large-file.txt?format=car&dag-scope=entity`)
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}_large-file.txt.car"`)
 
       const buf = new Uint8Array(await resp.arrayBuffer())
       const reader = await CarReader.fromBytes(buf)
       expect(await reader.getRoots()).to.deep.equal([fileCid])
-      expect(await itAll(reader.cids())).to.deep.equal([rootCid, fileCid, ...fileChunkCids], 'did not contain root and all large file blocks')
+      expect(await all(reader.cids())).to.deep.equal([rootCid, fileCid, ...fileChunkCids], 'did not contain root and all large file blocks')
     })
 
     it('dag-scope=entity returns a directory and its content', async () => {
       const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/nested?format=car&dag-scope=entity`)
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}_nested.car"`)
 
       const buf = new Uint8Array(await resp.arrayBuffer())
       const reader = await CarReader.fromBytes(buf)
       expect(await reader.getRoots()).to.deep.equal([nestedFolderCid])
-      expect(await itAll(reader.cids())).to.deep.equal([rootCid, nestedFolderCid, nestedFileCid], 'did not contain verification blocks and full entity contents for the directory')
+      expect(await all(reader.cids())).to.deep.equal([rootCid, nestedFolderCid], 'did not contain verification blocks and listing for the directory')
     })
 
-    it.skip('dag-scope=entity with entity-bytes returns slice of content', async () => {
+    it('dag-scope=entity with entity-bytes returns slice of content', async () => {
       const data = crypto.getRandomValues(new Uint8Array(1024))
-      const importResults = await itAll(importer([{
+      const importResults = await all(importer([{
         content: data
       }], helia.blockstore, {
         chunker: fixedSize({
@@ -291,15 +384,27 @@ describe('car files', () => {
       const resp = await verifiedFetch.fetch(`ipfs://${rootCid}?format=car&dag-scope=entity&entity-bytes=0:10`)
 
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1')
-      expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}_nested.car"`)
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}.car"`)
 
       const buf = new Uint8Array(await resp.arrayBuffer())
       const reader = await CarReader.fromBytes(buf)
 
-      expect(await reader.getRoots()).to.deep.equal([nestedFolderCid])
-      // contains verification blocks and full entity contents for the directory
-      expect(await itAll(reader.cids())).to.deep.equal([rootCid, nestedFolderCid, nestedFileCid])
+      expect(await reader.getRoots()).to.deep.equal([rootCid])
+      // contains only the blocks with the requested bytes
+      expect(await all(reader.cids())).to.deep.equal([rootCid, rootNode.Links[0].Hash])
+    })
+
+    it('entity-bytes implies dag-scope=entity', async () => {
+      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/large-file.txt?format=car&entity-bytes=0:*`)
+      expect(resp.status).to.equal(200)
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}_large-file.txt.car"`)
+
+      const buf = new Uint8Array(await resp.arrayBuffer())
+      const reader = await CarReader.fromBytes(buf)
+      expect(await reader.getRoots()).to.deep.equal([fileCid])
+      expect(await all(reader.cids())).to.deep.equal([rootCid, fileCid, ...fileChunkCids], 'did not contain root and all large file blocks')
     })
   })
 })

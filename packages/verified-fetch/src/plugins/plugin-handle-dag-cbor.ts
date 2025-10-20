@@ -30,7 +30,7 @@ export class DagCborPlugin extends BasePlugin {
       return false
     }
 
-    if (accept != null && accept.includes('text/html') && plugins.includes('dag-cbor-plugin-html-preview')) {
+    if (accept != null && accept.mimeType === 'text/html' && plugins.includes('dag-cbor-plugin-html-preview')) {
       // let the dag-cbor-html-preview plugin handle it
       return false
     }
@@ -47,10 +47,10 @@ export class DagCborPlugin extends BasePlugin {
 
     let body: string | Uint8Array
 
-    if (accept === 'application/octet-stream' || accept === 'application/vnd.ipld.dag-cbor' || accept === 'application/cbor') {
+    if (accept?.mimeType === 'application/octet-stream' || accept?.mimeType === 'application/vnd.ipld.dag-cbor' || accept?.mimeType === 'application/cbor') {
       // skip decoding
       body = block
-    } else if (accept === 'application/vnd.ipld.dag-json') {
+    } else if (accept?.mimeType === 'application/vnd.ipld.dag-json') {
       try {
         // if vnd.ipld.dag-json has been specified, convert to the format - note
         // that this supports more data types than regular JSON, the content-type
@@ -65,7 +65,7 @@ export class DagCborPlugin extends BasePlugin {
       try {
         body = dagCborToSafeJSON(block)
       } catch (err) {
-        if (accept === 'application/json') {
+        if (accept?.mimeType === 'application/json') {
           this.log('could not decode DAG-CBOR as JSON-safe, but the client sent "Accept: application/json"', err)
 
           return notAcceptableResponse(resource)
@@ -78,7 +78,7 @@ export class DagCborPlugin extends BasePlugin {
 
     context.byteRangeContext.setBody(body)
 
-    const responseContentType = accept ?? (body instanceof Uint8Array ? 'application/octet-stream' : 'application/json')
+    const responseContentType = accept?.mimeType ?? (body instanceof Uint8Array ? 'application/octet-stream' : 'application/json')
     const response = okRangeResponse(resource, context.byteRangeContext.getBody(responseContentType), { byteRangeContext: context.byteRangeContext, log: this.log })
 
     response.headers.set('content-type', context.byteRangeContext.getContentType() ?? responseContentType)

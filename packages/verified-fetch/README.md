@@ -777,7 +777,7 @@ To add your own plugin:
      canHandle(context: PluginContext): boolean {
        // Only handle requests if the Accept header matches your custom type
        // Or check context for pathDetails, custom values, etc...
-       return context.accept === 'application/vnd.my-custom-type'
+       return context.accept?.mimeType === 'application/vnd.my-custom-type'
      }
 
      async handle(context: PluginContext): Promise<Response | null> {

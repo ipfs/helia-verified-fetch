@@ -1,5 +1,6 @@
 import { code as dagCborCode } from '@ipld/dag-cbor'
 import { code as dagPbCode } from '@ipld/dag-pb'
+import { CODEC_IDENTITY } from '../constants.ts'
 import { handlePathWalking } from '../utils/walk-path.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
@@ -23,7 +24,7 @@ export class DagWalkPlugin extends BasePlugin {
       return false
     }
 
-    return (cid.code === dagPbCode || cid.code === dagCborCode)
+    return (cid.code === dagPbCode || cid.code === dagCborCode || cid.multihash.code === CODEC_IDENTITY)
   }
 
   async handle (context: PluginContext): Promise<Response | null> {

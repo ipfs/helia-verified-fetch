@@ -36,9 +36,42 @@ export function matchURLString (urlString: string): MatchUrlGroups {
         groups.path = decodeURIComponent(groups.path)
       }
 
+      // decode inline dnslink domain if present
+      if (pattern === SUBDOMAIN_GATEWAY_REGEX && groups.protocol === 'ipns' && isInlinedDnsLink(groups.cidOrPeerIdOrDnsLink)) {
+        groups.cidOrPeerIdOrDnsLink = dnsLinkLabelDecoder(groups.cidOrPeerIdOrDnsLink)
+      }
+
       return groups
     }
   }
 
   throw new TypeError(`Invalid URL: ${urlString}, please use ipfs://, ipns://, or gateway URLs only`)
+}
+
+/**
+ * For DNSLink see https://specs.ipfs.tech/http-gateways/subdomain-gateway/#host-request-header
+ * DNSLink names include . which means they must be inlined into a single DNS label to provide unique origin and work with wildcard TLS certificates.
+ */
+
+// DNS label can have up to 63 characters, consisting of alphanumeric
+// characters or hyphens -, but it must not start or end with a hyphen.
+const dnsLabelRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/
+
+/**
+ * Checks if label looks like inlined DNSLink.
+ * (https://specs.ipfs.tech/http-gateways/subdomain-gateway/#host-request-header)
+ */
+function isInlinedDnsLink (label: string): boolean {
+  return dnsLabelRegex.test(label) && label.includes('-') && !label.includes('.')
+}
+
+/**
+ * DNSLink label decoding
+ * - Every standalone - is replaced with .
+ * - Every remaining -- is replaced with -
+ *
+ * @example en-wikipedia--on--ipfs-org.ipns.example.net -> example.net/ipns/en.wikipedia-on-ipfs.org
+ */
+function dnsLinkLabelDecoder (linkLabel: string): string {
+  return linkLabel.replace(/--/g, '%').replace(/-/g, '.').replace(/%/g, '-')
 }

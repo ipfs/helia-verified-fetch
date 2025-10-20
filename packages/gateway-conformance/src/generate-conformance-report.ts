@@ -233,6 +233,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     })
     .catch((error) => {
       log.error('Failed to generate conformance results - %e', error)
+      // eslint-disable-next-line no-console
+      console.error(error)
       process.exit(1)
     }).finally(() => {
       setTimeout(() => {

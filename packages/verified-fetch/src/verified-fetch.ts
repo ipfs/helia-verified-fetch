@@ -27,6 +27,7 @@ import { selectOutputType } from './utils/select-output-type.js'
 import { ServerTiming } from './utils/server-timing.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, ResolveURLResult, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
 import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from './plugins/types.js'
+import type { AcceptHeader } from './utils/select-output-type.js'
 import type { DNSLink } from '@helia/dnslink'
 import type { Helia, SessionBlockstore } from '@helia/interface'
 import type { IPNSResolver } from '@helia/ipns'
@@ -85,7 +86,8 @@ export class VerifiedFetch {
       logger: prefixLogger('helia:verified-fetch'),
       getBlockstore: (cid, resource, useSession, options) => this.getBlockstore(cid, resource, useSession, options),
       helia,
-      contentTypeParser: this.contentTypeParser
+      contentTypeParser: this.contentTypeParser,
+      ipnsResolver: this.ipnsResolver
     }
 
     const defaultPlugins = [
@@ -208,7 +210,7 @@ export class VerifiedFetch {
     response.headers.set('Access-Control-Allow-Origin', '*')
     response.headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Range, X-Requested-With')
-    response.headers.set('Access-Control-Expose-Headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Stream-Output')
+    response.headers.set('Access-Control-Expose-Headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Stream-Output')
 
     if (context?.reqFormat !== 'car') {
       // if we are not doing streaming responses, set the Accept-Ranges header to bytes to enable range requests
@@ -216,6 +218,11 @@ export class VerifiedFetch {
     } else {
       // set accept-ranges to none to disable range requests for streaming responses
       response.headers.set('Accept-Ranges', 'none')
+    }
+
+    if (response.headers.get('Content-Type')?.includes('application/vnd.ipld.car') === true || response.headers.get('Content-Type')?.includes('application/vnd.ipld.raw') === true) {
+      // see https://specs.ipfs.tech/http-gateways/path-gateway/#x-content-type-options-response-header
+      response.headers.set('X-Content-Type-Options', 'nosniff')
     }
 
     if (context?.options?.method === 'HEAD') {
@@ -355,7 +362,7 @@ export class VerifiedFetch {
 
     const acceptHeader = getResolvedAcceptHeader({ query: parsedResult.query, headers: options?.headers, logger: this.helia.logger })
 
-    const accept: string | undefined = selectOutputType(parsedResult.cid, acceptHeader)
+    const accept: AcceptHeader | undefined = selectOutputType(parsedResult.cid, acceptHeader)
     this.log('output type %s', accept)
 
     if (acceptHeader != null && accept == null) {
@@ -363,7 +370,7 @@ export class VerifiedFetch {
       return this.handleFinalResponse(notAcceptableResponse(resource.toString()))
     }
 
-    const responseContentType: string = accept?.split(';')[0] ?? 'application/octet-stream'
+    const responseContentType: string = accept?.mimeType.split(';')[0] ?? 'application/octet-stream'
 
     const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid: parsedResult.cid })
     if (redirectResponse != null) {

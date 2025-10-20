@@ -142,8 +142,8 @@
     "release": "aegir release"
   },
   "dependencies": {
-    "@helia/block-brokers": "^5.0.0",
-    "@helia/http": "^3.0.0",
+    "@helia/block-brokers": "^5.0.4",
+    "@helia/http": "^3.0.5",
     "@helia/interface": "^6.0.0",
     "@helia/routers": "^4.0.0",
     "@helia/verified-fetch": "^3.2.3",

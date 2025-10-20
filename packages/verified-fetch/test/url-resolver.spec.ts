@@ -865,7 +865,7 @@ describe('url-resolver', () => {
             record: ipnsRecordStub({ peerId: value as PeerId })
           })
         } else if (type === 'dnslink-encoded') {
-          dnsLink.resolve.withArgs(value.toString()).resolves([{
+          dnsLink.resolve.withArgs(value.toString().replace(/-/g, '.')).resolves([{
             namespace: 'ipfs',
             cid,
             path: '',

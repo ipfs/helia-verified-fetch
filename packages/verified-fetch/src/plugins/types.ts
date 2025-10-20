@@ -1,8 +1,10 @@
 import type { PluginError } from './errors.js'
 import type { ResolveURLResult, UrlQuery, VerifiedFetchInit, ContentTypeParser, RequestFormatShorthand } from '../index.js'
 import type { ByteRangeContext } from '../utils/byte-range-context.js'
+import type { AcceptHeader } from '../utils/select-output-type.ts'
 import type { ServerTiming } from '../utils/server-timing.ts'
 import type { PathWalkerResponse } from '../utils/walk-path.js'
+import type { IPNSResolver } from '@helia/ipns'
 import type { AbortOptions, ComponentLogger, Logger } from '@libp2p/interface'
 import type { Helia } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
@@ -20,6 +22,7 @@ export interface PluginOptions {
   getBlockstore(cid: CID, resource: string | CID, useSession?: boolean, options?: AbortOptions): Blockstore
   contentTypeParser?: ContentTypeParser
   helia: Helia
+  ipnsResolver: IPNSResolver
 }
 
 /**
@@ -32,7 +35,7 @@ export interface PluginContext extends ResolveURLResult {
   readonly cid: CID
   readonly path: string
   readonly resource: string
-  readonly accept?: string
+  readonly accept?: AcceptHeader
 
   /**
    * An array of plugin IDs that are all enabled. You can use this to check if a plugin is enabled and respond accordingly.

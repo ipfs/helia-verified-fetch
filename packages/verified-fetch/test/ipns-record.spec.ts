@@ -1,15 +1,10 @@
 import { dagCbor } from '@helia/dag-cbor'
 import { generateKeyPair } from '@libp2p/crypto/keys'
 import { stop } from '@libp2p/interface'
-import { Record as DHTRecord } from '@libp2p/kad-dht'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
-import { Key } from 'interface-datastore'
 import { createIPNSRecord, marshalIPNSRecord, unmarshalIPNSRecord } from 'ipns'
 import { stubInterface } from 'sinon-ts'
-import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
@@ -49,14 +44,7 @@ describe('ipns records', () => {
       record
     })
 
-    // store the record in the datastore
-    const routingKey = uint8ArrayConcat([
-      uint8ArrayFromString('/ipns/'),
-      peerId.toMultihash().bytes
-    ])
-    const datastoreKey = new Key('/dht/record/' + uint8ArrayToString(routingKey, 'base32'), false)
-    const dhtRecord = new DHTRecord(routingKey, marshalIPNSRecord(record), new Date())
-    await helia.datastore.put(datastoreKey, dhtRecord.serialize())
+    const marshaledRecord = marshalIPNSRecord(record)
 
     const resp = await verifiedFetch.fetch(`ipns://${peerId}`, {
       headers: {
@@ -65,12 +53,42 @@ describe('ipns records', () => {
     })
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
+    expect(resp.headers.get('content-length')).to.equal(marshaledRecord.byteLength.toString())
+    expect(resp.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
+    expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${peerId}.bin"`)
 
     const buf = new Uint8Array(await resp.arrayBuffer())
     expect(marshalIPNSRecord(record)).to.equalBytes(buf)
 
     const output = unmarshalIPNSRecord(buf)
     expect(output.value).to.deep.equal(`/ipfs/${cid}`)
+  })
+
+  it('should override filename when fetching a raw IPNS record', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const privateKey = await generateKeyPair('Ed25519')
+    const record = await createIPNSRecord(privateKey, cid, 1, 10_000)
+    const peerId = peerIdFromPrivateKey(privateKey)
+
+    ipnsResolver.resolve.withArgs(peerId).resolves({
+      cid,
+      record
+    })
+
+    const filename = 'foo.bin'
+
+    const resp = await verifiedFetch.fetch(`http://${peerId}.ipns.local?filename=${filename}`, {
+      headers: {
+        accept: 'application/vnd.ipfs.ipns-record'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${filename}"`)
   })
 
   it('should reject a request for non-IPNS url', async () => {

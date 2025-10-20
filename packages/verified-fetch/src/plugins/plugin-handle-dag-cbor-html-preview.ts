@@ -62,7 +62,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
       return false
     }
 
-    if (accept == null || !accept.includes('text/html')) {
+    if (accept == null || !accept?.mimeType.includes('text/html')) {
       return false
     }
 
