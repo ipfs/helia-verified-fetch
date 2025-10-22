@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-v4.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.2.3...@helia/verified-fetch-4.0.0) (2025-10-20)
+
+### ⚠ BREAKING CHANGES
+
+* upgrade helia to v6 and libp2p to v3 (#278)
+
+### Dependencies
+
+* upgrade helia to v6 and libp2p to v3 ([#278](https://github.com/ipfs/helia-verified-fetch/issues/278)) ([c9a8325](https://github.com/ipfs/helia-verified-fetch/commit/c9a8325efecea50625b6f0ec01370e194c8f0fc7))
+
 ## [@helia/verified-fetch-v3.2.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.2.2...@helia/verified-fetch-3.2.3) (2025-09-18)
 
 ### Bug Fixes

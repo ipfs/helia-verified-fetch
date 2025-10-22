@@ -13,22 +13,22 @@ jobs:
     steps:
       # 1, Setup Node, install npm dependencies, and build all packages/*
       # see https://github.com/ipdxco/unified-github-workflows/blob/3a1a7870ce5967163d8f5c8210b8ad50b2e659aa/.github/workflows/js-test-and-release.yml#L28-L34
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: lts/*
       - uses: ipfs/aegir/actions/cache-node-modules@main
 
       # 2. Set up 'go' so we can install the gateway-conformance binary
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
 
       # 3. Download the gateway-conformance fixtures using ipfs/gateway-conformance action
       # This will prevent us from needing to install `docker` on the github runner
       - name: Download gateway-conformance fixtures
-        uses: ipfs/gateway-conformance/.github/actions/extract-fixtures@v0.7
+        uses: ipfs/gateway-conformance/.github/actions/extract-fixtures@v0.8
         # working-directory: ./packages/gateway-conformance
         with:
           output: ./packages/gateway-conformance/dist/src/fixtures/data/gateway-conformance-fixtures

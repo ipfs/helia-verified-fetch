@@ -1,8 +1,4 @@
-import { Record as DHTRecord } from '@libp2p/kad-dht'
-import { Key } from 'interface-datastore'
-import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { marshalIPNSRecord } from 'ipns'
 import { getPeerIdFromString } from '../utils/get-peer-id-from-string.js'
 import { badRequestResponse, okRangeResponse } from '../utils/responses.js'
 import { PluginFatalError } from './errors.js'
@@ -23,17 +19,19 @@ export class IpnsRecordPlugin extends BasePlugin {
       return false
     }
 
-    return accept === 'application/vnd.ipfs.ipns-record' || query.format === 'ipns-record'
+    return accept?.mimeType === 'application/vnd.ipfs.ipns-record' || query.format === 'ipns-record'
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext'>>): Promise<Response> {
-    const { resource, path, options } = context
-    const { helia } = this.pluginOptions
+    const { resource, path, query, options } = context
+    const { ipnsResolver } = this.pluginOptions
     context.reqFormat = 'ipns-record'
+
     if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.') || resource.includes('/ipns/'))) {
       this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
       throw new PluginFatalError('ERR_INVALID_IPNS_NAME', 'Invalid IPNS name', { response: badRequestResponse(resource, new Error('Invalid IPNS name')) })
     }
+
     let peerId: PeerId
 
     try {
@@ -54,21 +52,20 @@ export class IpnsRecordPlugin extends BasePlugin {
       throw new PluginFatalError('ERR_NO_PEER_ID_FOUND', 'could not parse peer id from url', { response: badRequestResponse(resource, err) })
     }
 
-    // since this call happens after parseResource, we've already resolved the
-    // IPNS name so a local copy should be in the helia datastore, so we can
-    // just read it out..
-    const routingKey = uint8ArrayConcat([
-      uint8ArrayFromString('/ipns/'),
-      peerId.toMultihash().bytes
-    ])
-    const datastoreKey = new Key('/dht/record/' + uint8ArrayToString(routingKey, 'base32'), false)
-    const buf = await helia.datastore.get(datastoreKey, options)
-    const record = DHTRecord.deserialize(buf)
+    // force download in handleFinalResponse
+    query.filename = query.filename ?? `${peerId}.bin`
+    query.download = true
 
-    context.byteRangeContext.setBody(record.value)
+    // @ts-expect-error progress handler types are incompatible
+    const result = await ipnsResolver.resolve(peerId, options)
+    const buf = marshalIPNSRecord(result.record)
+
+    context.byteRangeContext.setBody(buf)
 
     const response = okRangeResponse(resource, context.byteRangeContext.getBody('application/vnd.ipfs.ipns-record'), { byteRangeContext: context.byteRangeContext, log: this.log })
     response.headers.set('content-type', context.byteRangeContext.getContentType() ?? 'application/vnd.ipfs.ipns-record')
+    response.headers.set('content-length', buf.byteLength.toString())
+    response.headers.set('x-ipfs-roots', result.cid.toV1().toString())
 
     return response
   }

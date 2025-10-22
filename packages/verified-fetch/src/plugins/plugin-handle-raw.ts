@@ -1,3 +1,4 @@
+import toBuffer from 'it-to-buffer'
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
 import { getContentType } from '../utils/get-content-type.js'
@@ -5,6 +6,7 @@ import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
 import { PluginFatalError } from './errors.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
+import type { AcceptHeader } from '../utils/select-output-type.ts'
 
 /**
  * These are Accept header values that will cause content type sniffing to be
@@ -22,9 +24,9 @@ const RAW_HEADERS = [
  * type. This avoids the user from receiving something different when they
  * signal that they want to `Accept` a specific mime type.
  */
-function getOverriddenRawContentType ({ headers, accept }: { headers?: HeadersInit, accept?: string }): string | undefined {
+function getOverriddenRawContentType ({ headers, accept }: { headers?: HeadersInit, accept?: AcceptHeader }): string | undefined {
   // accept has already been resolved by getResolvedAcceptHeader, if we have it, use it.
-  const acceptHeader = accept ?? new Headers(headers).get('accept') ?? ''
+  const acceptHeader = accept?.mimeType ?? new Headers(headers).get('accept') ?? ''
 
   // e.g. "Accept: text/html, application/xhtml+xml, application/xml;q=0.9, image/webp, */*;q=0.8"
   const acceptHeaders = acceptHeader.split(',')
@@ -51,7 +53,7 @@ export class RawPlugin extends BasePlugin {
     if (byteRangeContext == null) {
       return false
     }
-    return accept === 'application/vnd.ipld.raw' || query.format === 'raw'
+    return accept?.mimeType === 'application/vnd.ipld.raw' || query.format === 'raw'
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext'>>): Promise<Response> {
@@ -60,7 +62,7 @@ export class RawPlugin extends BasePlugin {
     const session = options?.session ?? true
     const log = this.log
 
-    if (accept === 'application/vnd.ipld.raw' || query.format === 'raw') {
+    if (accept?.mimeType === 'application/vnd.ipld.raw' || query.format === 'raw') {
       context.reqFormat = 'raw'
       context.query.download = true
       context.query.filename = context.query.filename ?? `${cid.toString()}.bin`
@@ -78,18 +80,31 @@ export class RawPlugin extends BasePlugin {
 
     const terminalCid = context.pathDetails?.terminalElement.cid ?? context.cid
     const blockstore = getBlockstore(terminalCid, resource, session, options)
-    const result = await blockstore.get(terminalCid, options)
+    const result = await toBuffer(blockstore.get(terminalCid, options))
     context.byteRangeContext.setBody(result)
 
     // if the user has specified an `Accept` header that corresponds to a raw
     // type, honour that header, so for example they don't request
     // `application/vnd.ipld.raw` but get `application/octet-stream`
-    const contentType = await getContentType({ filename: query.filename, bytes: result, path, defaultContentType: getOverriddenRawContentType({ headers: options?.headers, accept }), contentTypeParser, log })
+    const contentType = await getContentType({
+      filename: query.filename,
+      bytes: result,
+      path,
+      defaultContentType: getOverriddenRawContentType({ headers: options?.headers, accept }),
+      contentTypeParser,
+      log
+    })
     const response = okRangeResponse(resource, context.byteRangeContext.getBody(contentType), { byteRangeContext: context.byteRangeContext, log }, {
       redirected: false
     })
 
     response.headers.set('content-type', context.byteRangeContext.getContentType() ?? contentType)
+    response.headers.set('x-ipfs-roots', terminalCid.toV1().toString())
+
+    // only set content-length if it is not a range request
+    if (!context.byteRangeContext.isRangeRequest) {
+      response.headers.set('content-length', result.byteLength.toString())
+    }
 
     return response
   }

@@ -68,7 +68,7 @@ console.log('Removed failing tests:')
 const failingTestRemovals = currentFailingTests.filter((test: string) => !failingTests.includes(test))
 console.log(failingTestRemovals)
 
-if (failingTestAdditions.length > 0 || failingTestAdditions.length > 0) {
+if (failingTestAdditions.length > 0 || passingTestRemovals.length > 0) {
   console.warn('WARNING: There are previously passing tests that are now failing, is this expected?')
 }
 

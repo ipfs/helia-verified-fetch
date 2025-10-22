@@ -1,5 +1,6 @@
 import { code as dagCborCode } from '@ipld/dag-cbor'
 import { code as dagPbCode } from '@ipld/dag-pb'
+import { CODEC_IDENTITY } from '../constants.ts'
 import { handlePathWalking } from '../utils/walk-path.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
@@ -23,16 +24,16 @@ export class DagWalkPlugin extends BasePlugin {
       return false
     }
 
-    return (cid.code === dagPbCode || cid.code === dagCborCode)
+    return (cid.code === dagPbCode || cid.code === dagCborCode || cid.multihash.code === CODEC_IDENTITY)
   }
 
   async handle (context: PluginContext): Promise<Response | null> {
-    const { cid, resource, options, withServerTiming = false } = context
-    const { getBlockstore, handleServerTiming } = this.pluginOptions
+    const { cid, resource, options } = context
+    const { getBlockstore } = this.pluginOptions
     const blockstore = getBlockstore(cid, resource, options?.session ?? true, options)
 
     // TODO: migrate handlePathWalking into this plugin
-    const pathDetails = await handleServerTiming('path-walking', '', async () => handlePathWalking({ ...context, blockstore, log: this.log }), withServerTiming)
+    const pathDetails = await context.serverTiming.time('path-walking', '', handlePathWalking({ ...context, blockstore, log: this.log }))
 
     if (pathDetails instanceof Response) {
       this.log.trace('path walking failed')
