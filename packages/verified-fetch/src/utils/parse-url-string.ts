@@ -26,6 +26,21 @@ function matchUrlGroupsGuard (groups?: null | { [key in string]: string; } | Mat
 
 // TODO: can this be replaced with `new URL`?
 export function matchURLString (urlString: string): MatchUrlGroups {
+  /**
+   * Remove hash fragment from URL before processing.
+   * Hash fragments are client-side only and should not be included in URL parsing.
+   * They cause issues with:
+   * 1. Regex URL parsing (hash gets captured as part of query string)
+   * 2. IPFS path resolution (hash is not part of the content path)
+   *
+   * @see https://github.com/ipfs/service-worker-gateway/issues/859
+   */
+  
+  const hashIndex = urlString.indexOf('#')
+  if (hashIndex !== -1) {
+    urlString = urlString.substring(0, hashIndex)
+  }
+
   for (const pattern of [SUBDOMAIN_GATEWAY_REGEX, URL_REGEX, PATH_GATEWAY_REGEX, PATH_REGEX]) {
     const match = urlString.match(pattern)
 
