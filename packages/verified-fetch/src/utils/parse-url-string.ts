@@ -35,12 +35,11 @@ export function matchURLString (urlString: string): MatchUrlGroups {
    *
    * @see https://github.com/ipfs/service-worker-gateway/issues/859
    */
-  
+
   const hashIndex = urlString.indexOf('#')
   if (hashIndex !== -1) {
     urlString = urlString.substring(0, hashIndex)
   }
-
   for (const pattern of [SUBDOMAIN_GATEWAY_REGEX, URL_REGEX, PATH_GATEWAY_REGEX, PATH_REGEX]) {
     const match = urlString.match(pattern)
 
