@@ -13,7 +13,17 @@ export async function getStreamFromAsyncIterable (iterator: AsyncIterable<Uint8A
   const { value: firstChunk, done } = await reader.next()
 
   if (done === true) {
-    log.error('no content found for path', path)
+    log.error('no content found for path "%s"', path)
+    /*
+    return {
+      stream: new ReadableStream({
+        start (controller) {
+          controller.close()
+        }
+      }),
+      firstChunk: new Uint8Array()
+    }
+*/
     throw new NoContentError()
   }
 

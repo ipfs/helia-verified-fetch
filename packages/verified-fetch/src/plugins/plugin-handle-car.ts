@@ -47,8 +47,6 @@ export class CarPlugin extends BasePlugin {
   readonly id = 'car-plugin'
 
   canHandle (context: PluginContext): boolean {
-    this.log('checking if we can handle %c with accept %s', context.cid, context.accept)
-
     if (context.byteRangeContext == null) {
       return false
     }

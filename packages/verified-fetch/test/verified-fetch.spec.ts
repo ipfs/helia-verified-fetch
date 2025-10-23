@@ -889,6 +889,24 @@ describe('@helia/verified-fetch', () => {
       const resp = await verifiedFetch.fetch(`ipfs://${res.cid}/does/not/exist`)
       expect(resp.status).to.equal(404)
     })
+
+    it('returns a 404 when requesting CID path from raw CID subdomain', async () => {
+      const fs = unixfs(helia)
+      const cid = await fs.addBytes(Uint8Array.from([0x01, 0x02, 0x03]))
+
+      const resp = await verifiedFetch.fetch(`https://${cid}.ipfs.localhost:3441/ipfs/${cid}`)
+      expect(resp.status).to.equal(404)
+    })
+
+    it('returns a 404 when requesting CID path from dag-pb CID subdomain', async () => {
+      const fs = unixfs(helia)
+      const cid = await fs.addBytes(Uint8Array.from([0x01, 0x02, 0x03]), {
+        rawLeaves: false
+      })
+
+      const resp = await verifiedFetch.fetch(`https://${cid}.ipfs.localhost:3441/ipfs/${cid}`)
+      expect(resp.status).to.equal(404)
+    })
   })
 
   describe('sessions', () => {

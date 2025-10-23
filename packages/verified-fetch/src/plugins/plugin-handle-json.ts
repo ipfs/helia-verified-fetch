@@ -12,8 +12,8 @@ import type { PluginContext } from './types.js'
 export class JsonPlugin extends BasePlugin {
   readonly id = 'json-plugin'
   readonly codes = [ipldDagJson.code, jsonCode]
+
   canHandle ({ cid, accept, byteRangeContext }: PluginContext): boolean {
-    this.log('checking if we can handle %c with accept %s', cid, accept)
     if (byteRangeContext == null) {
       return false
     }

@@ -1,17 +1,24 @@
+import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
-import { PluginError, PluginFatalError } from '../src/plugins/errors.js'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import { getCustomPluginFactory } from './fixtures/get-custom-plugin-factory.js'
 import type { Helia } from '@helia/interface'
+import type { CID } from 'multiformats/cid'
 
 describe('plugins', () => {
   let helia: Helia
   let verifiedFetch: VerifiedFetch
+  let cid: CID
 
   beforeEach(async () => {
     helia = await createHelia()
+
+    const fs = unixfs(helia)
+    cid = await fs.addBytes(new Uint8Array(10), {
+      rawLeaves: false
+    })
   })
 
   afterEach(async () => {
@@ -20,39 +27,45 @@ describe('plugins', () => {
 
   it('can override existing plugins', async () => {
     verifiedFetch = new VerifiedFetch(helia, {
-      plugins: [getCustomPluginFactory({ constructorName: 'DagWalkPlugin', canHandle: () => true, handle: async () => new Response('Hello, world!') })]
+      plugins: [
+        getCustomPluginFactory({
+          constructorName: 'DagWalkPlugin',
+          canHandle: () => true,
+          handle: async () => new Response('Hello, world!')
+        })
+      ]
     })
 
-    const response = await verifiedFetch.fetch('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
+    const response = await verifiedFetch.fetch(`ipfs://${cid}`)
     expect(response).to.be.instanceOf(Response)
     expect(response.status).to.equal(200)
     expect(await response.text()).to.equal('Hello, world!')
   })
 
-  it('can shortcut the request pipeline with a PluginFatalError', async () => {
+  it('can shortcut the request pipeline with an error', async () => {
     verifiedFetch = new VerifiedFetch(helia, {
       plugins: [getCustomPluginFactory({
         constructorName: 'Whatever',
         canHandle: () => true,
         handle: async () => {
-          throw new PluginFatalError('UNKNOWN_ERROR', 'Something went wrong', { response: new Response('Some custom response', { status: 500 }) })
+          throw new Error('Something went wrong')
         }
       })]
     })
 
-    const response = await verifiedFetch.fetch('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
+    const response = await verifiedFetch.fetch(`ipfs://${cid}`)
     expect(response).to.be.instanceOf(Response)
     expect(response.status).to.equal(500)
-    expect(await response.text()).to.equal('Some custom response')
+    expect(await response.text()).to.include('Something went wrong')
   })
 
-  it('should continue to the next plugin when a non-fatal PluginError is thrown', async () => {
+  it('should continue to the next plugin when null is returned', async () => {
     // Create one plugin that throws a non-fatal error and another that returns a valid response.
     const errorPlugin = getCustomPluginFactory({
       constructorName: 'ErrorPlugin',
       canHandle: () => true,
       handle: async () => {
-        throw new PluginError('NON_FATAL', 'Non-fatal error')
+        return null
       }
     })
 
@@ -64,7 +77,7 @@ describe('plugins', () => {
 
     verifiedFetch = new VerifiedFetch(helia, { plugins: [errorPlugin, finalPlugin] })
 
-    const response = await verifiedFetch.fetch('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
+    const response = await verifiedFetch.fetch(`ipfs://${cid}`)
     expect(response).to.be.instanceOf(Response)
     expect(response.status).to.equal(200)
     expect(await response.text()).to.equal('Final result')
@@ -90,9 +103,14 @@ describe('plugins', () => {
       handle: async (context) => new Response('Processed!', { status: 200 })
     })
 
-    verifiedFetch = new VerifiedFetch(helia, { plugins: [updaterPlugin, finalPlugin] })
+    verifiedFetch = new VerifiedFetch(helia, {
+      plugins: [
+        updaterPlugin,
+        finalPlugin
+      ]
+    })
 
-    const response = await verifiedFetch.fetch('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
+    const response = await verifiedFetch.fetch('ipfs://bafyaaaa')
     expect(response).to.be.instanceOf(Response)
     expect(response.status).to.equal(200)
     expect(await response.text()).to.equal('Processed!')
@@ -111,11 +129,15 @@ describe('plugins', () => {
       }
     })
 
-    verifiedFetch = new VerifiedFetch(helia, { plugins: [singleCallPlugin] })
+    verifiedFetch = new VerifiedFetch(helia, {
+      plugins: [
+        singleCallPlugin
+      ]
+    })
 
     // Call fetch. The runPluginPipeline should add the plugin's name to the used set,
     // ensuring it is not invoked more than once.
-    await verifiedFetch.fetch('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr')
+    await verifiedFetch.fetch(`ipfs://${cid}`)
     expect(invocationCount).to.equal(1)
   })
 
@@ -136,12 +158,17 @@ describe('plugins', () => {
 
     verifiedFetch = new VerifiedFetch(helia, { plugins: loopingPlugins })
 
-    // With no final response produced after max passes, the fetch method should return a
-    // notSupportedResponse (or similar). The content we're requesting here is dag-pb and a dag-cbor accept header, which we don't currently support
-    const response = await verifiedFetch.fetch('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr', { headers: { accept: 'application/vnd.ipld.dag-cbor' } })
+    // With no final response produced after max passes, the fetch method should
+    // return a notSupportedResponse (or similar). The content we're requesting
+    // here is dag-pb and a dag-cbor accept header, is unsupported
+    const response = await verifiedFetch.fetch(`ipfs://${cid}`, {
+      headers: {
+        accept: 'application/vnd.ipld.dag-cbor'
+      }
+    })
 
     expect(response).to.be.instanceOf(Response)
-    expect(response.status).to.be.oneOf([501, 404])
+    expect(response.status).to.equal(501)
     expect(iteration).to.equal(3)
   })
 })

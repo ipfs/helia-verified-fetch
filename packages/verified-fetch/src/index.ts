@@ -641,13 +641,13 @@
  *   Inspects the current `PluginContext` (which includes the CID, path, query, accept header, etc.)
  *   and returns `true` if the plugin can operate on the current state of the request.
  *
- * - **`handle(context: PluginContext): Promise<Response | null>`**
- *   Performs the plugin’s work. It may:
- *     - **Return a final `Response`**: This stops the pipeline immediately.
- *     - **Return `null`**: This indicates that the plugin has only partially processed the request
- *       (for example, by performing path walking or decoding) and the pipeline should continue.
- *    - **Throw a `PluginError`**: This logs a non-fatal error and continues the pipeline.
- *    - **Throw a `PluginFatalError`**: This logs a fatal error and stops the pipeline immediately.
+ * - **`handle(context: PluginContext): Promise<Response | undefined>`**
+ *   Performs the plugin’s work. It will only be executed if `canHandle` previously returned `true`.
+ *   It may:
+ *   - **Return a `Response`**: This stops the pipeline immediately and returns the response.
+ *   - **Return `undefined`**: This indicates that the plugin has only partially processed the request
+ *     (for example, by performing path walking or decoding) and the pipeline should continue.
+ *   - **Throw an `Error`**: An Internal Server Error will be returned
  *
  * ### Plugin Pipeline
  *
@@ -784,47 +784,6 @@
  *    const fetch = await createVerifiedFetch(helia, { plugins })
  *    ```
  *
- * ---
- *
- * ### Error Handling in the Plugin Pipeline
- *
- * Verified‑Fetch distinguishes between two types of errors thrown by plugins:
- *
- * - **PluginError (Non‑Fatal):**
- *   - Use this when your plugin encounters an issue that should be logged but does not prevent the pipeline
- *     from continuing.
- *   - When a plugin throws a `PluginError`, the error is logged and the pipeline continues with the next plugin.
- *
- * - **PluginFatalError (Fatal):**
- *   - Use this when a critical error occurs that should immediately abort the request.
- *   - When a plugin throws a `PluginFatalError`, the pipeline immediately terminates and the provided error
- *     response is returned.
- *
- * @example Plugin error Handling
- *
- * ```typescript
- * import { PluginError, PluginFatalError } from '@helia/verified-fetch'
- *
- * // async handle(context: PluginContext): Promise<Response | null> {
- * const recoverable = Math.random() > 0.5 // Use more sophisticated logic here ;)
- * if (recoverable === true) {
- *   throw new PluginError('MY_CUSTOM_WARNING', 'A non‑fatal issue occurred', {
- *     details: {
- *       someKey: 'Additional details here'
- *     }
- *   })
- * }
- *
- * if (recoverable === false) {
- *   throw new PluginFatalError('MY_CUSTOM_FATAL', 'A critical error occurred', {
- *     response: new Response('Something happened', { status: 500 })  // Required: supply your own error response
- *   })
- * }
- *
- *   // Otherwise, continue processing...
- * // }
- * ```
- *
  * ### How the Plugin Pipeline Works
  *
  * - **Shared Context:**
@@ -842,8 +801,7 @@
  *   This means you do not have to specify a rigid order, each plugin simply checks the context and acts if appropriate.
  *
  * - **Error Handling:**
- *   - A thrown `PluginError` is considered non‑fatal and is logged, allowing the pipeline to continue.
- *   - A thrown `PluginFatalError` immediately stops the pipeline and returns the error response.
+ *   - Any thrown error immediately stops the pipeline and returns the error response.
  *
  * For a detailed explanation of the pipeline, please refer to the discussion in [Issue #167](https://github.com/ipfs/helia-verified-fetch/issues/167).
  */

@@ -6,7 +6,7 @@ import { CustomProgressEvent } from 'progress-events'
 import { getContentType } from '../utils/get-content-type.js'
 import { getStreamFromAsyncIterable } from '../utils/get-stream-from-async-iterable.js'
 import { setIpfsRoots } from '../utils/response-headers.js'
-import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, notSupportedResponse, okRangeResponse } from '../utils/responses.js'
+import { badGatewayResponse, badRangeResponse, movedPermanentlyResponse, okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 import type { CIDDetail } from '../index.js'
@@ -18,12 +18,18 @@ import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 export class DagPbPlugin extends BasePlugin {
   readonly id = 'dag-pb-plugin'
   readonly codes = [dagPbCode]
+
   canHandle ({ cid, accept, pathDetails, byteRangeContext }: PluginContext): boolean {
-    this.log('checking if we can handle %c with accept %s', cid, accept)
     if (pathDetails == null) {
       return false
     }
+
     if (byteRangeContext == null) {
+      return false
+    }
+
+    // TODO: this may be too restrictive?
+    if (accept != null && accept.mimeType !== 'application/octet-stream') {
       return false
     }
 
@@ -105,21 +111,20 @@ export class DagPbPlugin extends BasePlugin {
         if (options?.signal?.aborted) {
           throw new AbortError(options?.signal?.reason)
         }
-        this.log.error('error loading path %c/%s', dirCid, rootFilePath, err)
+
+        this.log.error('error loading path %c/%s - %e', dirCid, rootFilePath, err)
+
         context.isDirectory = true
         context.directoryEntries = []
         context.modified++
+
         this.log.trace('attempting to get directory entries because index.html was not found')
-        try {
-          for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress, extended: false })) {
-            context.directoryEntries.push(dirItem)
-          }
-          // dir-index-html plugin or dir-index-json (future idea?) plugin should handle this
-          return null
-        } catch (e) {
-          log.error('error listing directory %c', dirCid, e)
-          return notSupportedResponse('Unable to get directory contents')
+        for await (const dirItem of fs.ls(dirCid, { signal: options?.signal, onProgress: options?.onProgress, extended: false })) {
+          context.directoryEntries.push(dirItem)
         }
+
+        // dir-index-html plugin or dir-index-json (future idea?) plugin should handle this
+        return null
       } finally {
         options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid: dirCid, path: rootFilePath }))
       }
@@ -152,7 +157,7 @@ export class DagPbPlugin extends BasePlugin {
         })
         log('got async iterator for %c/%s', cid, path)
 
-        const streamAndFirstChunk = await context.serverTiming.time('stream-and-chunk', '', getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
+        const streamAndFirstChunk = await context.serverTiming.time('stream-and-chunk', '', getStreamFromAsyncIterable(asyncIter, path, this.pluginOptions.logger, {
           onProgress: options?.onProgress,
           signal: options?.signal
         }))
@@ -177,11 +182,14 @@ export class DagPbPlugin extends BasePlugin {
       if (options?.signal?.aborted) {
         throw new AbortError(options?.signal?.reason)
       }
-      log.error('error streaming %c/%s', cid, path, err)
+
+      log.error('error streaming %c/%s - %e', cid, path, err)
+
       if (byteRangeContext.isRangeRequest && err.code === 'ERR_INVALID_PARAMS') {
         return badRangeResponse(resource)
       }
-      return badGatewayResponse(resource.toString(), 'Unable to stream content')
+
+      return badGatewayResponse(resource, 'Unable to stream content')
     }
   }
 
