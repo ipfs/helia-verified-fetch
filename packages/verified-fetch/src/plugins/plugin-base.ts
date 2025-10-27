@@ -17,9 +17,10 @@ export abstract class BasePlugin implements VerifiedFetchPlugin {
   protected _log?: Logger
 
   get log (): Logger {
-    // instantiate the logger lazily because it depends on the id, which is not set until after the constructor is called
+    // instantiate the logger lazily because it depends on the id, which is not
+    // set until after the constructor is called
     if (this._log == null) {
-      this._log = this.pluginOptions.logger.forComponent(this.id)
+      this._log = this.pluginOptions.logger.newScope(this.id)
     }
     return this._log
   }

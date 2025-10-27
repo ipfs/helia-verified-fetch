@@ -1,7 +1,6 @@
 import { dnsLink } from '@helia/dnslink'
 import { ipnsResolver } from '@helia/ipns'
 import { AbortError } from '@libp2p/interface'
-import { prefixLogger } from '@libp2p/logger'
 import { CustomProgressEvent } from 'progress-events'
 import QuickLRU from 'quick-lru'
 import { ByteRangeContextPlugin } from './plugins/plugin-handle-byte-range-context.js'
@@ -84,7 +83,7 @@ export class VerifiedFetch {
 
     const pluginOptions: PluginOptions = {
       ...init,
-      logger: prefixLogger('helia:verified-fetch'),
+      logger: helia.logger.forComponent('verified-fetch'),
       getBlockstore: (cid, resource, useSession, options) => this.getBlockstore(cid, resource, useSession, options),
       helia,
       contentTypeParser: this.contentTypeParser,
@@ -275,6 +274,8 @@ export class VerifiedFetch {
           pluginsUsed.add(plugin.id)
 
           const maybeResponse = await plugin.handle(context)
+
+          this.log('plugin response %s %o', plugin.id, maybeResponse)
 
           if (maybeResponse != null) {
             // if a plugin returns a final Response, short-circuit

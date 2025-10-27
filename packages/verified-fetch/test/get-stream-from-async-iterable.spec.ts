@@ -2,23 +2,26 @@ import { defaultLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import sinon from 'sinon'
 import { getStreamFromAsyncIterable } from '../src/utils/get-stream-from-async-iterable.js'
+import type { Logger } from '@libp2p/logger'
 
 describe('getStreamFromAsyncIterable', () => {
   let onProgressSpy: sinon.SinonSpy
+  let log: Logger
 
   beforeEach(() => {
     onProgressSpy = sinon.spy()
+    log = defaultLogger().forComponent('test')
   })
 
   it('should throw an error if no content is found', async () => {
     const iterator = (async function * () { })()
-    await expect(getStreamFromAsyncIterable(iterator, 'test', defaultLogger())).to.be.rejectedWith('No content found')
+    await expect(getStreamFromAsyncIterable(iterator, 'test', log)).to.be.rejectedWith('No content found')
   })
 
   it('should return the correct content type and a readable stream', async () => {
     const chunks = new TextEncoder().encode('Hello, world!')
     const iterator = (async function * () { yield chunks })()
-    const { firstChunk, stream } = await getStreamFromAsyncIterable(iterator, 'test.txt', defaultLogger(), { onProgress: onProgressSpy })
+    const { firstChunk, stream } = await getStreamFromAsyncIterable(iterator, 'test.txt', log, { onProgress: onProgressSpy })
     expect(firstChunk).to.equal(chunks)
     const reader = stream.getReader()
     const { value } = await reader.read()
@@ -30,7 +33,7 @@ describe('getStreamFromAsyncIterable', () => {
     const textEncoder = new TextEncoder()
     const chunks = ['Hello,', ' world!'].map((txt) => textEncoder.encode(txt))
     const iterator = (async function * () { yield chunks[0]; yield chunks[1] })()
-    const { firstChunk, stream } = await getStreamFromAsyncIterable(iterator, 'test.txt', defaultLogger(), { onProgress: onProgressSpy })
+    const { firstChunk, stream } = await getStreamFromAsyncIterable(iterator, 'test.txt', log, { onProgress: onProgressSpy })
     expect(firstChunk).to.equal(chunks[0])
     const reader = stream.getReader()
     let result = ''
@@ -59,7 +62,7 @@ describe('getStreamFromAsyncIterable', () => {
         }
       }
     }
-    const { firstChunk, stream } = await getStreamFromAsyncIterable(iterator, 'test.txt', defaultLogger(), { onProgress: onProgressSpy })
+    const { firstChunk, stream } = await getStreamFromAsyncIterable(iterator, 'test.txt', log, { onProgress: onProgressSpy })
     // @ts-expect-error - actualFirstChunk is not used before set, because the await above.
     expect(firstChunk).to.equal(actualFirstChunk)
     const reader = stream.getReader()
