@@ -52,7 +52,7 @@ export function isObjectNode (node: UnixFSEntry): node is ObjectNode {
  */
 export async function handlePathWalking ({ cid, path, resource, options, blockstore, log }: PluginContext & { blockstore: Blockstore, log: Logger }): Promise<PathWalkerResponse | Response> {
   try {
-    return await walkPath(blockstore, `${cid.toString()}/${path}`, options)
+    return await walkPath(blockstore, `${cid}/${path}`, options)
   } catch (err: any) {
     if (options?.signal?.aborted) {
       throw new AbortError(options?.signal?.reason)

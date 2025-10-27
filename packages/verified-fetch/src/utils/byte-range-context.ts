@@ -3,7 +3,7 @@ import { InvalidRangeError } from '../errors.js'
 import { calculateByteRangeIndexes, getHeader } from './request-headers.js'
 import { getContentRangeHeader } from './response-headers.js'
 import type { SupportedBodyTypes } from '../index.js'
-import type { ComponentLogger, Logger } from '@libp2p/interface'
+import type { Logger } from '@libp2p/interface'
 
 type SliceableBody = Exclude<SupportedBodyTypes, ReadableStream<Uint8Array> | null>
 
@@ -90,8 +90,8 @@ export class ByteRangeContext {
   // to be set by isValidRangeRequest so that we don't need to re-check the byteRanges
   private _isValidRangeRequest: boolean = false
 
-  constructor (logger: ComponentLogger, private readonly headers?: HeadersInit) {
-    this.log = logger.forComponent('helia:verified-fetch:byte-range-context')
+  constructor (logger: Logger, private readonly headers?: HeadersInit) {
+    this.log = logger.newScope('byte-range-context')
     this.rangeRequestHeader = getHeader(this.headers, 'Range')
 
     if (this.rangeRequestHeader != null) {

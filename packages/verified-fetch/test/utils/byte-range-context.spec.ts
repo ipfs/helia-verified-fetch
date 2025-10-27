@@ -12,7 +12,7 @@ import type { Helia } from 'helia'
 import type { CID } from 'multiformats/cid'
 
 describe('ByteRangeContext', () => {
-  const logger = prefixLogger('test')
+  const logger = prefixLogger('test').forComponent('test')
 
   it('should correctly detect range request', () => {
     const context = new ByteRangeContext(logger, { Range: 'bytes=0-2' })
@@ -166,7 +166,7 @@ describe('ByteRangeContext', () => {
     let cid: CID
     const getBodyStream = async (offset?: number, length?: number): Promise<ReadableStream<Uint8Array>> => {
       const iter = fs.cat(cid, { offset, length })
-      const { stream } = await getStreamFromAsyncIterable(iter, 'test.txt', defaultLogger())
+      const { stream } = await getStreamFromAsyncIterable(iter, 'test.txt', defaultLogger().forComponent('test'))
       return stream
     }
 

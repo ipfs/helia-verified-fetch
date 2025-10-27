@@ -4,7 +4,7 @@ import type { AcceptHeader } from '../utils/select-output-type.ts'
 import type { ServerTiming } from '../utils/server-timing.ts'
 import type { PathWalkerResponse } from '../utils/walk-path.js'
 import type { IPNSResolver } from '@helia/ipns'
-import type { AbortOptions, ComponentLogger, Logger } from '@libp2p/interface'
+import type { AbortOptions, Logger } from '@libp2p/interface'
 import type { Helia } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
@@ -17,7 +17,7 @@ import type { CustomProgressEvent } from 'progress-events'
  * - Persistent: Relevant even after the request completes (e.g., logging or metrics).
  */
 export interface PluginOptions {
-  logger: ComponentLogger
+  logger: Logger
   getBlockstore(cid: CID, resource: string | CID, useSession?: boolean, options?: AbortOptions): Blockstore
   contentTypeParser?: ContentTypeParser
   helia: Helia
