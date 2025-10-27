@@ -1,3 +1,10 @@
+## [@helia/verified-fetch-v4.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.0...@helia/verified-fetch-4.0.1) (2025-10-27)
+
+### Bug Fixes
+
+* re-use helia's logger ([#283](https://github.com/ipfs/helia-verified-fetch/issues/283)) ([375e1a0](https://github.com/ipfs/helia-verified-fetch/commit/375e1a07a308830db244bf8e0089b183ae8f5945))
+* simplify plugin pipeline ([#282](https://github.com/ipfs/helia-verified-fetch/issues/282)) ([6c1e66f](https://github.com/ipfs/helia-verified-fetch/commit/6c1e66f048daf63f672eb641523b0a8de03ede9d))
+
 ## [@helia/verified-fetch-v4.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-3.2.3...@helia/verified-fetch-4.0.0) (2025-10-20)
 
 ### ⚠ BREAKING CHANGES
