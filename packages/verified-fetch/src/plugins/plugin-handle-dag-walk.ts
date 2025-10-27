@@ -6,19 +6,24 @@ import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 
 /**
- * This plugin should almost always run first because it's going to handle path walking if needed, and will only say it can handle
- * the request if path walking is possible (path is not empty, terminalCid is unknown, and the path has not been walked yet).
+ * This plugin should almost always run first because it's going to handle path
+ * walking if needed, and will only say it can handle the request if path
+ * walking is possible (path is not empty, terminalCid is unknown, and the path
+ * has not been walked yet).
  *
- * Once this plugin has run, the PluginContext will be updated and then this plugin will return false for canHandle, so it won't run again.
+ * Once this plugin has run, the PluginContext will be updated and then this
+ * plugin will return false for canHandle, so it won't run again.
  */
 export class DagWalkPlugin extends BasePlugin {
   readonly id = 'dag-walk-plugin'
+
   /**
-   * Return false if the path has already been walked, otherwise return true if the CID is encoded with a codec that supports pathing.
+   * Return false if the path has already been walked, otherwise return true if
+   * the CID is encoded with a codec that supports pathing.
    */
   canHandle (context: PluginContext): boolean {
-    this.log('checking if we can handle %c with accept %s', context.cid, context.accept)
     const { pathDetails, cid } = context
+
     if (pathDetails != null) {
       // path has already been walked
       return false

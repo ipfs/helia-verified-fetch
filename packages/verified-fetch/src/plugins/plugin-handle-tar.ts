@@ -14,11 +14,12 @@ import type { PluginContext } from './types.js'
 export class TarPlugin extends BasePlugin {
   readonly id = 'tar-plugin'
   readonly codes = []
+
   canHandle ({ cid, accept, query, byteRangeContext }: PluginContext): boolean {
-    this.log('checking if we can handle %c with accept %s', cid, accept)
     if (byteRangeContext == null) {
       return false
     }
+
     return accept?.mimeType === 'application/x-tar' || query.format === 'tar'
   }
 

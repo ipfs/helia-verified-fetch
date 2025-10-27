@@ -44,6 +44,20 @@ export function okResponse (url: string, body?: SupportedBodyTypes, init?: Respo
   return response
 }
 
+export function internalServerErrorResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+  const response = new Response(body, {
+    ...(init ?? {}),
+    status: 500,
+    statusText: 'Internal Server Error'
+  })
+  response.headers.set('X-Content-Type-Options', 'nosniff') // see https://specs.ipfs.tech/http-gateways/path-gateway/#x-content-type-options-response-header
+
+  setType(response, 'basic')
+  setUrl(response, url)
+
+  return response
+}
+
 export function badGatewayResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
@@ -57,7 +71,7 @@ export function badGatewayResponse (url: string, body?: SupportedBodyTypes, init
   return response
 }
 
-export function notSupportedResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+export function notImplementedResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 501,

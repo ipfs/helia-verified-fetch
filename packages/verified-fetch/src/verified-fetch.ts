@@ -15,6 +15,7 @@ import { RawPlugin } from './plugins/plugin-handle-raw.js'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { URLResolver } from './url-resolver.ts'
 import { contentTypeParser } from './utils/content-type-parser.js'
+import { errorToObject } from './utils/error-to-object.ts'
 import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
 import { getETag } from './utils/get-e-tag.js'
 import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
@@ -22,7 +23,7 @@ import { getRedirectResponse } from './utils/handle-redirects.js'
 import { uriEncodeIPFSPath } from './utils/ipfs-path-to-string.ts'
 import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
 import { setCacheControlHeader } from './utils/response-headers.js'
-import { badRequestResponse, notAcceptableResponse, notSupportedResponse, badGatewayResponse } from './utils/responses.js'
+import { badRequestResponse, notAcceptableResponse, internalServerErrorResponse, notImplementedResponse } from './utils/responses.js'
 import { selectOutputType } from './utils/select-output-type.js'
 import { ServerTiming } from './utils/server-timing.js'
 import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, ResolveURLResult, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
@@ -116,8 +117,6 @@ export class VerifiedFetch {
     } else {
       this.plugins = defaultPlugins
     }
-
-    this.log.trace('created VerifiedFetch instance')
   }
 
   private getBlockstore (root: CID, resource: string | CID, useSession: boolean = true, options: AbortOptions = {}): Blockstore {
@@ -160,30 +159,26 @@ export class VerifiedFetch {
     // set Content-Disposition header
     let contentDisposition: string | undefined
 
-    this.log.trace('checking for content disposition')
-
     // force download if requested
     if (context?.query?.download === true) {
+      this.log.trace('download requested')
       contentDisposition = 'attachment'
-    } else {
-      this.log.trace('download not requested')
     }
 
     // override filename if requested
     if (context?.query?.filename != null) {
+      this.log.trace('specific filename requested')
+
       if (contentDisposition == null) {
         contentDisposition = 'inline'
       }
 
       contentDisposition = `${contentDisposition}; ${getContentDispositionFilename(context.query.filename)}`
-    } else {
-      this.log.trace('no filename specified in query')
     }
 
     if (contentDisposition != null) {
+      this.log.trace('content disposition %s', contentDisposition)
       response.headers.set('Content-Disposition', contentDisposition)
-    } else {
-      this.log.trace('no content disposition specified')
     }
 
     if (context?.cid != null && response.headers.get('etag') == null) {
@@ -240,7 +235,7 @@ export class VerifiedFetch {
    * Runs plugins in a loop. After each plugin that returns `null` (partial/no final),
    * we re-check `canHandle()` for all plugins in the next iteration if the context changed.
    */
-  private async runPluginPipeline (context: PluginContext, maxPasses: number = 3): Promise<Response | undefined> {
+  private async runPluginPipeline (context: PluginContext, maxPasses: number = 3): Promise<Response> {
     let finalResponse: Response | undefined
     let passCount = 0
     const pluginsUsed = new Set<string>()
@@ -251,20 +246,24 @@ export class VerifiedFetch {
       this.log(`starting pipeline pass #${passCount + 1}`)
       passCount++
 
+      this.log.trace('checking which plugins can handle %c%s with accept %o', context.cid, context.path != null ? `/${context.path}` : '', context.accept)
+
       // gather plugins that say they can handle the *current* context, but haven't been used yet
       const readyPlugins = this.plugins.filter(p => !pluginsUsed.has(p.id)).filter(p => p.canHandle(context))
+
       if (readyPlugins.length === 0) {
-        this.log.trace('no plugins can handle the current context.. checking by CID code')
+        this.log.trace('no plugins can handle the current context, checking by CID code')
         const plugins = this.plugins.filter(p => p.codes.includes(context.cid.code))
+
         if (plugins.length > 0) {
           readyPlugins.push(...plugins)
         } else {
-          this.log.trace('no plugins found that can handle request by CID code; exiting pipeline.')
+          this.log.trace('no plugins found that can handle request by CID code; exiting pipeline')
           break
         }
       }
 
-      this.log.trace('plugins ready to handle request: ', readyPlugins.map(p => p.id).join(', '))
+      this.log.trace('plugins ready to handle request: %s', readyPlugins.map(p => p.id).join(', '))
 
       // track if any plugin changed the context or returned a response
       let contextChanged = false
@@ -272,10 +271,11 @@ export class VerifiedFetch {
 
       for (const plugin of readyPlugins) {
         try {
-          this.log.trace('invoking plugin:', plugin.id)
+          this.log('invoking plugin: %s', plugin.id)
           pluginsUsed.add(plugin.id)
 
           const maybeResponse = await plugin.handle(context)
+
           if (maybeResponse != null) {
             // if a plugin returns a final Response, short-circuit
             finalResponse = maybeResponse
@@ -286,12 +286,16 @@ export class VerifiedFetch {
           if (context.options?.signal?.aborted) {
             throw new AbortError(context.options?.signal?.reason)
           }
-          this.log.error('error in plugin %s - %e', plugin.constructor.name, err)
-          // if fatal, short-circuit the pipeline
-          if (err.name === 'PluginFatalError') {
-            // if plugin provides a custom error response, return it
-            return err.response ?? badGatewayResponse(context.resource, 'Failed to fetch')
-          }
+
+          this.log.error('error in plugin %s - %e', plugin.id, err)
+
+          return internalServerErrorResponse(context.resource, JSON.stringify({
+            error: errorToObject(err)
+          }), {
+            headers: {
+              'content-type': 'application/json'
+            }
+          })
         } finally {
           // on each plugin call, check for changes in the context
           const newModificationId = context.modified
@@ -317,7 +321,13 @@ export class VerifiedFetch {
       }
     }
 
-    return finalResponse
+    return finalResponse ?? notImplementedResponse(context.resource, JSON.stringify({
+      error: errorToObject(new Error('No verified fetch plugin could handle the request'))
+    }), {
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
   }
 
   /**
@@ -363,7 +373,7 @@ export class VerifiedFetch {
     const acceptHeader = getResolvedAcceptHeader({ query: parsedResult.query, headers: options?.headers, logger: this.helia.logger })
 
     const accept: AcceptHeader | undefined = selectOutputType(parsedResult.cid, acceptHeader)
-    this.log('output type %s', accept)
+    this.log('accept %o', accept)
 
     if (acceptHeader != null && accept == null) {
       this.log.error('could not fulfil request based on accept header')
@@ -394,9 +404,16 @@ export class VerifiedFetch {
 
     const response = await this.runPluginPipeline(context)
 
-    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid: parsedResult.cid, path: parsedResult.path }))
+    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', {
+      cid: parsedResult.cid,
+      path: parsedResult.path
+    }))
 
-    return this.handleFinalResponse(response ?? notSupportedResponse(resource.toString()), context)
+    if (response == null) {
+      this.log.error('no plugin could handle request for %s', resource)
+    }
+
+    return this.handleFinalResponse(response, context)
   }
 
   /**

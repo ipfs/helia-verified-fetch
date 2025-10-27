@@ -1,4 +1,3 @@
-import type { PluginError } from './errors.js'
 import type { ResolveURLResult, UrlQuery, VerifiedFetchInit, ContentTypeParser, RequestFormatShorthand } from '../index.js'
 import type { ByteRangeContext } from '../utils/byte-range-context.js'
 import type { AcceptHeader } from '../utils/select-output-type.ts'
@@ -51,7 +50,6 @@ export interface PluginContext extends ResolveURLResult {
   options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
   isDirectory?: boolean
   directoryEntries?: UnixFSEntry[]
-  errors?: PluginError[]
   reqFormat?: RequestFormatShorthand
   pathDetails?: PathWalkerResponse
   query: UrlQuery
@@ -65,6 +63,10 @@ export interface PluginContext extends ResolveURLResult {
   byteRangeContext?: ByteRangeContext
   serverTiming: ServerTiming
   ipfsPath: string
+
+  /**
+   * Allow arbitrary keys/values
+   */
   [key: string]: unknown
 }
 
@@ -84,8 +86,4 @@ export interface PluginErrorOptions {
   fatal?: boolean
   details?: Record<string, any>
   response?: Response
-}
-
-export interface FatalPluginErrorOptions extends PluginErrorOptions {
-  response: Response
 }

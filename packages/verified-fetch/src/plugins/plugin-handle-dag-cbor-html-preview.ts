@@ -51,13 +51,14 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
   readonly codes = [ipldDagCbor.code]
 
   canHandle ({ cid, accept, pathDetails }: PluginContext): boolean {
-    this.log('checking if we can handle %c with accept %s', cid, accept)
     if (pathDetails == null) {
       return false
     }
+
     if (!isObjectNode(pathDetails.terminalElement)) {
       return false
     }
+
     if (cid.code !== ipldDagCbor.code) {
       return false
     }

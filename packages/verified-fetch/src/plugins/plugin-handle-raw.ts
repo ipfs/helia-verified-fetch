@@ -3,7 +3,6 @@ import { code as rawCode } from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
 import { getContentType } from '../utils/get-content-type.js'
 import { notFoundResponse, okRangeResponse } from '../utils/responses.js'
-import { PluginFatalError } from './errors.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 import type { AcceptHeader } from '../utils/select-output-type.ts'
@@ -49,10 +48,10 @@ export class RawPlugin extends BasePlugin {
   codes: number[] = [rawCode, identity.code]
 
   canHandle ({ cid, accept, query, byteRangeContext }: PluginContext): boolean {
-    this.log('checking if we can handle %c with accept %s', cid, accept)
     if (byteRangeContext == null) {
       return false
     }
+
     return accept?.mimeType === 'application/vnd.ipld.raw' || query.format === 'raw'
   }
 
@@ -66,21 +65,20 @@ export class RawPlugin extends BasePlugin {
       context.reqFormat = 'raw'
       context.query.download = true
       context.query.filename = context.query.filename ?? `${cid.toString()}.bin`
-      log.trace('Set content disposition...')
+      log.trace('set content disposition to force download')
     } else {
-      log.trace('Did NOT set content disposition...')
+      log.trace('did not set content disposition, raw block will display inline')
     }
 
     if (path !== '' && cid.code === rawCode) {
       log.trace('404-ing raw codec request for %c/%s', cid, path)
-      // throw new PluginError('ERR_RAW_PATHS_NOT_SUPPORTED', 'Raw codec does not support paths')
-      // return notFoundResponse(resource, 'Raw codec does not support paths')
-      throw new PluginFatalError('ERR_RAW_PATHS_NOT_SUPPORTED', 'Raw codec does not support paths', { response: notFoundResponse(resource, 'Raw codec does not support paths') })
+      return notFoundResponse(resource)
     }
 
     const terminalCid = context.pathDetails?.terminalElement.cid ?? context.cid
     const blockstore = getBlockstore(terminalCid, resource, session, options)
     const result = await toBuffer(blockstore.get(terminalCid, options))
+
     context.byteRangeContext.setBody(result)
 
     // if the user has specified an `Accept` header that corresponds to a raw
@@ -94,6 +92,7 @@ export class RawPlugin extends BasePlugin {
       contentTypeParser,
       log
     })
+
     const response = okRangeResponse(resource, context.byteRangeContext.getBody(contentType), { byteRangeContext: context.byteRangeContext, log }, {
       redirected: false
     })
