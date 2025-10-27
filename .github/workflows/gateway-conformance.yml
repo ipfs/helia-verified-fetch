@@ -21,14 +21,14 @@ jobs:
 
       # 2. Set up 'go' so we can install the gateway-conformance binary
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
 
       # 3. Download the gateway-conformance fixtures using ipfs/gateway-conformance action
       # This will prevent us from needing to install `docker` on the github runner
       - name: Download gateway-conformance fixtures
-        uses: ipfs/gateway-conformance/.github/actions/extract-fixtures@v0.7
+        uses: ipfs/gateway-conformance/.github/actions/extract-fixtures@v0.8
         # working-directory: ./packages/gateway-conformance
         with:
           output: ./packages/gateway-conformance/dist/src/fixtures/data/gateway-conformance-fixtures
@@ -70,13 +70,13 @@ jobs:
         run: cat ./packages/gateway-conformance/gwc-report-all.md >> $GITHUB_STEP_SUMMARY
       - name: Upload HTML report
         if: failure() || success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: gateway-conformance.html
           path: ./packages/gateway-conformance/gwc-report-all.html
       - name: Upload JSON report
         if: failure() || success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: gateway-conformance.json
           path: ./packages/gateway-conformance/gwc-report-all.json
