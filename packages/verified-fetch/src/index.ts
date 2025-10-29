@@ -1073,6 +1073,7 @@ export interface ResolveURLResult {
   protocol: string
   ttl: number
   path: string
+  fragment: string
   query: UrlQuery
   ipfsPath: string
 }

@@ -6,7 +6,8 @@ const SUBDOMAIN_GATEWAY_REGEX = /^https?:\/\/(?<cidOrPeerIdOrDnsLink>[^/?]+)\.(?
 interface MatchUrlGroups {
   protocol: 'ipfs' | 'ipns'
   cidOrPeerIdOrDnsLink: string
-  path?: string
+  path: string
+  fragment: string
   query?: string
 }
 
@@ -40,6 +41,11 @@ export function matchURLString (urlString: string): MatchUrlGroups {
       if (pattern === SUBDOMAIN_GATEWAY_REGEX && groups.protocol === 'ipns' && isInlinedDnsLink(groups.cidOrPeerIdOrDnsLink)) {
         groups.cidOrPeerIdOrDnsLink = dnsLinkLabelDecoder(groups.cidOrPeerIdOrDnsLink)
       }
+
+      const [path, fragment] = (groups.path ?? '').split('#')
+
+      groups.path = path ?? ''
+      groups.fragment = fragment ?? ''
 
       return groups
     }

@@ -53,19 +53,19 @@ export class URLResolver implements URLResolverInterface {
     const cid = CID.asCID(resource)
 
     if (cid != null) {
-      return this.resolveCIDResource(cid, '', {}, options)
+      return this.resolveCIDResource(cid, '', '', {}, options)
     }
 
     throw new TypeError(`Invalid resource. Cannot determine CID from resource: ${resource}`)
   }
 
   async parseUrlString (urlString: string, options: ResolveURLOptions = {}): Promise<ResolveURLResult> {
-    const { protocol, cidOrPeerIdOrDnsLink, path, query } = matchURLString(urlString)
+    const { protocol, cidOrPeerIdOrDnsLink, path, fragment, query } = matchURLString(urlString)
 
     if (protocol === 'ipfs') {
       const cid = CID.parse(cidOrPeerIdOrDnsLink)
 
-      return this.resolveCIDResource(cid, path ?? '', toQuery(query), options)
+      return this.resolveCIDResource(cid, path ?? '', fragment, toQuery(query), options)
     }
 
     if (protocol === 'ipns') {
@@ -76,20 +76,20 @@ export class URLResolver implements URLResolverInterface {
         peerId = peerIdFromString(cidOrPeerIdOrDnsLink)
       } catch {
         // fall back to DNSLink (e.g. /ipns/example.com)
-        return this.resolveDNSLink(cidOrPeerIdOrDnsLink, path ?? '', toQuery(query), options)
+        return this.resolveDNSLink(cidOrPeerIdOrDnsLink, path ?? '', fragment, toQuery(query), options)
       }
 
       // parse multihash from string (e.g. /ipns/QmFoo...)
-      return this.resolveIPNSName(cidOrPeerIdOrDnsLink, peerId, path ?? '', toQuery(query), options)
+      return this.resolveIPNSName(cidOrPeerIdOrDnsLink, peerId, path ?? '', fragment, toQuery(query), options)
     }
 
     throw new TypeError(`Invalid resource. Cannot determine CID from resource: ${urlString}`)
   }
 
-  async resolveCIDResource (cid: CID, path: string, query: Record<string, any>, options: ResolveURLOptions = {}): Promise<ResolveURLResult> {
+  async resolveCIDResource (cid: CID, path: string, fragment: string, query: Record<string, any>, options: ResolveURLOptions = {}): Promise<ResolveURLResult> {
     if (cid.code === CODEC_LIBP2P_KEY) {
       // special case - peer id encoded as a CID
-      return this.resolveIPNSName(cid.toString(), peerIdFromCID(cid), path, query, options)
+      return this.resolveIPNSName(cid.toString(), peerIdFromCID(cid), path, fragment, query, options)
     }
 
     return {
@@ -97,12 +97,13 @@ export class URLResolver implements URLResolverInterface {
       protocol: 'ipfs',
       query,
       path,
+      fragment,
       ttl: 29030400, // 1 year for ipfs content
       ipfsPath: `/ipfs/${cid}${path === '' ? '' : `/${path}`}`
     }
   }
 
-  async resolveDNSLink (domain: string, path: string, query: Record<string, any>, options?: ResolveURLOptions): Promise<ResolveURLResult> {
+  async resolveDNSLink (domain: string, path: string, fragment: string, query: Record<string, any>, options?: ResolveURLOptions): Promise<ResolveURLResult> {
     const results = await this.components.timing.time('dnsLink.resolve', `Resolve DNSLink ${domain}`, this.components.dnsLink.resolve(domain, options))
     const result = results?.[0]
 
@@ -112,7 +113,7 @@ export class URLResolver implements URLResolverInterface {
 
     // dnslink resolved to IPNS name
     if (result.namespace === 'ipns') {
-      return this.resolveIPNSName(domain, result.peerId, path, query, options)
+      return this.resolveIPNSName(domain, result.peerId, path, fragment, query, options)
     }
 
     // dnslink resolved to CID
@@ -124,6 +125,7 @@ export class URLResolver implements URLResolverInterface {
     return {
       cid: result.cid,
       path: concatPaths(result.path, path),
+      fragment,
       // dnslink is mutable so return 'ipns' protocol so we do not include immutable in cache-control header
       protocol: 'ipns',
       ttl: result.answer.TTL,
@@ -132,12 +134,13 @@ export class URLResolver implements URLResolverInterface {
     }
   }
 
-  async resolveIPNSName (resource: string, key: PeerId, path: string, query: Record<string, any>, options?: AbortOptions): Promise<ResolveURLResult> {
+  async resolveIPNSName (resource: string, key: PeerId, path: string, fragment: string, query: Record<string, any>, options?: AbortOptions): Promise<ResolveURLResult> {
     const result = await this.components.timing.time('ipns.resolve', `Resolve IPNS name ${key}`, this.components.ipnsResolver.resolve(key, options))
 
     return {
       cid: result.cid,
       path: concatPaths(result.path, path),
+      fragment,
       query,
       protocol: 'ipns',
       // IPNS ttl is in nanoseconds, convert to seconds

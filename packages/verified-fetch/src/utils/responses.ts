@@ -16,6 +16,11 @@ function setType (response: Response, value: 'basic' | 'cors' | 'error' | 'opaqu
 }
 
 function setUrl (response: Response, value: string): void {
+  // strip any fragment from the url
+  const url = new URL(value)
+  url.hash = ''
+  value = url.toString()
+
   setField(response, 'url', value)
 }
 
