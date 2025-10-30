@@ -155,7 +155,7 @@ describe('parse-url-string', () => {
             expect(parseURLString(`${uri.replace('{scheme}', type).replace('{key}', val)}${test.ref}`)).to.deep.equal({
               url: new URL(`${type}://${value}${test.ref}`),
               protocol: type,
-              cidOrPeerIdOrDnsLink: isIPNSSubdomainTest ? decodeDNSLinkLabel(val) : val,
+              cidOrPeerIdOrDnsLink: value,
               path: [],
               query: {},
               fragment: '',
