@@ -1,6 +1,6 @@
 import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
-import { defaultLogger, prefixLogger } from '@libp2p/logger'
+import { prefixLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import browserReadableStreamToIt from 'browser-readablestream-to-it'
 import all from 'it-all'
@@ -166,7 +166,7 @@ describe('ByteRangeContext', () => {
     let cid: CID
     const getBodyStream = async (offset?: number, length?: number): Promise<ReadableStream<Uint8Array>> => {
       const iter = fs.cat(cid, { offset, length })
-      const { stream } = await getStreamFromAsyncIterable(iter, 'test.txt', defaultLogger().forComponent('test'))
+      const { stream } = await getStreamFromAsyncIterable(iter)
       return stream
     }
 

@@ -1,4 +1,4 @@
-import type { ResolveURLResult, UrlQuery, VerifiedFetchInit, ContentTypeParser, RequestFormatShorthand } from '../index.js'
+import type { ResolveURLResult, VerifiedFetchInit, ContentTypeParser, RequestFormatShorthand } from '../index.js'
 import type { ByteRangeContext } from '../utils/byte-range-context.js'
 import type { AcceptHeader } from '../utils/select-output-type.ts'
 import type { ServerTiming } from '../utils/server-timing.ts'
@@ -31,8 +31,6 @@ export interface PluginOptions {
  * - Ephemeral: Typically discarded once fetch(...) completes.
  */
 export interface PluginContext extends ResolveURLResult {
-  readonly cid: CID
-  readonly path: string
   readonly resource: string
   readonly accept?: AcceptHeader
 
@@ -52,7 +50,6 @@ export interface PluginContext extends ResolveURLResult {
   directoryEntries?: UnixFSEntry[]
   reqFormat?: RequestFormatShorthand
   pathDetails?: PathWalkerResponse
-  query: UrlQuery
 
   /**
    * ByteRangeContext contains information about the size of the content and range requests.
