@@ -94,8 +94,11 @@ function toUrl (urlString: string): URL {
     urlString = ipfsUrlToUrl(urlString)
   }
 
-  // validate url
-  return new URL(urlString)
+  if (urlString.startsWith('http://') || urlString.startsWith('https://')) {
+    return new URL(urlString)
+  }
+
+  throw new InvalidParametersError(`Invalid URL: ${urlString}`)
 }
 
 /**

@@ -55,14 +55,14 @@ describe('url-resolver', () => {
       await expect(
         resolver.resolve('invalid')
       ).to.eventually.be.rejected
-        .with.property('message').that.include('Invalid URL')
+        .with.property('name').that.include('InvalidParametersError')
     })
 
     it('throws for invalid protocols', async () => {
       await expect(
-        resolver.resolve('invalid')
+        resolver.resolve('derp://invalid')
       ).to.eventually.be.rejected
-        .with.property('message').that.include('Invalid URL')
+        .with.property('name').that.include('InvalidParametersError')
     })
 
     it('throws an error if resulting CID is invalid', async () => {
