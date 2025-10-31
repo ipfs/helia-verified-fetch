@@ -5,7 +5,7 @@ import type { Logger } from '@libp2p/interface'
 
 export interface GetContentTypeOptions {
   bytes: Uint8Array
-  path?: string
+  path?: string[]
   defaultContentType?: string
   contentTypeParser?: ContentTypeParser
   log: Logger
@@ -25,7 +25,7 @@ export async function getContentType ({ bytes, path, contentTypeParser, log, def
     try {
       let fileName
       if (filenameParam == null) {
-        fileName = path?.split('/').pop()?.trim()
+        fileName = path?.[path.length - 1]?.trim()
         fileName = (fileName === '' || fileName?.split('.').length === 1) ? undefined : fileName
       } else {
         fileName = filenameParam

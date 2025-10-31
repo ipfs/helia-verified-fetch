@@ -16,6 +16,12 @@ function setType (response: Response, value: 'basic' | 'cors' | 'error' | 'opaqu
 }
 
 function setUrl (response: Response, value: string): void {
+  const fragmentStart = value.indexOf('#')
+
+  if (fragmentStart > -1) {
+    value = value.substring(0, fragmentStart)
+  }
+
   setField(response, 'url', value)
 }
 

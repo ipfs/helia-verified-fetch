@@ -40,23 +40,25 @@ export class DagPbPlugin extends BasePlugin {
    * @see https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
    */
   getRedirectUrl (context: PluginContext): string | null {
-    const { resource, path } = context
-    const redirectCheckNeeded = path === '' ? !resource.toString().endsWith('/') : !path.endsWith('/')
-    if (redirectCheckNeeded) {
-      try {
-        const url = new URL(resource.toString())
-        if (url.pathname.endsWith('/')) {
-          // url already has a trailing slash
-          return null
-        }
-        // make sure we append slash to end of the path
-        url.pathname = `${url.pathname}/`
-        return url.toString()
-      } catch (err: any) {
-        // resource is likely a CID
-        return `${resource.toString()}/`
-      }
+    const { resource, url, isDirectory } = context
+
+    let uri: URL
+
+    try {
+      // try the requested resource
+      uri = new URL(resource)
+    } catch {
+      // fall back to the canonical URL
+      uri = url
     }
+
+    // directories must be requested with a trailing slash
+    if (isDirectory && !uri.pathname.endsWith('/')) {
+      // make sure we append slash to end of the path
+      uri.pathname += '/'
+      return uri.toString()
+    }
+
     return null
   }
 
@@ -65,7 +67,7 @@ export class DagPbPlugin extends BasePlugin {
     const { contentTypeParser, helia, getBlockstore } = this.pluginOptions
     const log = this.log
     let resource = context.resource
-    let path = context.path
+    const path = context.path
 
     let redirected = false
 
@@ -75,8 +77,9 @@ export class DagPbPlugin extends BasePlugin {
     let resolvedCID = terminalElement.cid
     const fs = unixfs({ ...helia, blockstore: getBlockstore(context.cid, context.resource, options?.session ?? true, options) })
 
+    context.isDirectory = terminalElement?.type === 'directory'
+
     if (terminalElement?.type === 'directory') {
-      const dirCid = terminalElement.cid
       const redirectUrl = this.getRedirectUrl(context)
 
       if (redirectUrl != null) {
@@ -95,7 +98,9 @@ export class DagPbPlugin extends BasePlugin {
         redirected = true
       }
 
+      const dirCid = terminalElement.cid
       const rootFilePath = 'index.html'
+
       try {
         log.trace('found directory at %c/%s, looking for index.html', cid, path)
 
@@ -105,7 +110,6 @@ export class DagPbPlugin extends BasePlugin {
         }))
 
         log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
-        path = rootFilePath
         resolvedCID = entry.cid
       } catch (err: any) {
         if (options?.signal?.aborted) {
@@ -126,7 +130,7 @@ export class DagPbPlugin extends BasePlugin {
         // dir-index-html plugin or dir-index-json (future idea?) plugin should handle this
         return null
       } finally {
-        options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid: dirCid, path: rootFilePath }))
+        options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', { cid: dirCid, path: [rootFilePath] }))
       }
     }
 
@@ -157,13 +161,13 @@ export class DagPbPlugin extends BasePlugin {
         })
         log('got async iterator for %c/%s', cid, path)
 
-        const streamAndFirstChunk = await context.serverTiming.time('stream-and-chunk', '', getStreamFromAsyncIterable(asyncIter, path, this.pluginOptions.logger, {
+        const streamAndFirstChunk = await context.serverTiming.time('stream-and-chunk', '', getStreamFromAsyncIterable(asyncIter, {
           onProgress: options?.onProgress,
           signal: options?.signal
         }))
         const stream = streamAndFirstChunk.stream
         firstChunk = streamAndFirstChunk.firstChunk
-        contentType = await context.serverTiming.time('get-content-type', '', getContentType({ filename: query.filename, bytes: firstChunk, path, contentTypeParser, log }))
+        contentType = await context.serverTiming.time('get-content-type', '', getContentType({ path, filename: query.filename, bytes: firstChunk, contentTypeParser, log }))
 
         byteRangeContext.setBody(stream)
       }
@@ -207,7 +211,7 @@ export class DagPbPlugin extends BasePlugin {
       length: 8192
     })
 
-    const { firstChunk } = await getStreamFromAsyncIterable(asyncIter, path ?? '', this.pluginOptions.logger, {
+    const { firstChunk } = await getStreamFromAsyncIterable(asyncIter, {
       onProgress: options?.onProgress,
       signal: options?.signal
     })

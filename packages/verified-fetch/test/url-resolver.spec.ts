@@ -27,13 +27,14 @@ describe('url-resolver', () => {
   /**
    * Assert that the passed url is matched to the passed protocol, cid, etc
    */
-  async function assertMatchUrl (urlString: string, match: { protocol: string, cid: string, path: string, query: any }): Promise<void> {
+  async function assertMatchUrl (urlString: string, match: { protocol: string, cid: string, path: string[], fragment?: string, query: any }): Promise<void> {
     const result = await resolver.resolve(urlString)
 
     expect(result.protocol).to.equal(match.protocol)
     expect(result.cid.toString()).to.equal(match.cid)
-    expect(result.path).to.equal(match.path)
+    expect(result.path).to.deep.equal(match.path)
     expect(result.query).to.deep.equal(match.query)
+    expect(result.fragment).to.deep.equal(match.fragment ?? '')
   }
 
   beforeEach(() => {
@@ -54,14 +55,14 @@ describe('url-resolver', () => {
       await expect(
         resolver.resolve('invalid')
       ).to.eventually.be.rejected
-        .with.property('message', 'Invalid URL: invalid, please use ipfs://, ipns://, or gateway URLs only')
+        .with.property('name').that.include('InvalidParametersError')
     })
 
     it('throws for invalid protocols', async () => {
       await expect(
-        resolver.resolve('invalid')
+        resolver.resolve('derp://invalid')
       ).to.eventually.be.rejected
-        .with.property('message', 'Invalid URL: invalid, please use ipfs://, ipns://, or gateway URLs only')
+        .with.property('name').that.include('InvalidParametersError')
     })
 
     it('throws an error if resulting CID is invalid', async () => {
@@ -86,7 +87,7 @@ describe('url-resolver', () => {
         'ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr', {
           protocol: 'ipfs',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: '',
+          path: [],
           query: {}
         }
       )
@@ -97,7 +98,7 @@ describe('url-resolver', () => {
         'ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {}
         }
       )
@@ -108,7 +109,7 @@ describe('url-resolver', () => {
         'ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm?format=car', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '',
+          path: [],
           query: {
             format: 'car'
           }
@@ -121,7 +122,7 @@ describe('url-resolver', () => {
         'ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/?format=car', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '',
+          path: [],
           query: {
             format: 'car'
           }
@@ -134,7 +135,7 @@ describe('url-resolver', () => {
         'ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {
             format: 'tar'
           }
@@ -164,7 +165,7 @@ describe('url-resolver', () => {
         'ipns://mydomain.com', {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: '',
+          path: [],
           query: {}
         }
       )
@@ -182,7 +183,7 @@ describe('url-resolver', () => {
         'ipns://mydomain.com/some/path/to/file.txt', {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: 'some/path/to/file.txt',
+          path: ['some', 'path', 'to', 'file.txt'],
           query: {}
         }
       )
@@ -200,7 +201,7 @@ describe('url-resolver', () => {
         'ipns://mydomain.com?format=json', {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: '',
+          path: [],
           query: {
             format: 'json'
           }
@@ -220,7 +221,7 @@ describe('url-resolver', () => {
         'ipns://mydomain.com/some/path/to/file.txt?format=json', {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: 'some/path/to/file.txt',
+          path: ['some', 'path', 'to', 'file.txt'],
           query: {
             format: 'json'
           }
@@ -240,7 +241,7 @@ describe('url-resolver', () => {
         'ipns://mydomain.com/some/path/to/dir/?format=json', {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: 'some/path/to/dir/',
+          path: ['some', 'path', 'to', 'dir'],
           query: {
             format: 'json'
           }
@@ -292,10 +293,10 @@ describe('url-resolver', () => {
   describe('/ipfs/<CID> URLs', () => {
     it('should parse an IPFS Path with a CID only', async () => {
       await assertMatchUrl(
-        '/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/', {
+        '/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '',
+          path: [],
           query: {}
         }
       )
@@ -306,7 +307,7 @@ describe('url-resolver', () => {
         '/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {}
         }
       )
@@ -317,7 +318,7 @@ describe('url-resolver', () => {
         '/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm?format=car', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '',
+          path: [],
           query: {
             format: 'car'
           }
@@ -330,7 +331,7 @@ describe('url-resolver', () => {
         '/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {
             format: 'tar'
           }
@@ -347,7 +348,7 @@ describe('url-resolver', () => {
           protocol: 'ipfs',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
           // path with decoded component
-          path: `I/${rawPathLabel}`,
+          path: ['I', rawPathLabel],
           query: {}
         }
       )
@@ -357,10 +358,10 @@ describe('url-resolver', () => {
   describe('http://example.com/ipfs/<CID> URLs', () => {
     it('should parse an IPFS Gateway URL with a CID only', async () => {
       await assertMatchUrl(
-        'http://example.com/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/', {
+        'http://example.com/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '',
+          path: [],
           query: {}
         }
       )
@@ -371,7 +372,7 @@ describe('url-resolver', () => {
         'http://example.com/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {}
         }
       )
@@ -382,7 +383,7 @@ describe('url-resolver', () => {
         'http://example.com/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm?format=car', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '',
+          path: [],
           query: {
             format: 'car'
           }
@@ -395,7 +396,7 @@ describe('url-resolver', () => {
         'http://example.com/ipfs/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {
             format: 'tar'
           }
@@ -410,7 +411,7 @@ describe('url-resolver', () => {
         'http://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm.ipfs.example.com', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '',
+          path: [],
           query: {}
         }
       )
@@ -421,7 +422,7 @@ describe('url-resolver', () => {
         'http://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm.ipfs.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {}
         }
       )
@@ -432,7 +433,7 @@ describe('url-resolver', () => {
         'http://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm.ipfs.example.com?format=car', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '',
+          path: [],
           query: {
             format: 'car'
           }
@@ -445,7 +446,7 @@ describe('url-resolver', () => {
         'http://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm.ipfs.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar', {
           protocol: 'ipfs',
           cid: 'QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm',
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {
             format: 'tar'
           }
@@ -492,7 +493,7 @@ describe('url-resolver', () => {
         `ipns://${testPeerId}`, {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: '',
+          path: [],
           query: {}
         }
       )
@@ -509,7 +510,7 @@ describe('url-resolver', () => {
         `ipns://${base36CidPeerId}`, {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: '',
+          path: [],
           query: {}
         }
       )
@@ -526,7 +527,7 @@ describe('url-resolver', () => {
         `ipns://${testPeerId}/some/path/to/file.txt`, {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: 'some/path/to/file.txt',
+          path: ['some', 'path', 'to', 'file.txt'],
           query: {}
         }
       )
@@ -543,7 +544,7 @@ describe('url-resolver', () => {
         `ipns://${testPeerId}/some/path/to/dir/`, {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: 'some/path/to/dir/',
+          path: ['some', 'path', 'to', 'dir'],
           query: {}
         }
       )
@@ -560,7 +561,7 @@ describe('url-resolver', () => {
         `ipns://${testPeerId}?format=dag-cbor`, {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: '',
+          path: [],
           query: {
             format: 'dag-cbor'
           }
@@ -579,7 +580,7 @@ describe('url-resolver', () => {
         `ipns://${testPeerId}/some/path/to/file.txt?format=dag-cbor`, {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: 'some/path/to/file.txt',
+          path: ['some', 'path', 'to', 'file.txt'],
           query: {
             format: 'dag-cbor'
           }
@@ -604,7 +605,7 @@ describe('url-resolver', () => {
         `ipns://${peerId}/${requestPath}`, {
           protocol: 'ipns',
           cid: 'QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4iAqCr',
-          path: `${recordPath}/${requestPath}`,
+          path: [recordPath, ...requestPath.split('/')],
           query: {}
         }
       )
@@ -626,7 +627,7 @@ describe('url-resolver', () => {
       await assertMatchUrl(
         `ipns://${peerId}/${requestPath}`, {
           protocol: 'ipns',
-          path: 'foo/bar/baz.txt',
+          path: ['foo', ...requestPath.split('/')],
           cid: cid.toString(),
           query: {}
         }
@@ -649,7 +650,7 @@ describe('url-resolver', () => {
       await assertMatchUrl(
         `ipns://${peerId}/${requestPath}`, {
           protocol: 'ipns',
-          path: 'foo/bar/baz/qux.txt',
+          path: ['foo', 'bar', 'baz', 'qux.txt'],
           cid: cid.toString(),
           query: {}
         }
@@ -677,7 +678,7 @@ describe('url-resolver', () => {
         `/ipns/${peerId}/`, {
           protocol: 'ipns',
           cid: cid.toString(),
-          path: '',
+          path: [],
           query: {}
         }
       )
@@ -688,7 +689,7 @@ describe('url-resolver', () => {
         `/ipns/${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
           protocol: 'ipns',
           cid: cid.toString(),
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {}
         }
       )
@@ -699,7 +700,7 @@ describe('url-resolver', () => {
         `/ipns/${peerId}/path/to/dir/`, {
           protocol: 'ipns',
           cid: cid.toString(),
-          path: 'path/to/dir/',
+          path: ['path', 'to', 'dir'],
           query: {}
         }
       )
@@ -710,7 +711,7 @@ describe('url-resolver', () => {
         `/ipns/${peerId}?format=car`, {
           protocol: 'ipns',
           cid: cid.toString(),
-          path: '',
+          path: [],
           query: {
             format: 'car'
           }
@@ -723,7 +724,7 @@ describe('url-resolver', () => {
         `/ipns/${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar`, {
           protocol: 'ipns',
           cid: cid.toString(),
-          path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+          path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
           query: {
             format: 'tar'
           }
@@ -736,7 +737,7 @@ describe('url-resolver', () => {
         `/ipns/${peerId}/path/to/dir/?format=tar`, {
           protocol: 'ipns',
           cid: cid.toString(),
-          path: 'path/to/dir/',
+          path: ['path', 'to', 'dir'],
           query: {
             format: 'tar'
           }
@@ -766,7 +767,7 @@ describe('url-resolver', () => {
           `${proto}://example.com/ipns/${peerId}`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: '',
+            path: [],
             query: {}
           }
         )
@@ -777,7 +778,7 @@ describe('url-resolver', () => {
           `${proto}://example.com/ipns/${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+            path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
             query: {}
           }
         )
@@ -788,7 +789,7 @@ describe('url-resolver', () => {
           `${proto}://example.com/ipns/${peerId}/path/to/dir/`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: 'path/to/dir/',
+            path: ['path', 'to', 'dir'],
             query: {}
           }
         )
@@ -799,7 +800,7 @@ describe('url-resolver', () => {
           `${proto}://example.com/ipns/${peerId}?format=car`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: '',
+            path: [],
             query: {
               format: 'car'
             }
@@ -812,7 +813,7 @@ describe('url-resolver', () => {
           `${proto}://example.com/ipns/${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+            path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
             query: {
               format: 'tar'
             }
@@ -825,7 +826,7 @@ describe('url-resolver', () => {
           `${proto}://example.com/ipns/${peerId}/path/to/dir/?format=tar`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: 'path/to/dir/',
+            path: ['path', 'to', 'dir'],
             query: {
               format: 'tar'
             }
@@ -886,7 +887,7 @@ describe('url-resolver', () => {
           `${proto}://${value.toString()}.ipns.example.com`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: '',
+            path: [],
             query: {}
           }
         )
@@ -897,7 +898,7 @@ describe('url-resolver', () => {
           `${proto}://${value.toString()}.ipns.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+            path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
             query: {}
           }
         )
@@ -908,7 +909,7 @@ describe('url-resolver', () => {
           `${proto}://${value.toString()}.ipns.example.com/path/to/dir/`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: 'path/to/dir/',
+            path: ['path', 'to', 'dir'],
             query: {}
           }
         )
@@ -919,7 +920,7 @@ describe('url-resolver', () => {
           `${proto}://${value.toString()}.ipns.example.com?format=car`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: '',
+            path: [],
             query: {
               format: 'car'
             }
@@ -932,7 +933,7 @@ describe('url-resolver', () => {
           `${proto}://${value.toString()}.ipns.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?format=tar`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt',
+            path: ['1 - Barrel - Part 1', '1 - Barrel - Part 1 - alt.txt'],
             query: {
               format: 'tar'
             }
@@ -945,7 +946,7 @@ describe('url-resolver', () => {
           `${proto}://${value.toString()}.ipns.example.com/path/to/dir/?format=tar`, {
             protocol: 'ipns',
             cid: cid.toString(),
-            path: 'path/to/dir/',
+            path: ['path', 'to', 'dir'],
             query: {
               format: 'tar'
             }
@@ -962,8 +963,48 @@ describe('url-resolver', () => {
         'http://bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am.ipfs.localhost:3441/ipfs/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am', {
           protocol: 'ipfs',
           cid: 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am',
-          path: 'ipfs/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am',
+          path: ['ipfs', 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am'],
           query: {}
+        }
+      )
+    })
+  })
+
+  describe('url fragments', () => {
+    it('can parse an HTTP URL with a fragment', async () => {
+      await assertMatchUrl(
+        'http://bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am.ipfs.localhost:1234/#hello-fragment', {
+          protocol: 'ipfs',
+          cid: 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am',
+          path: [],
+          fragment: 'hello-fragment',
+          query: {}
+        }
+      )
+    })
+
+    it('can parse an HTTP URL with a fragment and a path', async () => {
+      await assertMatchUrl(
+        'http://bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am.ipfs.localhost:1234/path/to/dir/#hello-fragment', {
+          protocol: 'ipfs',
+          cid: 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am',
+          path: ['path', 'to', 'dir'],
+          fragment: 'hello-fragment',
+          query: {}
+        }
+      )
+    })
+
+    it('can parse an HTTP URL with a fragment and a path and a query', async () => {
+      await assertMatchUrl(
+        'http://bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am.ipfs.localhost:1234/path/to/dir/?format=tar#hello-fragment', {
+          protocol: 'ipfs',
+          cid: 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am',
+          path: ['path', 'to', 'dir'],
+          fragment: 'hello-fragment',
+          query: {
+            format: 'tar'
+          }
         }
       )
     })

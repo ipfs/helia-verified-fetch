@@ -98,7 +98,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
     })
   }
 
-  getHtml ({ path, obj, cid }: { path?: string, obj: Record<string, any>, cid: CID }): string {
+  getHtml ({ path, obj, cid }: { path?: string[], obj: Record<string, any>, cid: CID }): string {
     const style = `
       :root {
         --sans-serif: "Plex", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
@@ -221,7 +221,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
       <main>
         <header>
           <div><strong>CID: </strong> <code class="nowrap">${cid}</code></div>
-          <div><strong>Codec: </strong> ${this.valueHTML('dag-cbor (0x71)', null)}</div>
+          <div><strong>Codec: </strong> ${this.valueHTML('dag-cbor (0x71)', [])}</div>
         </header>
         <section class="container">
           <p>You can download this block as:</p>
@@ -242,7 +242,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
   </html>`
   }
 
-  valueHTML (value: any, link: string | null): string {
+  valueHTML (value: any, link: string[]): string {
     let valueString: string
     const isALinkObject = isLink(value)
     if (!isALinkObject && typeof value !== 'string') {
@@ -259,11 +259,11 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
     return valueCodeBlock
   }
 
-  private renderValue (key: string, value: any, currentPath: string): string {
+  private renderValue (key: string, value: any, currentPath: string[]): string {
     let rows = ''
     value.forEach((item: any, idx: number) => {
-      const itemPath = currentPath ? `${currentPath}/${key}/${idx}` : `${key}/${idx}`
-      rows += `<div>${this.valueHTML(idx, null)}</div>`
+      const itemPath = [...currentPath, key, idx.toString()]
+      rows += `<div>${this.valueHTML(idx, [])}</div>`
       if (isPrimitive(item)) {
         rows += `<div>${this.valueHTML(item, itemPath)}</div>`
       } else {
@@ -275,7 +275,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
     return rows
   }
 
-  renderRows (obj: Record<string, any>, currentPath: string = ''): string {
+  renderRows (obj: Record<string, any>, currentPath: string[] = []): string {
     let rows = ''
     for (const [key, value] of Object.entries(obj)) {
       if (Array.isArray(value)) {
@@ -284,7 +284,7 @@ export class DagCborHtmlPreviewPlugin extends BasePlugin {
         rows += this.renderValue(key, value, currentPath)
         rows += '</div>'
       } else {
-        const valuePath = currentPath ? `${currentPath}/${key}` : key
+        const valuePath = [...currentPath, key]
         rows += `<div>${key}</div><div>${this.valueHTML(value, valuePath)}</div>`
       }
     }

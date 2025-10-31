@@ -95,12 +95,12 @@ describe('@helia/verified-fetch', () => {
       })
       expect(onProgressEvents[1]).to.include({ type: 'verified-fetch:request:resolve' }).and.to.have.property('detail').that.deep.equals({
         cid,
-        path: ''
+        path: []
       })
       expect(onProgressEvents[2]).to.include({ type: 'blocks:get:blockstore:get' }).and.to.have.property('detail').that.deep.equals(cid)
       expect(onProgressEvents[3]).to.include({ type: 'verified-fetch:request:end' }).and.to.have.property('detail').that.deep.equals({
         cid,
-        path: ''
+        path: []
       })
     })
 

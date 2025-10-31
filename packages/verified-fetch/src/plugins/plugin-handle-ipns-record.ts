@@ -13,7 +13,7 @@ export class IpnsRecordPlugin extends BasePlugin {
   readonly id = 'ipns-record-plugin'
   readonly codes = []
 
-  canHandle ({ resource, accept, query, path, byteRangeContext }: PluginContext): boolean {
+  canHandle ({ accept, query, byteRangeContext }: PluginContext): boolean {
     if (byteRangeContext == null) {
       return false
     }
@@ -26,7 +26,7 @@ export class IpnsRecordPlugin extends BasePlugin {
     const { ipnsResolver } = this.pluginOptions
     context.reqFormat = 'ipns-record'
 
-    if (path !== '' || !(resource.startsWith('ipns://') || resource.includes('.ipns.') || resource.includes('/ipns/'))) {
+    if (path.length > 0 || !(resource.startsWith('ipns://') || resource.includes('.ipns.') || resource.includes('/ipns/'))) {
       this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
       return badRequestResponse(resource, new Error('Invalid IPNS name'))
     }

@@ -856,7 +856,7 @@ export interface ResourceDetail {
 
 export interface CIDDetail {
   cid: CID
-  path?: string
+  path?: string[]
 }
 
 export interface CIDDetailError extends CIDDetail {
@@ -1069,10 +1069,12 @@ export interface UrlQuery extends Record<string, string | unknown> {
 }
 
 export interface ResolveURLResult {
+  url: URL
   cid: CID
   protocol: string
   ttl: number
-  path: string
+  path: string[]
+  fragment: string
   query: UrlQuery
   ipfsPath: string
 }

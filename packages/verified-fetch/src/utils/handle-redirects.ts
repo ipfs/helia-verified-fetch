@@ -1,5 +1,5 @@
 import { SubdomainNotSupportedError } from '../errors.js'
-import { matchURLString } from './parse-url-string.js'
+import { parseURLString } from './parse-url-string.js'
 import { movedPermanentlyResponse } from './responses.js'
 import type { VerifiedFetchInit, Resource } from '../index.js'
 import type { AbortOptions, ComponentLogger } from '@libp2p/interface'
@@ -47,7 +47,7 @@ export async function getRedirectResponse ({ resource, options, logger, cid, fet
   // if x-forwarded-host is passed, we need to set the location header to the
   // subdomain so that the browser can redirect to the correct subdomain
   try {
-    const urlParts = matchURLString(resource)
+    const urlParts = parseURLString(resource)
     const reqUrl = new URL(resource)
     const actualHost = forwardedHost ?? reqUrl.host
     const subdomainUrl = new URL(reqUrl)

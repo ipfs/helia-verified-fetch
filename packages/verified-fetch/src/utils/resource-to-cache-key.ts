@@ -1,5 +1,5 @@
 import { CID } from 'multiformats/cid'
-import { matchURLString } from './parse-url-string.js'
+import { parseURLString } from './parse-url-string.js'
 
 /**
  * Takes a resource and returns a session cache key as an IPFS or IPNS path with
@@ -24,7 +24,7 @@ export function resourceToSessionCacheKey (url: string | CID): string {
     return `ipfs://${CID.parse(url.toString())}`
   } catch {}
 
-  const { protocol, cidOrPeerIdOrDnsLink } = matchURLString(url.toString())
+  const { protocol, cidOrPeerIdOrDnsLink } = parseURLString(url.toString())
 
   return `${protocol}://${cidOrPeerIdOrDnsLink}`
 }

@@ -70,7 +70,7 @@ export class RawPlugin extends BasePlugin {
       log.trace('did not set content disposition, raw block will display inline')
     }
 
-    if (path !== '' && cid.code === rawCode) {
+    if (path.length > 0 && cid.code === rawCode) {
       log.trace('404-ing raw codec request for %c/%s', cid, path)
       return notFoundResponse(resource)
     }
