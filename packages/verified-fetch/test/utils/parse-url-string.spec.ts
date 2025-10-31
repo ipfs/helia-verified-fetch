@@ -1,5 +1,5 @@
 import { expect } from 'aegir/chai'
-import { decodeDNSLinkLabel, encodeDNSLinkLabel } from '../../src/utils/dnslink-label.ts'
+import { encodeDNSLinkLabel } from '../../src/utils/dnslink-label.ts'
 import { parseURLString } from '../../src/utils/parse-url-string.ts'
 
 const schemes = {
