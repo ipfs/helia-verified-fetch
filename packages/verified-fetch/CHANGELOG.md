@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v4.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.1...@helia/verified-fetch-4.0.2) (2025-10-31)
+
+### Bug Fixes
+
+* strip URL fragement before resolving DAG path ([#284](https://github.com/ipfs/helia-verified-fetch/issues/284)) ([af5ad0d](https://github.com/ipfs/helia-verified-fetch/commit/af5ad0dae3952f93d9c1ef7aaa711dc8f962cd71)), closes [#271](https://github.com/ipfs/helia-verified-fetch/issues/271)
+
 ## [@helia/verified-fetch-v4.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.0...@helia/verified-fetch-4.0.1) (2025-10-27)
 
 ### Bug Fixes
