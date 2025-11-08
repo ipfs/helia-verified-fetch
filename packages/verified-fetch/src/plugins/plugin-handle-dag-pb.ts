@@ -68,6 +68,7 @@ export class DagPbPlugin extends BasePlugin {
     const log = this.log
     let resource = context.resource
     const path = context.path
+    let filename = query?.filename
 
     let redirected = false
 
@@ -111,6 +112,9 @@ export class DagPbPlugin extends BasePlugin {
 
         log.trace('found root file at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
         resolvedCID = entry.cid
+
+        // use `index.html` as the file name to help with content types
+        filename = rootFilePath
       } catch (err: any) {
         if (options?.signal?.aborted) {
           throw new AbortError(options?.signal?.reason)
@@ -136,7 +140,11 @@ export class DagPbPlugin extends BasePlugin {
 
     try {
       // attempt to get the exact file size, but timeout quickly.
-      const stat = await fs.stat(resolvedCID, { extended: true, signal: AbortSignal.timeout(500) })
+      const stat = await fs.stat(resolvedCID, {
+        extended: true,
+        signal: AbortSignal.timeout(500)
+      })
+
       byteRangeContext.setFileSize(stat.size)
     } catch (err: any) {
       log.error('error getting exact file size for %c/%s - %e', cid, path, err)
@@ -167,7 +175,13 @@ export class DagPbPlugin extends BasePlugin {
         }))
         const stream = streamAndFirstChunk.stream
         firstChunk = streamAndFirstChunk.firstChunk
-        contentType = await context.serverTiming.time('get-content-type', '', getContentType({ path, filename: query.filename, bytes: firstChunk, contentTypeParser, log }))
+        contentType = await context.serverTiming.time('get-content-type', '', getContentType({
+          path,
+          filename,
+          bytes: firstChunk,
+          contentTypeParser,
+          log
+        }))
 
         byteRangeContext.setBody(stream)
       }
