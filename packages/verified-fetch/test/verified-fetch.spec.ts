@@ -126,6 +126,7 @@ describe('@helia/verified-fetch', () => {
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
+      expect(resp.headers.get('content-type')).to.include('text/html')
 
       const data = await resp.arrayBuffer()
       expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
