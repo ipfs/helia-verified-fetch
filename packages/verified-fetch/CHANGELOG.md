@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v4.0.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.2...@helia/verified-fetch-4.0.3) (2025-11-08)
+
+### Bug Fixes
+
+* use index.html as file name when returning website index ([#285](https://github.com/ipfs/helia-verified-fetch/issues/285)) ([e7a47ca](https://github.com/ipfs/helia-verified-fetch/commit/e7a47ca3c91e2d3a4db2c0045145789252cb7ce4))
+
 ## [@helia/verified-fetch-v4.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.1...@helia/verified-fetch-4.0.2) (2025-10-31)
 
 ### Bug Fixes
