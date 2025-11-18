@@ -113,8 +113,6 @@
   "TestNativeDag/GET_response_for_application%2Fvnd.ipld.dag-cbor_has_expected_Content-Type/Header_Content-Length",
   "TestNativeDag/GET_response_for_application%2Fvnd.ipld.dag-cbor_has_expected_Content-Type/Header_X-Content-Type-Options",
   "TestNativeDag/GET_response_for_application%2Fvnd.ipld.dag-cbor_has_expected_Content-Type",
-  "TestNativeDag/GET_for_application%2Fvnd.ipld.dag-cbor_with_query_filename_includes_Content-Disposition_with_custom_filename/Header_Content-Disposition",
-  "TestNativeDag/GET_for_application%2Fvnd.ipld.dag-cbor_with_query_filename_includes_Content-Disposition_with_custom_filename",
   "TestNativeDag/Cache_control_HTTP_headers_%28cbor%29/Header_Etag",
   "TestNativeDag/Cache_control_HTTP_headers_%28cbor%29",
   "TestNativeDag/HEAD_plain_CBOR_codec_with_no_explicit_format_returns_HTTP_200/Header_Content-Type",

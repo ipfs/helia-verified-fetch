@@ -77,7 +77,8 @@ export class CborPlugin extends BasePlugin {
     response.headers.set('content-type', context.byteRangeContext.getContentType() ?? responseContentType)
 
     if (responseContentType !== 'application/json') {
-      response.headers.set('content-disposition', `attachment; filename="${cid}.cbor"`)
+      context.query.download = true
+      context.query.filename ??= `${cid}.cbor`
     }
 
     this.log.trace('setting content type to "%s"', context.byteRangeContext.getContentType() ?? responseContentType)

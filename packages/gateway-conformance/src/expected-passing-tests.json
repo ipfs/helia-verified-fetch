@@ -216,6 +216,8 @@
   "TestNativeDag/GET_plain_CBOR_codec_with_Accept:_application%2Fcbor_returns_same_payload_as_application%2Fvnd.ipld.dag-cbor_but_with_plain_Content-Type",
   "TestNativeDag/GET_response_for_application%2Fvnd.ipld.dag-cbor_has_expected_Content-Type/Header_Content-Type",
   "TestNativeDag/GET_response_for_application%2Fvnd.ipld.dag-cbor_has_expected_Content-Type/Header_Content-Disposition",
+  "TestNativeDag/GET_for_application%2Fvnd.ipld.dag-cbor_with_query_filename_includes_Content-Disposition_with_custom_filename/Header_Content-Disposition",
+  "TestNativeDag/GET_for_application%2Fvnd.ipld.dag-cbor_with_query_filename_includes_Content-Disposition_with_custom_filename",
   "TestNativeDag/GET_for_application%2Fvnd.ipld.dag-cbor_with_%3Fdownload=true_forces_Content-Disposition:_attachment/Header_Content-Disposition",
   "TestNativeDag/GET_for_application%2Fvnd.ipld.dag-cbor_with_%3Fdownload=true_forces_Content-Disposition:_attachment",
   "TestNativeDag/Cache_control_HTTP_headers_%28cbor%29/Header_X-Ipfs-Path",
