@@ -100,7 +100,8 @@ describe('content-type-parser', () => {
     expect(resp.headers.get('content-type')).to.equal('text/plain')
   })
 
-  it('supports file-type as a contentTypeParser', async () => {
+  // TODO: https://github.com/sindresorhus/file-type/issues/782
+  it.skip('supports file-type as a contentTypeParser', async () => {
     verifiedFetch = new VerifiedFetch(helia, {
       contentTypeParser: async (bytes) => {
         const type = await fileTypeFromBuffer(bytes)
