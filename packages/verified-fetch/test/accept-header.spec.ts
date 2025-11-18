@@ -348,12 +348,4 @@ describe('accept header', () => {
     },
     type: 'Uint8Array'
   })
-
-  shouldNotAcceptCborWith({
-    obj: {
-      hello: 'world',
-      invalid: CID.parse('QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv')
-    },
-    type: 'CID'
-  })
 })

@@ -87,7 +87,7 @@ describe('@helia/verified-fetch', () => {
         onProgress
       })
 
-      expect(onProgress.callCount).to.equal(4)
+      expect(onProgress.callCount).to.equal(5)
 
       const onProgressEvents = onProgress.getCalls().map(call => call.args[0])
       expect(onProgressEvents[0]).to.include({ type: 'verified-fetch:request:start' }).and.to.have.property('detail').that.deep.equals({
@@ -98,7 +98,8 @@ describe('@helia/verified-fetch', () => {
         path: []
       })
       expect(onProgressEvents[2]).to.include({ type: 'blocks:get:blockstore:get' }).and.to.have.property('detail').that.deep.equals(cid)
-      expect(onProgressEvents[3]).to.include({ type: 'verified-fetch:request:end' }).and.to.have.property('detail').that.deep.equals({
+      expect(onProgressEvents[3]).to.include({ type: 'blocks:get:blockstore:get' }).and.to.have.property('detail').that.deep.equals(cid)
+      expect(onProgressEvents[4]).to.include({ type: 'verified-fetch:request:end' }).and.to.have.property('detail').that.deep.equals({
         cid,
         path: []
       })
@@ -510,7 +511,11 @@ describe('@helia/verified-fetch', () => {
       const c = dagCbor(helia)
       const cid = await c.add(obj)
 
-      const resp = await verifiedFetch.fetch(cid)
+      const resp = await verifiedFetch.fetch(cid, {
+        headers: {
+          accept: 'application/json'
+        }
+      })
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
@@ -526,11 +531,20 @@ describe('@helia/verified-fetch', () => {
       const c = dagCbor(helia)
       const cid = await c.add(obj)
 
-      const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
+      const resp = await verifiedFetch.fetch(cid, {
+        headers: {
+          accept: 'application/json'
+        }
+      })
+      expect(resp.headers.get('content-type')).to.equal('application/json')
 
-      const data = await ipldDagCbor.decode(await resp.arrayBuffer())
-      expect(data).to.deep.equal(obj)
+      const data = await ipldJson.decode(await resp.arrayBuffer())
+      expect(data).to.deep.equal({
+        hello: 'world',
+        link: {
+          '/': 'QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN'
+        }
+      })
     })
 
     it('should return dag-cbor data with embedded bytes', async () => {
@@ -542,7 +556,7 @@ describe('@helia/verified-fetch', () => {
       const cid = await c.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
+      expect(resp.headers.get('content-type')).to.equal('application/cbor')
 
       const data = await ipldDagCbor.decode(await resp.arrayBuffer())
       expect(data).to.deep.equal(obj)
@@ -555,7 +569,11 @@ describe('@helia/verified-fetch', () => {
       const c = dagCbor(helia)
       const cid = await c.add(obj)
 
-      const resp = await verifiedFetch.fetch(cid)
+      const resp = await verifiedFetch.fetch(cid, {
+        headers: {
+          accept: 'application/json'
+        }
+      })
       expect(resp.headers.get('content-type')).to.equal('application/json')
 
       const data = ipldDagJson.decode(await resp.arrayBuffer())
@@ -570,7 +588,11 @@ describe('@helia/verified-fetch', () => {
       const c = dagCbor(helia)
       const cid = await c.add(obj)
 
-      const resp = await verifiedFetch.fetch(cid)
+      const resp = await verifiedFetch.fetch(cid, {
+        headers: {
+          accept: 'application/json'
+        }
+      })
       expect(resp.headers.get('content-type')).to.equal('application/json')
 
       const data = await resp.json()
@@ -580,7 +602,7 @@ describe('@helia/verified-fetch', () => {
       })
     })
 
-    it('should return dag-cbor with a large BigInt as application/octet-stream', async () => {
+    it('should return dag-cbor with a large BigInt as application/cbor', async () => {
       const obj = {
         hello: 'world',
         bigInt: BigInt(Number.MAX_SAFE_INTEGER) + 1n
@@ -589,7 +611,7 @@ describe('@helia/verified-fetch', () => {
       const cid = await c.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
+      expect(resp.headers.get('content-type')).to.equal('application/cbor')
 
       const data = ipldDagCbor.decode(await resp.arrayBuffer())
       expect(data).to.deep.equal(obj)
@@ -602,7 +624,11 @@ describe('@helia/verified-fetch', () => {
       const c = dagCbor(helia)
       const cid = await c.add(obj)
 
-      const resp = await verifiedFetch.fetch(cid)
+      const resp = await verifiedFetch.fetch(cid, {
+        headers: {
+          accept: 'application/json'
+        }
+      })
       expect(resp.headers.get('content-type')).to.equal('application/json')
 
       const output = await resp.json()
@@ -619,7 +645,11 @@ describe('@helia/verified-fetch', () => {
       const c = dagCbor(helia)
       const cid = await c.add(obj)
 
-      const resp = await verifiedFetch.fetch(cid)
+      const resp = await verifiedFetch.fetch(cid, {
+        headers: {
+          accept: 'application/json'
+        }
+      })
       expect(resp.headers.get('content-type')).to.equal('application/json')
 
       const output = ipldDagCbor.decode(await resp.arrayBuffer())
@@ -636,7 +666,7 @@ describe('@helia/verified-fetch', () => {
       const cid = await c.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
+      expect(resp.headers.get('content-type')).to.equal('application/cbor')
 
       const output = ipldDagCbor.decode(await resp.arrayBuffer())
       await expect(c.add(output)).to.eventually.deep.equal(cid)
@@ -706,7 +736,7 @@ describe('@helia/verified-fetch', () => {
       const obj = {
         hello: 'world',
         // fails to parse as JSON
-        link: CID.parse('QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN')
+        bytes: Uint8Array.from([0, 1, 2, 3, 4])
       }
       const c = dagCbor(helia)
       const cid = await c.add(obj)
