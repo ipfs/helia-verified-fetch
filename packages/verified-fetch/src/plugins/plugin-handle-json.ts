@@ -2,6 +2,7 @@ import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import toBuffer from 'it-to-buffer'
 import { code as jsonCode } from 'multiformats/codecs/json'
+import { CODEC_CBOR } from '../constants.ts'
 import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
@@ -18,8 +19,9 @@ export class JsonPlugin extends BasePlugin {
       return false
     }
 
-    if (accept?.mimeType === 'application/vnd.ipld.dag-json' && cid.code !== ipldDagCbor.code) {
-      // we can handle application/vnd.ipld.dag-json, but if the CID codec is ipldDagCbor, DagCborPlugin should handle it
+    if (accept?.mimeType === 'application/vnd.ipld.dag-json' && cid.code !== ipldDagCbor.code && cid.code !== CODEC_CBOR) {
+      // we can handle application/vnd.ipld.dag-json, but if the CID codec is
+      // cbor related, cbor related plugins will handle it
       // TODO: remove the need for deny-listing cases in plugins
       return true
     }
@@ -47,7 +49,7 @@ export class JsonPlugin extends BasePlugin {
         const obj = ipldDagJson.decode(block)
         body = ipldDagCbor.encode(obj)
       } catch (err) {
-        this.log.error('could not transform %c to application/vnd.ipld.dag-cbor', err)
+        this.log.error('could not transform %c to application/vnd.ipld.dag-cbor - %e', err)
         return notAcceptableResponse(resource)
       }
     } else {

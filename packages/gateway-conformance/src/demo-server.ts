@@ -33,10 +33,10 @@ const stopServer = await startVerifiedFetchGateway({
 
 process.on('exit', () => {
   stopServer().catch((err) => {
-    log.error('Failed to stop server', err)
+    log.error('Failed to stop server - %e', err)
   })
   controller?.stop().catch((err) => {
-    log.error('Failed to stop controller', err)
+    log.error('Failed to stop controller - %e', err)
     process.exit(1)
   })
 })

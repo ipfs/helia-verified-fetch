@@ -1,5 +1,8 @@
 import * as ipldDagCbor from '@ipld/dag-cbor'
-import { dagCborToSafeJSON } from '../utils/dag-cbor-to-safe-json.ts'
+import { CID } from 'multiformats/cid'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { CODEC_CBOR } from '../constants.ts'
+import { cborToObject, dagCborToSafeJSON } from '../utils/dag-cbor-to-safe-json.js'
 import { setIpfsRoots } from '../utils/response-headers.js'
 import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { isObjectNode } from '../utils/walk-path.js'
@@ -8,13 +11,13 @@ import type { PluginContext } from './types.js'
 import type { ObjectNode } from 'ipfs-unixfs-exporter'
 
 /**
- * Handles `dag-cbor` content, including requests with Accept: `application/vnd.ipld.dag-json` and `application/json`.
+ * Handles `cbor` content
  */
-export class DagCborPlugin extends BasePlugin {
-  readonly id = 'dag-cbor-plugin'
-  readonly codes = [ipldDagCbor.code]
+export class CborPlugin extends BasePlugin {
+  readonly id = 'cbor-plugin'
+  readonly codes = [CODEC_CBOR]
 
-  canHandle ({ cid, accept, pathDetails, byteRangeContext, plugins }: PluginContext): boolean {
+  canHandle ({ cid, pathDetails, byteRangeContext }: PluginContext): boolean {
     if (pathDetails == null) {
       return false
     }
@@ -23,7 +26,7 @@ export class DagCborPlugin extends BasePlugin {
       return false
     }
 
-    if (cid.code !== ipldDagCbor.code) {
+    if (cid.code !== CODEC_CBOR) {
       return false
     }
 
@@ -31,12 +34,7 @@ export class DagCborPlugin extends BasePlugin {
       return false
     }
 
-    if (accept != null && accept.mimeType === 'text/html' && plugins.includes('dag-cbor-plugin-html-preview')) {
-      // let the dag-cbor-html-preview plugin handle it
-      return false
-    }
-
-    return isObjectNode(pathDetails.terminalElement)
+    return true
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext' | 'pathDetails'>> & { pathDetails: { terminalElement: ObjectNode } }): Promise<Response> {
@@ -51,21 +49,29 @@ export class DagCborPlugin extends BasePlugin {
 
     if (accept?.mimeType === 'application/json' || accept?.mimeType === 'application/vnd.ipld.dag-json') {
       try {
-        // if vnd.ipld.dag-json has been specified, convert to the format - note
-        // that this supports more data types than regular JSON
-        body = dagCborToSafeJSON(body)
+        body = dagCborToSafeJSON(block)
         responseContentType = accept.mimeType
       } catch (err) {
         this.log.error('could not decode CBOR as JSON-safe - %e', err)
         return notAcceptableResponse(resource)
       }
-    } else if (accept?.mimeType === 'application/octet-stream' || accept?.mimeType === 'application/vnd.ipld.raw' || accept?.mimeType === 'application/vnd.ipld.dag-cbor') {
+    } else if (accept?.mimeType === 'application/vnd.ipld.dag-cbor') {
+      try {
+        const obj = cborToObject(block)
+        convert(obj)
+        body = ipldDagCbor.encode(obj)
+        responseContentType = accept.mimeType
+      } catch (err) {
+        this.log.error('could not translate CBOR to DAG-CBOR - %e', err)
+
+        return notAcceptableResponse(resource)
+      }
+    } else if (accept?.mimeType === 'application/octet-stream' || accept?.mimeType === 'application/vnd.ipld.raw') {
       responseContentType = accept.mimeType
     }
 
     context.byteRangeContext.setBody(body)
 
-    // const responseContentType = accept?.mimeType ?? (body instanceof Uint8Array ? 'application/octet-stream' : 'application/json')
     const response = okRangeResponse(resource, context.byteRangeContext.getBody(responseContentType), { byteRangeContext: context.byteRangeContext, log: this.log })
 
     response.headers.set('content-type', context.byteRangeContext.getContentType() ?? responseContentType)
@@ -79,4 +85,22 @@ export class DagCborPlugin extends BasePlugin {
 
     return response
   }
+}
+
+/**
+ * Turns `{ "/": string }` properties into `CID` instances and
+ * `{ "/": { "bytes": base64 } }` into `Uint8Array`s
+ */
+function convert (obj: any): void {
+  try {
+    for (const key of Object.getOwnPropertyNames(obj)) {
+      if (typeof obj[key]?.['/'] === 'string') {
+        obj[key] = CID.parse(obj[key]['/'])
+      } else if (typeof obj[key]?.['/']?.['bytes'] === 'string') {
+        obj[key] = uint8ArrayFromString(obj[key]['/']['bytes'], 'base64')
+      } else {
+        convert(obj[key])
+      }
+    }
+  } catch {}
 }
