@@ -5,6 +5,7 @@ import { CustomProgressEvent } from 'progress-events'
 import QuickLRU from 'quick-lru'
 import { ByteRangeContextPlugin } from './plugins/plugin-handle-byte-range-context.js'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
+import { CborPlugin } from './plugins/plugin-handle-cbor.js'
 import { DagCborPlugin } from './plugins/plugin-handle-dag-cbor.js'
 import { DagPbPlugin } from './plugins/plugin-handle-dag-pb.js'
 import { DagWalkPlugin } from './plugins/plugin-handle-dag-walk.js'
@@ -99,7 +100,8 @@ export class VerifiedFetch {
       new TarPlugin(pluginOptions),
       new JsonPlugin(pluginOptions),
       new DagCborPlugin(pluginOptions),
-      new DagPbPlugin(pluginOptions)
+      new DagPbPlugin(pluginOptions),
+      new CborPlugin(pluginOptions)
     ]
 
     const customPlugins = init.plugins?.map((pluginFactory) => pluginFactory(pluginOptions)) ?? []
@@ -245,7 +247,7 @@ export class VerifiedFetch {
       this.log(`starting pipeline pass #${passCount + 1}`)
       passCount++
 
-      this.log.trace('checking which plugins can handle %c%s with accept %o', context.cid, context.path != null ? `/${context.path}` : '', context.accept)
+      this.log.trace('checking which plugins can handle %c%s with accept %o', context.cid, context.path.length > 0 ? `/${context.path.join('/')}` : '', context.accept)
 
       // gather plugins that say they can handle the *current* context, but haven't been used yet
       const readyPlugins = this.plugins.filter(p => !pluginsUsed.has(p.id)).filter(p => p.canHandle(context))

@@ -588,7 +588,7 @@ export class ByteRangeContext {
 
           controller.close()
         } catch (err) {
-          log.error('Error processing range(s): %o', err)
+          log.error('Error processing range(s) - %e', err)
           controller.error(err)
         }
       }

@@ -43,7 +43,7 @@ export async function getContentType ({ bytes, path, contentTypeParser, log, def
       }
       log.trace('contentTypeParser returned %s for file with name %s', contentType, fileName)
     } catch (err) {
-      log.error('error parsing content type', err)
+      log.error('error parsing content type - %e', err)
     }
   }
 

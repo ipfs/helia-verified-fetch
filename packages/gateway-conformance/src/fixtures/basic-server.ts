@@ -157,13 +157,13 @@ async function callVerifiedFetch (req: IncomingMessage, res: Response, { serverP
     }
     res.end()
   } catch (e: any) {
-    urlLog.error('Problem with request: %s', e.message, e)
+    urlLog.error('problem with request - %e', e)
     if (!res.headersSent) {
       res.writeHead(500)
     }
     res.end(`Internal Server Error: ${e.message}`)
   } finally {
-    urlLog.trace('Cleaning up request')
+    urlLog.trace('cleaning up request')
     clearTimeout(reqTimeout)
     requestController.abort()
     requestController = null
@@ -195,7 +195,7 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
   const server = createServer((req, res) => {
     try {
       void callVerifiedFetch(req, res, { serverPort, useSessions, verifiedFetch }).catch((err) => {
-        log.error('Error in callVerifiedFetch', err)
+        log.error('error in callVerifiedFetch - %e', err)
 
         if (!res.headersSent) {
           res.writeHead(500)
@@ -203,7 +203,7 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
         res.end('Internal Server Error')
       })
     } catch (err) {
-      log.error('Error in createServer', err)
+      log.error('error in createServer - %e', err)
 
       if (!res.headersSent) {
         res.writeHead(500)
@@ -218,17 +218,17 @@ export async function startVerifiedFetchGateway ({ kuboGateway, serverPort, IPFS
   })
 
   return async function cleanup () {
-    log('Stopping basic server...')
+    log('stopping basic server...')
     await new Promise<void>((resolve, reject) => {
       // no matter what happens, we need to kill the server
       server.closeAllConnections()
-      log('Closed all connections')
+      log('closed all connections')
       server.close((err: any) => {
         if (err != null) {
-          log.error('Error closing server - %e', err)
+          log.error('error closing server - %e', err)
           reject(err instanceof Error ? err : new Error(err))
         } else {
-          log('Server closed successfully')
+          log('server closed successfully')
           resolve()
         }
       })
