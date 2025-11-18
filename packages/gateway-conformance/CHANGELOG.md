@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-gateway-conformance-v2.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-2.0.0...@helia/verified-fetch-gateway-conformance-2.0.1) (2025-11-18)
+
+### Bug Fixes
+
+* improve cbor support ([#289](https://github.com/ipfs/helia-verified-fetch/issues/289)) ([8a29a88](https://github.com/ipfs/helia-verified-fetch/commit/8a29a889eeee49830b48c86336a5d782caa3a5d0))
+
+### Trivial Changes
+
+* update sibling deps ([5e8ff1f](https://github.com/ipfs/helia-verified-fetch/commit/5e8ff1f7d3d8d41f91fa9a13354db9bc8c651ea9))
+
 ## [@helia/verified-fetch-gateway-conformance-v2.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-gateway-conformance-1.5.1...@helia/verified-fetch-gateway-conformance-2.0.0) (2025-10-20)
 
 ### ⚠ BREAKING CHANGES
