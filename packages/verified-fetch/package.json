@@ -209,7 +209,6 @@
     "@libp2p/logger": "^6.2.0",
     "@types/sinon": "^17.0.4",
     "aegir": "^47.0.24",
-    "blockstore-core": "^6.1.1",
     "browser-readablestream-to-it": "^2.0.9",
     "ipfs-unixfs-importer": "^16.0.1",
     "it-all": "^3.0.8",
