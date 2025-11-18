@@ -13,6 +13,10 @@ function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'c
     return query.filename
   }
 
+  if (ipfsPath.endsWith('/')) {
+    ipfsPath = ipfsPath.substring(0, ipfsPath.length - 1)
+  }
+
   // convert context.ipfsPath to a filename. replace all / with _, replace prefix protocol with empty string
   const filename = ipfsPath
     .replace(/\/ipfs\//, '')
