@@ -82,7 +82,7 @@ describe('content-disposition', () => {
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('Content-Disposition')).to.include('attachment')
-    expect(resp.headers.get('Content-Disposition')).to.include(`filename="my-car.car"`)
+    expect(resp.headers.get('Content-Disposition')).to.include('filename="my-car.car"')
   })
 
   it('should respect a filename for the car file name with many trailing slashes', async () => {
@@ -96,6 +96,6 @@ describe('content-disposition', () => {
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('Content-Disposition')).to.include('attachment')
-    expect(resp.headers.get('Content-Disposition')).to.include(`filename="my-car.car"`)
+    expect(resp.headers.get('Content-Disposition')).to.include('filename="my-car.car"')
   })
 })
