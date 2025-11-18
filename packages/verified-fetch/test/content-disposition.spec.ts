@@ -84,4 +84,18 @@ describe('content-disposition', () => {
     expect(resp.headers.get('Content-Disposition')).to.include('attachment')
     expect(resp.headers.get('Content-Disposition')).to.include(`filename="my-car.car"`)
   })
+
+  it('should respect a filename for the car file name with many trailing slashes', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const resp = await fetch(`ipfs://${cid}///////?filename=my-car.car&format=car`)
+    expect(resp).to.be.ok()
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('Content-Disposition')).to.include('attachment')
+    expect(resp.headers.get('Content-Disposition')).to.include(`filename="my-car.car"`)
+  })
 })
