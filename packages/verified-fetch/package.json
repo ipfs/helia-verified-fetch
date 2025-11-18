@@ -196,7 +196,8 @@
     "libp2p": "^3.1.0",
     "multiformats": "^13.3.6",
     "progress-events": "^1.0.1",
-    "quick-lru": "^7.0.1"
+    "quick-lru": "^7.0.1",
+    "uint8arrays": "^5.1.0"
   },
   "devDependencies": {
     "@helia/dag-cbor": "^5.0.0",
@@ -208,6 +209,7 @@
     "@libp2p/logger": "^6.2.0",
     "@types/sinon": "^17.0.4",
     "aegir": "^47.0.24",
+    "blockstore-core": "^6.1.1",
     "browser-readablestream-to-it": "^2.0.9",
     "ipfs-unixfs-importer": "^16.0.1",
     "it-all": "^3.0.8",
@@ -216,8 +218,7 @@
     "p-defer": "^4.0.1",
     "race-signal": "^2.0.0",
     "sinon": "^21.0.0",
-    "sinon-ts": "^2.0.0",
-    "uint8arrays": "^5.1.0"
+    "sinon-ts": "^2.0.0"
   },
   "browser": {
     "./dist/src/utils/libp2p-defaults.js": "./dist/src/utils/libp2p-defaults.browser.js"
