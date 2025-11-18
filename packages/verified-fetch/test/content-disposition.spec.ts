@@ -30,7 +30,7 @@ describe('content-disposition', () => {
     await stop(helia)
   })
 
-  it('should attach when filename is passed', async () => {
+  it('should inline by default', async () => {
     const obj = {
       hello: 'world'
     }
@@ -40,7 +40,7 @@ describe('content-disposition', () => {
     const resp = await fetch(`ipfs://${cid}?filename=foo.txt`)
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
-    expect(resp.headers.get('Content-Disposition')).to.include('attachment')
+    expect(resp.headers.get('Content-Disposition')).to.include('inline')
     expect(resp.headers.get('Content-Disposition')).to.include('filename="foo.txt"')
   })
 
