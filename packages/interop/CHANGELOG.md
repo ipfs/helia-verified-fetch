@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-interop-v2.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-2.0.0...@helia/verified-fetch-interop-2.0.1) (2025-11-20)
+
+### Trivial Changes
+
+* update sibling deps ([5e8ff1f](https://github.com/ipfs/helia-verified-fetch/commit/5e8ff1f7d3d8d41f91fa9a13354db9bc8c651ea9))
+
+### Dependencies
+
+* bump glob from 11.1.0 to 12.0.0 ([#287](https://github.com/ipfs/helia-verified-fetch/issues/287)) ([b28092e](https://github.com/ipfs/helia-verified-fetch/commit/b28092eed511ffe86c98fdba9af32c59aa751e1d))
+
 ## [@helia/verified-fetch-interop-v2.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-1.26.3...@helia/verified-fetch-interop-2.0.0) (2025-10-20)
 
 ### ⚠ BREAKING CHANGES
