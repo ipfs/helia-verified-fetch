@@ -1,6 +1,6 @@
 {
   "name": "@helia/verified-fetch",
-  "version": "4.0.3",
+  "version": "4.0.4",
   "description": "A fetch-like API for obtaining verified & trustless IPFS content on the web",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/verified-fetch#readme",
@@ -196,7 +196,8 @@
     "libp2p": "^3.1.0",
     "multiformats": "^13.3.6",
     "progress-events": "^1.0.1",
-    "quick-lru": "^7.0.1"
+    "quick-lru": "^7.0.1",
+    "uint8arrays": "^5.1.0"
   },
   "devDependencies": {
     "@helia/dag-cbor": "^5.0.0",
@@ -216,8 +217,7 @@
     "p-defer": "^4.0.1",
     "race-signal": "^2.0.0",
     "sinon": "^21.0.0",
-    "sinon-ts": "^2.0.0",
-    "uint8arrays": "^5.1.0"
+    "sinon-ts": "^2.0.0"
   },
   "browser": {
     "./dist/src/utils/libp2p-defaults.js": "./dist/src/utils/libp2p-defaults.browser.js"
