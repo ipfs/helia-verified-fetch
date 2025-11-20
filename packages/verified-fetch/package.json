@@ -183,7 +183,7 @@
     "@libp2p/websockets": "^10.1.0",
     "@multiformats/dns": "^1.0.6",
     "cborg": "^4.2.11",
-    "file-type": "^21.0.0",
+    "file-type": "^21.1.1",
     "helia": "^6.0.5",
     "interface-blockstore": "^6.0.1",
     "ipfs-unixfs-exporter": "^14.0.1",
