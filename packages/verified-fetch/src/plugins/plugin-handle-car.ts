@@ -1,9 +1,9 @@
-import { BlockExporter, car, CIDPath, SubgraphExporter, UnixFSExporter } from '@helia/car'
+import { BlockExporter, car, CIDPath, depthFirstWalker, naturalOrderWalker, SubgraphExporter, UnixFSExporter } from '@helia/car'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { createScalableCuckooFilter } from '@libp2p/utils'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { getOffsetAndLength } from '../utils/get-offset-and-length.ts'
-import { okRangeResponse } from '../utils/responses.js'
+import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from './types.js'
 import type { ExportCarOptions, UnixFSExporterOptions } from '@helia/car'
@@ -60,13 +60,18 @@ export class CarPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext'>>): Promise<Response> {
-    const { options, pathDetails, cid, query, accept } = context
+    const { options, pathDetails, cid, query, accept, resource } = context
 
-    const order = accept?.options.order === 'dfs' ? 'dfs' : 'unk'
-    const duplicates = accept?.options.dups !== 'n'
+    const order = accept?.options.order === 'dfs' || context.query['car-order'] === 'dfs' ? 'dfs' : 'unk'
+    const duplicates = accept?.options.dups !== 'n' && context.query['car-dups'] !== 'n'
 
     if (pathDetails == null) {
       throw new Error('attempted to handle request for car with no path details')
+    }
+
+    // TODO: `@ipld/car` only supports CARv1
+    if (accept?.options.version === '2' || context.query['car-version'] === '2') {
+      return notAcceptableResponse(resource, 'Only CARv1 is supported')
     }
 
     const { getBlockstore, helia } = this.pluginOptions
@@ -116,7 +121,9 @@ export class CarPlugin extends BasePlugin {
         carExportOptions.exporter = new BlockExporter()
       }
     } else {
-      carExportOptions.exporter = new SubgraphExporter()
+      carExportOptions.exporter = new SubgraphExporter({
+        walker: order === 'dfs' ? depthFirstWalker() : naturalOrderWalker()
+      })
     }
 
     context.byteRangeContext.setBody(toBrowserReadableStream(c.export(target, carExportOptions)))

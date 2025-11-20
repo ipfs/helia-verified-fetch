@@ -165,7 +165,7 @@
   },
   "dependencies": {
     "@helia/block-brokers": "^5.0.4",
-    "@helia/car": "^5.2.0",
+    "@helia/car": "^5.3.0",
     "@helia/delegated-routing-v1-http-api-client": "^5.0.0",
     "@helia/dnslink": "^1.0.1",
     "@helia/interface": "^6.0.0",
@@ -184,7 +184,7 @@
     "@multiformats/dns": "^1.0.6",
     "cborg": "^4.2.11",
     "file-type": "^21.1.1",
-    "helia": "^6.0.5",
+    "helia": "^6.0.11",
     "interface-blockstore": "^6.0.1",
     "ipfs-unixfs-exporter": "^14.0.1",
     "ipns": "^10.1.3",
