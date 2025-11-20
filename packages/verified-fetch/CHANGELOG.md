@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v4.0.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.3...@helia/verified-fetch-4.0.4) (2025-11-18)
+
+### Bug Fixes
+
+* improve cbor support ([#289](https://github.com/ipfs/helia-verified-fetch/issues/289)) ([8a29a88](https://github.com/ipfs/helia-verified-fetch/commit/8a29a889eeee49830b48c86336a5d782caa3a5d0))
+
 ## [@helia/verified-fetch-v4.0.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.2...@helia/verified-fetch-4.0.3) (2025-11-08)
 
 ### Bug Fixes

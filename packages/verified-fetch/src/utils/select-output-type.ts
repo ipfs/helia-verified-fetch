@@ -3,6 +3,7 @@ import { code as dagJsonCode } from '@ipld/dag-json'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { code as jsonCode } from 'multiformats/codecs/json'
 import { code as rawCode } from 'multiformats/codecs/raw'
+import { CODEC_CBOR } from '../constants.ts'
 import type { RequestFormatShorthand } from '../index.js'
 import type { CID } from 'multiformats/cid'
 
@@ -59,6 +60,17 @@ const CID_TYPE_MAP: Record<number, string[]> = {
     'application/vnd.ipld.dag-json',
     'application/vnd.ipld.car',
     'application/x-tar'
+  ],
+  [CODEC_CBOR]: [
+    'application/json',
+    'application/vnd.ipld.dag-cbor',
+    'application/cbor',
+    'application/vnd.ipld.dag-json',
+    'application/octet-stream',
+    'application/vnd.ipld.raw',
+    'application/vnd.ipfs.ipns-record',
+    'application/vnd.ipld.car',
+    'text/html'
   ]
 }
 
@@ -71,7 +83,7 @@ export interface AcceptHeader {
  * Selects an output mime-type based on the CID and a passed `Accept` header
  */
 export function selectOutputType (cid: CID, accept?: string): AcceptHeader | undefined {
-  const cidMimeTypes = CID_TYPE_MAP[cid.code]
+  const cidMimeTypes = CID_TYPE_MAP[cid.code] ?? []
 
   if (accept != null) {
     return chooseMimeType(accept, cidMimeTypes)
