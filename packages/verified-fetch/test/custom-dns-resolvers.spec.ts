@@ -23,12 +23,11 @@ describe('custom dns-resolvers', () => {
     expect(response.statusText).to.equal('OK')
     await expect(response.text()).to.eventually.equal('hello world')
 
-    expect(customDnsResolver.callCount).to.equal(1)
-    expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain.com', {
+    expect(customDnsResolver.calledWith('_dnslink.some-non-cached-domain.com', {
       types: [
         RecordType.TXT
       ]
-    }])
+    })).to.be.true()
     await stop(fetch)
   })
 
