@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v4.0.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.4...@helia/verified-fetch-4.0.5) (2025-11-20)
+
+### Bug Fixes
+
+* strip trailing slash from car file name ([#290](https://github.com/ipfs/helia-verified-fetch/issues/290)) ([0a7b07b](https://github.com/ipfs/helia-verified-fetch/commit/0a7b07b3ad13f89cd4279c5f0757f4a102a43ae3))
+
 ## [@helia/verified-fetch-v4.0.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.3...@helia/verified-fetch-4.0.4) (2025-11-18)
 
 ### Bug Fixes
