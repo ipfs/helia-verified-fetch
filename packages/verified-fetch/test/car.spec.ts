@@ -55,6 +55,32 @@ describe('car files', () => {
     expect(buf).to.equalBytes(carFile)
   })
 
+  it('should return a 406 for a CARv2 file via the accept header', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const resp = await verifiedFetch.fetch(cid, {
+      headers: {
+        accept: 'application/vnd.ipld.car; version=2'
+      }
+    })
+    expect(resp.status).to.equal(406)
+  })
+
+  it('should return a 406 for a CARv2 file via a query param', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}?format=car&car-version=2`)
+    expect(resp.status).to.equal(406)
+  })
+
   it('should support specifying a filename for a CAR file', async () => {
     const obj = {
       hello: 'world'
