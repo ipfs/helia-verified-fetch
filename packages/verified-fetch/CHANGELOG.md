@@ -1,3 +1,14 @@
+## [@helia/verified-fetch-v4.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.5...@helia/verified-fetch-4.1.0) (2025-11-20)
+
+### Features
+
+* support missing car options ([#293](https://github.com/ipfs/helia-verified-fetch/issues/293)) ([266078c](https://github.com/ipfs/helia-verified-fetch/commit/266078c9127be7bcfec25b6e2e4855908255f063))
+
+### Trivial Changes
+
+* bump @types/sinon from 17.0.4 to 21.0.0 ([#288](https://github.com/ipfs/helia-verified-fetch/issues/288)) ([baf8601](https://github.com/ipfs/helia-verified-fetch/commit/baf86012d0524214752a278e87e5a7d7ccdd7742))
+* re-enable file-type test ([#291](https://github.com/ipfs/helia-verified-fetch/issues/291)) ([3cbc266](https://github.com/ipfs/helia-verified-fetch/commit/3cbc266ca1085fb4db8e44aca54deace11da837f))
+
 ## [@helia/verified-fetch-v4.0.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.4...@helia/verified-fetch-4.0.5) (2025-11-20)
 
 ### Bug Fixes
