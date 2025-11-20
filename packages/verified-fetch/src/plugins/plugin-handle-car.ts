@@ -17,6 +17,7 @@ function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'c
   const filename = ipfsPath
     .replace(/\/ipfs\//, '')
     .replace(/\/ipns\//, '')
+    .replace(/\/+$/g, '')
     .replace(/\//g, '_')
 
   return `${filename}.car`
