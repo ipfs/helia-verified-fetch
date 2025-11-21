@@ -1,3 +1,14 @@
+## [@helia/verified-fetch-v4.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.1.0...@helia/verified-fetch-4.1.1) (2025-11-21)
+
+### Bug Fixes
+
+* remove content-disposition header from error responses ([#296](https://github.com/ipfs/helia-verified-fetch/issues/296)) ([f109e77](https://github.com/ipfs/helia-verified-fetch/commit/f109e77e4f513c1693188d819e7479e90ac9bf81))
+* replace deprecated method use ([#295](https://github.com/ipfs/helia-verified-fetch/issues/295)) ([2ff9a94](https://github.com/ipfs/helia-verified-fetch/commit/2ff9a94918c38f629a90dd4210f7cb3330637116))
+
+### Trivial Changes
+
+* fix flaky DNS resolver test ([#294](https://github.com/ipfs/helia-verified-fetch/issues/294)) ([cf98769](https://github.com/ipfs/helia-verified-fetch/commit/cf987691f5c8f74338c0e218fd19ee283caf6f60))
+
 ## [@helia/verified-fetch-v4.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.0.5...@helia/verified-fetch-4.1.0) (2025-11-20)
 
 ### Features
