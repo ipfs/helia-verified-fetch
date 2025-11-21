@@ -68,6 +68,7 @@ describe('car files', () => {
       }
     })
     expect(resp.status).to.equal(406)
+    expect(resp.headers.has('content-disposition')).to.be.false()
   })
 
   it('should return a 406 for a CARv2 file via a query param', async () => {
@@ -79,6 +80,7 @@ describe('car files', () => {
 
     const resp = await verifiedFetch.fetch(`ipfs://${cid}?format=car&car-version=2`)
     expect(resp.status).to.equal(406)
+    expect(resp.headers.has('content-disposition')).to.be.false()
   })
 
   it('should support specifying a filename for a CAR file', async () => {
