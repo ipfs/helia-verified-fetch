@@ -11,6 +11,7 @@ import type { CID } from 'multiformats/cid'
 export interface PathWalkerOptions extends ExporterOptions {
 
 }
+
 export interface PathWalkerResponse {
   ipfsRoots: CID[]
   terminalElement: UnixFSEntry

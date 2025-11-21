@@ -143,7 +143,11 @@ export class VerifiedFetch {
    */
   private handleFinalResponse (response: Response, context?: Partial<PluginContext>): Response {
     if ((this.withServerTiming || context?.withServerTiming === true) && context?.serverTiming != null) {
-      response.headers.set('Server-Timing', context?.serverTiming.getHeader())
+      const timingHeader = context?.serverTiming.getHeader()
+
+      if (timingHeader !== '') {
+        response.headers.set('Server-Timing', timingHeader)
+      }
     }
 
     // if there are multiple ranges, we should omit the content-length header. see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Transfer-Encoding
@@ -227,6 +231,11 @@ export class VerifiedFetch {
         status: 200,
         headers: response.headers
       })
+    }
+
+    // make sure users are not expected to "download" error responses
+    if (response.status > 399) {
+      response.headers.delete('content-disposition')
     }
 
     return response
