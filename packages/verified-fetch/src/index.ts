@@ -807,7 +807,7 @@
  */
 
 import { bitswap, trustlessGateway } from '@helia/block-brokers'
-import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
+import { delegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
 import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
 import { dns } from '@multiformats/dns'
 import { createHelia } from 'helia'
@@ -1096,8 +1096,9 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
 
     const delegatedRouters = init?.routers ?? ['https://delegated-ipfs.dev']
     for (let index = 0; index < delegatedRouters.length; index++) {
-      const routerUrl = delegatedRouters[index]
-      libp2pConfig.services[`delegatedRouting${index}`] = () => createDelegatedRoutingV1HttpApiClient(routerUrl)
+      libp2pConfig.services[`delegatedRouting${index}`] = delegatedRoutingV1HttpApiClient({
+        url: delegatedRouters[index]
+      })
     }
     // merge any passed options from init.libp2pConfig into libp2pConfig if it exists
     if (init?.libp2pConfig != null) {
