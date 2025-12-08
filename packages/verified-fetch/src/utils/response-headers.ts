@@ -24,8 +24,10 @@ export function setCacheControlHeader ({ ttl, protocol, response }: CacheControl
     // don't set the header if it's already set by a plugin
     return
   }
+
   let headerValue: string
-  if (protocol === 'ipfs') {
+
+  if (protocol === 'ipfs:') {
     headerValue = 'public, max-age=29030400, immutable'
   } else if (ttl == null) {
     /**
@@ -42,46 +44,59 @@ export function setCacheControlHeader ({ ttl, protocol, response }: CacheControl
 }
 
 /**
- * This function returns the value of the `Content-Range` header for a given range.
+ * This function returns the value of the `Content-Range` header for a given
+ * range.
+ *
  * If you know the total size of the body, pass it as `byteSize`
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
  */
-export function getContentRangeHeader ({ byteStart, byteEnd, byteSize }: { byteStart: number | undefined, byteEnd: number | undefined, byteSize: number | undefined }): string {
-  const total = byteSize ?? '*' // if we don't know the total size, we should use *
+export function getContentRangeHeader (byteSize: number | bigint | string, byteStart?: number | bigint | string, byteEnd?: number | bigint | string): string {
+  if (byteStart != null) {
+    byteStart = BigInt(byteStart)
+  }
 
-  if ((byteEnd ?? 0) >= (byteSize ?? Infinity)) {
+  if (byteEnd != null) {
+    byteEnd = BigInt(byteEnd)
+  }
+
+  // if we don't know the total size, we should use *
+  const total = BigInt(byteSize)
+
+  // validate start/end are not outside total size
+  if ((byteEnd ?? 0n) >= total) {
     throw new InvalidRangeError('Invalid range: Range-end index is greater than or equal to the size of the file.')
   }
-  if ((byteStart ?? 0) >= (byteSize ?? Infinity)) {
+
+  if ((byteStart ?? 0n) >= total) {
     throw new InvalidRangeError('Invalid range: Range-start index is greater than or equal to the size of the file.')
   }
 
-  if (byteStart != null && byteEnd == null) {
-    // only byteStart in range
-    if (byteSize == null) {
-      return `bytes */${total}`
+  let range = '*'
+
+  if (byteStart == null) {
+    if (byteEnd != null) {
+      if (byteEnd < 0n) {
+        range = `${total + byteEnd}-${total - 1n}`
+      } else {
+        range = `0-${byteEnd}`
+      }
     }
-    return `bytes ${byteStart}-${byteSize - 1}/${byteSize}`
-  }
+  } else {
+    if (byteEnd == null) {
+      let end = '*'
 
-  if (byteStart == null && byteEnd != null) {
-    // only byteEnd in range
-    if (byteSize == null) {
-      return `bytes */${total}`
+      if (byteSize != null) {
+        end = `${total - 1n}`
+      }
+
+      range = `${byteStart}-${end}`
+    } else {
+      range = `${byteStart}-${byteEnd}`
     }
-    const end = byteSize - 1
-    const start = end - byteEnd + 1
-
-    return `bytes ${start}-${end}/${byteSize}`
   }
 
-  if (byteStart == null && byteEnd == null) {
-    // neither are provided, we can't return a valid range.
-    return `bytes */${total}`
-  }
-
-  return `bytes ${byteStart}-${byteEnd}/${total}`
+  return `bytes ${range}/${total}`
 }
 
 /**
@@ -91,10 +106,9 @@ export function getContentRangeHeader ({ byteStart, byteEnd, byteSize }: { byteS
  */
 export function setIpfsRoots (response: Response, ipfsRoots?: CID[]): void {
   if (ipfsRoots != null) {
-    response.headers.set('X-Ipfs-Roots', getIpfsRoots(ipfsRoots))
+    response.headers.set('X-Ipfs-Roots', ipfsRoots
+      .map(cid => cid.toV1().toString())
+      .join(',')
+    )
   }
-}
-
-export function getIpfsRoots (ipfsRoots: CID[]): string {
-  return ipfsRoots.map(cid => cid.toV1().toString()).join(',')
 }

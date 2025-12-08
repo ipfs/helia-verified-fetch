@@ -10,7 +10,9 @@ const schemes = {
 }
 
 const types = [
-  'ipfs', 'ipns'
+  ['ipfs', 'ipfs'],
+  ['ipns', 'ipns'],
+  ['dnslink', 'ipns']
 ]
 
 const keys: Record<string, Record<string, string>> = {
@@ -19,9 +21,11 @@ const keys: Record<string, Record<string, string>> = {
     'case sensitive CID': 'QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn'
   },
   ipns: {
-    domain: 'example.org',
     PeerID: '12D3KooWAsKeVQRVqBi2uzfVub7L6b7oByD1dGmorN644bEx6TyT',
     'PeerID CID': 'bafzaajaiaejcad45sqaz4vc7ftbzbyw5clcjhifslsklqzkqn4hcghvuqmim7qok'
+  },
+  dnslink: {
+    domain: 'example.org'
   }
 }
 
@@ -139,12 +143,12 @@ const testCases: Record<string, { ref: string, verify: any }> = {
 }
 
 describe('parse-url-string', () => {
-  for (const type of types) {
+  for (const [type, protocol] of types) {
     for (const [scheme, uri] of Object.entries(schemes)) {
       for (const [key, value] of Object.entries(keys[type])) {
         for (const [name, test] of Object.entries(testCases)) {
           it(`should parse ${type.toUpperCase()} ${scheme} with ${key} ${name}`, () => {
-            const isIPNSSubdomainTest = type === 'ipns' && scheme.includes('Subdomain') && key === 'domain'
+            const isIPNSSubdomainTest = protocol === 'ipns' && scheme.includes('Subdomain') && key === 'domain'
             let val = value
 
             // have to encode DNSLink label if it's going in a subdomain
@@ -152,15 +156,8 @@ describe('parse-url-string', () => {
               val = encodeDNSLinkLabel(value)
             }
 
-            expect(parseURLString(`${uri.replace('{scheme}', type).replace('{key}', val)}${test.ref}`)).to.deep.equal({
-              url: new URL(`${type}://${value}${test.ref}`),
-              protocol: type,
-              cidOrPeerIdOrDnsLink: value,
-              path: [],
-              query: {},
-              fragment: '',
-              ...test.verify
-            })
+            expect(parseURLString(`${uri.replace('{scheme}', protocol).replace('{key}', val)}${test.ref}`))
+              .to.deep.equal(new URL(`${type}://${value}${test.ref}`))
           })
         }
       }

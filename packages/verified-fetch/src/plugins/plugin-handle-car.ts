@@ -2,17 +2,15 @@ import { BlockExporter, car, CIDPath, depthFirstWalker, naturalOrderWalker, Subg
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { createScalableCuckooFilter } from '@libp2p/utils'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
-import { getOffsetAndLength } from '../utils/get-offset-and-length.ts'
-import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
+import { CONTENT_TYPE_CAR, MEDIA_TYPE_CAR } from '../utils/content-types.ts'
+import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
+import { entityBytesToOffsetAndLength } from '../utils/get-offset-and-length.ts'
+import { badRequestResponse, notAcceptableResponse, okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from './types.js'
+import type { PluginContext } from '../index.js'
 import type { ExportCarOptions, UnixFSExporterOptions } from '@helia/car'
 
-function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'cid' | 'ipfsPath'>): string {
-  if (query.filename != null) {
-    return query.filename
-  }
-
+function getFilename (ipfsPath: string): string {
   // convert context.ipfsPath to a filename. replace all / with _, replace prefix protocol with empty string
   const filename = ipfsPath
     .replace(/\/ipfs\//, '')
@@ -23,17 +21,20 @@ function getFilename ({ cid, ipfsPath, query }: Pick<PluginContext, 'query' | 'c
   return `${filename}.car`
 }
 
-// https://specs.ipfs.tech/http-gateways/trustless-gateway/#dag-scope-request-query-parameter
+/**
+ * @see https://specs.ipfs.tech/http-gateways/trustless-gateway/#dag-scope-request-query-parameter
+ */
 type DagScope = 'all' | 'entity' | 'block'
-function getDagScope ({ query }: Pick<PluginContext, 'query'>): DagScope | null {
-  const dagScope = query['dag-scope']
+
+function getDagScope ({ url }: PluginContext): DagScope | null {
+  const dagScope = url.searchParams.get('dag-scope')
 
   if (dagScope === 'all' || dagScope === 'entity' || dagScope === 'block') {
     return dagScope
   }
 
   // entity-bytes implies entity scope
-  if (query['entity-bytes']) {
+  if (url.searchParams.has('entity-bytes')) {
     return 'entity'
   }
 
@@ -47,38 +48,36 @@ function getDagScope ({ query }: Pick<PluginContext, 'query'>): DagScope | null 
 export class CarPlugin extends BasePlugin {
   readonly id = 'car-plugin'
 
-  canHandle (context: PluginContext): boolean {
-    if (context.byteRangeContext == null) {
-      return false
-    }
-
-    if (context.pathDetails == null) {
-      return false
-    }
-
-    return context.accept?.mimeType.startsWith('application/vnd.ipld.car') === true || context.query.format === 'car' // application/vnd.ipld.car
+  canHandle ({ accept }: PluginContext): boolean {
+    return accept.some(header => header.contentType.mediaType === MEDIA_TYPE_CAR)
   }
 
-  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext'>>): Promise<Response> {
-    const { options, pathDetails, cid, query, accept, resource } = context
+  async handle (context: PluginContext): Promise<Response> {
+    const { options, url, accept, resource, blockstore, range, ipfsRoots, terminalElement } = context
 
-    const order = accept?.options.order === 'dfs' || context.query['car-order'] === 'dfs' ? 'dfs' : 'unk'
-    const duplicates = accept?.options.dups !== 'n' && context.query['car-dups'] !== 'n'
-
-    if (pathDetails == null) {
-      throw new Error('attempted to handle request for car with no path details')
+    if (range != null) {
+      return badRequestResponse(resource, new Error('Range requests are not supported for CAR files'))
     }
+
+    const acceptCar = accept.filter(header => header.contentType.mediaType === MEDIA_TYPE_CAR).pop()
+
+    // we have already asserted that the CAR media type is present so this
+    // branch should never be hit
+    if (acceptCar == null) {
+      return badRequestResponse(resource, new Error('Could not find CAR media type in accept header'))
+    }
+
+    const order = acceptCar.options.order === 'dfs' || url.searchParams.get('car-order') === 'dfs' ? 'dfs' : 'unk'
+    const duplicates = acceptCar.options.dups !== 'n' && url.searchParams.get('car-dups') !== 'n'
 
     // TODO: `@ipld/car` only supports CARv1
-    if (accept?.options.version === '2' || context.query['car-version'] === '2') {
-      return notAcceptableResponse(resource, 'Only CARv1 is supported')
+    if (acceptCar.options.version === '2' || url.searchParams.get('car-version') === '2') {
+      return notAcceptableResponse(resource, [
+        CONTENT_TYPE_CAR
+      ])
     }
 
-    const { getBlockstore, helia } = this.pluginOptions
-    context.reqFormat = 'car'
-    context.query.download = true
-    context.query.filename = getFilename(context)
-    const blockstore = getBlockstore(cid, context.resource, options?.session ?? true, options)
+    const helia = this.pluginOptions.helia
 
     const c = car({
       blockstore,
@@ -95,12 +94,12 @@ export class CarPlugin extends BasePlugin {
       carExportOptions.blockFilter = createScalableCuckooFilter(1024)
     }
 
-    if (pathDetails.ipfsRoots.length > 1) {
-      carExportOptions.traversal = new CIDPath(pathDetails.ipfsRoots)
+    if (ipfsRoots.length > 1) {
+      carExportOptions.traversal = new CIDPath(ipfsRoots)
     }
 
     const dagScope = getDagScope(context)
-    const target = pathDetails.terminalElement.cid ?? cid
+    const target = terminalElement.cid
 
     if (dagScope === 'block') {
       carExportOptions.exporter = new BlockExporter()
@@ -112,7 +111,7 @@ export class CarPlugin extends BasePlugin {
           listingOnly: true
         }
 
-        const slice = getOffsetAndLength(pathDetails.terminalElement, query['entity-bytes']?.toString())
+        const slice = entityBytesToOffsetAndLength(terminalElement.size, url.searchParams.get('entity-bytes'))
         options.offset = slice.offset
         options.length = slice.length
 
@@ -126,14 +125,15 @@ export class CarPlugin extends BasePlugin {
       })
     }
 
-    context.byteRangeContext.setBody(toBrowserReadableStream(c.export(target, carExportOptions)))
+    const stream = toBrowserReadableStream(c.export(target, carExportOptions))
 
-    const response = okRangeResponse(context.resource, context.byteRangeContext.getBody('application/vnd.ipld.car; version=1'), {
-      byteRangeContext: context.byteRangeContext,
-      log: this.log
+    return okResponse(resource, stream, {
+      headers: {
+        'content-type': `${MEDIA_TYPE_CAR}; version=1; order=${order}; dups=${duplicates ? 'y' : 'n'}`,
+        'content-disposition': `attachment; ${
+          getContentDispositionFilename(url.searchParams.get('filename') ?? getFilename(`/ipfs/${url.hostname}${url.pathname}`))
+        }`
+      }
     })
-    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? `application/vnd.ipld.car; version=1; order=${order}; dups=${duplicates ? 'y' : 'n'}`)
-
-    return response
   }
 }

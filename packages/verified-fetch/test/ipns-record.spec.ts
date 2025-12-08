@@ -97,7 +97,7 @@ describe('ipns records', () => {
         accept: 'application/vnd.ipfs.ipns-record'
       }
     })
-    expect(resp.status).to.equal(400)
+    expect(resp.status).to.equal(406)
   })
 
   it('should reject a request for a DNSLink url', async () => {
@@ -106,7 +106,7 @@ describe('ipns records', () => {
         accept: 'application/vnd.ipfs.ipns-record'
       }
     })
-    expect(resp.status).to.equal(400)
+    expect(resp.status).to.equal(406)
   })
 
   it('should reject a request for an IPNS url with a path component', async () => {

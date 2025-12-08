@@ -30,7 +30,8 @@ describe('accept header', () => {
   let verifiedFetch: VerifiedFetch
 
   function shouldNotAcceptCborWith ({ obj, type, codec = ipldDagCbor }: AcceptCborTestArgs): void {
-    it(`should return 406 Not Acceptable if CBOR ${type} field is encountered`, async () => {
+    // skipped pending https://github.com/ipfs/specs/pull/524
+    it.skip(`should return 406 Not Acceptable if CBOR ${type} field is encountered`, async () => {
       const buf = codec.encode(obj)
       const rawCid = CID.createV1(raw.code, await sha256.digest(buf))
       await helia.blockstore.put(rawCid, buf)
@@ -204,11 +205,11 @@ describe('accept header', () => {
 
     const resp = await verifiedFetch.fetch(cid, {
       headers: {
-        accept: 'application/what-even-is-this, */*, application/vnd.ipld.raw'
+        accept: 'application/what-even-is-this, */*'
       }
     })
     expect(resp.status).to.equal(200)
-    expect(resp.headers.get('content-type')).to.equal('application/json')
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-cbor')
   })
 
   it('should support type wildcards', async () => {
@@ -240,7 +241,7 @@ describe('accept header', () => {
       }
     })
     expect(resp.status).to.equal(200)
-    expect(resp.headers.get('content-type')).to.equal('application/json')
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-cbor')
   })
 
   it('should support q-factor weighting', async () => {
@@ -263,6 +264,25 @@ describe('accept header', () => {
     })
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
+  })
+
+  it('should support q-factor weighting with wildcards', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+
+    const resp = await verifiedFetch.fetch(cid, {
+      headers: {
+        accept: [
+          '*/json;q=0.1',
+          'application/vnd.ipld.raw'
+        ].join(', ')
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.raw')
   })
 
   it('should support fetching IPNS records', async () => {

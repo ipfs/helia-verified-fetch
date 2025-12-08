@@ -71,6 +71,7 @@ describe('content-type-parser', () => {
     })
     const resp = await verifiedFetch.fetch(`ipfs://${dirCid}/index.html`)
     expect(resp.headers.get('content-type')).to.equal('index.html')
+    expect(resp.headers.get('content-disposition')).to.include('filename="index.html"')
   })
 
   it('is passed a filename from a deep traversal if it is available', async () => {
@@ -90,6 +91,7 @@ describe('content-type-parser', () => {
     const resp = await verifiedFetch.fetch(`ipfs://${deepDirCid}/foo/bar/a-file.html`)
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('a-file.html')
+    expect(resp.headers.get('content-disposition')).to.include('filename="a-file.html"')
   })
 
   it('sets content type if contentTypeParser is passed', async () => {

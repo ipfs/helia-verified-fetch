@@ -5,7 +5,6 @@ import { expect } from 'aegir/chai'
 import { fixedSize } from 'ipfs-unixfs-importer/chunker'
 import all from 'it-all'
 import { CID } from 'multiformats/cid'
-import pDefer from 'p-defer'
 import Sinon from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
@@ -21,7 +20,8 @@ describe('abort-handling', function () {
   this.timeout(500) // these tests should all fail extremely quickly. if they don't, they're not aborting properly, or they're being ran on an extremely slow machine.
   const sandbox = Sinon.createSandbox()
   /**
-   * CID I created by running `npx kubo add --cid-version 1 -r dist` in the `verified-fetch` package folder
+   * dag-pb CID created by running `npx kubo add --cid-version 1 -r dist` in the
+   * `verified-fetch` package folder
    */
   const notPublishedCid = CID.parse('bafybeichqiz32cw5c3vdpvh2xtfgl42veqbsr6sw2g6c7ffz6atvh2vise')
   let helia: Helia
@@ -137,7 +137,7 @@ describe('abort-handling', function () {
     await expect(helia.blockstore.has(leaf2))
       .to.eventually.be.true()
 
-    const fileRootGot = pDefer()
+    const fileRootGot = Promise.withResolvers<void>()
     const blockstoreGetSpy = Sinon.stub(helia.blockstore, 'get')
     blockstoreGetSpy.callsFake(async function * (cid, options) {
       if (cid.equals(fileCid)) {
@@ -147,7 +147,9 @@ describe('abort-handling', function () {
       yield * blockstoreGetSpy.wrappedMethod.call(helia.blockstore, cid, options)
     })
 
-    await expect(makeAbortedRequest(verifiedFetch, [cid], fileRootGot.promise))
+    await expect(makeAbortedRequest(verifiedFetch, [cid, {
+      session: false
+    }], fileRootGot.promise))
       .to.eventually.be.rejectedWith('aborted')
 
     // not called because parseResource never passes the resource to
@@ -197,7 +199,7 @@ describe('abort-handling', function () {
     await expect(helia.blockstore.has(leaf2))
       .to.eventually.be.true()
 
-    const leaf1Got = pDefer()
+    const leaf1Got = Promise.withResolvers<void>()
     let leaf2Loaded = false
     const blockstoreGetSpy = Sinon.stub(helia.blockstore, 'get')
     blockstoreGetSpy.callsFake(async function * (cid, options) {
@@ -214,7 +216,9 @@ describe('abort-handling', function () {
       yield * b
     })
 
-    await expect(makeAbortedRequest(verifiedFetch, [cid], leaf1Got.promise))
+    await expect(makeAbortedRequest(verifiedFetch, [cid, {
+      session: false
+    }], leaf1Got.promise))
       .to.eventually.be.rejectedWith('aborted')
 
     // not called because parseResource never passes the resource to

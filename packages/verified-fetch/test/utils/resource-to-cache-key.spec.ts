@@ -15,12 +15,12 @@ describe('resource-to-cache-key', () => {
 
   it('converts url with IPNS path', () => {
     expect(resourceToSessionCacheKey('https://localhost:8080/ipns/ipfs.io'))
-      .to.equal('ipns://ipfs.io')
+      .to.equal('dnslink://ipfs.io')
   })
 
   it('converts url with IPNS path and resource path', () => {
     expect(resourceToSessionCacheKey('https://localhost:8080/ipns/ipfs.io/foo/bar/baz.txt'))
-      .to.equal('ipns://ipfs.io')
+      .to.equal('dnslink://ipfs.io')
   })
 
   it('converts IPFS subdomain', () => {
@@ -35,12 +35,12 @@ describe('resource-to-cache-key', () => {
 
   it('converts IPNS subdomain', () => {
     expect(resourceToSessionCacheKey('https://ipfs.io.ipns.localhost:8080'))
-      .to.equal('ipns://ipfs.io')
+      .to.equal('dnslink://ipfs.io')
   })
 
   it('converts IPNS subdomain with resource path', () => {
     expect(resourceToSessionCacheKey('https://ipfs.io.ipns.localhost:8080/foo/bar/baz.txt'))
-      .to.equal('ipns://ipfs.io')
+      .to.equal('dnslink://ipfs.io')
   })
 
   it('converts CID', () => {

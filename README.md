@@ -19,7 +19,6 @@ This monorepo contains the `@helia/verified-fetch` package and its corresponding
 
 # Packages
 
-- [`packages/gateway-conformance`](https://github.com/ipfs/helia-verified-fetch/tree/main/packages/gateway-conformance) Gateway conformance tests for @helia/verified-fetch
 - [`packages/interop`](https://github.com/ipfs/helia-verified-fetch/tree/main/packages/interop) Interop tests for @helia/verified-fetch
 - [`packages/verified-fetch`](https://github.com/ipfs/helia-verified-fetch/tree/main/packages/verified-fetch) A fetch-like API for obtaining verified & trustless IPFS content on the web
 

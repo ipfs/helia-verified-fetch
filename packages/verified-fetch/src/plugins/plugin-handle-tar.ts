@@ -1,11 +1,13 @@
+import { NotUnixFSError } from '@helia/unixfs/errors'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { code as rawCode } from 'multiformats/codecs/raw'
-import { getETag } from '../utils/get-e-tag.js'
+import { MEDIA_TYPE_TAR } from '../utils/content-types.ts'
+import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
 import { tarStream } from '../utils/get-tar-stream.js'
-import { notAcceptableResponse, okRangeResponse } from '../utils/responses.js'
+import { badRequestResponse, okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from './types.js'
+import type { PluginContext } from '../index.js'
 
 /**
  * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or
@@ -15,37 +17,30 @@ export class TarPlugin extends BasePlugin {
   readonly id = 'tar-plugin'
   readonly codes = []
 
-  canHandle ({ cid, accept, query, byteRangeContext }: PluginContext): boolean {
-    if (byteRangeContext == null) {
-      return false
-    }
-
-    return accept?.mimeType === 'application/x-tar' || query.format === 'tar'
+  canHandle ({ accept }: PluginContext): boolean {
+    return accept.some(header => header.contentType.mediaType === MEDIA_TYPE_TAR)
   }
 
-  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext'>>): Promise<Response> {
-    const { cid, path, resource, options, pathDetails } = context
-    const { getBlockstore } = this.pluginOptions
+  async handle (context: PluginContext): Promise<Response> {
+    const { terminalElement, url, resource, options, blockstore, range } = context
 
-    const terminusElement = pathDetails?.terminalElement.cid ?? cid
-    if (terminusElement.code !== dagPbCode && terminusElement.code !== rawCode) {
-      return notAcceptableResponse('only UnixFS data can be returned in a TAR file')
+    if (terminalElement.cid.code !== dagPbCode && terminalElement.cid.code !== rawCode) {
+      return badRequestResponse(resource, new NotUnixFSError('Only UnixFS data can be returned in a TAR file'))
     }
 
-    context.reqFormat = 'tar'
-    context.query.download = true
-    context.query.filename = context.query.filename ?? `${terminusElement.toString()}.tar`
+    if (range != null) {
+      return badRequestResponse(resource, new Error('Range requests are not supported for TAR files'))
+    }
 
-    const blockstore = getBlockstore(terminusElement, resource, options?.session, options)
-    const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${cid}/${path}`, blockstore, options))
+    const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${terminalElement.cid}${url.pathname}`, blockstore, options))
 
-    context.byteRangeContext.setBody(stream)
-
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody('application/x-tar'), { byteRangeContext: context.byteRangeContext, log: this.log })
-    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? 'application/x-tar')
-
-    response.headers.set('etag', getETag({ cid: terminusElement, reqFormat: context.reqFormat, weak: true }))
-
-    return response
+    return okResponse(resource, stream, {
+      headers: {
+        'content-type': MEDIA_TYPE_TAR,
+        'content-disposition': `attachment; ${
+          getContentDispositionFilename(url.searchParams.get('filename') ?? `${terminalElement.cid.toString()}.tar`)
+        }`
+      }
+    })
   }
 }

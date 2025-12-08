@@ -659,16 +659,10 @@
  *      create a mutable `PluginContext` object.
  *
  * 2. **Pipeline Execution:**
- *    - The pipeline repeatedly checks, up to a maximum number of passes (default = 3), which plugins
- *      are currently able to handle the request by calling each plugin’s `canHandle()` method.
+ *    - The pipeline checks which plugins can handle the request by calling each plugin’s `canHandle()` method.
  *    - Plugins that have not yet been called in the current run and return `true` for `canHandle()`
  *      are invoked in sequence.
- *      - If a plugin returns a final `Response` or throws a `PluginFatalError`, the pipeline immediately
- *        stops and that response is returned.
- *      - If a plugin returns `null`, it may have updated the context (for example, by
- *        performing path walking), other plugins that said they `canHandle` will run.
- *    - If no plugin modifies the context (i.e. no change to `context.modified`) and no final response is
- *      produced after iterating through all plugins, the pipeline exits and a default “Not Supported”
+ *    - If no plugin can handle the request, the pipeline exits and a “Not Supported”
  *      response is returned.
  *
  *    **Diagram of the Plugin Pipeline:**
@@ -742,25 +736,20 @@
  *      // Optionally, list any codec codes your plugin supports:
  *      codes = [] //
  *
- *      canHandle(context: PluginContext): boolean {
+ *      canHandle({ accept }: PluginContext): boolean {
  *        // Only handle requests if the Accept header matches your custom type
  *        // Or check context for pathDetails, custom values, etc...
- *        return context.accept?.mimeType === 'application/vnd.my-custom-type'
+ *        return accept.some(header => header.contentType.mediaType === 'application/vnd.my-custom-type')
  *      }
  *
- *      async handle(context: PluginContext): Promise<Response | null> {
- *        // Perform any partial processing here, e.g., modify the context:
- *        context.customProcessed = true
- *
- *        // If you are ready to finalize the response:
+ *      async handle(context: PluginContext): Promise<Response> {
+ *        // Return the response:
  *        return new Response('Hello, world!', {
  *          status: 200,
  *          headers: {
  *            'Content-Type': 'text/plain'
  *          }
  *        })
- *
- *        // Or, if further processing is needed by another plugin, simply return null.
  *      }
  *    }
  *    export const myCustomPluginFactory: VerifiedFetchPluginFactory = (opts: PluginOptions) => new MyCustomPlugin(opts)
@@ -814,18 +803,156 @@ import { createHelia } from 'helia'
 import { createLibp2p } from 'libp2p'
 import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
-import type { VerifiedFetchPluginFactory } from './plugins/types.js'
+import type { RangeHeader } from './utils/get-range-header.ts'
+import type { ServerTiming } from './utils/server-timing.ts'
 import type { DNSLink, ResolveProgressEvents as ResolveDNSLinkProgressEvents } from '@helia/dnslink'
 import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
-import type { IPNSResolver } from '@helia/ipns'
-import type { AbortOptions, Libp2p, ServiceMap } from '@libp2p/interface'
+import type { ResolveProgressEvents as ResolveIPNSNameProgressEvents, IPNSRoutingProgressEvents, IPNSResolver } from '@helia/ipns'
+import type { AbortOptions, Libp2p, ServiceMap, Logger } from '@libp2p/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { HeliaInit } from 'helia'
-import type { ExporterProgressEvents } from 'ipfs-unixfs-exporter'
+import type { Blockstore } from 'interface-blockstore'
+import type { ExporterProgressEvents, UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { Libp2pOptions } from 'libp2p'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
+
+export {
+  MEDIA_TYPE_DAG_CBOR,
+  MEDIA_TYPE_CBOR,
+  MEDIA_TYPE_DAG_JSON,
+  MEDIA_TYPE_JSON,
+  MEDIA_TYPE_RAW,
+  MEDIA_TYPE_OCTET_STREAM,
+  MEDIA_TYPE_IPNS_RECORD,
+  MEDIA_TYPE_CAR,
+  MEDIA_TYPE_TAR,
+  MEDIA_TYPE_UNIXFS
+} from './utils/content-types.js'
+
+export interface ContentType {
+  /**
+   * The media type of this content type
+   */
+  mediaType: string
+
+  /**
+   * A list of CID codecs that map to this content type
+   */
+  codecs: number[]
+
+  /**
+   * If false this content-type is mutable so should have an etag prefixed with
+   * W/
+   */
+  immutable: boolean
+
+  /**
+   * The file extension associated with this content type
+   */
+  suffix: string
+
+  /**
+   * Whether data of this type should be downloaded by default
+   */
+  disposition: 'inline' | 'attachment'
+}
+
+export interface AcceptHeader {
+  contentType: ContentType
+  options: Record<string, string>
+}
+
+export interface ContextDispositionHeader {
+  disposition: 'inline' | 'attachment'
+  filename: string
+}
+
+/**
+ * Contains common components and functions required by plugins to handle a request.
+ * - Read-Only: Plugins can read but shouldn't rewrite them.
+ * - Persistent: Relevant even after the request completes (e.g., logging or metrics).
+ */
+export interface PluginOptions {
+  logger: Logger
+  contentTypeParser?: ContentTypeParser
+  helia: Helia
+  ipnsResolver: IPNSResolver
+}
+
+/**
+ * Represents the ephemeral, modifiable state used by the pipeline.
+ * - Mutable: Evolves as you walk the plugin chain.
+ * - Shared Data: Allows plugins to communicate partial results, discovered data, or interim errors.
+ * - Ephemeral: Typically discarded once fetch(...) completes.
+ */
+export interface PluginContext extends ResolveURLResult {
+  /**
+   * The resource that was requested by the user
+   */
+  readonly resource: string
+
+  /**
+   * These are the response representations that are acceptable to return
+   */
+  readonly accept: AcceptHeader[]
+
+  /**
+   * If present the user requested a subset of bytes using the Range header
+   */
+  readonly range?: RangeHeader
+
+  /**
+   * Any passed headers from the fetch init arg
+   */
+  headers: Headers
+
+  /**
+   * A callback that receives progress events
+   */
+  onProgress?(evt: ProgressEvent): void
+
+  /**
+   * Onward options to pass to async operations
+   */
+  options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
+
+  /**
+   * Any async operations should be invoked using server timings to allow
+   * introspection by the user
+   */
+  serverTiming: ServerTiming
+
+  /**
+   * The blockstore is used to load data from the IPFS network
+   */
+  blockstore: Blockstore
+}
+
+export interface VerifiedFetchPlugin {
+  readonly id: string
+
+  /**
+   * Should return `true` if this plugin can handle the current request
+   */
+  canHandle (context: PluginContext): boolean
+
+  /**
+   * Handle the current request
+   */
+  handle (context: PluginContext): Promise<Response>
+}
+
+export interface VerifiedFetchPluginFactory {
+  (options: PluginOptions): VerifiedFetchPlugin
+}
+
+export interface PluginErrorOptions {
+  fatal?: boolean
+  details?: Record<string, any>
+  response?: Response
+}
 
 export type RequestFormatShorthand = 'raw' | 'car' | 'tar' | 'ipns-record' | 'dag-json' | 'dag-cbor' | 'json' | 'cbor'
 
@@ -856,7 +983,7 @@ export interface ResourceDetail {
 
 export interface CIDDetail {
   cid: CID
-  path?: string[]
+  path?: string
 }
 
 export interface CIDDetailError extends CIDDetail {
@@ -955,7 +1082,7 @@ export interface CreateVerifiedFetchOptions {
   /**
    * How long each blockstore session should stay in the cache for.
    *
-   * @default 60000
+   * @default 60_000
    */
   sessionTTLms?: number
 
@@ -997,7 +1124,9 @@ export type VerifiedFetchProgressEvents =
   ProgressEvent<'verified-fetch:request:error', CIDDetailError> |
   ExporterProgressEvents |
   GetBlockProgressEvents |
-  ResolveDNSLinkProgressEvents
+  ResolveDNSLinkProgressEvents |
+  ResolveIPNSNameProgressEvents |
+  IPNSRoutingProgressEvents
 
 /**
  * Options for the `fetch` function returned by `createVerifiedFetch`.
@@ -1055,32 +1184,45 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<Verified
    * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
    */
   withServerTiming?: boolean
+
+  /**
+   * By default when a CID is fetched that resolves to a UnixFS directory, and
+   * that directory contains an `index.html` file, respond with the index file
+   * instead of the directory listing.
+   *
+   * @default true
+   */
+  supportDirectoryIndexes?: boolean
+
+  /**
+   * If a `_redirects` file exists at the root of a DAG, use it to allow path
+   * overrides within that DAG.
+   *
+   * @see https://specs.ipfs.tech/http-gateways/web-redirects-file/
+   * @default true
+   */
+  supportWebRedirects?: boolean
 }
 
-export interface ResolveURLOptions extends ProgressOptions<VerifiedFetchProgressEvents>, AbortOptions {
+export type URLProtocols = 'ipfs' | 'ipns' | 'dnslink'
 
-}
-
-export interface UrlQuery extends Record<string, string | unknown> {
-  format?: RequestFormatShorthand
-  download?: boolean
-  filename?: string
-  'dag-scope'?: string
+export interface ResolveURLOptions extends AbortOptions {
+  session?: boolean
 }
 
 export interface ResolveURLResult {
   url: URL
-  cid: CID
-  protocol: string
   ttl: number
-  path: string[]
-  fragment: string
-  query: UrlQuery
-  ipfsPath: string
+  blockstore: Blockstore
+  ipfsRoots: CID[]
+  terminalElement: UnixFSEntry
 }
 
 export interface URLResolver {
-  resolve (resource: Resource, options?: ResolveURLOptions): Promise<ResolveURLResult>
+  /**
+   * Resolve the passed resource to a CID and associated metadata
+   */
+  resolve (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult>
 }
 
 /**

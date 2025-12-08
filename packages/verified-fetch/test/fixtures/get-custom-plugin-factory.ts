@@ -1,12 +1,12 @@
 import { BasePlugin } from '../../src/plugins/plugin-base.js'
-import type { PluginContext, PluginOptions, VerifiedFetchPluginFactory } from '../../src/plugins/types.js'
+import type { PluginContext, PluginOptions, VerifiedFetchPluginFactory } from '../../src/index.js'
 
 export interface PluginFixtureOptions {
   codes?: number[]
   constructorName?: string
   id?: string
   canHandle?(context: PluginContext): boolean
-  handle?(context: PluginContext): Promise<Response | null>
+  handle?(context: PluginContext): Promise<Response>
 }
 
 export const getCustomPluginFactory = (options: PluginFixtureOptions): VerifiedFetchPluginFactory => {
@@ -21,7 +21,7 @@ export const getCustomPluginFactory = (options: PluginFixtureOptions): VerifiedF
         return options.canHandle != null ? options.canHandle(context) : false
       }
 
-      async handle (context: PluginContext): Promise<Response | null> {
+      async handle (context: PluginContext): Promise<Response> {
         if (options.handle != null) {
           return options.handle(context)
         } else {

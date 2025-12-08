@@ -774,25 +774,20 @@ To add your own plugin:
      // Optionally, list any codec codes your plugin supports:
      codes = [] //
 
-     canHandle(context: PluginContext): boolean {
+     canHandle({ accept }: PluginContext): boolean {
        // Only handle requests if the Accept header matches your custom type
        // Or check context for pathDetails, custom values, etc...
-       return context.accept?.mimeType === 'application/vnd.my-custom-type'
+       return accept.some(header => header.contentType.mediaType === 'application/vnd.my-custom-type')
      }
 
-     async handle(context: PluginContext): Promise<Response | null> {
-       // Perform any partial processing here, e.g., modify the context:
-       context.customProcessed = true
-
-       // If you are ready to finalize the response:
+     async handle(context: PluginContext): Promise<Response> {
+       // Return the response:
        return new Response('Hello, world!', {
          status: 200,
          headers: {
            'Content-Type': 'text/plain'
          }
        })
-
-       // Or, if further processing is needed by another plugin, simply return null.
      }
    }
    export const myCustomPluginFactory: VerifiedFetchPluginFactory = (opts: PluginOptions) => new MyCustomPlugin(opts)

@@ -1,6 +1,9 @@
-import type { ByteRangeContext } from './byte-range-context.js'
-import type { SupportedBodyTypes } from '../index.js'
-import type { Logger } from '@libp2p/interface'
+import itToBrowserReadableStream from 'it-to-browser-readablestream'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { rangeToOffsetAndLength } from './get-offset-and-length.ts'
+import { getContentRangeHeader } from './response-headers.ts'
+import type { SupportedBodyTypes, ContentType } from '../index.js'
+import type { Range, RangeHeader } from './get-range-header.ts'
 
 function setField (response: Response, name: string, value: string | boolean): void {
   Object.defineProperty(response, name, {
@@ -12,17 +15,22 @@ function setField (response: Response, name: string, value: string | boolean): v
 }
 
 function setType (response: Response, value: 'basic' | 'cors' | 'error' | 'opaque' | 'opaqueredirect'): void {
-  setField(response, 'type', value)
+  if (response.type !== value) {
+    setField(response, 'type', value)
+  }
 }
 
-function setUrl (response: Response, value: string): void {
+function setUrl (response: Response, value: string | URL): void {
+  value = value.toString()
   const fragmentStart = value.indexOf('#')
 
   if (fragmentStart > -1) {
     value = value.substring(0, fragmentStart)
   }
 
-  setField(response, 'url', value)
+  if (response.url !== value) {
+    setField(response, 'url', value)
+  }
 }
 
 function setRedirected (response: Response): void {
@@ -64,6 +72,26 @@ export function internalServerErrorResponse (url: string, body?: SupportedBodyTy
   return response
 }
 
+/**
+ * A 504 Gateway Timeout for when a request made to an upstream server timed out
+ */
+export function gatewayTimeoutResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+  const response = new Response(body, {
+    ...(init ?? {}),
+    status: 504,
+    statusText: 'Gateway Timeout'
+  })
+
+  setType(response, 'basic')
+  setUrl(response, url)
+
+  return response
+}
+
+/**
+ * A 502 Bad Gateway is for when an invalid response was received from an
+ * upstream server.
+ */
 export function badGatewayResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
@@ -91,11 +119,17 @@ export function notImplementedResponse (url: string, body?: SupportedBodyTypes, 
   return response
 }
 
-export function notAcceptableResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
-  const response = new Response(body, {
+export function notAcceptableResponse (url: string | URL, acceptable: ContentType[], init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers)
+  headers.set('content-type', 'application/json')
+
+  const response = new Response(JSON.stringify({
+    acceptable: acceptable.map(contentType => contentType.mediaType)
+  }), {
     ...(init ?? {}),
     status: 406,
-    statusText: 'Not Acceptable'
+    statusText: 'Not Acceptable',
+    headers
   })
 
   setType(response, 'basic')
@@ -125,6 +159,7 @@ export function badRequestResponse (url: string, errors: Error | Error[], init?:
   // stacktrace of the single error, or the stacktrace of the last error in the array
   let stack: string | undefined
   let convertedErrors: Array<{ message: string, stack: string }> | undefined
+
   if (isArrayOfErrors(errors)) {
     stack = errors[errors.length - 1].stack
     convertedErrors = errors.map(e => ({ message: e.message, stack: e.stack ?? '' }))
@@ -171,47 +206,23 @@ export function movedPermanentlyResponse (url: string, location: string, init?: 
   return response
 }
 
-interface RangeOptions {
-  byteRangeContext: ByteRangeContext
-  log?: Logger
+export interface PartialContent {
+  /**
+   * Yield data from the content starting at `start` (or 0) inclusive and ending
+   * at `end` exclusive
+   */
+  (offset: number, length: number): AsyncGenerator<Uint8Array>
 }
 
-export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRangeContext, log }: RangeOptions, init?: ResponseOptions): Response {
-  if (!byteRangeContext.isRangeRequest) {
-    return okResponse(url, body, init)
-  }
-
-  if (!byteRangeContext.isValidRangeRequest) {
-    return badRangeResponse(url, body, init)
-  }
-
+export function partialContentResponse (url: string, getSlice: PartialContent, range: RangeHeader, documentSize: number | bigint, init?: ResponseOptions): Response {
   let response: Response
-  try {
-    // Create headers object with any initial headers from init
-    const headers = new Headers(init?.headers)
 
-    // For multipart responses, we should use the content-type header instead of content-range
-    const multipartContentType = byteRangeContext.getContentType()
-
-    if (multipartContentType != null) {
-      headers.set('content-type', multipartContentType)
-    } else {
-      if (byteRangeContext.isMultiRangeRequest) {
-        headers.set('content-type', 'multipart/byteranges')
-      } else {
-        headers.set('content-range', byteRangeContext.contentRangeHeaderValue)
-      }
-    }
-
-    response = new Response(body, {
-      ...(init ?? {}),
-      status: 206,
-      statusText: 'Partial Content',
-      headers
-    })
-  } catch (e: any) {
-    log?.error('failed to create range response', e)
-    return badRangeResponse(url, body, init)
+  if (range.ranges.length === 1) {
+    response = singleRangeResponse(url, getSlice, range.ranges[0], documentSize, init)
+  } else if (range.ranges.length > 1) {
+    response = multiRangeResponse(url, getSlice, range, documentSize, init)
+  } else {
+    return notSatisfiableResponse(url, documentSize)
   }
 
   if (init?.redirected === true) {
@@ -224,17 +235,124 @@ export function okRangeResponse (url: string, body: SupportedBodyTypes, { byteRa
   return response
 }
 
+function singleRangeResponse (url: string, getSlice: PartialContent, range: Range, documentSize: number | bigint, init?: ResponseOptions): Response {
+  try {
+    // create headers object with any initial headers from init
+    const headers = new Headers(init?.headers)
+    const { offset, length } = rangeToOffsetAndLength(documentSize, range.start, range.end)
+
+    headers.set('content-length', `${length}`)
+
+    // see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Range
+    headers.set('content-range', getContentRangeHeader(documentSize, range.start, range.end))
+
+    const stream = itToBrowserReadableStream(getSlice(offset, length))
+
+    return new Response(stream, {
+      ...(init ?? {}),
+      status: 206,
+      statusText: 'Partial Content',
+      headers
+    })
+  } catch (err: any) {
+    if (err.name === 'InvalidRangeError') {
+      return notSatisfiableResponse(url, documentSize, init)
+    }
+
+    return internalServerErrorResponse(url, '', init)
+  }
+}
+
 /**
- * We likely need to catch errors handled by upstream helia libraries if range-request throws an error. Some examples:
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests
+ */
+function multiRangeResponse (url: string, getSlice: PartialContent, range: RangeHeader, documentSize: number | bigint, init?: ResponseOptions): Response {
+  // create headers object with any initial headers from init
+  const headers = new Headers(init?.headers)
+
+  const contentType = headers.get('content-type')
+
+  if (contentType == null) {
+    throw new Error('Content-Type header must be set')
+  }
+
+  headers.delete('content-type')
+
+  let contentLength = 0n
+
+  // calculate content range based on range headers
+  const rangeHeaders = range.ranges.map(({ start, end }) => {
+    const header = uint8ArrayFromString([
+      `--${range.multipartBoundary}`,
+
+      // content-type of multipart part
+      `Content-Type: ${contentType}`,
+
+      // see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Range
+      `Content-Range: ${getContentRangeHeader(documentSize, start, end)}`,
+      '',
+      ''
+    ].join('\r\n'))
+
+    contentLength += BigInt(header.byteLength) + (BigInt(end ?? documentSize) - BigInt(start ?? 0))
+
+    return header
+  })
+
+  const trailer = uint8ArrayFromString([
+    `--${range.multipartBoundary}--`,
+    ''
+  ].join('\r\n'))
+
+  contentLength += BigInt(trailer.byteLength)
+
+  // content length is the expected length of all multipart parts
+  headers.set('content-length', `${contentLength}`)
+
+  // content type of response is multipart
+  headers.set('content-type', `multipart/byteranges; boundary=${range.multipartBoundary}`)
+
+  const stream = itToBrowserReadableStream(async function * () {
+    for (let i = 0; i < rangeHeaders.length; i++) {
+      yield rangeHeaders[i]
+
+      const { offset, length } = rangeToOffsetAndLength(documentSize, range.ranges[i].start, range.ranges[i].end)
+      yield * getSlice(offset, length)
+
+      yield uint8ArrayFromString('\r\n')
+    }
+
+    yield trailer
+  }())
+
+  return new Response(stream, {
+    ...(init ?? {}),
+    status: 206,
+    statusText: 'Partial Content',
+    headers
+  })
+}
+
+/**
+ * We likely need to catch errors handled by upstream helia libraries if
+ * range-request throws an error. Some examples:
+ *
  * - The range is out of bounds
  * - The range is invalid
  * - The range is not supported for the given type
  */
-export function badRangeResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
-  const response = new Response(body, {
-    ...(init ?? {}),
+export function notSatisfiableResponse (url: string, documentSize?: number | bigint | string, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers)
+
+  if (documentSize != null) {
+    headers.set('content-range', `bytes */${documentSize}`)
+  }
+
+  const response = new Response('Range Not Satisfiable', {
+    ...init,
+    headers,
     status: 416,
-    statusText: 'Requested Range Not Satisfiable'
+    statusText: 'Range Not Satisfiable'
   })
 
   setType(response, 'basic')

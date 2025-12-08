@@ -1,100 +1,143 @@
-import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
+import { DoesNotExistError } from '@helia/unixfs/errors'
+import * as dagCbor from '@ipld/dag-cbor'
+import * as dagJson from '@ipld/dag-json'
+import * as dagPb from '@ipld/dag-pb'
+import { peerIdFromString } from '@libp2p/peer-id'
+import { InvalidParametersError, walkPath } from 'ipfs-unixfs-exporter'
+import toBuffer from 'it-to-buffer'
 import { CID } from 'multiformats/cid'
-import { parseURLString } from './utils/parse-url-string.ts'
-import type { ResolveURLOptions, ResolveURLResult, Resource, URLResolver as URLResolverInterface } from './index.ts'
-import type { ParsedURL } from './utils/parse-url-string.ts'
-import type { ServerTiming } from './utils/server-timing.ts'
+import * as json from 'multiformats/codecs/json'
+import * as raw from 'multiformats/codecs/raw'
+import QuickLRU from 'quick-lru'
+import { SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS, CODEC_CBOR, CODEC_IDENTITY } from './constants.ts'
+import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.ts'
+import { ServerTiming } from './utils/server-timing.ts'
+import type { ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
 import type { DNSLink } from '@helia/dnslink'
 import type { IPNSResolver } from '@helia/ipns'
-import type { AbortOptions, PeerId } from '@libp2p/interface'
+import type { AbortOptions } from '@libp2p/interface'
+import type { Helia, SessionBlockstore } from 'helia'
+import type { Blockstore } from 'interface-blockstore'
+import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 
-const CODEC_LIBP2P_KEY = 0x72
+// 1 year in seconds for ipfs content
+const IPFS_CONTENT_TTL = 29030400
+
+const ENTITY_CODECS = [
+  CODEC_CBOR,
+  json.code,
+  raw.code
+]
+
+/**
+ * These are supported by the UnixFS exporter
+ */
+const EXPORTABLE_CODECS = [
+  dagPb.code,
+  dagCbor.code,
+  dagJson.code,
+  raw.code
+]
+
+interface GetBlockstoreOptions extends AbortOptions {
+  session?: boolean
+}
+
+export interface WalkPathResult {
+  ipfsRoots: CID[]
+  terminalElement: UnixFSEntry
+  blockstore: Blockstore
+}
+
+function basicEntry (type: 'raw' | 'object', cid: CID, bytes: Uint8Array): UnixFSEntry {
+  return {
+    name: cid.toString(),
+    path: cid.toString(),
+    depth: 0,
+    type,
+    node: bytes,
+    cid,
+    size: BigInt(bytes.byteLength),
+    content: async function * () {
+      yield bytes
+    }
+  }
+}
 
 export interface URLResolverComponents {
+  helia: Helia
   ipnsResolver: IPNSResolver
   dnsLink: DNSLink
-  timing: ServerTiming
+}
+
+export interface URLResolverInit {
+  sessionCacheSize?: number
+  sessionTTLms?: number
+}
+
+export interface ResolveURLOptions extends AbortOptions {
+  session?: boolean
 }
 
 export class URLResolver implements URLResolverInterface {
   private readonly components: URLResolverComponents
+  private readonly blockstoreSessions: QuickLRU<string, SessionBlockstore>
 
-  constructor (components: URLResolverComponents) {
+  constructor (components: URLResolverComponents, init: URLResolverInit = {}) {
     this.components = components
-  }
 
-  async resolve (resource: Resource, options: ResolveURLOptions = {}): Promise<ResolveURLResult> {
-    if (typeof resource === 'string') {
-      return this.parseUrlString(resource, options)
-    }
-
-    const cid = CID.asCID(resource)
-
-    if (cid != null) {
-      return this.resolveCIDResource(cid, {
-        url: new URL(`ipfs://${cid}`)
-      }, options)
-    }
-
-    throw new TypeError(`Invalid resource. Cannot determine CID from resource: ${resource}`)
-  }
-
-  async parseUrlString (urlString: string, options: ResolveURLOptions = {}): Promise<ResolveURLResult> {
-    const result = parseURLString(urlString)
-
-    if (result.protocol === 'ipfs') {
-      const cid = CID.parse(result.cidOrPeerIdOrDnsLink)
-
-      return this.resolveCIDResource(cid, result, options)
-    }
-
-    if (result.protocol === 'ipns') {
-      // try to parse target as peer id
-      let peerId: PeerId
-
-      try {
-        peerId = peerIdFromString(result.cidOrPeerIdOrDnsLink)
-      } catch {
-        // fall back to DNSLink (e.g. /ipns/example.com)
-        return this.resolveDNSLink(result.cidOrPeerIdOrDnsLink, result, options)
+    this.blockstoreSessions = new QuickLRU({
+      maxSize: init.sessionCacheSize ?? SESSION_CACHE_MAX_SIZE,
+      maxAge: init.sessionTTLms ?? SESSION_CACHE_TTL_MS,
+      onEviction: (key, store) => {
+        store.close()
       }
-
-      // parse multihash from string (e.g. /ipns/QmFoo...)
-      return this.resolveIPNSName(result.cidOrPeerIdOrDnsLink, peerId, result, options)
-    }
-
-    throw new TypeError(`Invalid resource. Cannot determine CID from resource: ${urlString}`)
+    })
   }
 
-  async resolveCIDResource (cid: CID, parsed: Partial<ParsedURL> & Pick<ParsedURL, 'url'>, options: ResolveURLOptions = {}): Promise<ResolveURLResult> {
-    if (cid.code === CODEC_LIBP2P_KEY) {
-      // special case - peer id encoded as a CID
-      return this.resolveIPNSName(cid.toString(), peerIdFromCID(cid), parsed, options)
+  async resolve (url: URL, serverTiming: ServerTiming = new ServerTiming(), options: ResolveURLOptions = {}): Promise<ResolveURLResult> {
+    if (url.protocol === 'ipfs:') {
+      return this.resolveIPFSPath(url, serverTiming, options)
     }
 
-    return {
-      url: parsed.url,
-      cid,
-      protocol: 'ipfs',
-      query: parsed.query ?? {},
-      path: parsed.path ?? [],
-      fragment: parsed.fragment ?? '',
-      ttl: 29030400, // 1 year for ipfs content
-      ipfsPath: `/ipfs/${cid}${parsed.url.pathname}`
+    if (url.protocol === 'ipns:') {
+      return this.resolveIPNSName(url, serverTiming, options)
     }
+
+    if (url.protocol === 'dnslink:') {
+      return this.resolveDNSLink(url, serverTiming, options)
+    }
+
+    throw new InvalidParametersError(`Invalid resource. Unsupported protocol in URL, must be ipfs:, ipns:, or dnslink: ${url}`)
   }
 
-  async resolveDNSLink (domain: string, parsed: ParsedURL, options?: ResolveURLOptions): Promise<ResolveURLResult> {
-    const results = await this.components.timing.time('dnsLink.resolve', `Resolve DNSLink ${domain}`, this.components.dnsLink.resolve(domain, options))
+  private getBlockstore (root: CID, options: GetBlockstoreOptions = {}): Blockstore {
+    if (options.session === false) {
+      return this.components.helia.blockstore
+    }
+
+    const key = resourceToSessionCacheKey(root)
+    let session = this.blockstoreSessions.get(key)
+
+    if (session == null) {
+      session = this.components.helia.blockstore.createSession(root, options)
+      this.blockstoreSessions.set(key, session)
+    }
+
+    return session
+  }
+
+  private async resolveDNSLink (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult> {
+    const results = await serverTiming.time('dnsLink.resolve', `Resolve DNSLink ${url.hostname}`, this.components.dnsLink.resolve(url.hostname, options))
     const result = results?.[0]
 
     if (result == null) {
-      throw new TypeError(`Invalid resource. Cannot resolve DNSLink from domain: ${domain}`)
+      throw new TypeError(`Invalid resource. Cannot resolve DNSLink from domain: ${url.hostname}`)
     }
 
     // dnslink resolved to IPNS name
     if (result.namespace === 'ipns') {
-      return this.resolveIPNSName(domain, result.peerId, parsed, options)
+      return this.resolveIPNSName(url, serverTiming, options)
     }
 
     // dnslink resolved to CID
@@ -103,38 +146,106 @@ export class URLResolver implements URLResolverInterface {
       throw new TypeError(`Invalid resource. Unexpected DNSLink namespace ${result.namespace} from domain: ${domain}`)
     }
 
+    if (result.path != null && url.pathname !== '') {
+      // path conflict?
+    }
+
+    const ipfsUrl = new URL(`ipfs://${result.cid}/${url.pathname}`)
+    const ipfsResult = await this.resolveIPFSPath(ipfsUrl, serverTiming, options)
+
     return {
-      url: parsed.url,
-      cid: result.cid,
-      path: concatPaths(...(result.path ?? '').split('/'), ...(parsed.path ?? [])),
-      fragment: parsed.fragment,
-      // dnslink is mutable so return 'ipns' protocol so we do not include immutable in cache-control header
-      protocol: 'ipns',
-      ttl: result.answer.TTL,
-      query: parsed.query,
-      ipfsPath: `/ipns/${domain}${parsed.url.pathname}`
+      ...ipfsResult,
+      url,
+      ttl: result.answer.TTL
     }
   }
 
-  async resolveIPNSName (resource: string, key: PeerId, parsed: Partial<ParsedURL> & Pick<ParsedURL, 'url'>, options?: AbortOptions): Promise<ResolveURLResult> {
-    const result = await this.components.timing.time('ipns.resolve', `Resolve IPNS name ${key}`, this.components.ipnsResolver.resolve(key, options))
+  private async resolveIPNSName (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult> {
+    const peerId = peerIdFromString(url.hostname)
+    const result = await serverTiming.time('ipns.resolve', `Resolve IPNS name ${peerId}`, this.components.ipnsResolver.resolve(peerId, options))
+
+    if (result.path != null && url.pathname !== '') {
+      // path conflict?
+    }
+
+    const ipfsUrl = new URL(`ipfs://${result.cid}/${url.pathname}`)
+    const ipfsResult = await this.resolveIPFSPath(ipfsUrl, serverTiming, options)
 
     return {
-      url: parsed.url,
-      cid: result.cid,
-      path: concatPaths(...(result.path ?? '').split('/'), ...(parsed.path ?? [])),
-      query: parsed.query ?? {},
-      fragment: parsed.fragment ?? '',
-      protocol: 'ipns',
+      ...ipfsResult,
+      url,
       // IPNS ttl is in nanoseconds, convert to seconds
-      ttl: Number((result.record.ttl ?? 0n) / BigInt(1e9)),
-      ipfsPath: `/ipns/${resource}${parsed.url.pathname}`
+      ttl: Number((result.record.ttl ?? 0n) / BigInt(1e9))
+    }
+  }
+
+  private async resolveIPFSPath (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult> {
+    const walkPathResult = await serverTiming.time('ipfs.resolve', '', this.walkPath(url, options))
+
+    return {
+      ...walkPathResult,
+      url,
+      ttl: IPFS_CONTENT_TTL,
+      blockstore: walkPathResult.blockstore
+    }
+  }
+
+  private async walkPath (url: URL, options: ResolveURLOptions = {}): Promise<WalkPathResult> {
+    const cid = CID.parse(url.hostname)
+    const blockstore = this.getBlockstore(cid, options)
+
+    if (EXPORTABLE_CODECS.includes(cid.code)) {
+      const ipfsRoots: CID[] = []
+      let terminalElement: UnixFSEntry | undefined
+      const ipfsPath = toIPFSPath(url)
+
+      for await (const entry of walkPath(ipfsPath, blockstore, options)) {
+        ipfsRoots.push(entry.cid)
+        terminalElement = entry
+      }
+
+      if (terminalElement == null) {
+        throw new DoesNotExistError('No terminal element found')
+      }
+
+      return {
+        ipfsRoots,
+        terminalElement,
+        blockstore
+      }
+    }
+
+    let bytes: Uint8Array
+
+    if (cid.multihash.code === CODEC_IDENTITY) {
+      bytes = cid.multihash.digest
+    } else {
+      bytes = await toBuffer(blockstore.get(cid, options))
+    }
+
+    // entity codecs contain all the bytes for an entity in one block and no
+    // path walking outside of that block is possible
+    if (ENTITY_CODECS.includes(cid.code)) {
+      return {
+        ipfsRoots: [cid],
+        terminalElement: basicEntry('object', cid, bytes),
+        blockstore
+      }
+    }
+
+    // may be an unknown codec
+    return {
+      ipfsRoots: [cid],
+      terminalElement: basicEntry('raw', cid, bytes),
+      blockstore
     }
   }
 }
 
-function concatPaths (...paths: Array<string | undefined>): string[] {
-  // @ts-expect-error undefined is filtered out
-  return paths
-    .filter(p => p != null && p !== '')
+function toIPFSPath (url: URL): string {
+  return `/ipfs/${url.hostname}${
+    url.pathname.split('/')
+      .map(part => decodeURIComponent(part))
+      .join('/')
+  }`
 }

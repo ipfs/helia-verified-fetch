@@ -8,9 +8,9 @@ import { parseURLString } from './parse-url-string.js'
  * E.g.
  *
  * - Qmfoo -> /ipfs/Qmfoo
- * - https://Qmfoo.ipfs.gateway.org -> /ipfs/Qmfoo
- * - https://gateway.org/ipfs/Qmfoo -> /ipfs/Qmfoo
- * - https://gateway.org/ipfs/Qmfoo/bar.txt -> /ipfs/Qmfoo
+ * - https://Qmfoo.ipfs.gateway.org -> ipfs://Qmfoo
+ * - https://gateway.org/ipfs/Qmfoo -> ipfs://Qmfoo
+ * - https://gateway.org/ipfs/Qmfoo/bar.txt -> ipfs://Qmfoo
  * - etc
  */
 export function resourceToSessionCacheKey (url: string | CID): string {
@@ -24,7 +24,7 @@ export function resourceToSessionCacheKey (url: string | CID): string {
     return `ipfs://${CID.parse(url.toString())}`
   } catch {}
 
-  const { protocol, cidOrPeerIdOrDnsLink } = parseURLString(url.toString())
+  const { protocol, host } = parseURLString(url.toString())
 
-  return `${protocol}://${cidOrPeerIdOrDnsLink}`
+  return `${protocol}//${host}`
 }

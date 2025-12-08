@@ -71,18 +71,6 @@ describe('car files', () => {
     expect(resp.headers.has('content-disposition')).to.be.false()
   })
 
-  it('should return a 406 for a CARv2 file via a query param', async () => {
-    const obj = {
-      hello: 'world'
-    }
-    const c = dagCbor(helia)
-    const cid = await c.add(obj)
-
-    const resp = await verifiedFetch.fetch(`ipfs://${cid}?format=car&car-version=2`)
-    expect(resp.status).to.equal(406)
-    expect(resp.headers.has('content-disposition')).to.be.false()
-  })
-
   it('should support specifying a filename for a CAR file', async () => {
     const obj = {
       hello: 'world'
@@ -232,7 +220,11 @@ describe('car files', () => {
     })
 
     it('dag-scope=all returns all blocks', async () => {
-      const resp = await verifiedFetch.fetch(`ipfs://${cid}?format=car&dag-scope=all`)
+      const resp = await verifiedFetch.fetch(`ipfs://${cid}?dag-scope=all`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
 
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
@@ -249,7 +241,7 @@ describe('car files', () => {
     })
 
     it('dag-scope=block returns only the nested block - plus verification/root block', async () => {
-      const resp = await verifiedFetch.fetch(`ipfs://${cid}/z/a?format=car&dag-scope=block`)
+      const resp = await verifiedFetch.fetch(`ipfs://${cid}/z/a?dag-scope=block`)
 
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
@@ -268,7 +260,7 @@ describe('car files', () => {
 
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
-      expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${cid.toString()}_z.car"`)
+      expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${cid}_z.car"`)
 
       const buf = new Uint8Array(await resp.arrayBuffer())
       const reader = await CarReader.fromBytes(buf)

@@ -28,7 +28,7 @@ const options: DecodeOptions = {
  * re-serialize it in a form that can be passed to `JSON.serialize` and then
  * `JSON.parse` without losing any data.
  */
-export function dagCborToSafeJSON (buf: Uint8Array): string {
+export function dagCborToSafeJSON (buf: Uint8Array): Uint8Array {
   const opts: DecodeOptions = {
     ...options,
     tags: []
@@ -45,7 +45,7 @@ export function dagCborToSafeJSON (buf: Uint8Array): string {
 
   const obj = decode(buf, opts)
 
-  return new TextDecoder().decode(jsonEncode(obj))
+  return jsonEncode(obj)
 }
 
 /**

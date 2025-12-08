@@ -4,6 +4,7 @@ import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats'
 import { sha256 } from 'multiformats/hashes/sha2'
+import { MEDIA_TYPE_DAG_CBOR } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from 'helia'
@@ -21,7 +22,7 @@ describe('dag-cbor', () => {
     await stop(helia, verifiedFetch)
   })
 
-  it('should download DAG-CBOR blocks as application/cbor by default', async () => {
+  it('should download DAG-CBOR blocks as application/vnd.ipld.dag-cbor by default', async () => {
     const obj = {
       hello: 'world',
       link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
@@ -34,7 +35,7 @@ describe('dag-cbor', () => {
 
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`)
     expect(res.ok).to.be.true()
-    expect(res.headers.get('content-type')).to.equal('application/cbor')
+    expect(res.headers.get('content-type')).to.equal(MEDIA_TYPE_DAG_CBOR)
 
     const body = await res.arrayBuffer()
     const decoded = dagCbor.decode(new Uint8Array(body))
