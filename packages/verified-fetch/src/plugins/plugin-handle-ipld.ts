@@ -46,7 +46,13 @@ export class IpldPlugin extends BasePlugin {
     const { url, resource, accept, blockstore, options, ipfsRoots, terminalElement } = context
 
     this.log.trace('fetching %c/%s', terminalElement.cid, url.pathname)
-    let block = await toBuffer(blockstore.get(terminalElement.cid, options))
+    let block: Uint8Array
+    if (terminalElement.type === 'object' || terminalElement.type === 'raw' || terminalElement.type === 'identity') {
+      block = terminalElement.node
+    } else {
+      block = dagPb.encode(terminalElement.node)
+    }
+
     let contentType: ContentType
 
     try {
