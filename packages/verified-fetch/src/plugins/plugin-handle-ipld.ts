@@ -1,7 +1,6 @@
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import * as dagPb from '@ipld/dag-pb'
-import toBuffer from 'it-to-buffer'
 import * as json from 'multiformats/codecs/json'
 import * as raw from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
@@ -43,7 +42,7 @@ export class IpldPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { url, resource, accept, blockstore, options, ipfsRoots, terminalElement } = context
+    const { url, resource, accept, ipfsRoots, terminalElement } = context
 
     this.log.trace('fetching %c/%s', terminalElement.cid, url.pathname)
     let block: Uint8Array
