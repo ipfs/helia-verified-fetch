@@ -7,7 +7,6 @@ import toBuffer from 'it-to-buffer'
 import * as raw from 'multiformats/codecs/raw'
 import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_UNIXFS } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
-import { setIpfsRoots } from '../utils/response-headers.ts'
 import { badGatewayResponse, movedPermanentlyResponse, partialContentResponse, okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from '../index.js'
@@ -112,20 +111,17 @@ export class UnixFSPlugin extends BasePlugin {
       // no index file found, return the directory listing
       const block = await toBuffer(context.blockstore.get(dirCid, context.options))
 
-      const response = okResponse(resource, block, {
+      return okResponse(resource, block, {
         headers: {
           'content-type': MEDIA_TYPE_UNIXFS,
           'content-length': `${block.byteLength}`,
           'content-disposition': `${url.searchParams.get('download') === 'true' ? 'attachment' : 'inline'}; ${
             getContentDispositionFilename(`${dirCid}.dir`)
-          }`
+          }`,
+          'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(',')
         },
         redirected
       })
-
-      setIpfsRoots(response, ipfsRoots)
-
-      return response
     } else if (terminalElement.type === 'file' || terminalElement.type === 'raw' || terminalElement.type === 'identity') {
       this.log('streaming file')
       return this.streamFile(resource, terminalElement, filename, redirected, context.range, context.options)

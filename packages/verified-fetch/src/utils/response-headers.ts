@@ -98,17 +98,3 @@ export function getContentRangeHeader (byteSize: number | bigint | string, byteS
 
   return `bytes ${range}/${total}`
 }
-
-/**
- * Sets the `X-Ipfs-Roots` header on the response if it exists.
- *
- * @see https://specs.ipfs.tech/http-gateways/path-gateway/#x-ipfs-roots-response-header
- */
-export function setIpfsRoots (response: Response, ipfsRoots?: CID[]): void {
-  if (ipfsRoots != null) {
-    response.headers.set('X-Ipfs-Roots', ipfsRoots
-      .map(cid => cid.toV1().toString())
-      .join(',')
-    )
-  }
-}

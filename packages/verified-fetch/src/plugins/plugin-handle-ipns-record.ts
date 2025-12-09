@@ -1,11 +1,11 @@
 import { marshalIPNSRecord } from 'ipns'
 import { CONTENT_TYPE_IPNS, MEDIA_TYPE_IPNS_RECORD } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
-import { getPeerIdFromString } from '../utils/get-peer-id-from-string.js'
 import { badRequestResponse, okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from '../index.js'
 import type { PeerId } from '@libp2p/interface'
+import { peerIdFromString } from '@libp2p/peer-id'
 
 /**
  * Accepts an `ipns://...`, `https?://<ipnsname>.ipns.<domain>`, or `https?://<domain>/ipns/...` URL as a string and
@@ -36,7 +36,7 @@ export class IpnsRecordPlugin extends BasePlugin {
 
     try {
       this.log.trace('trying to parse peer id from "%s"', url.hostname)
-      peerId = getPeerIdFromString(url.hostname)
+      peerId = peerIdFromString(url.hostname)
     } catch (err: any) {
       this.log.error('could not parse peer id from IPNS url %s', resource, err)
 
