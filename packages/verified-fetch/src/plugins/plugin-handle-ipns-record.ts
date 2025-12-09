@@ -1,3 +1,4 @@
+import { peerIdFromString } from '@libp2p/peer-id'
 import { marshalIPNSRecord } from 'ipns'
 import { CONTENT_TYPE_IPNS, MEDIA_TYPE_IPNS_RECORD } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
@@ -5,7 +6,6 @@ import { badRequestResponse, okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
 import type { PluginContext } from '../index.js'
 import type { PeerId } from '@libp2p/interface'
-import { peerIdFromString } from '@libp2p/peer-id'
 
 /**
  * Accepts an `ipns://...`, `https?://<ipnsname>.ipns.<domain>`, or `https?://<domain>/ipns/...` URL as a string and

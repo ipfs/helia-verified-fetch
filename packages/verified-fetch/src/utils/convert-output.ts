@@ -17,10 +17,18 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return dagJson.encode(dagCbor.decode(buf))
     },
-    [MEDIA_TYPE_DAG_CBOR]: (buf) => buf,
-    [MEDIA_TYPE_CBOR]: (buf) => buf,
-    [MEDIA_TYPE_RAW]: (buf) => buf,
-    [MEDIA_TYPE_OCTET_STREAM]: (buf) => buf
+    [MEDIA_TYPE_DAG_CBOR]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_CBOR]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_RAW]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_OCTET_STREAM]: (buf) => {
+      return buf
+    }
   },
   [CODEC_CBOR]: {
     [MEDIA_TYPE_JSON]: (buf) => {
@@ -29,10 +37,18 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return dagJson.encode(dagCbor.decode(buf))
     },
-    [MEDIA_TYPE_DAG_CBOR]: (buf) => buf,
-    [MEDIA_TYPE_CBOR]: (buf) => buf,
-    [MEDIA_TYPE_RAW]: (buf) => buf,
-    [MEDIA_TYPE_OCTET_STREAM]: (buf) => buf
+    [MEDIA_TYPE_DAG_CBOR]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_CBOR]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_RAW]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_OCTET_STREAM]: (buf) => {
+      return buf
+    }
   },
   [dagJson.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
@@ -41,10 +57,18 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
       return dagCbor.encode(dagJson.decode(buf))
     },
-    [MEDIA_TYPE_DAG_JSON]: (buf) => buf,
-    [MEDIA_TYPE_JSON]: (buf) => buf,
-    [MEDIA_TYPE_RAW]: (buf) => buf,
-    [MEDIA_TYPE_OCTET_STREAM]: (buf) => buf
+    [MEDIA_TYPE_DAG_JSON]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_JSON]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_RAW]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_OCTET_STREAM]: (buf) => {
+      return buf
+    }
   },
   [json.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
@@ -53,10 +77,18 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
       return dagCbor.encode(json.decode(buf))
     },
-    [MEDIA_TYPE_DAG_JSON]: (buf) => buf,
-    [MEDIA_TYPE_JSON]: (buf) => buf,
-    [MEDIA_TYPE_RAW]: (buf) => buf,
-    [MEDIA_TYPE_OCTET_STREAM]: (buf) => buf
+    [MEDIA_TYPE_DAG_JSON]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_JSON]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_RAW]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_OCTET_STREAM]: (buf) => {
+      return buf
+    }
   },
   [dagPb.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
@@ -71,24 +103,32 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return dagJson.encode(dagPb.decode(buf))
     },
-    [MEDIA_TYPE_RAW]: (buf) => buf,
-    [MEDIA_TYPE_OCTET_STREAM]: (buf) => buf
+    [MEDIA_TYPE_RAW]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_OCTET_STREAM]: (buf) => {
+      return buf
+    }
   },
   [raw.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
-      return dagCbor.encode(buf)
+      return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
-      return dagCbor.encode(buf)
+      return buf
     },
     [MEDIA_TYPE_JSON]: (buf) => {
-      return dagJson.encode(buf)
+      return buf
     },
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return dagJson.encode(buf)
     },
-    [MEDIA_TYPE_RAW]: (buf) => buf,
-    [MEDIA_TYPE_OCTET_STREAM]: (buf) => buf
+    [MEDIA_TYPE_RAW]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_OCTET_STREAM]: (buf) => {
+      return buf
+    }
   },
   [identity.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
@@ -103,8 +143,12 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return dagJson.encode(buf)
     },
-    [MEDIA_TYPE_RAW]: (buf) => buf,
-    [MEDIA_TYPE_OCTET_STREAM]: (buf) => buf
+    [MEDIA_TYPE_RAW]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_OCTET_STREAM]: (buf) => {
+      return buf
+    }
   }
 }
 

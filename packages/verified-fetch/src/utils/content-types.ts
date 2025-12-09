@@ -28,7 +28,7 @@ export const CONTENT_TYPE_OCTET_STREAM: ContentType = {
 
 export const CONTENT_TYPE_DAG_CBOR: ContentType = {
   mediaType: MEDIA_TYPE_DAG_CBOR,
-  codecs: [dagCborCode, CODEC_CBOR, dagJsonCode, jsonCode],
+  codecs: [dagCborCode, CODEC_CBOR, dagJsonCode, jsonCode, rawCode],
   immutable: true,
   suffix: '.cbor',
   disposition: 'attachment'
@@ -36,7 +36,7 @@ export const CONTENT_TYPE_DAG_CBOR: ContentType = {
 
 export const CONTENT_TYPE_CBOR: ContentType = {
   mediaType: MEDIA_TYPE_CBOR,
-  codecs: [CODEC_CBOR, dagCborCode, dagJsonCode, jsonCode],
+  codecs: [CODEC_CBOR, dagCborCode, dagJsonCode, jsonCode, rawCode],
   immutable: true,
   suffix: '.cbor',
   disposition: 'attachment'
@@ -44,7 +44,7 @@ export const CONTENT_TYPE_CBOR: ContentType = {
 
 export const CONTENT_TYPE_DAG_JSON: ContentType = {
   mediaType: MEDIA_TYPE_DAG_JSON,
-  codecs: [dagJsonCode, jsonCode, dagCborCode, CODEC_CBOR],
+  codecs: [dagJsonCode, jsonCode, dagCborCode, CODEC_CBOR, rawCode],
   immutable: true,
   suffix: '.json',
   disposition: 'inline'
@@ -52,7 +52,7 @@ export const CONTENT_TYPE_DAG_JSON: ContentType = {
 
 export const CONTENT_TYPE_JSON: ContentType = {
   mediaType: MEDIA_TYPE_JSON,
-  codecs: [jsonCode, dagJsonCode, dagCborCode, CODEC_CBOR],
+  codecs: [jsonCode, dagJsonCode, dagCborCode, CODEC_CBOR, rawCode],
   immutable: true,
   suffix: '.json',
   disposition: 'inline'

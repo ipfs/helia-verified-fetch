@@ -1,5 +1,4 @@
 import { InvalidRangeError } from '../errors.js'
-import type { CID } from 'multiformats/cid'
 
 interface CacheControlHeaderOptions {
   /**
