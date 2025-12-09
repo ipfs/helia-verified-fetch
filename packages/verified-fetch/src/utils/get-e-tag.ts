@@ -23,9 +23,7 @@ interface GetETagArg {
   rangeEnd?: number
 
   /**
-   * A custom prefix to use for the content of the etag. This is needed for some
-   * cases (like dir-index-html) where we need to use a custom prefix for the
-   * etag.
+   * A custom prefix to use for the content of the etag
    */
   contentPrefix?: string
 }

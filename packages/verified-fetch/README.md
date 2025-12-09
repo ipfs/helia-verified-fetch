@@ -728,29 +728,6 @@ Please see the original discussion on extensibility in [Issue #167](https://gith
 
 ***
 
-### Non-default plugins provided by this library
-
-#### `dir-index-html-plugin`
-
-This plugin is used to serve dag-pb/unixfs without an `index.html` child as HTML directory listing of the content requested.
-
-#### `dag-cbor-html-preview-plugin`
-
-This plugin is used to serve the requested dag-cbor object as HTML when the Accept header includes `text/html`.
-
-## Example - Using the plugins
-
-```typescript
-import { createVerifiedFetch } from '@helia/verified-fetch'
-import { dagCborHtmlPreviewPluginFactory, dirIndexHtmlPluginFactory } from '@helia/verified-fetch/plugins'
-import { createHelia } from 'helia'
-
-const helia = await createHelia()
-const fetch = await createVerifiedFetch(helia, {
-  plugins: [dagCborHtmlPreviewPluginFactory, dirIndexHtmlPluginFactory, ]
-})
-```
-
 ### Extending Verified‑Fetch with Custom Plugins
 
 To add your own plugin:
