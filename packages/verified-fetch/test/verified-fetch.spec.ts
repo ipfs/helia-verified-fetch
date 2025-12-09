@@ -86,7 +86,7 @@ describe('@helia/verified-fetch', () => {
         onProgress
       })
 
-      expect(onProgress.callCount).to.equal(6)
+      expect(onProgress.callCount).to.equal(5)
 
       const onProgressEvents = onProgress.getCalls().map(call => call.args[0])
       expect(onProgressEvents[0]).to.include({ type: 'verified-fetch:request:start' }).and.to.have.property('detail').that.deep.equals({
@@ -99,8 +99,7 @@ describe('@helia/verified-fetch', () => {
       })
 
       expect(onProgressEvents[3]).to.include({ type: 'unixfs:exporter:progress:raw' })
-      expect(onProgressEvents[4]).to.include({ type: 'unixfs:exporter:progress:raw' })
-      expect(onProgressEvents[5]).to.include({ type: 'verified-fetch:request:end' }).and.to.have.property('detail').that.deep.equals({
+      expect(onProgressEvents[4]).to.include({ type: 'verified-fetch:request:end' }).and.to.have.property('detail').that.deep.equals({
         cid,
         path: ''
       })

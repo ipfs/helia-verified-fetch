@@ -1049,11 +1049,14 @@ export interface CreateVerifiedFetchInit {
   allowInsecure?: boolean
 
   /**
-   * We will instantiate a libp2p node for you, but if you want to override the libp2p configuration,
-   * you can pass it here.
+   * A libp2p node will be instantiated - if you want to override the libp2p
+   * configuration, you can pass it here.
    *
-   * **WARNING**: We use Object.assign to merge the default libp2p configuration from Helia with the one you pass here,
-   * which results in a shallow merge. If you need a deep merge, you should do it yourself before passing the
+   * **WARNING**: Object.assign is used to merge the default libp2p
+   * configuration from Helia with the one you pass here, which results in a
+   * shallow merge.
+   *
+   * If you need a deep merge, you should do it yourself before passing the
    * configuration here.
    */
   libp2pConfig?: Partial<Libp2pOptions<ServiceMap>>
@@ -1087,7 +1090,8 @@ export interface CreateVerifiedFetchOptions {
   sessionTTLms?: number
 
   /**
-   * Whether to include server-timing headers in responses. This option can be overridden on a per-request basis.
+   * Whether to include server-timing headers in responses. This option can be
+   * overridden on a per-request basis.
    *
    * @default false
    * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
@@ -1095,8 +1099,11 @@ export interface CreateVerifiedFetchOptions {
   withServerTiming?: boolean
 
   /**
-   * Plugins to use with the verified-fetch instance. Note that we have a set of default plugins that are always used.
-   * If you want to replace one of the default plugins, you can do so by passing a plugin with the same name.
+   * Plugins to use with the verified-fetch instance. Note that we have a set of
+   * default plugins that are always used.
+   *
+   * If you want to replace one of the default plugins, you can do so by passing
+   * a plugin with the same name.
    */
   plugins?: VerifiedFetchPluginFactory[]
 

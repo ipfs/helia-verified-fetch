@@ -248,7 +248,7 @@ describe('url-resolver', () => {
 
     it('should return the correct TTL from the DNS Answer ', async () => {
       // spell-checker: disable-next-line
-      dnsLink.resolve.withArgs('newdomain.com').resolves([{
+      dnsLink.resolve.withArgs('example.com').resolves([{
         namespace: 'ipfs',
         cid: nestedDirectoryCID,
         path: '',
@@ -260,7 +260,7 @@ describe('url-resolver', () => {
         }
       }])
 
-      const result = await resolver.resolve(new URL('dnslink://newdomain.com/'), new ServerTiming(), {
+      const result = await resolver.resolve(new URL('dnslink://example.com/'), new ServerTiming(), {
         session: false
       })
       expect(result.ttl).to.equal(oneHourInSeconds)

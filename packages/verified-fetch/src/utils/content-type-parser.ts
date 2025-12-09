@@ -39,7 +39,8 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
     return detectedType
   }
 
-  if (fileName == null) {
+  // no filename or filename has no extension
+  if (fileName == null || fileName.includes('.') === false) {
     // it's likely text... no other way to determine file-type.
     const text = getText(bytes)
 
@@ -59,7 +60,7 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
     return defaultMimeType
   }
 
-  // no need to include file-types listed at https://github.com/SgtPooki/file-type#supported-file-types
+  // no need to include file-types listed at https://github.com/sindresorhus/file-type#supported-file-types
   switch (fileName.split('.').pop()) {
     case 'css':
       return 'text/css'
@@ -73,7 +74,7 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
       return 'text/plain'
     case 'woff2':
       return 'font/woff2'
-    // see bottom of https://github.com/SgtPooki/file-type#supported-file-types
+    // see bottom of https://github.com/sindresorhus/file-type#supported-file-types
     case 'svg':
       return 'image/svg+xml'
     case 'csv':

@@ -1,4 +1,5 @@
 ENOENT
+ETIMEOUT
 GOPATH
 mgmt
 gotest

@@ -1,10 +1,11 @@
 /* eslint-env mocha */
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
+import type { VerifiedFetch } from '@helia/verified-fetch'
 
 describe('@helia/verified-fetch - websites', () => {
   describe('helia-identify.on.fleek.co', () => {
-    let verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>
+    let verifiedFetch: VerifiedFetch
 
     before(async () => {
       // 2024-01-22 CID for _dnslink.helia-identify.on.fleek.co

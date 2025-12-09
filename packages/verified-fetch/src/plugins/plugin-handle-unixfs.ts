@@ -1,6 +1,7 @@
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { isPromise } from '@libp2p/utils'
 import { exporter } from 'ipfs-unixfs-exporter'
+import first from 'it-first'
 import itToBrowserReadableStream from 'it-to-browser-readablestream'
 import toBuffer from 'it-to-buffer'
 import * as raw from 'multiformats/codecs/raw'
@@ -13,6 +14,29 @@ import type { PluginContext } from '../index.js'
 import type { RangeHeader } from '../utils/get-range-header.ts'
 import type { AbortOptions } from '@libp2p/interface'
 import type { IdentityNode, RawNode, UnixFSEntry, UnixFSFile } from 'ipfs-unixfs-exporter'
+
+/**
+ * @see https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
+ */
+function getRedirectUrl (resource: string, url: URL, terminalElement: UnixFSEntry): string | undefined {
+  let uri: URL
+
+  try {
+    // try the requested resource
+    uri = new URL(resource)
+  } catch {
+    // fall back to the canonical URL
+    uri = url
+  }
+
+  // directories must be requested with a trailing slash
+  if (terminalElement?.type === 'directory' && !uri.pathname.endsWith('/')) {
+    // make sure we append slash to end of the path
+    uri.pathname += '/'
+
+    return uri.toString()
+  }
+}
 
 /**
  * Handles UnixFS content
@@ -30,36 +54,13 @@ export class UnixFSPlugin extends BasePlugin {
     return supportsCid && supportsAccept
   }
 
-  /**
-   * @see https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
-   */
-  getRedirectUrl (resource: string, url: URL, terminalElement: UnixFSEntry): string | undefined {
-    let uri: URL
-
-    try {
-      // try the requested resource
-      uri = new URL(resource)
-    } catch {
-      // fall back to the canonical URL
-      uri = url
-    }
-
-    // directories must be requested with a trailing slash
-    if (terminalElement?.type === 'directory' && !uri.pathname.endsWith('/')) {
-      // make sure we append slash to end of the path
-      uri.pathname += '/'
-
-      return uri.toString()
-    }
-  }
-
   async handle (context: PluginContext): Promise<Response> {
     let { url, resource, terminalElement, ipfsRoots } = context
     let filename = url.searchParams.get('filename') ?? terminalElement.name
     let redirected: undefined | true
 
     if (terminalElement.type === 'directory') {
-      const redirectUrl = this.getRedirectUrl(resource, url, terminalElement)
+      const redirectUrl = getRedirectUrl(resource, url, terminalElement)
 
       if (redirectUrl != null) {
         this.log.trace('directory url normalization spec requires redirect...')
@@ -175,11 +176,18 @@ export class UnixFSPlugin extends BasePlugin {
   }
 
   private async detectContentType (entry: UnixFSFile | RawNode | IdentityNode, filename?: string, options?: AbortOptions): Promise<string> {
-    const buf = await toBuffer(entry.content({
-      ...(options ?? {}),
-      offset: 0,
-      length: Number(entry.size < 10n ? entry.size : 10n)
-    }))
+    let buf: Uint8Array | undefined
+
+    if (entry.type === 'raw' || entry.type === 'identity') {
+      buf = entry.node
+    } else {
+      // read the first block of the file
+      buf = await first(entry.content(options))
+    }
+
+    if (buf == null) {
+      throw new Error('stream ended before first block was read')
+    }
 
     let contentType: string | undefined
 
