@@ -805,7 +805,7 @@ export {
   MEDIA_TYPE_IPNS_RECORD,
   MEDIA_TYPE_CAR,
   MEDIA_TYPE_TAR,
-  MEDIA_TYPE_UNIXFS
+  MEDIA_TYPE_DAG_PB
 } from './utils/content-types.js'
 
 export interface ContentType {

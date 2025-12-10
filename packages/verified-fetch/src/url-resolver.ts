@@ -77,6 +77,7 @@ export interface URLResolverInit {
 
 export interface ResolveURLOptions extends AbortOptions {
   session?: boolean
+  isRawBlockRequest?: boolean
 }
 
 export class URLResolver implements URLResolverInterface {
@@ -199,7 +200,10 @@ export class URLResolver implements URLResolverInterface {
       let terminalElement: UnixFSEntry | undefined
       const ipfsPath = toIPFSPath(url)
 
-      for await (const entry of walkPath(ipfsPath, blockstore, options)) {
+      for await (const entry of walkPath(ipfsPath, blockstore, {
+        ...options,
+        extended: options.isRawBlockRequest !== true
+      })) {
         ipfsRoots.push(entry.cid)
         terminalElement = entry
       }

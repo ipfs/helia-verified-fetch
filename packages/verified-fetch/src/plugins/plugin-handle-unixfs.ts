@@ -5,7 +5,7 @@ import first from 'it-first'
 import itToBrowserReadableStream from 'it-to-browser-readablestream'
 import toBuffer from 'it-to-buffer'
 import * as raw from 'multiformats/codecs/raw'
-import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_UNIXFS } from '../utils/content-types.ts'
+import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_DAG_PB } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
 import { badGatewayResponse, movedPermanentlyResponse, partialContentResponse, okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
@@ -47,7 +47,7 @@ export class UnixFSPlugin extends BasePlugin {
   canHandle ({ terminalElement, accept }: PluginContext): boolean {
     const supportsCid = this.codes.includes(terminalElement.cid.code)
     const supportsAccept = accept.length === 0 || accept.some(header => header.contentType.mediaType === MEDIA_TYPE_OCTET_STREAM ||
-      header.contentType.mediaType === MEDIA_TYPE_UNIXFS
+      header.contentType.mediaType === MEDIA_TYPE_DAG_PB
     )
 
     return supportsCid && supportsAccept
@@ -113,7 +113,7 @@ export class UnixFSPlugin extends BasePlugin {
 
       return okResponse(resource, block, {
         headers: {
-          'content-type': MEDIA_TYPE_UNIXFS,
+          'content-type': MEDIA_TYPE_DAG_PB,
           'content-length': `${block.byteLength}`,
           'content-disposition': `${url.searchParams.get('download') === 'true' ? 'attachment' : 'inline'}; ${
             getContentDispositionFilename(`${dirCid}.dir`)
@@ -126,6 +126,7 @@ export class UnixFSPlugin extends BasePlugin {
       this.log('streaming file')
       return this.streamFile(resource, terminalElement, filename, redirected, context.range, context.options)
     } else {
+      this.log.error('cannot stream terminal element type %s', terminalElement.type)
       return badGatewayResponse(resource, 'Unable to stream content')
     }
   }
@@ -150,8 +151,9 @@ export class UnixFSPlugin extends BasePlugin {
         headers: {
           'content-type': contentType,
           'content-disposition': `inline; ${
-          getContentDispositionFilename(filename)
-        }`
+            getContentDispositionFilename(filename)
+          }`,
+          'x-ipfs-roots': entry.cid.toString()
         },
         redirected
       })
@@ -165,7 +167,8 @@ export class UnixFSPlugin extends BasePlugin {
         'content-length': `${entry.size}`,
         'content-disposition': `inline; ${
           getContentDispositionFilename(filename)
-        }`
+        }`,
+        'x-ipfs-roots': entry.cid.toString()
       },
       redirected
     })

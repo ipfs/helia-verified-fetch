@@ -29,8 +29,12 @@ const FORMATS: Format[] = [{
     return uint8ArrayFromString(JSON.stringify(obj))
   },
   verify: async (obj, block, res) => {
-    expect(res.headers.get('content-length')).to.equal(block.byteLength.toString())
-    expect(await res.json()).to.deep.equal(obj)
+    expect(res.headers.get('content-length')).to.equal('41')
+    expect(await res.json()).to.deep.equal({
+      '/': {
+        bytes: uint8ArrayToString(block, 'base64')
+      }
+    })
   }
 }, {
   name: 'DAG-JSON',
@@ -53,8 +57,8 @@ const FORMATS: Format[] = [{
     return cborg.encode(obj)
   },
   verify: async (obj, block, res) => {
-    expect(res.headers.get('content-length')).to.equal(block.byteLength.toString())
-    expect(cborg.decode(new Uint8Array(await res.arrayBuffer()))).to.deep.equal(obj)
+    expect(res.headers.get('content-length')).to.equal(cborg.encode(block).byteLength.toString())
+    expect(cborg.decode(new Uint8Array(await res.arrayBuffer()))).to.deep.equal(cborg.encode(obj))
   }
 }, {
   name: 'DAG-CBOR',
@@ -63,8 +67,8 @@ const FORMATS: Format[] = [{
     return cborg.encode(obj)
   },
   verify: async (obj, block, res) => {
-    expect(res.headers.get('content-length')).to.equal(block.byteLength.toString())
-    expect(cborg.decode(new Uint8Array(await res.arrayBuffer()))).to.deep.equal(obj)
+    expect(res.headers.get('content-length')).to.equal(cborg.encode(block).byteLength.toString())
+    expect(cborg.decode(new Uint8Array(await res.arrayBuffer()))).to.deep.equal(cborg.encode(obj))
   }
 }]
 

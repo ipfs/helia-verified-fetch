@@ -10,7 +10,7 @@ import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { UnixFSPlugin } from './plugins/plugin-handle-unixfs.js'
 import { URLResolver } from './url-resolver.ts'
 import { contentTypeParser } from './utils/content-type-parser.js'
-import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, CONTENT_TYPE_CAR, MEDIA_TYPE_IPNS_RECORD } from './utils/content-types.ts'
+import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, CONTENT_TYPE_CAR, MEDIA_TYPE_IPNS_RECORD, MEDIA_TYPE_RAW } from './utils/content-types.ts'
 import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag } from './utils/get-e-tag.js'
@@ -54,6 +54,21 @@ function isIPNSRecordRequest (headers: Headers): boolean {
   const mediaType = acceptHeaders[0].split(';')[0]
 
   return mediaType === MEDIA_TYPE_IPNS_RECORD
+}
+
+/**
+ * Returns true if the quest is only for an IPNS record
+ */
+function isRawBlockRequest (headers: Headers): boolean {
+  const acceptHeaders = headers.get('accept')?.split(',') ?? []
+
+  if (acceptHeaders.length !== 1) {
+    return false
+  }
+
+  const mediaType = acceptHeaders[0].split(';')[0]
+
+  return mediaType === MEDIA_TYPE_RAW
 }
 
 export class VerifiedFetch {
@@ -166,7 +181,10 @@ export class VerifiedFetch {
       }))
     } else {
       try {
-        parsedResult = await this.urlResolver.resolve(url, serverTiming, options)
+        parsedResult = await this.urlResolver.resolve(url, serverTiming, {
+          ...options,
+          isRawBlockRequest: isRawBlockRequest(headers)
+        })
       } catch (err: any) {
         options?.signal?.throwIfAborted()
 

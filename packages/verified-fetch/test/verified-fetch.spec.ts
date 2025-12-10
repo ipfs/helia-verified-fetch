@@ -17,7 +17,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import Sinon from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { MEDIA_TYPE_UNIXFS } from '../src/index.ts'
+import { MEDIA_TYPE_DAG_PB } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
@@ -353,7 +353,7 @@ describe('@helia/verified-fetch', () => {
       const resp = await verifiedFetch.fetch(res.cid)
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal(MEDIA_TYPE_UNIXFS)
+      expect(resp.headers.get('content-type')).to.equal(MEDIA_TYPE_DAG_PB)
     })
 
     it('can round trip json via .json()', async () => {

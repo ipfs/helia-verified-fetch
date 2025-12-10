@@ -16,7 +16,7 @@ export const MEDIA_TYPE_OCTET_STREAM = 'application/octet-stream'
 export const MEDIA_TYPE_IPNS_RECORD = 'application/vnd.ipfs.ipns-record'
 export const MEDIA_TYPE_CAR = 'application/vnd.ipld.car'
 export const MEDIA_TYPE_TAR = 'application/x-tar'
-export const MEDIA_TYPE_UNIXFS = 'application/vnd.ipld.dag-pb'
+export const MEDIA_TYPE_DAG_PB = 'application/vnd.ipld.dag-pb'
 
 export const CONTENT_TYPE_OCTET_STREAM: ContentType = {
   mediaType: MEDIA_TYPE_OCTET_STREAM,
@@ -28,7 +28,7 @@ export const CONTENT_TYPE_OCTET_STREAM: ContentType = {
 
 export const CONTENT_TYPE_DAG_CBOR: ContentType = {
   mediaType: MEDIA_TYPE_DAG_CBOR,
-  codecs: [dagCborCode, CODEC_CBOR, dagJsonCode, jsonCode, rawCode],
+  codecs: [dagCborCode, CODEC_CBOR, dagJsonCode, jsonCode, dagPbCode, rawCode],
   immutable: true,
   suffix: '.cbor',
   disposition: 'attachment'
@@ -36,7 +36,7 @@ export const CONTENT_TYPE_DAG_CBOR: ContentType = {
 
 export const CONTENT_TYPE_CBOR: ContentType = {
   mediaType: MEDIA_TYPE_CBOR,
-  codecs: [CODEC_CBOR, dagCborCode, dagJsonCode, jsonCode, rawCode],
+  codecs: [CODEC_CBOR, dagCborCode, dagJsonCode, jsonCode, dagPbCode, rawCode],
   immutable: true,
   suffix: '.cbor',
   disposition: 'attachment'
@@ -44,7 +44,7 @@ export const CONTENT_TYPE_CBOR: ContentType = {
 
 export const CONTENT_TYPE_DAG_JSON: ContentType = {
   mediaType: MEDIA_TYPE_DAG_JSON,
-  codecs: [dagJsonCode, jsonCode, dagCborCode, CODEC_CBOR, rawCode],
+  codecs: [dagJsonCode, jsonCode, dagCborCode, CODEC_CBOR, dagPbCode, rawCode],
   immutable: true,
   suffix: '.json',
   disposition: 'inline'
@@ -52,7 +52,7 @@ export const CONTENT_TYPE_DAG_JSON: ContentType = {
 
 export const CONTENT_TYPE_JSON: ContentType = {
   mediaType: MEDIA_TYPE_JSON,
-  codecs: [jsonCode, dagJsonCode, dagCborCode, CODEC_CBOR, rawCode],
+  codecs: [jsonCode, dagJsonCode, dagCborCode, CODEC_CBOR, dagPbCode, rawCode],
   immutable: true,
   suffix: '.json',
   disposition: 'inline'

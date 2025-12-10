@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-import { createVerifiedFetch, MEDIA_TYPE_UNIXFS } from '@helia/verified-fetch'
+import { createVerifiedFetch, MEDIA_TYPE_DAG_PB } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
 import { filetypemime } from 'magic-bytes.js'
 import type { VerifiedFetch } from '@helia/verified-fetch'
@@ -49,7 +49,7 @@ describe('@helia/verified-fetch - unixfs directory', () => {
       })
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal(MEDIA_TYPE_UNIXFS)
+      expect(resp.headers.get('content-type')).to.equal(MEDIA_TYPE_DAG_PB)
     })
 
     it('can return a string for deep-linked unixfs data', async () => {
