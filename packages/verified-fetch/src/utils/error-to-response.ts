@@ -1,6 +1,6 @@
-import { badGatewayResponse, gatewayTimeoutResponse, internalServerErrorResponse, notAcceptableResponse, notFoundResponse } from './responses.js'
-import { MEDIA_TYPE_RAW, type Resource } from '../index.js'
 import { CONTENT_TYPE_OCTET_STREAM, CONTENT_TYPE_RAW } from './content-types.ts'
+import { badGatewayResponse, gatewayTimeoutResponse, internalServerErrorResponse, notAcceptableResponse, notFoundResponse } from './responses.js'
+import type { Resource } from '../index.js'
 
 export function errorToResponse (resource: Resource | string, err: any): Response {
   // if a signal abort caused the error, throw the error
