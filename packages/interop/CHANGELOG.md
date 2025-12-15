@@ -1,3 +1,17 @@
+## [@helia/verified-fetch-interop-v3.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-2.0.2...@helia/verified-fetch-interop-3.0.0) (2025-12-15)
+
+### ⚠ BREAKING CHANGES
+
+* support for the `format` query arg has been removed, pass an accept header instead
+
+### Bug Fixes
+
+* remove gateway code ([#299](https://github.com/ipfs/helia-verified-fetch/issues/299)) ([9d2d7c2](https://github.com/ipfs/helia-verified-fetch/commit/9d2d7c279822776af0594570122d7f411ee01859))
+
+### Dependencies
+
+* bump kubo in the kubo-deps group across 1 directory ([#298](https://github.com/ipfs/helia-verified-fetch/issues/298)) ([4b7e7e0](https://github.com/ipfs/helia-verified-fetch/commit/4b7e7e085e12c2ddf24853aa5f3eb048a91e1fff))
+
 ## [@helia/verified-fetch-interop-v2.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-2.0.1...@helia/verified-fetch-interop-2.0.2) (2025-11-20)
 
 ### Dependencies
