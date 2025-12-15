@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-v5.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.1.1...@helia/verified-fetch-5.0.0) (2025-12-15)
+
+### ⚠ BREAKING CHANGES
+
+* support for the `format` query arg has been removed, pass an accept header instead
+
+### Bug Fixes
+
+* remove gateway code ([#299](https://github.com/ipfs/helia-verified-fetch/issues/299)) ([9d2d7c2](https://github.com/ipfs/helia-verified-fetch/commit/9d2d7c279822776af0594570122d7f411ee01859))
+
 ## [@helia/verified-fetch-v4.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.1.0...@helia/verified-fetch-4.1.1) (2025-11-21)
 
 ### Bug Fixes
