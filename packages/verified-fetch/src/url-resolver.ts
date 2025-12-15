@@ -148,7 +148,7 @@ export class URLResolver implements URLResolverInterface {
       throw new TypeError(`Invalid resource. Unexpected DNSLink namespace ${result.namespace} from domain: ${domain}`)
     }
 
-    if (result.path != null && url.pathname !== '') {
+    if (result.path != null && (url.pathname !== '' && url.pathname !== '/')) {
       // path conflict?
     }
 
@@ -166,7 +166,7 @@ export class URLResolver implements URLResolverInterface {
     const peerId = peerIdFromString(url.hostname)
     const result = await serverTiming.time('ipns.resolve', `Resolve IPNS name ${peerId}`, this.components.ipnsResolver.resolve(peerId, options))
 
-    if (result.path != null && url.pathname !== '') {
+    if (result.path != null && (url.pathname !== '' && url.pathname !== '/')) {
       // path conflict?
     }
 
