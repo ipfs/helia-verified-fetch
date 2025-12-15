@@ -62,7 +62,7 @@ export class UnixFSPlugin extends BasePlugin {
       const redirectUrl = getRedirectUrl(resource, url, terminalElement)
 
       if (redirectUrl != null) {
-        this.log.trace('directory url normalization spec requires redirect...')
+        this.log.trace('directory url normalization spec requires redirect')
 
         if (context.options?.redirect === 'error') {
           this.log('could not redirect to %s as redirect option was set to "error"', redirectUrl)
@@ -118,7 +118,8 @@ export class UnixFSPlugin extends BasePlugin {
           'content-disposition': `${url.searchParams.get('download') === 'true' ? 'attachment' : 'inline'}; ${
             getContentDispositionFilename(`${dirCid}.dir`)
           }`,
-          'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(',')
+          'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(','),
+          'accept-ranges': 'bytes'
         },
         redirected
       })
@@ -153,7 +154,8 @@ export class UnixFSPlugin extends BasePlugin {
           'content-disposition': `inline; ${
             getContentDispositionFilename(filename)
           }`,
-          'x-ipfs-roots': entry.cid.toString()
+          'x-ipfs-roots': entry.cid.toString(),
+          'accept-ranges': 'bytes'
         },
         redirected
       })
@@ -168,7 +170,8 @@ export class UnixFSPlugin extends BasePlugin {
         'content-disposition': `inline; ${
           getContentDispositionFilename(filename)
         }`,
-        'x-ipfs-roots': entry.cid.toString()
+        'x-ipfs-roots': entry.cid.toString(),
+        'accept-ranges': 'bytes'
       },
       redirected
     })

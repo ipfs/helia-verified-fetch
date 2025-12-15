@@ -71,9 +71,11 @@ export class IpldPlugin extends BasePlugin {
       'content-length': `${block.byteLength}`,
       'content-type': contentType.mediaType,
       'content-disposition': `${url.searchParams.get('download') === 'true' ? 'attachment' : contentType.disposition}; ${
-        getContentDispositionFilename(url.searchParams.get('filename') ?? `${terminalElement.cid}${contentType.suffix}`)
+        getContentDispositionFilename(url.searchParams.get('filename') ?? `${terminalElement.cid}${contentType.extension}`)
       }`,
-      'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(',')
+      'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(','),
+      'x-content-type-options': 'nosniff',
+      'accept-ranges': 'bytes'
     }
 
     if (context.range != null) {

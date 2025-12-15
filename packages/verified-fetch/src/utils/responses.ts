@@ -360,3 +360,26 @@ export function notSatisfiableResponse (url: string, documentSize?: number | big
 
   return response
 }
+
+/**
+ * Error to indicate that request was formally correct, but Gateway is unable to
+ * return requested data under the additional (usually cache-related) conditions
+ * sent by the client.
+ *
+ * @see https://specs.ipfs.tech/http-gateways/path-gateway/#412-precondition-failed
+ */
+export function preconditionFailedResponse (url: string, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers)
+
+  const response = new Response('Precondition Failed', {
+    ...init,
+    headers,
+    status: 412,
+    statusText: 'Precondition Failed'
+  })
+
+  setType(response, 'basic')
+  setUrl(response, url)
+
+  return response
+}

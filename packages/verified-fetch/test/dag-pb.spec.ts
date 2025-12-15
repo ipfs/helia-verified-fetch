@@ -61,13 +61,9 @@ const fixtures: Record<string, UnixFSFixtures> = {
     fixtures: {
       raw: {
         async verify (res, cid, helia) {
-          expect(await res.json())
-            .to.deep.equal(
-              JSON.parse(
-                uint8ArrayToString(
-                  dagJson.encode(await toBuffer(helia.blockstore.get(cid)))
-                )
-              )
+          expect(new Uint8Array(await res.arrayBuffer()))
+            .to.equalBytes(
+              await toBuffer(helia.blockstore.get(cid))
             )
         }
       },

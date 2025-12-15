@@ -118,7 +118,7 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
       return dagCbor.encode(buf)
     },
     [MEDIA_TYPE_JSON]: (buf) => {
-      return dagJson.encode(buf)
+      return buf
     },
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return dagJson.encode(buf)

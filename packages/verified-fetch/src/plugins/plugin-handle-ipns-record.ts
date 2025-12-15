@@ -51,9 +51,11 @@ export class IpnsRecordPlugin extends BasePlugin {
         'content-length': `${block.byteLength}`,
         'content-type': CONTENT_TYPE_IPNS.mediaType,
         'content-disposition': `attachment; ${
-          getContentDispositionFilename(url.searchParams.get('filename') ?? `${peerId}${CONTENT_TYPE_IPNS.suffix}`)
+          getContentDispositionFilename(url.searchParams.get('filename') ?? `${peerId}${CONTENT_TYPE_IPNS.extension}`)
         }`,
-        'x-ipfs-roots': result.cid.toV1().toString()
+        'x-ipfs-roots': result.cid.toV1().toString(),
+        'cache-control': `public, max-age=${Number((result.record.ttl ?? 0n) / BigInt(1e9))}`,
+        'accept-ranges': 'none'
       }
     })
   }

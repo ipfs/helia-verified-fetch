@@ -826,9 +826,14 @@ export interface ContentType {
   immutable: boolean
 
   /**
+   * A suffix used in etags
+   */
+  etag: string
+
+  /**
    * The file extension associated with this content type
    */
-  suffix: string
+  extension: string
 
   /**
    * Whether data of this type should be downloaded by default

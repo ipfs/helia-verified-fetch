@@ -29,12 +29,8 @@ const FORMATS: Format[] = [{
     return uint8ArrayFromString(JSON.stringify(obj))
   },
   verify: async (obj, block, res) => {
-    expect(res.headers.get('content-length')).to.equal('41')
-    expect(await res.json()).to.deep.equal({
-      '/': {
-        bytes: uint8ArrayToString(block, 'base64')
-      }
-    })
+    expect(res.headers.get('content-length')).to.equal('17')
+    expect(new Uint8Array(await res.arrayBuffer())).to.equalBytes(block)
   }
 }, {
   name: 'DAG-JSON',

@@ -78,6 +78,7 @@ export interface URLResolverInit {
 export interface ResolveURLOptions extends AbortOptions {
   session?: boolean
   isRawBlockRequest?: boolean
+  onlyIfCached?: boolean
 }
 
 export class URLResolver implements URLResolverInterface {
@@ -200,8 +201,10 @@ export class URLResolver implements URLResolverInterface {
       let terminalElement: UnixFSEntry | undefined
       const ipfsPath = toIPFSPath(url)
 
+      // @ts-expect-error offline is a helia option
       for await (const entry of walkPath(ipfsPath, blockstore, {
         ...options,
+        offline: options.onlyIfCached === true,
         extended: options.isRawBlockRequest !== true
       })) {
         ipfsRoots.push(entry.cid)
@@ -247,9 +250,5 @@ export class URLResolver implements URLResolverInterface {
 }
 
 function toIPFSPath (url: URL): string {
-  return `/ipfs/${url.hostname}${
-    url.pathname.split('/')
-      .map(part => decodeURIComponent(part))
-      .join('/')
-  }`
+  return `/ipfs/${url.hostname}${decodeURI(url.pathname)}`
 }

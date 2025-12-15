@@ -39,7 +39,8 @@ export class TarPlugin extends BasePlugin {
         'content-type': MEDIA_TYPE_TAR,
         'content-disposition': `attachment; ${
           getContentDispositionFilename(url.searchParams.get('filename') ?? `${terminalElement.cid.toString()}.tar`)
-        }`
+        }`,
+        'accept-ranges': 'none'
       }
     })
   }

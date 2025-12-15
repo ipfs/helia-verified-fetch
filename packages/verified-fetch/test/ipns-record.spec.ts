@@ -5,6 +5,7 @@ import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import { createIPNSRecord, marshalIPNSRecord, unmarshalIPNSRecord } from 'ipns'
 import { stubInterface } from 'sinon-ts'
+import { MEDIA_TYPE_IPNS_RECORD } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
@@ -48,14 +49,15 @@ describe('ipns records', () => {
 
     const resp = await verifiedFetch.fetch(`ipns://${peerId}`, {
       headers: {
-        accept: 'application/vnd.ipfs.ipns-record'
+        accept: MEDIA_TYPE_IPNS_RECORD
       }
     })
     expect(resp.status).to.equal(200)
-    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
+    expect(resp.headers.get('content-type')).to.equal(MEDIA_TYPE_IPNS_RECORD)
     expect(resp.headers.get('content-length')).to.equal(marshaledRecord.byteLength.toString())
     expect(resp.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
     expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${peerId}.bin"`)
+    expect(resp.headers.get('cache-control')).to.equal('public, max-age=300')
 
     const buf = new Uint8Array(await resp.arrayBuffer())
     expect(marshalIPNSRecord(record)).to.equalBytes(buf)
@@ -84,7 +86,7 @@ describe('ipns records', () => {
 
     const resp = await verifiedFetch.fetch(`http://${peerId}.ipns.local?filename=${filename}`, {
       headers: {
-        accept: 'application/vnd.ipfs.ipns-record'
+        accept: MEDIA_TYPE_IPNS_RECORD
       }
     })
     expect(resp.status).to.equal(200)
@@ -94,7 +96,7 @@ describe('ipns records', () => {
   it('should reject a request for non-IPNS url', async () => {
     const resp = await verifiedFetch.fetch('ipfs://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv', {
       headers: {
-        accept: 'application/vnd.ipfs.ipns-record'
+        accept: MEDIA_TYPE_IPNS_RECORD
       }
     })
     expect(resp.status).to.equal(406)
@@ -103,7 +105,7 @@ describe('ipns records', () => {
   it('should reject a request for a DNSLink url', async () => {
     const resp = await verifiedFetch.fetch('ipns://ipfs.io', {
       headers: {
-        accept: 'application/vnd.ipfs.ipns-record'
+        accept: MEDIA_TYPE_IPNS_RECORD
       }
     })
     expect(resp.status).to.equal(406)
@@ -112,7 +114,7 @@ describe('ipns records', () => {
   it('should reject a request for an IPNS url with a path component', async () => {
     const resp = await verifiedFetch.fetch('ipns://QmbxpRxwKXxnJQjnPqm1kzDJSJ8YgkLxH23mcZURwPHjGv/hello', {
       headers: {
-        accept: 'application/vnd.ipfs.ipns-record'
+        accept: MEDIA_TYPE_IPNS_RECORD
       }
     })
     expect(resp.status).to.equal(400)

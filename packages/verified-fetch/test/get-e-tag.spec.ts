@@ -82,6 +82,6 @@ describe('getEtagRequest', () => {
     }
 
     const response = await verifiedFetch.fetch(`ipfs://${res.cid}/someFile.foo`)
-    expect(response.headers.get('etag')).to.equal(`"${terminus.cid.toString()}.bin"`)
+    expect(response.headers.get('etag')).to.equal(`"${terminus.cid.toString()}"`)
   })
 })

@@ -3,6 +3,8 @@ import { ipnsResolver } from '@helia/ipns'
 import { AbortError } from '@libp2p/interface'
 import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { IpldPlugin } from './plugins/plugin-handle-ipld.js'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
@@ -15,10 +17,9 @@ import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag } from './utils/get-e-tag.js'
 import { getRangeHeader } from './utils/get-range-header.ts'
-import { uriEncodeIPFSPath } from './utils/ipfs-path-to-string.ts'
 import { parseURLString } from './utils/parse-url-string.ts'
 import { setCacheControlHeader } from './utils/response-headers.js'
-import { internalServerErrorResponse, notAcceptableResponse, notImplementedResponse } from './utils/responses.js'
+import { badRequestResponse, internalServerErrorResponse, notAcceptableResponse, notImplementedResponse } from './utils/responses.js'
 import { ServerTiming } from './utils/server-timing.js'
 import type { AcceptHeader, CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, ResolveURLResult, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions, VerifiedFetchPlugin, PluginContext, PluginOptions } from './index.js'
 import type { DNSLink } from '@helia/dnslink'
@@ -156,7 +157,14 @@ export class VerifiedFetch {
       return this.handleFinalResponse(range)
     }
 
-    const url = parseURLString(typeof resource === 'string' ? resource : `ipfs://${resource}`)
+    let url: URL
+
+    try {
+      url = parseURLString(typeof resource === 'string' ? resource : `ipfs://${resource}`)
+    } catch (err: any) {
+      return this.handleFinalResponse(badRequestResponse(resource.toString(), err))
+    }
+
     let parsedResult: ResolveURLResult
 
     // if just an IPNS record has been requested, don't try to load the block
@@ -183,7 +191,8 @@ export class VerifiedFetch {
       try {
         parsedResult = await this.urlResolver.resolve(url, serverTiming, {
           ...options,
-          isRawBlockRequest: isRawBlockRequest(headers)
+          isRawBlockRequest: isRawBlockRequest(headers),
+          onlyIfCached: headers.get('cache-control') === 'only-if-cached'
         })
       } catch (err: any) {
         options?.signal?.throwIfAborted()
@@ -397,7 +406,11 @@ export class VerifiedFetch {
     }
 
     if (context?.terminalElement.cid != null) {
-      response.headers.set('x-ipfs-path', uriEncodeIPFSPath(`/${context.url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${context?.url.hostname}${context?.url.pathname}`))
+      // headers can ony contain extended ASCII but IPFS paths can be unicode
+      const decodedPath = decodeURI(context?.url.pathname)
+      const path = uint8ArrayToString(uint8ArrayFromString(decodedPath), 'ascii')
+
+      response.headers.set('x-ipfs-path', `/${context.url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${context?.url.hostname}${path}`)
     }
 
     // set CORS headers. If hosting your own gateway with verified-fetch behind
@@ -407,22 +420,6 @@ export class VerifiedFetch {
     response.headers.set('access-control-allow-methods', 'GET, HEAD, OPTIONS')
     response.headers.set('access-control-allow-headers', 'Range, X-Requested-With')
     response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Stream-Output')
-
-    if (contentType.mediaType !== 'application/vnd.ipld.car') {
-      // if we are not doing streaming responses, set the Accept-Ranges header
-      // to bytes to enable range requests
-      response.headers.set('accept-ranges', 'bytes')
-    } else {
-      // set accept-ranges to none to disable range requests for streaming
-      // responses
-      response.headers.set('accept-ranges', 'none')
-    }
-
-    if (response.headers.get('content-type')?.includes('application/vnd.ipld.car') === true ||
-      response.headers.get('content-type')?.includes('application/vnd.ipld.raw') === true) {
-      // see https://specs.ipfs.tech/http-gateways/path-gateway/#x-content-type-options-response-header
-      response.headers.set('x-content-type-options', 'nosniff')
-    }
 
     if (context?.options?.method === 'HEAD') {
       // don't send the body for HEAD requests

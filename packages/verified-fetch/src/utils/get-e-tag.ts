@@ -40,7 +40,7 @@ interface GetETagArg {
  */
 export function getETag ({ cid, contentType, rangeStart, rangeEnd, contentPrefix }: GetETagArg): string {
   const prefix = contentType.immutable ? '' : 'W/'
-  let suffix = contentType.suffix
+  let suffix = contentType.etag
 
   if (rangeStart != null || rangeEnd != null) {
     suffix += `.${rangeStart ?? '0'}-${rangeEnd ?? 'N'}`

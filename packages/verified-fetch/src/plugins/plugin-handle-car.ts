@@ -132,7 +132,9 @@ export class CarPlugin extends BasePlugin {
         'content-type': `${MEDIA_TYPE_CAR}; version=1; order=${order}; dups=${duplicates ? 'y' : 'n'}`,
         'content-disposition': `attachment; ${
           getContentDispositionFilename(url.searchParams.get('filename') ?? getFilename(`/ipfs/${url.hostname}${url.pathname}`))
-        }`
+        }`,
+        'x-content-type-options': 'nosniff',
+        'accept-ranges': 'none'
       }
     })
   }

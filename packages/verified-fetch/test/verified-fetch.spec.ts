@@ -17,6 +17,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import Sinon from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { MEDIA_TYPE_DAG_PB } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
@@ -354,6 +355,20 @@ describe('@helia/verified-fetch', () => {
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.equal(MEDIA_TYPE_DAG_PB)
+    })
+
+    it('should return 412 if only-if-cached is requested and block is not present', async () => {
+      const cid = CID.parse('bafkreifucp2h2e7of7tmqrns5ykbv6a55bmn6twfjgsyw6lqxolgiw6i2i')
+
+      await expect(helia.blockstore.has(cid)).to.eventually.be.false()
+
+      const resp = await verifiedFetch.fetch(cid, {
+        headers: {
+          'cache-control': 'only-if-cached'
+        }
+      })
+
+      expect(resp.status).to.equal(412)
     })
 
     it('can round trip json via .json()', async () => {
@@ -767,11 +782,12 @@ describe('@helia/verified-fetch', () => {
     // tests for https://github.com/ipfs-shipyard/service-worker-gateway/issues/83 issue
     it('should decode encoded URI paths', async () => {
       const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
+      // spell-checker: disable-next-line
+      const path = "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp"
 
       const fs = unixfs(helia)
       const res = await last(fs.addAll([{
-        // spell-checker: disable-next-line
-        path: "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp",
+        path,
         content: finalRootFileContent
       }], {
         wrapWithDirectory: true
@@ -781,10 +797,17 @@ describe('@helia/verified-fetch', () => {
         throw new Error('Import failed')
       }
       const { cid } = res
-      const resp = await verifiedFetch.fetch(`ipfs://${cid}/${encodeURIComponent("Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp")}`)
+      const url = `ipfs://${cid}/${encodeURIComponent(path)}`
+      const resp = await verifiedFetch.fetch(url)
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
+
+      const decodedPath = decodeURI(new URL(url).pathname)
+      const asAscii = uint8ArrayToString(uint8ArrayFromString(decodedPath), 'ascii')
+
+      expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipfs/${cid}${asAscii}`)
+
       const data = await resp.arrayBuffer()
       expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
     })

@@ -22,7 +22,8 @@ export const CONTENT_TYPE_OCTET_STREAM: ContentType = {
   mediaType: MEDIA_TYPE_OCTET_STREAM,
   codecs: [rawCode, jsonCode, dagJsonCode, CODEC_CBOR, dagCborCode, dagPbCode],
   immutable: true,
-  suffix: '.bin',
+  extension: '.bin',
+  etag: '',
   disposition: 'attachment'
 }
 
@@ -30,7 +31,8 @@ export const CONTENT_TYPE_DAG_CBOR: ContentType = {
   mediaType: MEDIA_TYPE_DAG_CBOR,
   codecs: [dagCborCode, CODEC_CBOR, dagJsonCode, jsonCode, dagPbCode, rawCode],
   immutable: true,
-  suffix: '.cbor',
+  extension: '.cbor',
+  etag: '.dag-cbor',
   disposition: 'attachment'
 }
 
@@ -38,7 +40,8 @@ export const CONTENT_TYPE_CBOR: ContentType = {
   mediaType: MEDIA_TYPE_CBOR,
   codecs: [CODEC_CBOR, dagCborCode, dagJsonCode, jsonCode, dagPbCode, rawCode],
   immutable: true,
-  suffix: '.cbor',
+  extension: '.cbor',
+  etag: '.cbor',
   disposition: 'attachment'
 }
 
@@ -46,7 +49,8 @@ export const CONTENT_TYPE_DAG_JSON: ContentType = {
   mediaType: MEDIA_TYPE_DAG_JSON,
   codecs: [dagJsonCode, jsonCode, dagCborCode, CODEC_CBOR, dagPbCode, rawCode],
   immutable: true,
-  suffix: '.json',
+  extension: '.json',
+  etag: '.dag-json',
   disposition: 'inline'
 }
 
@@ -54,7 +58,8 @@ export const CONTENT_TYPE_JSON: ContentType = {
   mediaType: MEDIA_TYPE_JSON,
   codecs: [jsonCode, dagJsonCode, dagCborCode, CODEC_CBOR, dagPbCode, rawCode],
   immutable: true,
-  suffix: '.json',
+  extension: '.json',
+  etag: '.json',
   disposition: 'inline'
 }
 
@@ -62,7 +67,8 @@ export const CONTENT_TYPE_RAW: ContentType = {
   mediaType: MEDIA_TYPE_RAW,
   codecs: [rawCode, jsonCode, dagJsonCode, CODEC_CBOR, dagCborCode, dagPbCode],
   immutable: true,
-  suffix: '.raw',
+  extension: '.raw',
+  etag: '.raw',
   disposition: 'attachment'
 }
 
@@ -70,7 +76,8 @@ export const CONTENT_TYPE_IPNS: ContentType = {
   mediaType: MEDIA_TYPE_IPNS_RECORD,
   codecs: [],
   immutable: false,
-  suffix: '.bin',
+  extension: '.bin',
+  etag: '.bin',
   disposition: 'attachment'
 }
 
@@ -78,7 +85,8 @@ export const CONTENT_TYPE_CAR: ContentType = {
   mediaType: MEDIA_TYPE_CAR,
   codecs: [rawCode, jsonCode, dagJsonCode, CODEC_CBOR, dagCborCode, dagPbCode],
   immutable: false,
-  suffix: '.car',
+  extension: '.car',
+  etag: '.car',
   disposition: 'attachment'
 }
 
@@ -86,7 +94,8 @@ export const CONTENT_TYPE_TAR: ContentType = {
   mediaType: MEDIA_TYPE_TAR,
   codecs: [rawCode, dagPbCode],
   immutable: false,
-  suffix: '.x-tar',
+  extension: '.x-tar',
+  etag: '.x-tar',
   disposition: 'attachment'
 }
 

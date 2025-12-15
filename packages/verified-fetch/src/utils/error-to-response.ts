@@ -1,5 +1,5 @@
 import { CONTENT_TYPE_OCTET_STREAM, CONTENT_TYPE_RAW } from './content-types.ts'
-import { badGatewayResponse, gatewayTimeoutResponse, internalServerErrorResponse, notAcceptableResponse, notFoundResponse } from './responses.js'
+import { badGatewayResponse, gatewayTimeoutResponse, internalServerErrorResponse, notAcceptableResponse, notFoundResponse, preconditionFailedResponse } from './responses.js'
 import type { Resource } from '../index.js'
 
 export function errorToResponse (resource: Resource | string, err: any): Response {
@@ -34,6 +34,14 @@ export function errorToResponse (resource: Resource | string, err: any): Respons
   // path was not under DAG root
   if (['DoesNotExistError'].includes(err.name)) {
     return notFoundResponse(resource.toString())
+  }
+
+  if (['BlockNotFoundWhileOfflineError'].includes(err.name)) {
+    return preconditionFailedResponse(resource.toString())
+  }
+
+  if (['RecordNotFoundError'].includes('err.name')) {
+    return badGatewayResponse(resource.toString(), err)
   }
 
   // can't tell what went wrong, return a generic error

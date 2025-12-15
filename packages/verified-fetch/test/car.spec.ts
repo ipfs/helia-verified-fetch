@@ -46,6 +46,7 @@ describe('car files', () => {
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
     expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${cid.toString()}.car"`)
+    expect(resp.headers.get('x-content-type-options')).to.equal('nosniff')
 
     const buf = new Uint8Array(await resp.arrayBuffer())
     const reader = await CarReader.fromBytes(buf)
