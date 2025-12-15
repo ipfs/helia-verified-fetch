@@ -150,7 +150,7 @@
     "execa": "^9.5.3",
     "glob": "^13.0.0",
     "ipfsd-ctl": "^16.0.0",
-    "kubo": "^0.38.1",
+    "kubo": "^0.39.0",
     "kubo-rpc-client": "^6.0.1",
     "magic-bytes.js": "^1.12.1",
     "multiformats": "^13.3.6",
