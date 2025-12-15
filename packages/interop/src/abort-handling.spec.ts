@@ -24,16 +24,10 @@ describe('verified-fetch abort handling', () => {
   })
 
   it('should handle aborts properly', async function () {
-    this.timeout(2000)
-    const controller = new AbortController()
-    const timeout = setTimeout(() => {
-      controller.abort()
-    }, 70)
+    const signal = AbortSignal.timeout(1)
 
-    const fetchPromise = verifiedFetch('ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt', {
-      signal: controller.signal
-    })
-    await expect(fetchPromise).to.eventually.be.rejected.with.property('name', 'AbortError')
-    clearTimeout(timeout)
+    await expect(verifiedFetch('ipfs://QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt', {
+      signal
+    })).to.eventually.be.rejected.with.property('name', 'TimeoutError')
   })
 })

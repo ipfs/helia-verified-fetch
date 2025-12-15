@@ -728,29 +728,6 @@ Please see the original discussion on extensibility in [Issue #167](https://gith
 
 ***
 
-### Non-default plugins provided by this library
-
-#### `dir-index-html-plugin`
-
-This plugin is used to serve dag-pb/unixfs without an `index.html` child as HTML directory listing of the content requested.
-
-#### `dag-cbor-html-preview-plugin`
-
-This plugin is used to serve the requested dag-cbor object as HTML when the Accept header includes `text/html`.
-
-## Example - Using the plugins
-
-```typescript
-import { createVerifiedFetch } from '@helia/verified-fetch'
-import { dagCborHtmlPreviewPluginFactory, dirIndexHtmlPluginFactory } from '@helia/verified-fetch/plugins'
-import { createHelia } from 'helia'
-
-const helia = await createHelia()
-const fetch = await createVerifiedFetch(helia, {
-  plugins: [dagCborHtmlPreviewPluginFactory, dirIndexHtmlPluginFactory, ]
-})
-```
-
 ### Extending Verified‑Fetch with Custom Plugins
 
 To add your own plugin:
@@ -774,25 +751,20 @@ To add your own plugin:
      // Optionally, list any codec codes your plugin supports:
      codes = [] //
 
-     canHandle(context: PluginContext): boolean {
+     canHandle({ accept }: PluginContext): boolean {
        // Only handle requests if the Accept header matches your custom type
        // Or check context for pathDetails, custom values, etc...
-       return context.accept?.mimeType === 'application/vnd.my-custom-type'
+       return accept.some(header => header.contentType.mediaType === 'application/vnd.my-custom-type')
      }
 
-     async handle(context: PluginContext): Promise<Response | null> {
-       // Perform any partial processing here, e.g., modify the context:
-       context.customProcessed = true
-
-       // If you are ready to finalize the response:
+     async handle(context: PluginContext): Promise<Response> {
+       // Return the response:
        return new Response('Hello, world!', {
          status: 200,
          headers: {
            'Content-Type': 'text/plain'
          }
        })
-
-       // Or, if further processing is needed by another plugin, simply return null.
      }
    }
    export const myCustomPluginFactory: VerifiedFetchPluginFactory = (opts: PluginOptions) => new MyCustomPlugin(opts)

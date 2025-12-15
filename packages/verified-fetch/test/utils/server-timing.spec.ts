@@ -1,5 +1,8 @@
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
+import { CID } from 'multiformats/cid'
+import * as raw from 'multiformats/codecs/raw'
+import { identity } from 'multiformats/hashes/identity'
 import { createVerifiedFetch } from '../../src/index.js'
 import { ServerTiming } from '../../src/utils/server-timing.js'
 import { createHelia } from '../fixtures/create-offline-helia.js'
@@ -71,10 +74,12 @@ describe('serverTiming', () => {
   describe('serverTiming with verified-fetch', () => {
     let vFetch: VerifiedFetch
     let helia: Helia
+    let cid: CID
 
     beforeEach(async () => {
       helia = await createHelia()
       vFetch = await createVerifiedFetch(helia)
+      cid = CID.createV1(raw.code, identity.digest(new Uint8Array()))
     })
 
     afterEach(async () => {
@@ -82,12 +87,12 @@ describe('serverTiming', () => {
     })
 
     it('response does not include server timing by default', async () => {
-      const response = await vFetch('https://example.com')
+      const response = await vFetch(`https://example.com/ipfs/${cid}`)
       expect(response.headers.get('Server-Timing')).to.be.null()
     })
 
     it('can include one-off server timing headers in response', async () => {
-      const response = await vFetch('ipfs://bafyaaaa', {
+      const response = await vFetch(`ipfs://${cid}`, {
         withServerTiming: true
       })
       expect(response.headers.get('Server-Timing')).to.be.a('string')

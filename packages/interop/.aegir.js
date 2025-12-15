@@ -20,7 +20,6 @@ export default {
   test: {
     files: './dist/src/*.spec.js',
     before: async () => {
-
       const { createKuboNode } = await import('./dist/src/fixtures/create-kubo.js')
       const kuboNode = await createKuboNode(IPFS_PATH)
 

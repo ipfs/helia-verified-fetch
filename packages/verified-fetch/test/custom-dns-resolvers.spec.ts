@@ -32,6 +32,8 @@ describe('custom dns-resolvers', () => {
     await expect(response.text()).to.eventually.equal('hello world')
 
     expect(customDnsResolver.calledWith('_dnslink.some-non-cached-domain.com', {
+      isRawBlockRequest: false,
+      onlyIfCached: false,
       types: [
         RecordType.TXT
       ]
@@ -62,6 +64,8 @@ describe('custom dns-resolvers', () => {
 
     expect(customDnsResolver.callCount).to.equal(1)
     expect(customDnsResolver.getCall(0).args).to.deep.equal(['_dnslink.some-non-cached-domain2.com', {
+      isRawBlockRequest: false,
+      onlyIfCached: false,
       types: [
         RecordType.TXT
       ]

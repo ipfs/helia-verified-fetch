@@ -1,4 +1,5 @@
 import { dagCbor } from '@helia/dag-cbor'
+import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import { createHelia } from 'helia'
@@ -49,6 +50,26 @@ describe('dnslink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('http://dnslink--test-example-org.ipns.local')
+    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
+  })
+
+  it('should redirect an inline dnslink url to a directory', async () => {
+    const fs = unixfs(helia)
+    const cid = await fs.addDirectory()
+
+    const domain = 'dnslink-test.example.org'
+    dnsLink.resolve.withArgs(domain).resolves([{
+      namespace: 'ipfs',
+      cid,
+      path: '',
+      answer: stubInterface()
+    }])
+
+    const resp = await fetch('http://local:3000/ipns/dnslink-test.example.org')
+    expect(resp).to.be.ok()
+    expect(resp.status).to.equal(200)
+    expect(resp.redirected).to.be.true()
+    expect(resp.url).to.equal('http://local:3000/ipns/dnslink-test.example.org/')
     expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
   })
 })

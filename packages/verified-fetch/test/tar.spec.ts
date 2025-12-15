@@ -108,17 +108,6 @@ describe('tar files', () => {
     await expect(toBuffer(entries[4].body)).to.eventually.deep.equal(directory[0].content)
   })
 
-  it('should support fetching a TAR file by format', async () => {
-    const file = Uint8Array.from([0, 1, 2, 3, 4])
-    const fs = unixfs(helia)
-    const cid = await fs.addBytes(file)
-
-    const resp = await verifiedFetch.fetch(`ipfs://${cid}?format=tar`)
-    expect(resp.status).to.equal(200)
-    expect(resp.headers.get('content-type')).to.equal('application/x-tar')
-    expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${cid.toString()}.tar"`)
-  })
-
   it('should support specifying a filename for a TAR file', async () => {
     const file = Uint8Array.from([0, 1, 2, 3, 4])
     const fs = unixfs(helia)
@@ -134,12 +123,16 @@ describe('tar files', () => {
     expect(resp.headers.get('content-disposition')).to.equal('attachment; filename="foo.bar"')
   })
 
-  it('should support fetching a TAR file by format with a filename', async () => {
+  it('should support fetching a TAR file with a filename', async () => {
     const file = Uint8Array.from([0, 1, 2, 3, 4])
     const fs = unixfs(helia)
     const cid = await fs.addBytes(file)
 
-    const resp = await verifiedFetch.fetch(`ipfs://${cid}?format=tar&filename=foo.bar`)
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}?filename=foo.bar`, {
+      headers: {
+        accept: 'application/x-tar'
+      }
+    })
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('application/x-tar')
     expect(resp.headers.get('content-disposition')).to.equal('attachment; filename="foo.bar"')

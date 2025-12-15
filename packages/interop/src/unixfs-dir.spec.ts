@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-import { createVerifiedFetch } from '@helia/verified-fetch'
+import { createVerifiedFetch, MEDIA_TYPE_DAG_PB } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
 import { filetypemime } from 'magic-bytes.js'
 import type { VerifiedFetch } from '@helia/verified-fetch'
@@ -41,14 +41,15 @@ describe('@helia/verified-fetch - unixfs directory', () => {
 
   // This tests the content of https://explore.ipld.io/#/explore/QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm/1%20-%20Barrel%20-%20Part%201
   describe('XKCD Barrel Part 1', () => {
-    it('fails to load when passed the root', async () => {
+    it('should load the directory root', async () => {
       // The spec says we should generate HTML with directory listings, but we don't do that yet, so expect a failure
       const resp = await verifiedFetch('ipfs://QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR', {
         allowLocal: true,
         allowInsecure: true
       })
       expect(resp).to.be.ok()
-      expect(resp.status).to.equal(501) // TODO: we should do a directory listing instead
+      expect(resp.status).to.equal(200)
+      expect(resp.headers.get('content-type')).to.equal(MEDIA_TYPE_DAG_PB)
     })
 
     it('can return a string for deep-linked unixfs data', async () => {

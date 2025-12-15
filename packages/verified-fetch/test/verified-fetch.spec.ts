@@ -14,11 +14,11 @@ import * as ipldJson from 'multiformats/codecs/json'
 import * as raw from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
 import { sha256 } from 'multiformats/hashes/sha2'
-import pDefer from 'p-defer'
 import Sinon from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { dirIndexHtmlPluginFactory } from '../src/plugins/plugin-handle-dir-index-html.js'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { MEDIA_TYPE_DAG_PB } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
@@ -93,15 +93,16 @@ describe('@helia/verified-fetch', () => {
       expect(onProgressEvents[0]).to.include({ type: 'verified-fetch:request:start' }).and.to.have.property('detail').that.deep.equals({
         resource: `ipfs://${cid}`
       })
-      expect(onProgressEvents[1]).to.include({ type: 'verified-fetch:request:resolve' }).and.to.have.property('detail').that.deep.equals({
+      expect(onProgressEvents[1]).to.include({ type: 'blocks:get:blockstore:get' }).and.to.have.property('detail').that.deep.equals(cid)
+      expect(onProgressEvents[2]).to.include({ type: 'verified-fetch:request:resolve' }).and.to.have.property('detail').that.deep.equals({
         cid,
-        path: []
+        path: ''
       })
-      expect(onProgressEvents[2]).to.include({ type: 'blocks:get:blockstore:get' }).and.to.have.property('detail').that.deep.equals(cid)
-      expect(onProgressEvents[3]).to.include({ type: 'blocks:get:blockstore:get' }).and.to.have.property('detail').that.deep.equals(cid)
+
+      expect(onProgressEvents[3]).to.include({ type: 'unixfs:exporter:progress:raw' })
       expect(onProgressEvents[4]).to.include({ type: 'verified-fetch:request:end' }).and.to.have.property('detail').that.deep.equals({
         cid,
-        path: []
+        path: ''
       })
     })
 
@@ -352,36 +353,22 @@ describe('@helia/verified-fetch', () => {
 
       const resp = await verifiedFetch.fetch(res.cid)
       expect(resp).to.be.ok()
-      expect(resp.status).to.equal(501)
-      expect(resp.statusText).to.equal('Not Implemented')
+      expect(resp.status).to.equal(200)
+      expect(resp.headers.get('content-type')).to.equal(MEDIA_TYPE_DAG_PB)
     })
 
-    it('should return html directory listing if index file is not found and dir-index-html plugin is used', async () => {
-      const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
+    it('should return 412 if only-if-cached is requested and block is not present', async () => {
+      const cid = CID.parse('bafkreifucp2h2e7of7tmqrns5ykbv6a55bmn6twfjgsyw6lqxolgiw6i2i')
 
-      const verifiedFetch = new VerifiedFetch(helia, { plugins: [dirIndexHtmlPluginFactory] })
+      await expect(helia.blockstore.has(cid)).to.eventually.be.false()
 
-      const fs = unixfs(helia)
-      const res = await last(fs.addAll([{
-        path: 'not_an_index.html',
-        content: finalRootFileContent
-      }], {
-        wrapWithDirectory: true
-      }))
+      const resp = await verifiedFetch.fetch(cid, {
+        headers: {
+          'cache-control': 'only-if-cached'
+        }
+      })
 
-      if (res == null) {
-        throw new Error('Import failed')
-      }
-
-      const stat = await fs.stat(res.cid)
-      expect(stat.type).to.equal('directory')
-
-      const resp = await verifiedFetch.fetch(res.cid)
-      expect(resp).to.be.ok()
-      expect(resp.status).to.equal(200)
-      expect(resp.statusText).to.equal('OK')
-      expect(resp.headers.get('content-type')).to.equal('text/html')
-      expect(await resp.text()).to.include('not_an_index.html')
+      expect(resp.status).to.equal(412)
     })
 
     it('can round trip json via .json()', async () => {
@@ -556,7 +543,7 @@ describe('@helia/verified-fetch', () => {
       const cid = await c.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/cbor')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-cbor')
 
       const data = await ipldDagCbor.decode(await resp.arrayBuffer())
       expect(data).to.deep.equal(obj)
@@ -611,7 +598,7 @@ describe('@helia/verified-fetch', () => {
       const cid = await c.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/cbor')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-cbor')
 
       const data = ipldDagCbor.decode(await resp.arrayBuffer())
       expect(data).to.deep.equal(obj)
@@ -666,7 +653,7 @@ describe('@helia/verified-fetch', () => {
       const cid = await c.add(obj)
 
       const resp = await verifiedFetch.fetch(cid)
-      expect(resp.headers.get('content-type')).to.equal('application/cbor')
+      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-cbor')
 
       const output = ipldDagCbor.decode(await resp.arrayBuffer())
       await expect(c.add(output)).to.eventually.deep.equal(cid)
@@ -743,7 +730,7 @@ describe('@helia/verified-fetch', () => {
 
       const resp = await verifiedFetch.fetch(cid, {
         headers: {
-          accept: 'application/json'
+          accept: 'application/derp'
         }
       })
       expect(resp.status).to.equal(406)
@@ -795,11 +782,12 @@ describe('@helia/verified-fetch', () => {
     // tests for https://github.com/ipfs-shipyard/service-worker-gateway/issues/83 issue
     it('should decode encoded URI paths', async () => {
       const finalRootFileContent = new Uint8Array([0x01, 0x02, 0x03])
+      // spell-checker: disable-next-line
+      const path = "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp"
 
       const fs = unixfs(helia)
       const res = await last(fs.addAll([{
-        // spell-checker: disable-next-line
-        path: "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp",
+        path,
         content: finalRootFileContent
       }], {
         wrapWithDirectory: true
@@ -809,68 +797,18 @@ describe('@helia/verified-fetch', () => {
         throw new Error('Import failed')
       }
       const { cid } = res
-      const resp = await verifiedFetch.fetch(`ipfs://${cid}/${encodeURIComponent("Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp")}`)
+      const url = `ipfs://${cid}/${encodeURIComponent(path)}`
+      const resp = await verifiedFetch.fetch(url)
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
+
+      const decodedPath = decodeURI(new URL(url).pathname)
+      const asAscii = uint8ArrayToString(uint8ArrayFromString(decodedPath), 'ascii')
+
+      expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipfs/${cid}${asAscii}`)
+
       const data = await resp.arrayBuffer()
-      expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
-    })
-  })
-
-  describe('?format', () => {
-    let helia: Helia
-    let verifiedFetch: VerifiedFetch
-    let contentTypeParser: Sinon.SinonStub
-
-    beforeEach(async () => {
-      contentTypeParser = Sinon.stub()
-      helia = await createHelia()
-      verifiedFetch = new VerifiedFetch(helia, {
-        contentTypeParser
-      })
-    })
-
-    afterEach(async () => {
-      await stop(helia, verifiedFetch)
-    })
-
-    it('cbor?format=dag-json should be able to override curl/browser default accept header when query parameter is provided', async () => {
-      const obj = {
-        hello: 'world'
-      }
-      const c = dagCbor(helia)
-      const cid = await c.add(obj)
-
-      const resp = await verifiedFetch.fetch(`http://example.com/ipfs/${cid}?format=dag-json`, {
-        headers: {
-          // see https://github.com/ipfs/helia-verified-fetch/issues/35
-          accept: '*/*'
-        }
-      })
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
-      const data = ipldDagJson.decode(await resp.arrayBuffer())
-      expect(data).to.deep.equal(obj)
-    })
-
-    it('raw?format=dag-json should be able to override curl/browser default accept header when query parameter is provided', async () => {
-      const finalRootFileContent = uint8ArrayFromString(JSON.stringify({
-        hello: 'world'
-      }))
-      const cid = CID.createV1(raw.code, await sha256.digest(finalRootFileContent))
-      await helia.blockstore.put(cid, finalRootFileContent)
-
-      const resp = await verifiedFetch.fetch(`http://example.com/ipfs/${cid}?format=dag-json`, {
-        headers: {
-          // see https://github.com/ipfs/helia-verified-fetch/issues/35
-          accept: '*/*'
-        }
-      })
-      expect(resp).to.be.ok()
-      expect(resp.status).to.equal(200)
-      expect(resp.statusText).to.equal('OK')
-      const data = await resp.arrayBuffer()
-      expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
       expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
     })
   })
@@ -955,7 +893,7 @@ describe('@helia/verified-fetch', () => {
 
     it('should use sessions', async () => {
       const getSpy = Sinon.spy(helia.blockstore, 'get')
-      const deferred = pDefer()
+      const deferred = Promise.withResolvers<void>()
       const controller = new AbortController()
       const originalCreateSession = helia.blockstore.createSession.bind(helia.blockstore)
 
@@ -979,7 +917,7 @@ describe('@helia/verified-fetch', () => {
 
     it('should not use sessions when session option is false', async () => {
       const sessionSpy = Sinon.spy(helia.blockstore, 'createSession')
-      const deferred = pDefer()
+      const deferred = Promise.withResolvers<void>()
       const controller = new AbortController()
       const originalGet = helia.blockstore.get.bind(helia.blockstore)
 

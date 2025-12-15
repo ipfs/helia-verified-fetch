@@ -1,3 +1,5 @@
+import { AbortError } from '@libp2p/interface'
+
 /**
  * we need to emulate signal handling (blockBrokers/dnsResolvers/etc should
  * handle abort signals too) this is a simplified version of what libs we depend
@@ -12,7 +14,7 @@ export async function getAbortablePromise <T> (signal?: AbortSignal): Promise<T>
 
     signal?.addEventListener('abort', () => {
       clearTimeout(timeoutId)
-      reject(new Error('aborted'))
+      reject(signal.reason ?? new AbortError('aborted'))
     })
   })
 }

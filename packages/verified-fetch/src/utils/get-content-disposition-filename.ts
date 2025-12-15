@@ -1,8 +1,14 @@
+import { InvalidParametersError } from '@libp2p/interface'
+
 /**
  * Takes a filename URL param and returns a string for use in a
  * `Content-Disposition` header
  */
-export function getContentDispositionFilename (filename: string): string {
+export function getContentDispositionFilename (filename: string | null): string {
+  if (filename == null) {
+    throw new InvalidParametersError('Cannot get filename for Content-Disposition header - filename argument was missing')
+  }
+
   const asciiOnly = replaceNonAsciiCharacters(filename)
 
   if (asciiOnly === filename) {

@@ -1,60 +1,75 @@
 import { dnsLink } from '@helia/dnslink'
 import { ipnsResolver } from '@helia/ipns'
 import { AbortError } from '@libp2p/interface'
+import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
-import QuickLRU from 'quick-lru'
-import { ByteRangeContextPlugin } from './plugins/plugin-handle-byte-range-context.js'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
-import { CborPlugin } from './plugins/plugin-handle-cbor.js'
-import { DagCborPlugin } from './plugins/plugin-handle-dag-cbor.js'
-import { DagPbPlugin } from './plugins/plugin-handle-dag-pb.js'
-import { DagWalkPlugin } from './plugins/plugin-handle-dag-walk.js'
+import { IpldPlugin } from './plugins/plugin-handle-ipld.js'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
-import { JsonPlugin } from './plugins/plugin-handle-json.js'
-import { RawPlugin } from './plugins/plugin-handle-raw.js'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
+import { UnixFSPlugin } from './plugins/plugin-handle-unixfs.js'
 import { URLResolver } from './url-resolver.ts'
 import { contentTypeParser } from './utils/content-type-parser.js'
+import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, CONTENT_TYPE_CAR, MEDIA_TYPE_IPNS_RECORD, MEDIA_TYPE_RAW } from './utils/content-types.ts'
 import { errorToObject } from './utils/error-to-object.ts'
-import { getContentDispositionFilename } from './utils/get-content-disposition-filename.js'
+import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag } from './utils/get-e-tag.js'
-import { getResolvedAcceptHeader } from './utils/get-resolved-accept-header.js'
-import { getRedirectResponse } from './utils/handle-redirects.js'
-import { uriEncodeIPFSPath } from './utils/ipfs-path-to-string.ts'
-import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.js'
+import { getRangeHeader } from './utils/get-range-header.ts'
+import { parseURLString } from './utils/parse-url-string.ts'
 import { setCacheControlHeader } from './utils/response-headers.js'
-import { badRequestResponse, notAcceptableResponse, internalServerErrorResponse, notImplementedResponse } from './utils/responses.js'
-import { selectOutputType } from './utils/select-output-type.js'
+import { badRequestResponse, internalServerErrorResponse, notAcceptableResponse, notImplementedResponse } from './utils/responses.js'
 import { ServerTiming } from './utils/server-timing.js'
-import type { CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, ResolveURLResult, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions } from './index.js'
-import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from './plugins/types.js'
-import type { AcceptHeader } from './utils/select-output-type.js'
+import type { AcceptHeader, CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, ResolveURLResult, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions, VerifiedFetchPlugin, PluginContext, PluginOptions } from './index.js'
 import type { DNSLink } from '@helia/dnslink'
-import type { Helia, SessionBlockstore } from '@helia/interface'
+import type { Helia } from '@helia/interface'
 import type { IPNSResolver } from '@helia/ipns'
 import type { AbortOptions, Logger } from '@libp2p/interface'
-import type { Blockstore } from 'interface-blockstore'
-import type { CID } from 'multiformats/cid'
 
-const SESSION_CACHE_MAX_SIZE = 100
-const SESSION_CACHE_TTL_MS = 60 * 1000
-
+/**
+ * Retypes the `.signal` property of the options from
+ * `AbortSignal | null | undefined` to `AbortSignal | undefined`.
+ */
 function convertOptions (options?: VerifiedFetchOptions): (Omit<VerifiedFetchOptions, 'signal'> & AbortOptions) | undefined {
   if (options == null) {
-    return undefined
-  }
-
-  let signal: AbortSignal | undefined
-  if (options?.signal === null) {
-    signal = undefined
-  } else {
-    signal = options?.signal
+    return
   }
 
   return {
     ...options,
-    signal
+    signal: options?.signal == null ? undefined : options?.signal
   }
+}
+
+/**
+ * Returns true if the quest is only for an IPNS record
+ */
+function isIPNSRecordRequest (headers: Headers): boolean {
+  const acceptHeaders = headers.get('accept')?.split(',') ?? []
+
+  if (acceptHeaders.length !== 1) {
+    return false
+  }
+
+  const mediaType = acceptHeaders[0].split(';')[0]
+
+  return mediaType === MEDIA_TYPE_IPNS_RECORD
+}
+
+/**
+ * Returns true if the quest is only for an IPNS record
+ */
+function isRawBlockRequest (headers: Headers): boolean {
+  const acceptHeaders = headers.get('accept')?.split(',') ?? []
+
+  if (acceptHeaders.length !== 1) {
+    return false
+  }
+
+  const mediaType = acceptHeaders[0].split(';')[0]
+
+  return mediaType === MEDIA_TYPE_RAW
 }
 
 export class VerifiedFetch {
@@ -63,9 +78,9 @@ export class VerifiedFetch {
   private readonly dnsLink: DNSLink
   private readonly log: Logger
   private readonly contentTypeParser: ContentTypeParser | undefined
-  private readonly blockstoreSessions: QuickLRU<string, SessionBlockstore>
   private readonly withServerTiming: boolean
   private readonly plugins: VerifiedFetchPlugin[] = []
+  private readonly urlResolver: URLResolver
 
   constructor (helia: Helia, init: CreateVerifiedFetchOptions = {}) {
     this.helia = helia
@@ -73,35 +88,27 @@ export class VerifiedFetch {
     this.ipnsResolver = init.ipnsResolver ?? ipnsResolver(helia)
     this.dnsLink = init.dnsLink ?? dnsLink(helia)
     this.contentTypeParser = init.contentTypeParser ?? contentTypeParser
-    this.blockstoreSessions = new QuickLRU({
-      maxSize: init?.sessionCacheSize ?? SESSION_CACHE_MAX_SIZE,
-      maxAge: init?.sessionTTLms ?? SESSION_CACHE_TTL_MS,
-      onEviction: (key, store) => {
-        store.close()
-      }
-    })
     this.withServerTiming = init?.withServerTiming ?? false
+    this.urlResolver = new URLResolver({
+      ipnsResolver: this.ipnsResolver,
+      dnsLink: this.dnsLink,
+      helia: this.helia
+    }, init)
 
     const pluginOptions: PluginOptions = {
       ...init,
       logger: helia.logger.forComponent('verified-fetch'),
-      getBlockstore: (cid, resource, useSession, options) => this.getBlockstore(cid, resource, useSession, options),
       helia,
       contentTypeParser: this.contentTypeParser,
       ipnsResolver: this.ipnsResolver
     }
 
     const defaultPlugins = [
-      new DagWalkPlugin(pluginOptions),
-      new ByteRangeContextPlugin(pluginOptions),
-      new IpnsRecordPlugin(pluginOptions),
+      new UnixFSPlugin(pluginOptions),
+      new IpldPlugin(pluginOptions),
       new CarPlugin(pluginOptions),
-      new RawPlugin(pluginOptions),
       new TarPlugin(pluginOptions),
-      new JsonPlugin(pluginOptions),
-      new DagCborPlugin(pluginOptions),
-      new DagPbPlugin(pluginOptions),
-      new CborPlugin(pluginOptions)
+      new IpnsRecordPlugin(pluginOptions)
     ]
 
     const customPlugins = init.plugins?.map((pluginFactory) => pluginFactory(pluginOptions)) ?? []
@@ -113,117 +120,306 @@ export class VerifiedFetch {
 
       this.plugins = defaultPlugins.map(plugin => customPluginMap.get(plugin.id) ?? plugin)
 
-      // Add any remaining custom plugins that don't replace a default plugin
-      this.plugins.push(...customPlugins.filter(plugin => !defaultPluginMap.has(plugin.id)))
+      // add any custom plugins that don't replace default ones with a higher
+      // priority than anything built-in
+      this.plugins.unshift(...customPlugins.filter(plugin => !defaultPluginMap.has(plugin.id)))
     } else {
       this.plugins = defaultPlugins
     }
   }
 
-  private getBlockstore (root: CID, resource: string | CID, useSession: boolean = true, options: AbortOptions = {}): Blockstore {
-    const key = resourceToSessionCacheKey(resource)
-    if (!useSession) {
-      return this.helia.blockstore
-    }
-
-    let session = this.blockstoreSessions.get(key)
-
-    if (session == null) {
-      session = this.helia.blockstore.createSession(root, options)
-      this.blockstoreSessions.set(key, session)
-    }
-
-    return session
-  }
-
   /**
-   * The last place a Response touches in verified-fetch before being returned to the user. This is where we add the
-   * Server-Timing header to the response if it has been collected. It should be used for any final processing of the
-   * response before it is returned to the user.
+   * Load a resource from the IPFS network and ensure the retrieved data is the
+   * data that was expected to be loaded.
+   *
+   * Like [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch)
+   * but verified.
    */
-  private handleFinalResponse (response: Response, context?: Partial<PluginContext>): Response {
-    if ((this.withServerTiming || context?.withServerTiming === true) && context?.serverTiming != null) {
-      const timingHeader = context?.serverTiming.getHeader()
+  async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
+    this.log('fetch %s %s', opts?.method ?? 'GET', resource)
 
-      if (timingHeader !== '') {
-        response.headers.set('Server-Timing', timingHeader)
+    if (opts?.method === 'OPTIONS') {
+      return this.handleFinalResponse(new Response(null, {
+        status: 200
+      }))
+    }
+
+    const options = convertOptions(opts)
+    const headers = new Headers(options?.headers)
+    const serverTiming = new ServerTiming()
+
+    options?.onProgress?.(new CustomProgressEvent<ResourceDetail>('verified-fetch:request:start', { resource }))
+
+    const range = getRangeHeader(resource.toString(), headers)
+
+    if (range instanceof Response) {
+      // invalid range request
+      return this.handleFinalResponse(range)
+    }
+
+    let url: URL
+
+    try {
+      url = parseURLString(typeof resource === 'string' ? resource : `ipfs://${resource}`)
+    } catch (err: any) {
+      return this.handleFinalResponse(badRequestResponse(resource.toString(), err))
+    }
+
+    let parsedResult: ResolveURLResult
+
+    // if just an IPNS record has been requested, don't try to load the block
+    // the record points to or do any recursive IPNS resolving
+    if (isIPNSRecordRequest(headers)) {
+      if (url.protocol !== 'ipns:') {
+        return notAcceptableResponse(url, [])
+      }
+
+      // @ts-expect-error ipnsRecordPlugin may not be of type IpnsRecordPlugin
+      const ipnsRecordPlugin: IpnsRecordPlugin | undefined = this.plugins.find(plugin => plugin.id === 'ipns-record-plugin')
+
+      if (ipnsRecordPlugin == null) {
+        return notAcceptableResponse(url, [])
+      }
+
+      return this.handleFinalResponse(await ipnsRecordPlugin.handle({
+        range,
+        url,
+        resource: resource.toString(),
+        options
+      }))
+    } else {
+      try {
+        parsedResult = await this.urlResolver.resolve(url, serverTiming, {
+          ...options,
+          isRawBlockRequest: isRawBlockRequest(headers),
+          onlyIfCached: headers.get('cache-control') === 'only-if-cached'
+        })
+      } catch (err: any) {
+        options?.signal?.throwIfAborted()
+
+        this.log.error('error parsing resource %s - %e', resource, err)
+        return this.handleFinalResponse(errorToResponse(resource, err))
       }
     }
 
-    // if there are multiple ranges, we should omit the content-length header. see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Transfer-Encoding
-    if (response.headers.get('Transfer-Encoding') !== 'chunked') {
-      if (context?.byteRangeContext != null) {
-        const contentLength = context.byteRangeContext.getLength()
-        if (contentLength != null) {
-          this.log.trace('Setting Content-Length from byteRangeContext: %d', contentLength)
-          response.headers.set('Content-Length', contentLength.toString())
+    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', {
+      cid: parsedResult.terminalElement.cid,
+      path: parsedResult.url.pathname
+    }))
+
+    const accept = this.getAcceptHeader(parsedResult.url, headers.get('accept'), parsedResult.terminalElement.cid)
+
+    if (accept instanceof Response) {
+      this.log('allowed media types for requested CID did not contain anything the client can understand')
+
+      // invalid accept header
+      return this.handleFinalResponse(accept)
+    }
+
+    const context: PluginContext = {
+      ...parsedResult,
+      resource: resource.toString(),
+      accept,
+      range,
+      options,
+      onProgress: options?.onProgress,
+      serverTiming,
+      headers
+    }
+
+    this.log.trace('finding handler for cid code "0x%s" and response content types %s', parsedResult.terminalElement.cid.code.toString(16), accept.map(header => header.contentType.mediaType).join(', '))
+
+    const response = await this.runPluginPipeline(context)
+
+    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', {
+      cid: parsedResult.terminalElement.cid,
+      path: parsedResult.url.pathname
+    }))
+
+    if (response == null) {
+      this.log.error('no plugin could handle request for %s', resource)
+    }
+
+    return this.handleFinalResponse(response, Boolean(options?.withServerTiming) || Boolean(this.withServerTiming), context)
+  }
+
+  /**
+   * Returns a prioritized list of acceptable content types for the response
+   * based on the CID and a passed `Accept` header
+   */
+  private getAcceptHeader (url: URL, accept?: string | null, cid?: CID): AcceptHeader[] | Response {
+    if (accept == null || accept === '') {
+      // if the user has specified CAR options but no Accept header, default to
+      // the car content type with the passed options
+      try {
+        const dagScope = url.searchParams.get('dag-scope')
+        const entityBytes = url.searchParams.get('entity-bytes')
+        const dups = url.searchParams.get('car-dups')
+        const order = url.searchParams.get('car-order')
+        const version = url.searchParams.get('car-version')
+
+        if (dagScope != null ||
+          entityBytes != null ||
+          dups != null ||
+          entityBytes != null ||
+          order != null
+        ) {
+          const options: Record<string, string> = {}
+
+          if (dups != null) {
+            options.dups = dups
+          }
+
+          if (order != null) {
+            options.order = order
+          }
+
+          if (version != null) {
+            options.version = version
+          }
+
+          return [{
+            contentType: CONTENT_TYPE_CAR,
+            options
+          }]
+        }
+      } catch {}
+
+      // yolo content-type
+      accept = '*/*'
+      // return []
+    }
+
+    // allow user to choose specific output type
+    const acceptable: AcceptHeader[] = []
+
+    const requestedMimeTypes = accept
+      .split(',')
+      .map(s => {
+        const parts = s.trim().split(';')
+
+        const options: Record<string, string> = {
+          q: '1'
+        }
+
+        for (let i = 1; i < parts.length; i++) {
+          const [key, value] = parts[i].split('=').map(s => s.trim())
+
+          options[key] = value
+        }
+
+        return {
+          mediaType: `${parts[0]}`.trim(),
+          options
+        }
+      })
+      .sort((a, b) => {
+        if (a.options.q === b.options.q) {
+          return 0
+        }
+
+        if (a.options.q > b.options.q) {
+          return -1
+        }
+
+        return 1
+      })
+
+    const supportedContentTypes = getSupportedContentTypes(url.protocol, cid)
+
+    for (const headerFormat of requestedMimeTypes) {
+      const [headerFormatType, headerFormatSubType] = headerFormat.mediaType.split('/')
+
+      for (const contentType of supportedContentTypes) {
+        const [contentTypeType, contentTypeSubType] = contentType.mediaType.split('/')
+
+        if (headerFormat.mediaType.includes(contentType.mediaType)) {
+          acceptable.push({
+            contentType,
+            options: headerFormat.options
+          })
+        }
+
+        if (headerFormat.mediaType === '*/*') {
+          acceptable.push({
+            contentType,
+            options: headerFormat.options
+          })
+        }
+
+        if (headerFormat.mediaType.startsWith('*/') && contentTypeSubType === headerFormatSubType) {
+          acceptable.push({
+            contentType,
+            options: headerFormat.options
+          })
+        }
+
+        if (headerFormat.mediaType.endsWith('/*') && contentTypeType === headerFormatType) {
+          acceptable.push({
+            contentType,
+            options: headerFormat.options
+          })
         }
       }
     }
 
-    // set Content-Disposition header
-    let contentDisposition: string | undefined
+    if (acceptable.length === 0) {
+      this.log('requested %o', requestedMimeTypes.map(({ mediaType }) => mediaType))
+      this.log('supported %o', supportedContentTypes.map(({ mediaType }) => mediaType))
 
-    // force download if requested
-    if (context?.query?.download === true) {
-      this.log.trace('download requested')
-      contentDisposition = 'attachment'
+      return notAcceptableResponse(url, supportedContentTypes)
     }
 
-    // override filename if requested
-    if (context?.query?.filename != null) {
-      this.log.trace('specific filename requested')
+    return acceptable
+  }
 
-      if (contentDisposition == null) {
-        contentDisposition = 'inline'
+  /**
+   * The last place a Response touches in verified-fetch before being returned
+   * to the user. This is where we add the Server-Timing header to the response
+   * if it has been collected. It should be used for any final processing of the
+   * response before it is returned to the user.
+   */
+  private handleFinalResponse (response: Response, withServerTiming?: boolean, context?: PluginContext): Response {
+    const contentType = getContentType(response.headers.get('content-type')) ?? CONTENT_TYPE_OCTET_STREAM
+
+    if (withServerTiming === true && context?.serverTiming != null) {
+      const timingHeader = context?.serverTiming.getHeader()
+
+      if (timingHeader !== '') {
+        response.headers.set('server-timing', timingHeader)
       }
-
-      contentDisposition = `${contentDisposition}; ${getContentDispositionFilename(context.query.filename)}`
     }
 
-    if (contentDisposition != null) {
-      this.log.trace('content disposition %s', contentDisposition)
-      response.headers.set('Content-Disposition', contentDisposition)
-    }
-
-    if (context?.cid != null && response.headers.get('etag') == null) {
+    if (context?.terminalElement.cid != null && response.headers.get('etag') == null) {
       response.headers.set('etag', getETag({
-        cid: context.pathDetails?.terminalElement.cid ?? context.cid,
-        reqFormat: context.reqFormat,
-        weak: false
+        cid: context.terminalElement.cid,
+        contentType
       }))
     }
 
-    if (context?.protocol != null && context.ttl != null) {
+    if (context?.url?.protocol != null && context.ttl != null) {
       setCacheControlHeader({
         response,
         ttl: context.ttl,
-        protocol: context.protocol
+        protocol: context.url.protocol
       })
     }
 
-    if (context?.ipfsPath != null) {
-      response.headers.set('X-Ipfs-Path', uriEncodeIPFSPath(context.ipfsPath))
+    if (context?.terminalElement.cid != null) {
+      // headers can ony contain extended ASCII but IPFS paths can be unicode
+      const decodedPath = decodeURI(context?.url.pathname)
+      const path = uint8ArrayToString(uint8ArrayFromString(decodedPath), 'ascii')
+
+      response.headers.set('x-ipfs-path', `/${context.url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${context?.url.hostname}${path}`)
     }
 
-    // set CORS headers. If hosting your own gateway with verified-fetch behind the scenes, you can alter these before you send the response to the client.
-    response.headers.set('Access-Control-Allow-Origin', '*')
-    response.headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Range, X-Requested-With')
-    response.headers.set('Access-Control-Expose-Headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Stream-Output')
-
-    if (context?.reqFormat !== 'car') {
-      // if we are not doing streaming responses, set the Accept-Ranges header to bytes to enable range requests
-      response.headers.set('Accept-Ranges', 'bytes')
-    } else {
-      // set accept-ranges to none to disable range requests for streaming responses
-      response.headers.set('Accept-Ranges', 'none')
-    }
-
-    if (response.headers.get('Content-Type')?.includes('application/vnd.ipld.car') === true || response.headers.get('Content-Type')?.includes('application/vnd.ipld.raw') === true) {
-      // see https://specs.ipfs.tech/http-gateways/path-gateway/#x-content-type-options-response-header
-      response.headers.set('X-Content-Type-Options', 'nosniff')
-    }
+    // set CORS headers. If hosting your own gateway with verified-fetch behind
+    // the scenes, you can alter these before you send the response to the
+    // client.
+    response.headers.set('access-control-allow-origin', '*')
+    response.headers.set('access-control-allow-methods', 'GET, HEAD, OPTIONS')
+    response.headers.set('access-control-allow-headers', 'Range, X-Requested-With')
+    response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Stream-Output')
 
     if (context?.options?.method === 'HEAD') {
       // don't send the body for HEAD requests
@@ -241,86 +437,59 @@ export class VerifiedFetch {
     return response
   }
 
-  /**
-   * Runs plugins in a loop. After each plugin that returns `null` (partial/no final),
-   * we re-check `canHandle()` for all plugins in the next iteration if the context changed.
-   */
-  private async runPluginPipeline (context: PluginContext, maxPasses: number = 3): Promise<Response> {
+  private async runPluginPipeline (context: PluginContext): Promise<Response> {
     let finalResponse: Response | undefined
-    let passCount = 0
     const pluginsUsed = new Set<string>()
 
-    let prevModificationId = context.modified
+    this.log.trace('checking which plugins can handle %c%s with accept %s', context.terminalElement.cid, context.url.pathname, context.accept.map(contentType => contentType.contentType.mediaType).join(', '))
 
-    while (passCount < maxPasses) {
-      this.log(`starting pipeline pass #${passCount + 1}`)
-      passCount++
+    const plugins = this.plugins.filter(p => !pluginsUsed.has(p.id)).filter(p => p.canHandle(context))
 
-      this.log.trace('checking which plugins can handle %c%s with accept %o', context.cid, context.path.length > 0 ? `/${context.path.join('/')}` : '', context.accept)
+    if (plugins.length === 0) {
+      this.log.trace('no plugins found that can handle request; exiting pipeline')
+      return notImplementedResponse(context.resource)
+    }
 
-      // gather plugins that say they can handle the *current* context, but haven't been used yet
-      const readyPlugins = this.plugins.filter(p => !pluginsUsed.has(p.id)).filter(p => p.canHandle(context))
+    this.log.trace('plugins ready to handle request: %s', plugins.map(p => p.id).join(', '))
 
-      if (readyPlugins.length === 0) {
-        this.log.trace('no plugins can handle the current context, checking by CID code')
-        const plugins = this.plugins.filter(p => p.codes.includes(context.cid.code))
+    // track if any plugin changed the context or returned a response
+    const contextChanged = false
+    let pluginHandled = false
 
-        if (plugins.length > 0) {
-          readyPlugins.push(...plugins)
-        } else {
-          this.log.trace('no plugins found that can handle request by CID code; exiting pipeline')
+    for (const plugin of plugins) {
+      try {
+        this.log('invoking plugin: %s', plugin.id)
+        pluginsUsed.add(plugin.id)
+
+        const maybeResponse = await plugin.handle(context)
+
+        this.log('plugin response %s %o', plugin.id, maybeResponse)
+
+        if (maybeResponse != null) {
+          // if a plugin returns a final Response, short-circuit
+          finalResponse = maybeResponse
+          pluginHandled = true
           break
         }
+      } catch (err: any) {
+        if (context.options?.signal?.aborted) {
+          throw new AbortError(context.options?.signal?.reason)
+        }
+
+        this.log.error('error in plugin %s - %e', plugin.id, err)
+
+        return internalServerErrorResponse(context.resource, JSON.stringify({
+          error: errorToObject(err)
+        }), {
+          headers: {
+            'content-type': 'application/json'
+          }
+        })
       }
 
-      this.log.trace('plugins ready to handle request: %s', readyPlugins.map(p => p.id).join(', '))
-
-      // track if any plugin changed the context or returned a response
-      let contextChanged = false
-      let pluginHandled = false
-
-      for (const plugin of readyPlugins) {
-        try {
-          this.log('invoking plugin: %s', plugin.id)
-          pluginsUsed.add(plugin.id)
-
-          const maybeResponse = await plugin.handle(context)
-
-          this.log('plugin response %s %o', plugin.id, maybeResponse)
-
-          if (maybeResponse != null) {
-            // if a plugin returns a final Response, short-circuit
-            finalResponse = maybeResponse
-            pluginHandled = true
-            break
-          }
-        } catch (err: any) {
-          if (context.options?.signal?.aborted) {
-            throw new AbortError(context.options?.signal?.reason)
-          }
-
-          this.log.error('error in plugin %s - %e', plugin.id, err)
-
-          return internalServerErrorResponse(context.resource, JSON.stringify({
-            error: errorToObject(err)
-          }), {
-            headers: {
-              'content-type': 'application/json'
-            }
-          })
-        } finally {
-          // on each plugin call, check for changes in the context
-          const newModificationId = context.modified
-          contextChanged = newModificationId !== prevModificationId
-          if (contextChanged) {
-            prevModificationId = newModificationId
-          }
-        }
-
-        if (finalResponse != null) {
-          this.log.trace('plugin %s produced final response', plugin.id)
-          break
-        }
+      if (finalResponse != null) {
+        this.log.trace('plugin %s produced final response', plugin.id)
+        break
       }
 
       if (pluginHandled && finalResponse != null) {
@@ -340,92 +509,6 @@ export class VerifiedFetch {
         'content-type': 'application/json'
       }
     })
-  }
-
-  /**
-   * We're starting to get to the point where we need a queue or pipeline of
-   * operations to perform and a single place to handle errors.
-   *
-   * TODO: move operations called by fetch to a queue of operations where we can
-   * always exit early (and cleanly) if a given signal is aborted
-   */
-  async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
-    this.log('fetch %s', resource)
-
-    if (opts?.method === 'OPTIONS') {
-      return this.handleFinalResponse(new Response(null, { status: 200 }))
-    }
-
-    const options = convertOptions(opts)
-    const serverTiming = new ServerTiming()
-
-    const urlResolver = new URLResolver({
-      ipnsResolver: this.ipnsResolver,
-      dnsLink: this.dnsLink,
-      timing: serverTiming
-    })
-
-    options?.onProgress?.(new CustomProgressEvent<ResourceDetail>('verified-fetch:request:start', { resource }))
-
-    let parsedResult: ResolveURLResult
-
-    try {
-      parsedResult = await urlResolver.resolve(resource, options)
-    } catch (err: any) {
-      if (options?.signal?.aborted) {
-        throw new AbortError(options?.signal?.reason)
-      }
-      this.log.error('error parsing resource %s', resource, err)
-
-      return this.handleFinalResponse(badRequestResponse(resource.toString(), err))
-    }
-
-    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', { cid: parsedResult.cid, path: parsedResult.path }))
-
-    const acceptHeader = getResolvedAcceptHeader({ query: parsedResult.query, headers: options?.headers, logger: this.helia.logger })
-
-    const accept: AcceptHeader | undefined = selectOutputType(parsedResult.cid, acceptHeader)
-    this.log('accept %o', accept)
-
-    if (acceptHeader != null && accept == null) {
-      this.log.error('could not fulfil request based on accept header')
-      return this.handleFinalResponse(notAcceptableResponse(resource.toString()))
-    }
-
-    const responseContentType: string = accept?.mimeType.split(';')[0] ?? 'application/octet-stream'
-
-    const redirectResponse = await getRedirectResponse({ resource, options, logger: this.helia.logger, cid: parsedResult.cid })
-    if (redirectResponse != null) {
-      return this.handleFinalResponse(redirectResponse)
-    }
-
-    const context: PluginContext = {
-      ...parsedResult,
-      resource: resource.toString(),
-      accept,
-      options,
-      onProgress: options?.onProgress,
-      modified: 0,
-      plugins: this.plugins.map(p => p.id),
-      query: parsedResult.query ?? {},
-      withServerTiming: Boolean(options?.withServerTiming) || Boolean(this.withServerTiming),
-      serverTiming
-    }
-
-    this.log.trace('finding handler for cid code "%s" and response content type "%s"', parsedResult.cid.code, responseContentType)
-
-    const response = await this.runPluginPipeline(context)
-
-    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', {
-      cid: parsedResult.cid,
-      path: parsedResult.path
-    }))
-
-    if (response == null) {
-      this.log.error('no plugin could handle request for %s', resource)
-    }
-
-    return this.handleFinalResponse(response, context)
   }
 
   /**

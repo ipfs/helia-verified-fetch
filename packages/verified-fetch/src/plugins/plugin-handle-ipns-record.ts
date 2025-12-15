@@ -1,8 +1,10 @@
+import { peerIdFromString } from '@libp2p/peer-id'
 import { marshalIPNSRecord } from 'ipns'
-import { getPeerIdFromString } from '../utils/get-peer-id-from-string.js'
-import { badRequestResponse, okRangeResponse } from '../utils/responses.js'
+import { CONTENT_TYPE_IPNS, MEDIA_TYPE_IPNS_RECORD } from '../utils/content-types.ts'
+import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
+import { badRequestResponse, okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from './types.js'
+import type { PluginContext } from '../index.js'
 import type { PeerId } from '@libp2p/interface'
 
 /**
@@ -13,60 +15,48 @@ export class IpnsRecordPlugin extends BasePlugin {
   readonly id = 'ipns-record-plugin'
   readonly codes = []
 
-  canHandle ({ accept, query, byteRangeContext }: PluginContext): boolean {
-    if (byteRangeContext == null) {
-      return false
-    }
-
-    return accept?.mimeType === 'application/vnd.ipfs.ipns-record' || query.format === 'ipns-record'
+  canHandle ({ accept }: PluginContext): boolean {
+    return accept.some(header => header.contentType.mediaType === MEDIA_TYPE_IPNS_RECORD)
   }
 
-  async handle (context: PluginContext & Required<Pick<PluginContext, 'byteRangeContext'>>): Promise<Response> {
-    const { resource, path, query, options } = context
+  async handle (context: Pick<PluginContext, 'resource' | 'url' | 'options' | 'range'>): Promise<Response> {
+    const { resource, url, options, range } = context
     const { ipnsResolver } = this.pluginOptions
-    context.reqFormat = 'ipns-record'
 
-    if (path.length > 0 || !(resource.startsWith('ipns://') || resource.includes('.ipns.') || resource.includes('/ipns/'))) {
-      this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, path)
+    if (url.pathname !== '' || url.protocol !== 'ipns:') {
+      this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, url.pathname)
       return badRequestResponse(resource, new Error('Invalid IPNS name'))
+    }
+
+    if (range != null) {
+      return badRequestResponse(resource, new Error('Range requests are not supported for IPNS records'))
     }
 
     let peerId: PeerId
 
     try {
-      let peerIdString: string
-
-      if (resource.startsWith('ipns://')) {
-        peerIdString = resource.replace('ipns://', '')
-      } else if (resource.includes('/ipns/')) {
-        peerIdString = resource.split('/ipns/')[1].split('/')[0].split('?')[0]
-      } else {
-        peerIdString = resource.split('.ipns.')[0].split('://')[1]
-      }
-
-      this.log.trace('trying to parse peer id from "%s"', peerIdString)
-      peerId = getPeerIdFromString(peerIdString)
+      this.log.trace('trying to parse peer id from "%s"', url.hostname)
+      peerId = peerIdFromString(url.hostname)
     } catch (err: any) {
       this.log.error('could not parse peer id from IPNS url %s', resource, err)
 
       return badRequestResponse(resource, err)
     }
 
-    // force download in handleFinalResponse
-    query.filename = query.filename ?? `${peerId}.bin`
-    query.download = true
-
-    // @ts-expect-error progress handler types are incompatible
     const result = await ipnsResolver.resolve(peerId, options)
-    const buf = marshalIPNSRecord(result.record)
+    const block = marshalIPNSRecord(result.record)
 
-    context.byteRangeContext.setBody(buf)
-
-    const response = okRangeResponse(resource, context.byteRangeContext.getBody('application/vnd.ipfs.ipns-record'), { byteRangeContext: context.byteRangeContext, log: this.log })
-    response.headers.set('content-type', context.byteRangeContext.getContentType() ?? 'application/vnd.ipfs.ipns-record')
-    response.headers.set('content-length', buf.byteLength.toString())
-    response.headers.set('x-ipfs-roots', result.cid.toV1().toString())
-
-    return response
+    return okResponse(resource, block, {
+      headers: {
+        'content-length': `${block.byteLength}`,
+        'content-type': CONTENT_TYPE_IPNS.mediaType,
+        'content-disposition': `attachment; ${
+          getContentDispositionFilename(url.searchParams.get('filename') ?? `${peerId}${CONTENT_TYPE_IPNS.extension}`)
+        }`,
+        'x-ipfs-roots': result.cid.toV1().toString(),
+        'cache-control': `public, max-age=${Number((result.record.ttl ?? 0n) / BigInt(1e9))}`,
+        'accept-ranges': 'none'
+      }
+    })
   }
 }

@@ -2,10 +2,11 @@
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
+import type { VerifiedFetch } from '@helia/verified-fetch'
 
 describe('@helia/verified-fetch - json', () => {
   describe('unixfs - multi-block', () => {
-    let verifiedFetch: Awaited<ReturnType<typeof createVerifiedFetch>>
+    let verifiedFetch: VerifiedFetch
 
     before(async () => {
       // As of 2024-01-18, https://cloudflare-ipfs.com/ipns/tokens.uniswap.org resolves to:

@@ -150,11 +150,9 @@ describe('cbor', () => {
   it('can download CBOR blocks as DAG-CBOR', async () => {
     const obj = {
       hello: 'world',
-      link: {
-        '/': 'bafkqaddimvwgy3zao5xxe3debi'
-      }
+      link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
     }
-    const buf = cbor.encode(obj)
+    const buf = dagCbor.encode(obj)
     const digest = await sha256.digest(buf)
     const cid = CID.createV1(CODEC_CBOR, digest)
 
