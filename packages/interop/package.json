@@ -145,7 +145,7 @@
   },
   "dependencies": {
     "@helia/delegated-routing-v1-http-api-server": "^5.0.0",
-    "@helia/verified-fetch": "^4.0.0",
+    "@helia/verified-fetch": "^5.0.0",
     "aegir": "^47.0.24",
     "execa": "^9.5.3",
     "glob": "^13.0.0",
