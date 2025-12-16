@@ -23,8 +23,8 @@ export class IpnsRecordPlugin extends BasePlugin {
     const { resource, url, options, range } = context
     const { ipnsResolver } = this.pluginOptions
 
-    if (url.pathname !== '' || url.protocol !== 'ipns:') {
-      this.log.error('invalid request for IPNS name "%s" and path "%s"', resource, url.pathname)
+    if ((url.pathname !== '' && url.pathname !== '/') || url.protocol !== 'ipns:') {
+      this.log.error('invalid request for IPNS name "%s" and path "%s"', url, url.pathname)
       return badRequestResponse(resource, new Error('Invalid IPNS name'))
     }
 
