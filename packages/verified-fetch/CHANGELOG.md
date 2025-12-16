@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v5.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.0...@helia/verified-fetch-5.0.1) (2025-12-16)
+
+### Bug Fixes
+
+* check for slash in pathname ([#301](https://github.com/ipfs/helia-verified-fetch/issues/301)) ([70cb95f](https://github.com/ipfs/helia-verified-fetch/commit/70cb95f14baf00a9f6ba494a8e11a5d6b86d3dde))
+
 ## [@helia/verified-fetch-v5.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-4.1.1...@helia/verified-fetch-5.0.0) (2025-12-15)
 
 ### ⚠ BREAKING CHANGES
