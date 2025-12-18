@@ -24,25 +24,27 @@ describe('getETag', () => {
   })
 
   it('should return ETag with CID and range suffix', () => {
-    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_CAR, rangeStart: 10, rangeEnd: 20 })).to.equal(`W/"${cidString}.car.10-20"`)
+    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_CAR, ranges: [{ start: 10, end: 20 }] })).to.equal(`W/"${cidString}.car.10-20"`)
   })
 
   it('should return ETag with CID, format and range suffix', () => {
-    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_RAW, rangeStart: 10, rangeEnd: 20 })).to.equal(`"${cidString}.raw.10-20"`)
+    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_RAW, ranges: [{ start: 10, end: 20 }] })).to.equal(`"${cidString}.raw.10-20"`)
   })
 
   it('should handle undefined rangeStart and rangeEnd', () => {
-    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_RAW, rangeStart: undefined, rangeEnd: undefined })).to.equal(`"${cidString}.raw"`)
-    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_RAW, rangeStart: 55, rangeEnd: undefined })).to.equal(`"${cidString}.raw.55-N"`)
-    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_RAW, rangeStart: undefined, rangeEnd: 77 })).to.equal(`"${cidString}.raw.0-77"`)
+    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_RAW, ranges: [{ }] })).to.equal(`"${cidString}.raw"`)
+    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_RAW, ranges: [{ start: 55 }] })).to.equal(`"${cidString}.raw.55-N"`)
+    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_RAW, ranges: [{ end: 77 }] })).to.equal(`"${cidString}.raw.0-77"`)
+  })
+
+  it('should return ETag with CID, format and multiple range', () => {
+    expect(getETag({ cid: testCID, contentType: CONTENT_TYPE_RAW, ranges: [{ start: 10, end: 20 }, { start: 25, end: 30 }] })).to.equal(`"${cidString}.raw.10-20,25-30"`)
   })
 
   it('should handle tar appropriately', () => {
     expect(getETag({
       cid: CID.parse('bafkreialihlqnf5uwo4byh4n3cmwlntwqzxxs2fg5vanqdi3d7tb2l5xkm'),
-      contentType: CONTENT_TYPE_TAR,
-      rangeStart: undefined,
-      rangeEnd: undefined
+      contentType: CONTENT_TYPE_TAR
     })).to.equal('W/"bafkreialihlqnf5uwo4byh4n3cmwlntwqzxxs2fg5vanqdi3d7tb2l5xkm.x-tar"')
   })
 })
