@@ -1,6 +1,8 @@
 import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
+import browserReadableStreamToIt from 'browser-readablestream-to-it'
+import toBuffer from 'it-to-buffer'
 import { CID } from 'multiformats/cid'
 import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
@@ -123,6 +125,25 @@ describe('range requests', () => {
         })
       })
 
+      it('should return valid response when passed single range', async () => {
+        const response = await verifiedFetch.fetch(cid, {
+          headers: {
+            Range: 'bytes=3-5'
+          }
+        })
+        expect(response.status).to.equal(206)
+        expect(response.statusText).to.equal('Partial Content')
+        expect(response.headers.get('content-type')).to.include('application/octet-stream')
+        expect(response.headers.get('etag')).to.include('3-5')
+
+        if (response.body == null) {
+          throw new Error('Response body was null')
+        }
+
+        const body = await toBuffer(browserReadableStreamToIt(response.body))
+        expect(body).to.equalBytes(content.subarray(3, 6))
+      })
+
       it('should return valid response when passed multiple ranges', async () => {
         const response = await verifiedFetch.fetch(cid, {
           headers: {
@@ -132,6 +153,7 @@ describe('range requests', () => {
         expect(response.status).to.equal(206)
         expect(response.statusText).to.equal('Partial Content')
         expect(response.headers.get('content-type')).to.include('multipart/byteranges; boundary=multipart_byteranges_')
+        expect(response.headers.get('etag')).to.include('0-2,3-5')
 
         const boundary = response.headers.get('content-type')?.split('=')[1]
 

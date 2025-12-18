@@ -1,4 +1,5 @@
 import type { ContentType } from '../index.ts'
+import type { Range } from './get-range-header.ts'
 import type { CID } from 'multiformats/cid'
 
 interface GetETagArg {
@@ -13,14 +14,9 @@ interface GetETagArg {
   contentType: ContentType
 
   /**
-   * Where the byte range starts, if specified
+   * Any byte ranges, if specified
    */
-  rangeStart?: number
-
-  /**
-   * Where the byte range ends, if specified
-   */
-  rangeEnd?: number
+  ranges?: Range[]
 
   /**
    * A custom prefix to use for the content of the etag
@@ -38,12 +34,19 @@ interface GetETagArg {
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#etag-response-header
  */
-export function getETag ({ cid, contentType, rangeStart, rangeEnd, contentPrefix }: GetETagArg): string {
+export function getETag ({ cid, contentType, ranges, contentPrefix }: GetETagArg): string {
   const prefix = contentType.immutable ? '' : 'W/'
   let suffix = contentType.etag
 
-  if (rangeStart != null || rangeEnd != null) {
-    suffix += `.${rangeStart ?? '0'}-${rangeEnd ?? 'N'}`
+  if (ranges?.length != null && ranges?.length > 0) {
+    const validRanges = ranges
+      .filter(range => range.start != null || range.end != null)
+
+    if (validRanges.length > 0) {
+      suffix += '.' + validRanges
+        .map(range => `${range.start ?? 0}-${range.end ?? 'N'}`)
+        .join(',')
+    }
   }
 
   return `${prefix}"${contentPrefix ?? ''}${cid.toString()}${suffix}"`

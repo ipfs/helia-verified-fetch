@@ -393,7 +393,8 @@ export class VerifiedFetch {
     if (context?.terminalElement.cid != null && response.headers.get('etag') == null) {
       response.headers.set('etag', getETag({
         cid: context.terminalElement.cid,
-        contentType
+        contentType,
+        ranges: context?.range?.ranges
       }))
     }
 
