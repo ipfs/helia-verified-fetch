@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v5.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.1...@helia/verified-fetch-5.0.2) (2025-12-18)
+
+### Bug Fixes
+
+* report ranges in etags ([#303](https://github.com/ipfs/helia-verified-fetch/issues/303)) ([d5e91bf](https://github.com/ipfs/helia-verified-fetch/commit/d5e91bf215eb4b09b1946dfff857bf6db3d3cf06))
+
 ## [@helia/verified-fetch-v5.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.0...@helia/verified-fetch-5.0.1) (2025-12-16)
 
 ### Bug Fixes
