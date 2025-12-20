@@ -299,11 +299,11 @@ describe('dag-pb', () => {
     await stop(helia, verifiedFetch)
   })
 
-  it('should 406 on non-unixfs data loaded as dag-pb', async () => {
+  it('should 502 on non-unixfs data loaded as dag-pb', async () => {
     const cid = CID.createV1(dagPb.code, cids.raw.multihash)
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`)
 
-    expect(res).to.have.property('status', 406)
+    expect(res).to.have.property('status', 502)
   })
 
   for (const [type, types] of Object.entries(fixtures)) {

@@ -12,7 +12,7 @@ import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { UnixFSPlugin } from './plugins/plugin-handle-unixfs.js'
 import { URLResolver } from './url-resolver.ts'
 import { contentTypeParser } from './utils/content-type-parser.js'
-import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, CONTENT_TYPE_CAR, MEDIA_TYPE_IPNS_RECORD, MEDIA_TYPE_RAW } from './utils/content-types.ts'
+import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, MEDIA_TYPE_IPNS_RECORD, MEDIA_TYPE_RAW, CONTENT_TYPE_IPNS } from './utils/content-types.ts'
 import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag } from './utils/get-e-tag.js'
@@ -165,20 +165,25 @@ export class VerifiedFetch {
       return this.handleFinalResponse(badRequestResponse(resource.toString(), err))
     }
 
+    const requestedMimeTypes = getRequestedMimeTypes(url, headers.get('accept'))
+
     let parsedResult: ResolveURLResult
 
     // if just an IPNS record has been requested, don't try to load the block
     // the record points to or do any recursive IPNS resolving
     if (isIPNSRecordRequest(headers)) {
       if (url.protocol !== 'ipns:') {
-        return notAcceptableResponse(url, [])
+        return notAcceptableResponse(url, requestedMimeTypes, [
+          CONTENT_TYPE_IPNS
+        ])
       }
 
       // @ts-expect-error ipnsRecordPlugin may not be of type IpnsRecordPlugin
       const ipnsRecordPlugin: IpnsRecordPlugin | undefined = this.plugins.find(plugin => plugin.id === 'ipns-record-plugin')
 
       if (ipnsRecordPlugin == null) {
-        return notAcceptableResponse(url, [])
+        // IPNS record was requested but no IPNS Record plugin is configured?!
+        return notAcceptableResponse(url, requestedMimeTypes, [])
       }
 
       return this.handleFinalResponse(await ipnsRecordPlugin.handle({
@@ -198,6 +203,7 @@ export class VerifiedFetch {
         options?.signal?.throwIfAborted()
 
         this.log.error('error parsing resource %s - %e', resource, err)
+        this.log.error('wat name %s', err.name)
         return this.handleFinalResponse(errorToResponse(resource, err))
       }
     }
@@ -207,7 +213,7 @@ export class VerifiedFetch {
       path: parsedResult.url.pathname
     }))
 
-    const accept = this.getAcceptHeader(parsedResult.url, headers.get('accept'), parsedResult.terminalElement.cid)
+    const accept = this.getAcceptHeader(parsedResult.url, requestedMimeTypes, parsedResult.terminalElement.cid)
 
     if (accept instanceof Response) {
       this.log('allowed media types for requested CID did not contain anything the client can understand')
@@ -224,7 +230,8 @@ export class VerifiedFetch {
       options,
       onProgress: options?.onProgress,
       serverTiming,
-      headers
+      headers,
+      requestedMimeTypes
     }
 
     this.log.trace('finding handler for cid code "0x%s" and response content types %s', parsedResult.terminalElement.cid.code.toString(16), accept.map(header => header.contentType.mediaType).join(', '))
@@ -247,85 +254,9 @@ export class VerifiedFetch {
    * Returns a prioritized list of acceptable content types for the response
    * based on the CID and a passed `Accept` header
    */
-  private getAcceptHeader (url: URL, accept?: string | null, cid?: CID): AcceptHeader[] | Response {
-    if (accept == null || accept === '') {
-      // if the user has specified CAR options but no Accept header, default to
-      // the car content type with the passed options
-      try {
-        const dagScope = url.searchParams.get('dag-scope')
-        const entityBytes = url.searchParams.get('entity-bytes')
-        const dups = url.searchParams.get('car-dups')
-        const order = url.searchParams.get('car-order')
-        const version = url.searchParams.get('car-version')
-
-        if (dagScope != null ||
-          entityBytes != null ||
-          dups != null ||
-          entityBytes != null ||
-          order != null
-        ) {
-          const options: Record<string, string> = {}
-
-          if (dups != null) {
-            options.dups = dups
-          }
-
-          if (order != null) {
-            options.order = order
-          }
-
-          if (version != null) {
-            options.version = version
-          }
-
-          return [{
-            contentType: CONTENT_TYPE_CAR,
-            options
-          }]
-        }
-      } catch {}
-
-      // yolo content-type
-      accept = '*/*'
-      // return []
-    }
-
-    // allow user to choose specific output type
-    const acceptable: AcceptHeader[] = []
-
-    const requestedMimeTypes = accept
-      .split(',')
-      .map(s => {
-        const parts = s.trim().split(';')
-
-        const options: Record<string, string> = {
-          q: '1'
-        }
-
-        for (let i = 1; i < parts.length; i++) {
-          const [key, value] = parts[i].split('=').map(s => s.trim())
-
-          options[key] = value
-        }
-
-        return {
-          mediaType: `${parts[0]}`.trim(),
-          options
-        }
-      })
-      .sort((a, b) => {
-        if (a.options.q === b.options.q) {
-          return 0
-        }
-
-        if (a.options.q > b.options.q) {
-          return -1
-        }
-
-        return 1
-      })
-
+  private getAcceptHeader (url: URL, requestedMimeTypes: RequestedMimeType[], cid?: CID): AcceptHeader[] | Response {
     const supportedContentTypes = getSupportedContentTypes(url.protocol, cid)
+    const acceptable: AcceptHeader[] = []
 
     for (const headerFormat of requestedMimeTypes) {
       const [headerFormatType, headerFormatSubType] = headerFormat.mediaType.split('/')
@@ -367,7 +298,7 @@ export class VerifiedFetch {
       this.log('requested %o', requestedMimeTypes.map(({ mediaType }) => mediaType))
       this.log('supported %o', supportedContentTypes.map(({ mediaType }) => mediaType))
 
-      return notAcceptableResponse(url, supportedContentTypes)
+      return notAcceptableResponse(url, requestedMimeTypes, supportedContentTypes)
     }
 
     return acceptable
@@ -525,4 +456,48 @@ export class VerifiedFetch {
   async stop (): Promise<void> {
     await this.helia.stop()
   }
+}
+
+export interface RequestedMimeType {
+  mediaType: string
+  options: Record<string, string>
+}
+
+function getRequestedMimeTypes (url: URL, accept?: string | null): RequestedMimeType[] {
+  if (accept == null || accept === '') {
+    // yolo content-type
+    accept = '*/*'
+  }
+
+  return accept
+    .split(',')
+    .map(s => {
+      const parts = s.trim().split(';')
+
+      const options: Record<string, string> = {
+        q: '1'
+      }
+
+      for (let i = 1; i < parts.length; i++) {
+        const [key, value] = parts[i].split('=').map(s => s.trim())
+
+        options[key] = value
+      }
+
+      return {
+        mediaType: `${parts[0]}`.trim(),
+        options
+      }
+    })
+    .sort((a, b) => {
+      if (a.options.q === b.options.q) {
+        return 0
+      }
+
+      if (a.options.q > b.options.q) {
+        return -1
+      }
+
+      return 1
+    })
 }
