@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v5.0.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.3...@helia/verified-fetch-5.0.4) (2025-12-20)
+
+### Bug Fixes
+
+* show requested accept media types ([#305](https://github.com/ipfs/helia-verified-fetch/issues/305)) ([b25e2bf](https://github.com/ipfs/helia-verified-fetch/commit/b25e2bf5987690a3b7a5c7de592ec52580fcb46b))
+
 ## [@helia/verified-fetch-v5.0.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.2...@helia/verified-fetch-5.0.3) (2025-12-20)
 
 ### Bug Fixes
