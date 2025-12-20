@@ -40,7 +40,7 @@ export function errorToResponse (resource: Resource | string, err: any): Respons
     return preconditionFailedResponse(resource.toString())
   }
 
-  if (['RecordNotFoundError'].includes('err.name')) {
+  if (['RecordNotFoundError', 'LoadBlockFailedError'].includes(err.name)) {
     return badGatewayResponse(resource.toString(), err)
   }
 
