@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v5.0.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.2...@helia/verified-fetch-5.0.3) (2025-12-20)
+
+### Bug Fixes
+
+* test for error name ([#304](https://github.com/ipfs/helia-verified-fetch/issues/304)) ([fa9b582](https://github.com/ipfs/helia-verified-fetch/commit/fa9b58247e4aea1a784f01d16f0671711156a517))
+
 ## [@helia/verified-fetch-v5.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.1...@helia/verified-fetch-5.0.2) (2025-12-18)
 
 ### Bug Fixes
