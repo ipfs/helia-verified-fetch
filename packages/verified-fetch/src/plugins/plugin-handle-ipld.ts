@@ -43,7 +43,7 @@ export class IpldPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { url, resource, accept, ipfsRoots, terminalElement, blockstore, options } = context
+    const { url, resource, accept, ipfsRoots, terminalElement, blockstore, options, requestedMimeTypes } = context
 
     this.log.trace('fetching %c/%s', terminalElement.cid, url.pathname)
     let block: Uint8Array
@@ -64,7 +64,7 @@ export class IpldPlugin extends BasePlugin {
       contentType = result.contentType
     } catch (err) {
       this.log.error('could not decode object from block - %e', err)
-      return notAcceptableResponse(resource, getContentTypesForCid(terminalElement.cid))
+      return notAcceptableResponse(resource, requestedMimeTypes, getContentTypesForCid(terminalElement.cid))
     }
 
     const headers = {

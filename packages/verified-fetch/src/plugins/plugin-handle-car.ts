@@ -53,7 +53,7 @@ export class CarPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { options, url, accept, resource, blockstore, range, ipfsRoots, terminalElement } = context
+    const { options, url, accept, resource, blockstore, range, ipfsRoots, terminalElement, requestedMimeTypes } = context
 
     if (range != null) {
       return badRequestResponse(resource, new Error('Range requests are not supported for CAR files'))
@@ -67,12 +67,12 @@ export class CarPlugin extends BasePlugin {
       return badRequestResponse(resource, new Error('Could not find CAR media type in accept header'))
     }
 
-    const order = acceptCar.options.order === 'dfs' || url.searchParams.get('car-order') === 'dfs' ? 'dfs' : 'unk'
-    const duplicates = acceptCar.options.dups !== 'n' && url.searchParams.get('car-dups') !== 'n'
+    const order = acceptCar.options.order === 'dfs' ? 'dfs' : 'unk'
+    const duplicates = acceptCar.options.dups !== 'n'
 
     // TODO: `@ipld/car` only supports CARv1
     if (acceptCar.options.version === '2' || url.searchParams.get('car-version') === '2') {
-      return notAcceptableResponse(resource, [
+      return notAcceptableResponse(resource, requestedMimeTypes, [
         CONTENT_TYPE_CAR
       ])
     }

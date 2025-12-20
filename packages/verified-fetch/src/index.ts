@@ -782,6 +782,7 @@ import { getLibp2pConfig } from './utils/libp2p-defaults.js'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
 import type { RangeHeader } from './utils/get-range-header.ts'
 import type { ServerTiming } from './utils/server-timing.ts'
+import type { RequestedMimeType } from './verified-fetch.js'
 import type { DNSLink, ResolveProgressEvents as ResolveDNSLinkProgressEvents } from '@helia/dnslink'
 import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
 import type { ResolveProgressEvents as ResolveIPNSNameProgressEvents, IPNSRoutingProgressEvents, IPNSResolver } from '@helia/ipns'
@@ -876,9 +877,16 @@ export interface PluginContext extends ResolveURLResult {
   readonly resource: string
 
   /**
-   * These are the response representations that are acceptable to return
+   * These are the response representations that the user requested and we
+   * support given the CID that is being requested
    */
   readonly accept: AcceptHeader[]
+
+  /**
+   * The mime types and options the user requested - these may be different from
+   * the allowed response representations in `PluginContext.accept`
+   */
+  readonly requestedMimeTypes: RequestedMimeType[]
 
   /**
    * If present the user requested a subset of bytes using the Range header

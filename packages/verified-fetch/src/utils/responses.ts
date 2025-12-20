@@ -119,11 +119,12 @@ export function notImplementedResponse (url: string, body?: SupportedBodyTypes, 
   return response
 }
 
-export function notAcceptableResponse (url: string | URL, acceptable: ContentType[], init?: ResponseInit): Response {
+export function notAcceptableResponse (url: string | URL, requested: Array<Pick<ContentType, 'mediaType'>>, acceptable: Array<Pick<ContentType, 'mediaType'>>, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers)
   headers.set('content-type', 'application/json')
 
   const response = new Response(JSON.stringify({
+    requested: requested.map(contentType => contentType.mediaType),
     acceptable: acceptable.map(contentType => contentType.mediaType)
   }), {
     ...(init ?? {}),

@@ -165,22 +165,6 @@ describe('car files', () => {
     expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car')
   })
 
-  it('should use options from accept header when format is also passed', async () => {
-    const obj = {
-      hello: 'world'
-    }
-    const c = dagCbor(helia)
-    const cid = await c.add(obj)
-
-    const resp = await verifiedFetch.fetch(`ipfs://${cid}?format=car`, {
-      headers: {
-        accept: 'application/vnd.ipld.car; order=dfs; dups=y'
-      }
-    })
-    expect(resp.status).to.equal(200)
-    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.car; version=1; order=dfs; dups=y')
-  })
-
   describe('dag-scope cbor', () => {
     let cid: CID
     let nestedCid1: CID
@@ -242,7 +226,11 @@ describe('car files', () => {
     })
 
     it('dag-scope=block returns only the nested block - plus verification/root block', async () => {
-      const resp = await verifiedFetch.fetch(`ipfs://${cid}/z/a?dag-scope=block`)
+      const resp = await verifiedFetch.fetch(`ipfs://${cid}/z/a?dag-scope=block`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
 
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
@@ -257,7 +245,11 @@ describe('car files', () => {
     })
 
     it('dag-scope=entity returns only the root block', async () => {
-      const resp = await verifiedFetch.fetch(`ipfs://${cid}/z?format=car&dag-scope=entity`)
+      const resp = await verifiedFetch.fetch(`ipfs://${cid}/z?dag-scope=entity`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
 
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
@@ -323,7 +315,11 @@ describe('car files', () => {
     })
 
     it('dag-scope=all returns all blocks', async () => {
-      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}?format=car&dag-scope=all`)
+      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}?dag-scope=all`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}.car"`)
@@ -336,7 +332,11 @@ describe('car files', () => {
     })
 
     it('dag-scope=block returns only the requested block', async () => {
-      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/large-file.txt?format=car&dag-scope=block`)
+      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/large-file.txt?dag-scope=block`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}_large-file.txt.car"`)
@@ -348,7 +348,11 @@ describe('car files', () => {
     })
 
     it('dag-scope=entity for multi-block file returns all blocks for that entity', async () => {
-      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/large-file.txt?format=car&dag-scope=entity`)
+      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/large-file.txt?dag-scope=entity`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}_large-file.txt.car"`)
@@ -360,7 +364,11 @@ describe('car files', () => {
     })
 
     it('dag-scope=entity returns a directory and its content', async () => {
-      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/nested?format=car&dag-scope=entity`)
+      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/nested?dag-scope=entity`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}_nested.car"`)
@@ -402,7 +410,11 @@ describe('car files', () => {
 
       // request only the first 10 bytes, should not attempt to access
       // subsequent blocks that we don't have
-      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}?format=car&dag-scope=entity&entity-bytes=0:10`)
+      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}?dag-scope=entity&entity-bytes=0:10`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
 
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
@@ -417,7 +429,11 @@ describe('car files', () => {
     })
 
     it('entity-bytes implies dag-scope=entity', async () => {
-      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/large-file.txt?format=car&entity-bytes=0:*`)
+      const resp = await verifiedFetch.fetch(`ipfs://${rootCid}/large-file.txt?entity-bytes=0:*`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
       expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${rootCid.toString()}_large-file.txt.car"`)
