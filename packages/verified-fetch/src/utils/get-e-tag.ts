@@ -51,3 +51,23 @@ export function getETag ({ cid, contentType, ranges, contentPrefix }: GetETagArg
 
   return `${prefix}"${contentPrefix ?? ''}${cid.toString()}${suffix}"`
 }
+
+export function ifNoneMatches (etag: string, headers?: Headers): boolean {
+  const ifNoneMatch = (headers?.get('if-none-match') ?? '')
+    .split(',')
+    .map(tag => {
+      tag = tag.trim()
+
+      if (tag.startsWith('W/')) {
+        tag = tag.substring(2)
+      }
+
+      return tag
+    })
+
+  if (etag.startsWith('W/')) {
+    etag = etag.substring(2)
+  }
+
+  return ifNoneMatch.includes('*') || ifNoneMatch.includes(etag)
+}

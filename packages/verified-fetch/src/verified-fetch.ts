@@ -15,11 +15,11 @@ import { contentTypeParser } from './utils/content-type-parser.js'
 import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, MEDIA_TYPE_IPNS_RECORD, MEDIA_TYPE_RAW, CONTENT_TYPE_IPNS } from './utils/content-types.ts'
 import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
-import { getETag } from './utils/get-e-tag.js'
+import { getETag, ifNoneMatches } from './utils/get-e-tag.js'
 import { getRangeHeader } from './utils/get-range-header.ts'
 import { parseURLString } from './utils/parse-url-string.ts'
 import { setCacheControlHeader } from './utils/response-headers.js'
-import { badRequestResponse, internalServerErrorResponse, notAcceptableResponse, notImplementedResponse } from './utils/responses.js'
+import { badRequestResponse, internalServerErrorResponse, notAcceptableResponse, notImplementedResponse, notModifiedResponse } from './utils/responses.js'
 import { ServerTiming } from './utils/server-timing.js'
 import type { AcceptHeader, CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, ResolveURLResult, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions, VerifiedFetchPlugin, PluginContext, PluginOptions } from './index.js'
 import type { DNSLink } from '@helia/dnslink'
@@ -163,6 +163,18 @@ export class VerifiedFetch {
       url = parseURLString(typeof resource === 'string' ? resource : `ipfs://${resource}`)
     } catch (err: any) {
       return this.handleFinalResponse(badRequestResponse(resource.toString(), err))
+    }
+
+    if (url.protocol === 'ipfs:' && url.pathname === '') {
+      // if we don't need to resolve an IPNS names or traverse a DAG, we can
+      // check the if-none-match header and maybe return a 304 without needing
+      // to load any blocks
+      if (ifNoneMatches(`"${url.hostname}"`, headers)) {
+        return notModifiedResponse(resource.toString(), new Headers({
+          etag: `"${url.hostname}"`,
+          'cache-control': 'public, max-age=29030400, immutable'
+        }))
+      }
     }
 
     const requestedMimeTypes = getRequestedMimeTypes(url, headers.get('accept'))
@@ -321,14 +333,6 @@ export class VerifiedFetch {
       }
     }
 
-    if (context?.terminalElement.cid != null && response.headers.get('etag') == null) {
-      response.headers.set('etag', getETag({
-        cid: context.terminalElement.cid,
-        contentType,
-        ranges: context?.range?.ranges
-      }))
-    }
-
     if (context?.url?.protocol != null && context.ttl != null) {
       setCacheControlHeader({
         response,
@@ -352,6 +356,20 @@ export class VerifiedFetch {
     response.headers.set('access-control-allow-methods', 'GET, HEAD, OPTIONS')
     response.headers.set('access-control-allow-headers', 'Range, X-Requested-With')
     response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Stream-Output')
+
+    if (context?.terminalElement.cid != null && response.headers.get('etag') == null) {
+      const etag = getETag({
+        cid: context.terminalElement.cid,
+        contentType,
+        ranges: context?.range?.ranges
+      })
+
+      response.headers.set('etag', etag)
+
+      if (ifNoneMatches(etag, context?.headers)) {
+        return notModifiedResponse(response.url, response.headers)
+      }
+    }
 
     if (context?.options?.method === 'HEAD') {
       // don't send the body for HEAD requests
