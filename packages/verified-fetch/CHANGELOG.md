@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v5.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.4...@helia/verified-fetch-5.1.0) (2025-12-26)
+
+### Features
+
+* support if-none-match ([#306](https://github.com/ipfs/helia-verified-fetch/issues/306)) ([d017dbe](https://github.com/ipfs/helia-verified-fetch/commit/d017dbef54b3fd103efe7e293733dd3752d4acd9))
+
 ## [@helia/verified-fetch-v5.0.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.3...@helia/verified-fetch-5.0.4) (2025-12-20)
 
 ### Bug Fixes
