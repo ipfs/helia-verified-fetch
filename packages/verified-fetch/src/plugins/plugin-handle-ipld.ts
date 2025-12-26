@@ -68,6 +68,7 @@ export class IpldPlugin extends BasePlugin {
     }
 
     const headers = {
+      'cache-control': 'public, max-age=29030400, immutable',
       'content-length': `${block.byteLength}`,
       'content-type': contentType.mediaType,
       'content-disposition': `${url.searchParams.get('download') === 'true' ? 'attachment' : contentType.disposition}; ${

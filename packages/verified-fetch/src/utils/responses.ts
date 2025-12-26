@@ -207,6 +207,36 @@ export function movedPermanentlyResponse (url: string, location: string, init?: 
   return response
 }
 
+export function notModifiedResponse (url: string, headers: Headers, init?: ResponseInit): Response {
+  const response = new Response(null, {
+    ...(init ?? {}),
+    status: 304,
+    statusText: 'Not Modified'
+  })
+
+  const copyHeaders = [
+    'cache-control',
+    'content-location',
+    'date',
+    'etag',
+    'expires',
+    'vary'
+  ]
+
+  copyHeaders.forEach(key => {
+    const value = headers.get(key)
+
+    if (value != null) {
+      response.headers.set(key, value)
+    }
+  })
+
+  setType(response, 'basic')
+  setUrl(response, url)
+
+  return response
+}
+
 export interface PartialContent {
   /**
    * Yield data from the content starting at `start` (or 0) inclusive and ending
