@@ -214,6 +214,9 @@ export function notModifiedResponse (url: string, headers: Headers, init?: Respo
     statusText: 'Not Modified'
   })
 
+  // These fields would be present on a 200 and must be sent as part of a 304
+  // for the same resource
+  // https://www.rfc-editor.org/rfc/rfc9110.html#name-304-not-modified
   const copyHeaders = [
     'cache-control',
     'content-location',
