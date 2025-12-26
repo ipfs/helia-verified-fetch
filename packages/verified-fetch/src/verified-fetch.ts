@@ -333,20 +333,6 @@ export class VerifiedFetch {
       }
     }
 
-    if (context?.terminalElement.cid != null && response.headers.get('etag') == null) {
-      const etag = getETag({
-        cid: context.terminalElement.cid,
-        contentType,
-        ranges: context?.range?.ranges
-      })
-
-      response.headers.set('etag', etag)
-
-      if (ifNoneMatches(etag, context?.headers)) {
-        return notModifiedResponse(response.url, response.headers)
-      }
-    }
-
     if (context?.url?.protocol != null && context.ttl != null) {
       setCacheControlHeader({
         response,
@@ -370,6 +356,20 @@ export class VerifiedFetch {
     response.headers.set('access-control-allow-methods', 'GET, HEAD, OPTIONS')
     response.headers.set('access-control-allow-headers', 'Range, X-Requested-With')
     response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Stream-Output')
+
+    if (context?.terminalElement.cid != null && response.headers.get('etag') == null) {
+      const etag = getETag({
+        cid: context.terminalElement.cid,
+        contentType,
+        ranges: context?.range?.ranges
+      })
+
+      response.headers.set('etag', etag)
+
+      if (ifNoneMatches(etag, context?.headers)) {
+        return notModifiedResponse(response.url, response.headers)
+      }
+    }
 
     if (context?.options?.method === 'HEAD') {
       // don't send the body for HEAD requests

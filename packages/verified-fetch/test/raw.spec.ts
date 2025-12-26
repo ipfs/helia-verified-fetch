@@ -93,17 +93,18 @@ describe('raw blocks', () => {
     const cid = await c.add(obj)
     const block = await toBuffer(helia.blockstore.get(cid))
 
-    const resp = await verifiedFetch.fetch(`ipfs://${cid}`, {
+    const res = await verifiedFetch.fetch(`ipfs://${cid}`, {
       headers: {
         accept: 'application/vnd.ipld.raw'
       }
     })
-    expect(resp.status).to.equal(200)
-    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.raw')
-    expect(resp.headers.get('content-length')).to.equal(block.byteLength.toString())
-    expect(resp.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
+    expect(res.status).to.equal(200)
+    expect(res.headers.get('content-type')).to.equal('application/vnd.ipld.raw')
+    expect(res.headers.get('content-length')).to.equal(block.byteLength.toString())
+    expect(res.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
-    const buf = new Uint8Array(await resp.arrayBuffer())
+    const buf = new Uint8Array(await res.arrayBuffer())
     expect(buf).to.equalBytes(block)
   })
 
@@ -118,16 +119,17 @@ describe('raw blocks', () => {
       const cid = CID.createV1(raw.code, hash)
       await helia.blockstore.put(cid, block)
 
-      const resp = await verifiedFetch.fetch(`ipfs://${cid}`, {
+      const res = await verifiedFetch.fetch(`ipfs://${cid}`, {
         headers: {
           accept: format.accept
         }
       })
-      expect(resp.status).to.equal(200)
-      expect(resp.headers.get('content-type')).to.equal(format.accept)
-      expect(resp.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
+      expect(res.status).to.equal(200)
+      expect(res.headers.get('content-type')).to.equal(format.accept)
+      expect(res.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
+      expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
-      await format.verify(obj, block, resp)
+      await format.verify(obj, block, res)
     })
   }
 })

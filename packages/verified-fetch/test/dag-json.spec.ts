@@ -76,6 +76,7 @@ describe('dag-json', () => {
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`)
     expect(res.ok).to.be.true()
     expect(res.headers.get('content-type')).to.equal(MEDIA_TYPE_DAG_CBOR)
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
     const body = await res.arrayBuffer()
     const decoded = dagCbor.decode(new Uint8Array(body))
@@ -106,6 +107,7 @@ describe('dag-json', () => {
       expect(res.headers.get('content-type')).to.equal(fixture.contentType.mediaType)
       expect(res.headers.get('etag')).to.equal(`"${cid}${fixture.contentType.etag}"`)
       expect(res.headers.get('x-content-type-options')).to.equal('nosniff')
+      expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
       await fixture.verify(obj, cid, res)
     })

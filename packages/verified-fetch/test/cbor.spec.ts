@@ -44,6 +44,7 @@ describe('cbor', () => {
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`)
     expect(res.ok).to.be.true()
     expect(res.headers.get('content-type')).to.equal('application/cbor')
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
     const body = await res.arrayBuffer()
     const decoded = cbor.decode(new Uint8Array(body))
@@ -68,6 +69,7 @@ describe('cbor', () => {
     })
     expect(res.ok).to.be.true()
     expect(res.headers.get('content-type')).to.equal('application/octet-stream')
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
     const body = await res.arrayBuffer()
     const decoded = cbor.decode(new Uint8Array(body))
@@ -92,6 +94,7 @@ describe('cbor', () => {
     })
     expect(res.ok).to.be.true()
     expect(res.headers.get('content-type')).to.equal('application/vnd.ipld.raw')
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
     const body = await res.arrayBuffer()
     const decoded = cbor.decode(new Uint8Array(body))
@@ -116,6 +119,7 @@ describe('cbor', () => {
     })
     expect(res.ok).to.be.true()
     expect(res.headers.get('content-type')).to.equal('application/cbor')
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
     const body = await res.arrayBuffer()
     const decoded = cbor.decode(new Uint8Array(body))
@@ -140,6 +144,7 @@ describe('cbor', () => {
     })
     expect(res.ok).to.be.true()
     expect(res.headers.get('content-type')).to.equal('application/json')
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
     const body = await res.arrayBuffer()
     const decoded = json.decode(new Uint8Array(body))
@@ -165,6 +170,7 @@ describe('cbor', () => {
     })
     expect(res.ok).to.be.true()
     expect(res.headers.get('content-type')).to.equal('application/vnd.ipld.dag-cbor')
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
     const body = await res.arrayBuffer()
     const decoded = dagCbor.decode(new Uint8Array(body))
@@ -195,6 +201,7 @@ describe('cbor', () => {
     })
     expect(res.ok).to.be.true()
     expect(res.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
     const body = await res.arrayBuffer()
     const decoded = dagJson.decode(new Uint8Array(body))

@@ -322,6 +322,7 @@ describe('dag-pb', () => {
         })
         expect(res.ok).to.be.true()
         expect(res.headers.get('content-type')).to.equal(fixture.contentType ?? types.accept)
+        expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
         await fixture.verify(res, cid, helia, cids)
       })
