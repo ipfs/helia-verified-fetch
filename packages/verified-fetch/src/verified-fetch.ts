@@ -215,7 +215,6 @@ export class VerifiedFetch {
         options?.signal?.throwIfAborted()
 
         this.log.error('error parsing resource %s - %e', resource, err)
-        this.log.error('wat name %s', err.name)
         return this.handleFinalResponse(errorToResponse(resource, err))
       }
     }
