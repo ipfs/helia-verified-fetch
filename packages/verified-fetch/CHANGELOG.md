@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v5.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.1.0...@helia/verified-fetch-5.1.1) (2025-12-27)
+
+### Bug Fixes
+
+* remove extra log line ([ac9b895](https://github.com/ipfs/helia-verified-fetch/commit/ac9b895491ea27271d46c0742c4185c1e14e8cd0))
+
 ## [@helia/verified-fetch-v5.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.0.4...@helia/verified-fetch-5.1.0) (2025-12-26)
 
 ### Features
