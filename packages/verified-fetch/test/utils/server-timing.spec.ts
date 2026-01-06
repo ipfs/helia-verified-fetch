@@ -87,7 +87,7 @@ describe('serverTiming', () => {
     })
 
     it('response does not include server timing by default', async () => {
-      const response = await vFetch(`https://example.com/ipfs/${cid}`)
+      const response = await vFetch(`/ipfs/${cid}`)
       expect(response.headers.get('Server-Timing')).to.be.null()
     })
 

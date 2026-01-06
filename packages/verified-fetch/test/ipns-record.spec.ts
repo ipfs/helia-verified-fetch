@@ -84,7 +84,7 @@ describe('ipns records', () => {
 
     const filename = 'foo.bin'
 
-    const resp = await verifiedFetch.fetch(`http://${peerId}.ipns.local?filename=${filename}`, {
+    const resp = await verifiedFetch.fetch(`ipns://${peerId}?filename=${filename}`, {
       headers: {
         accept: MEDIA_TYPE_IPNS_RECORD
       }

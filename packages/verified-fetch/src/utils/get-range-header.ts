@@ -1,5 +1,6 @@
 import { InvalidRangeError } from '../errors.ts'
 import { badRequestResponse, notSatisfiableResponse } from './responses.ts'
+import type { Resource } from '../index.ts'
 
 /**
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Range
@@ -78,7 +79,7 @@ function getByteRangeFromHeader (rangeHeader?: string): Range[] {
   return ranges
 }
 
-export function getRangeHeader (resource: string, headers: Headers): RangeHeader | undefined | Response {
+export function getRangeHeader (resource: Resource, headers: Headers): RangeHeader | undefined | Response {
   const header = headers.get('range')
 
   // not a range request

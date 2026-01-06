@@ -22,9 +22,8 @@ describe('@helia/verified-fetch - unixfs directory', () => {
 
   describe('unixfs-dir-redirect', () => {
     [
-      'https://example.com/ipfs/bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q',
-      'ipfs://bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q',
-      'http://example.com/ipfs/bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q'
+      '/ipfs/bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q',
+      'ipfs://bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q'
     ].forEach((url: string) => {
       it(`request to unixfs directory with ${url} should return a 301 with a trailing slash`, async () => {
         const response = await verifiedFetch(url, {
@@ -34,7 +33,7 @@ describe('@helia/verified-fetch - unixfs directory', () => {
         })
         expect(response).to.be.ok()
         expect(response.status).to.equal(301)
-        expect(response.headers.get('location')).to.equal(`${url}/`)
+        expect(response.headers.get('location')).to.equal('ipfs://bafybeifq2rzpqnqrsdupncmkmhs3ckxxjhuvdcbvydkgvch3ms24k5lo7q/')
       })
     })
   })

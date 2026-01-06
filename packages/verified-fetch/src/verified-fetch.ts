@@ -1,6 +1,6 @@
 import { dnsLink } from '@helia/dnslink'
 import { ipnsResolver } from '@helia/ipns'
-import { AbortError } from '@libp2p/interface'
+import { AbortError, isPeerId, isPublicKey } from '@libp2p/interface'
 import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
@@ -17,11 +17,11 @@ import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag, ifNoneMatches } from './utils/get-e-tag.js'
 import { getRangeHeader } from './utils/get-range-header.ts'
-import { parseURLString } from './utils/parse-url-string.ts'
+import { stringToIpfsUrl } from './utils/parse-resource.ts'
 import { setCacheControlHeader } from './utils/response-headers.js'
-import { badRequestResponse, internalServerErrorResponse, notAcceptableResponse, notImplementedResponse, notModifiedResponse } from './utils/responses.js'
+import { internalServerErrorResponse, notAcceptableResponse, notImplementedResponse, notModifiedResponse } from './utils/responses.js'
 import { ServerTiming } from './utils/server-timing.js'
-import type { AcceptHeader, CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, ResolveURLResult, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions, VerifiedFetchPlugin, PluginContext, PluginOptions } from './index.js'
+import type { AcceptHeader, CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions, VerifiedFetchPlugin, PluginContext, PluginOptions } from './index.js'
 import type { DNSLink } from '@helia/dnslink'
 import type { Helia } from '@helia/interface'
 import type { IPNSResolver } from '@helia/ipns'
@@ -138,127 +138,117 @@ export class VerifiedFetch {
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s %s', opts?.method ?? 'GET', resource)
 
-    if (opts?.method === 'OPTIONS') {
-      return this.handleFinalResponse(new Response(null, {
-        status: 200
-      }))
-    }
-
-    const options = convertOptions(opts)
-    const headers = new Headers(options?.headers)
-    const serverTiming = new ServerTiming()
-
-    options?.onProgress?.(new CustomProgressEvent<ResourceDetail>('verified-fetch:request:start', { resource }))
-
-    const range = getRangeHeader(resource.toString(), headers)
-
-    if (range instanceof Response) {
-      // invalid range request
-      return this.handleFinalResponse(range)
-    }
-
-    let url: URL
-
     try {
-      url = parseURLString(typeof resource === 'string' ? resource : `ipfs://${resource}`)
-    } catch (err: any) {
-      return this.handleFinalResponse(badRequestResponse(resource.toString(), err))
-    }
-
-    if (url.protocol === 'ipfs:' && url.pathname === '') {
-      // if we don't need to resolve an IPNS names or traverse a DAG, we can
-      // check the if-none-match header and maybe return a 304 without needing
-      // to load any blocks
-      if (ifNoneMatches(`"${url.hostname}"`, headers)) {
-        return notModifiedResponse(resource.toString(), new Headers({
-          etag: `"${url.hostname}"`,
-          'cache-control': 'public, max-age=29030400, immutable'
+      if (opts?.method === 'OPTIONS') {
+        return this.handleFinalResponse(new Response(null, {
+          status: 200
         }))
       }
-    }
 
-    const requestedMimeTypes = getRequestedMimeTypes(url, headers.get('accept'))
+      const options = convertOptions(opts)
+      const headers = new Headers(options?.headers)
+      const serverTiming = new ServerTiming()
 
-    let parsedResult: ResolveURLResult
+      options?.onProgress?.(new CustomProgressEvent<ResourceDetail>('verified-fetch:request:start', { resource }))
 
-    // if just an IPNS record has been requested, don't try to load the block
-    // the record points to or do any recursive IPNS resolving
-    if (isIPNSRecordRequest(headers)) {
-      if (url.protocol !== 'ipns:') {
-        return notAcceptableResponse(url, requestedMimeTypes, [
-          CONTENT_TYPE_IPNS
-        ])
+      const range = getRangeHeader(resource, headers)
+
+      if (range instanceof Response) {
+        // invalid range request
+        return this.handleFinalResponse(range)
       }
 
-      // @ts-expect-error ipnsRecordPlugin may not be of type IpnsRecordPlugin
-      const ipnsRecordPlugin: IpnsRecordPlugin | undefined = this.plugins.find(plugin => plugin.id === 'ipns-record-plugin')
+      const url = this.parseResource(resource)
 
-      if (ipnsRecordPlugin == null) {
-        // IPNS record was requested but no IPNS Record plugin is configured?!
-        return notAcceptableResponse(url, requestedMimeTypes, [])
+      if (url.protocol === 'ipfs:' && url.pathname === '') {
+        // if we don't need to resolve an IPNS names or traverse a DAG, we can
+        // check the if-none-match header and maybe return a 304 without needing
+        // to load any blocks
+        if (ifNoneMatches(`"${url.hostname}"`, headers)) {
+          return notModifiedResponse(resource, new Headers({
+            etag: `"${url.hostname}"`,
+            'cache-control': 'public, max-age=29030400, immutable'
+          }))
+        }
       }
 
-      return this.handleFinalResponse(await ipnsRecordPlugin.handle({
-        range,
-        url,
-        resource: resource.toString(),
-        options
+      const requestedMimeTypes = getRequestedMimeTypes(url, headers.get('accept'))
+
+      // if a raw IPNS record has been requested, don't try to load the block
+      // the record points to or do any recursive IPNS resolving
+      if (isIPNSRecordRequest(headers)) {
+        if (url.protocol !== 'ipns:') {
+          return notAcceptableResponse(url, requestedMimeTypes, [
+            CONTENT_TYPE_IPNS
+          ])
+        }
+
+        // @ts-expect-error ipnsRecordPlugin may not be of type IpnsRecordPlugin
+        const ipnsRecordPlugin: IpnsRecordPlugin | undefined = this.plugins.find(plugin => plugin.id === 'ipns-record-plugin')
+
+        if (ipnsRecordPlugin == null) {
+          // IPNS record was requested but no IPNS Record plugin is configured?!
+          return notAcceptableResponse(resource, requestedMimeTypes, [])
+        }
+
+        return this.handleFinalResponse(await ipnsRecordPlugin.handle({
+          range,
+          url,
+          resource,
+          options
+        }))
+      }
+
+      const resolveResult = await this.urlResolver.resolve(url, serverTiming, {
+        ...options,
+        isRawBlockRequest: isRawBlockRequest(headers),
+        onlyIfCached: headers.get('cache-control') === 'only-if-cached'
+      })
+
+      options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', {
+        cid: resolveResult.terminalElement.cid,
+        path: resolveResult.url.pathname
       }))
-    } else {
-      try {
-        parsedResult = await this.urlResolver.resolve(url, serverTiming, {
-          ...options,
-          isRawBlockRequest: isRawBlockRequest(headers),
-          onlyIfCached: headers.get('cache-control') === 'only-if-cached'
-        })
-      } catch (err: any) {
-        options?.signal?.throwIfAborted()
 
-        this.log.error('error parsing resource %s - %e', resource, err)
-        return this.handleFinalResponse(errorToResponse(resource, err))
+      const accept = this.getAcceptHeader(resolveResult.url, requestedMimeTypes, resolveResult.terminalElement.cid)
+
+      if (accept instanceof Response) {
+        this.log('allowed media types for requested CID did not contain anything the client can understand')
+
+        // invalid accept header
+        return this.handleFinalResponse(accept)
       }
+
+      const context: PluginContext = {
+        ...resolveResult,
+        resource,
+        accept,
+        range,
+        options,
+        onProgress: options?.onProgress,
+        serverTiming,
+        headers,
+        requestedMimeTypes
+      }
+
+      this.log.trace('finding handler for cid code "0x%s" and response content types %s', resolveResult.terminalElement.cid.code.toString(16), accept.map(header => header.contentType.mediaType).join(', '))
+
+      const response = await this.runPluginPipeline(context)
+
+      options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', {
+        cid: resolveResult.terminalElement.cid,
+        path: resolveResult.url.pathname
+      }))
+
+      if (response == null) {
+        this.log.error('no plugin could handle request for %s', resource)
+      }
+
+      return this.handleFinalResponse(response, Boolean(options?.withServerTiming) || Boolean(this.withServerTiming), context)
+    } catch (err: any) {
+      this.log.error('error fetching resource %s - %e', resource, err)
+      return this.handleFinalResponse(errorToResponse(resource, err, opts))
     }
-
-    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', {
-      cid: parsedResult.terminalElement.cid,
-      path: parsedResult.url.pathname
-    }))
-
-    const accept = this.getAcceptHeader(parsedResult.url, requestedMimeTypes, parsedResult.terminalElement.cid)
-
-    if (accept instanceof Response) {
-      this.log('allowed media types for requested CID did not contain anything the client can understand')
-
-      // invalid accept header
-      return this.handleFinalResponse(accept)
-    }
-
-    const context: PluginContext = {
-      ...parsedResult,
-      resource: resource.toString(),
-      accept,
-      range,
-      options,
-      onProgress: options?.onProgress,
-      serverTiming,
-      headers,
-      requestedMimeTypes
-    }
-
-    this.log.trace('finding handler for cid code "0x%s" and response content types %s', parsedResult.terminalElement.cid.code.toString(16), accept.map(header => header.contentType.mediaType).join(', '))
-
-    const response = await this.runPluginPipeline(context)
-
-    options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:end', {
-      cid: parsedResult.terminalElement.cid,
-      path: parsedResult.url.pathname
-    }))
-
-    if (response == null) {
-      this.log.error('no plugin could handle request for %s', resource)
-    }
-
-    return this.handleFinalResponse(response, Boolean(options?.withServerTiming) || Boolean(this.withServerTiming), context)
   }
 
   /**
@@ -315,6 +305,18 @@ export class VerifiedFetch {
     return acceptable
   }
 
+  private parseResource (resource: Resource): URL {
+    if (isPeerId(resource) || isPublicKey(resource)) {
+      resource = `/ipns/${resource}`
+    }
+
+    if (CID.asCID(resource) === resource || resource instanceof CID) {
+      resource = `/ipfs/${resource}`
+    }
+
+    return new URL(stringToIpfsUrl(resource.toString()))
+  }
+
   /**
    * The last place a Response touches in verified-fetch before being returned
    * to the user. This is where we add the Server-Timing header to the response
@@ -345,7 +347,7 @@ export class VerifiedFetch {
       const decodedPath = decodeURI(context?.url.pathname)
       const path = uint8ArrayToString(uint8ArrayFromString(decodedPath), 'ascii')
 
-      response.headers.set('x-ipfs-path', `/${context.url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${context?.url.hostname}${path}`)
+      response.headers.set('x-ipfs-path', `/${context.url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${context?.url.hostname}${path === '/' ? '' : path}`)
     }
 
     // set CORS headers. If hosting your own gateway with verified-fetch behind
@@ -427,13 +429,7 @@ export class VerifiedFetch {
 
         this.log.error('error in plugin %s - %e', plugin.id, err)
 
-        return internalServerErrorResponse(context.resource, JSON.stringify({
-          error: errorToObject(err)
-        }), {
-          headers: {
-            'content-type': 'application/json'
-          }
-        })
+        return internalServerErrorResponse(context.resource, err)
       }
 
       if (finalResponse != null) {
