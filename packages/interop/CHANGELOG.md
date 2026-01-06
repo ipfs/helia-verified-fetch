@@ -1,3 +1,17 @@
+## [@helia/verified-fetch-interop-v4.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-3.0.0...@helia/verified-fetch-interop-4.0.0) (2026-01-06)
+
+### ⚠ BREAKING CHANGES
+
+* resources must be fetched by IPFS/IPNS URLs or paths, e.g: `ipfs://...` or `/ipfs/...`
+
+### Bug Fixes
+
+* remove gateway url support ([#307](https://github.com/ipfs/helia-verified-fetch/issues/307)) ([c1b6fc3](https://github.com/ipfs/helia-verified-fetch/commit/c1b6fc3f2d35ad8f73cb4a8ce57e94373728bf0e))
+
+### Trivial Changes
+
+* update sibling version ([#302](https://github.com/ipfs/helia-verified-fetch/issues/302)) ([4e9f8e1](https://github.com/ipfs/helia-verified-fetch/commit/4e9f8e1c67e8ce558a059812172ac0a303b5b5a7))
+
 ## [@helia/verified-fetch-interop-v3.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-2.0.2...@helia/verified-fetch-interop-3.0.0) (2025-12-15)
 
 ### ⚠ BREAKING CHANGES
