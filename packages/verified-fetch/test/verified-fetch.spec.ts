@@ -294,20 +294,6 @@ describe('@helia/verified-fetch', () => {
       expect(ipfsResponse.url).to.equal(`ipfs://${res.cid}/foo/`)
     })
 
-    it.skip('should redirect to a libp2p-key CID when a base36 CIDv1 dag-pb IPNS name is requested', async () => {
-      // spell-checker: disable-next-line
-      const base36str = 'k50rm9yjlt0jey4fqg6wafvqprktgbkpgkqdg27tpqje6iimzxewnhvtin9hhq'
-      // const cid = CID.parse('k50rm9yjlt0jey4fqg6wafvqprktgbkpgkqdg27tpqje6iimzxewnhvtin9hhq')
-
-      const ipfsResponse = await verifiedFetch.fetch(`https://${base36str}.ipns.local`, {
-        redirect: 'manual'
-      })
-      expect(ipfsResponse).to.be.ok()
-      expect(ipfsResponse.status).to.equal(301)
-      expect(ipfsResponse.headers.get('location')).to.equal(`https://${base36str}.ipfs.local`)
-      expect(ipfsResponse.url).to.equal(`https://${base36str}.ipfs.local`)
-    })
-
     it('should allow use as a stream', async () => {
       const content = new Uint8Array([0x01, 0x02, 0x03])
 
