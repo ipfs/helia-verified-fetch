@@ -786,7 +786,7 @@ import type { RequestedMimeType } from './verified-fetch.js'
 import type { DNSLink, ResolveProgressEvents as ResolveDNSLinkProgressEvents } from '@helia/dnslink'
 import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
 import type { ResolveProgressEvents as ResolveIPNSNameProgressEvents, IPNSRoutingProgressEvents, IPNSResolver } from '@helia/ipns'
-import type { AbortOptions, Libp2p, ServiceMap, Logger } from '@libp2p/interface'
+import type { AbortOptions, Libp2p, ServiceMap, Logger, PeerId, PublicKey } from '@libp2p/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { HeliaInit } from 'helia'
@@ -874,7 +874,7 @@ export interface PluginContext extends ResolveURLResult {
   /**
    * The resource that was requested by the user
    */
-  readonly resource: string
+  readonly resource: Resource
 
   /**
    * These are the response representations that the user requested and we
@@ -963,9 +963,25 @@ export interface ContentTypeParser {
 }
 
 /**
- * The types for the first argument of the `verifiedFetch` function.
+ * The resource that `verifiedFetch` will resolve
+ *
+ * Strings
+ * - '/ipfs/bafyfoo' (IPFS/IPNS path)
+ * - 'ipfs://bafyfoo' (IPFS/IPNS URL)
+ *
+ * CID object
+ * - CID('bafyfoo')
+ *
+ * URL object
+ * - URL('ipfs://bafyfoo') (IPFS/IPNS URL)
+ *
+ * PeerId object (will be resolved as an IPNS name)
+ * - PeerId('123koo')
+ *
+ * PublicKey object (will be resolved as an IPNS name)
+ * - PublicKey('Qmfoo')
  */
-export type Resource = string | CID
+export type Resource = string | CID | URL | PublicKey | PeerId
 
 export interface ResourceDetail {
   resource: Resource

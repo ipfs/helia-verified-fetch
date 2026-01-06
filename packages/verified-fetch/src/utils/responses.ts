@@ -1,8 +1,9 @@
 import itToBrowserReadableStream from 'it-to-browser-readablestream'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { errorToObject } from './error-to-object.ts'
 import { rangeToOffsetAndLength } from './get-offset-and-length.ts'
 import { getContentRangeHeader } from './response-headers.ts'
-import type { SupportedBodyTypes, ContentType } from '../index.js'
+import type { SupportedBodyTypes, ContentType, Resource } from '../index.js'
 import type { Range, RangeHeader } from './get-range-header.ts'
 
 function setField (response: Response, name: string, value: string | boolean): void {
@@ -20,7 +21,7 @@ function setType (response: Response, value: 'basic' | 'cors' | 'error' | 'opaqu
   }
 }
 
-function setUrl (response: Response, value: string | URL): void {
+function setUrl (response: Response, value: Resource): void {
   value = value.toString()
   const fragmentStart = value.indexOf('#')
 
@@ -41,7 +42,7 @@ export interface ResponseOptions extends ResponseInit {
   redirected?: boolean
 }
 
-export function okResponse (url: string, body?: SupportedBodyTypes, init?: ResponseOptions): Response {
+export function okResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseOptions): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 200,
@@ -58,13 +59,17 @@ export function okResponse (url: string, body?: SupportedBodyTypes, init?: Respo
   return response
 }
 
-export function internalServerErrorResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
-  const response = new Response(body, {
+export function internalServerErrorResponse (url: Resource, err: Error, init?: ResponseInit): Response {
+  const response = new Response(JSON.stringify({
+    error: errorToObject(err)
+  }), {
     ...(init ?? {}),
     status: 500,
     statusText: 'Internal Server Error'
   })
   response.headers.set('X-Content-Type-Options', 'nosniff') // see https://specs.ipfs.tech/http-gateways/path-gateway/#x-content-type-options-response-header
+  response.headers.set('content-type', 'application/json')
+  response.headers.set('x-error-message', btoa(err.message))
 
   setType(response, 'basic')
   setUrl(response, url)
@@ -75,7 +80,7 @@ export function internalServerErrorResponse (url: string, body?: SupportedBodyTy
 /**
  * A 504 Gateway Timeout for when a request made to an upstream server timed out
  */
-export function gatewayTimeoutResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+export function gatewayTimeoutResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 504,
@@ -92,7 +97,7 @@ export function gatewayTimeoutResponse (url: string, body?: SupportedBodyTypes, 
  * A 502 Bad Gateway is for when an invalid response was received from an
  * upstream server.
  */
-export function badGatewayResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+export function badGatewayResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 502,
@@ -105,7 +110,7 @@ export function badGatewayResponse (url: string, body?: SupportedBodyTypes, init
   return response
 }
 
-export function notImplementedResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+export function notImplementedResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 501,
@@ -119,7 +124,7 @@ export function notImplementedResponse (url: string, body?: SupportedBodyTypes, 
   return response
 }
 
-export function notAcceptableResponse (url: string | URL, requested: Array<Pick<ContentType, 'mediaType'>>, acceptable: Array<Pick<ContentType, 'mediaType'>>, init?: ResponseInit): Response {
+export function notAcceptableResponse (url: Resource, requested: Array<Pick<ContentType, 'mediaType'>>, acceptable: Array<Pick<ContentType, 'mediaType'>>, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers)
   headers.set('content-type', 'application/json')
 
@@ -139,7 +144,7 @@ export function notAcceptableResponse (url: string | URL, requested: Array<Pick<
   return response
 }
 
-export function notFoundResponse (url: string, body?: SupportedBodyTypes, init?: ResponseInit): Response {
+export function notFoundResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseInit): Response {
   const response = new Response(body, {
     ...(init ?? {}),
     status: 404,
@@ -156,7 +161,7 @@ function isArrayOfErrors (body: unknown | Error | Error[]): body is Error[] {
   return Array.isArray(body) && body.every(e => e instanceof Error)
 }
 
-export function badRequestResponse (url: string, errors: Error | Error[], init?: ResponseInit): Response {
+export function badRequestResponse (url: Resource, errors: Error | Error[], init?: ResponseInit): Response {
   // stacktrace of the single error, or the stacktrace of the last error in the array
   let stack: string | undefined
   let convertedErrors: Array<{ message: string, stack: string }> | undefined
@@ -190,7 +195,7 @@ export function badRequestResponse (url: string, errors: Error | Error[], init?:
   return response
 }
 
-export function movedPermanentlyResponse (url: string, location: string, init?: ResponseInit): Response {
+export function movedPermanentlyResponse (url: Resource, location: string, init?: ResponseInit): Response {
   const response = new Response(null, {
     ...(init ?? {}),
     status: 301,
@@ -207,7 +212,7 @@ export function movedPermanentlyResponse (url: string, location: string, init?: 
   return response
 }
 
-export function notModifiedResponse (url: string, headers: Headers, init?: ResponseInit): Response {
+export function notModifiedResponse (url: Resource, headers: Headers, init?: ResponseInit): Response {
   const response = new Response(null, {
     ...(init ?? {}),
     status: 304,
@@ -248,7 +253,7 @@ export interface PartialContent {
   (offset: number, length: number): AsyncGenerator<Uint8Array>
 }
 
-export function partialContentResponse (url: string, getSlice: PartialContent, range: RangeHeader, documentSize: number | bigint, init?: ResponseOptions): Response {
+export function partialContentResponse (url: Resource, getSlice: PartialContent, range: RangeHeader, documentSize: number | bigint, init?: ResponseOptions): Response {
   let response: Response
 
   if (range.ranges.length === 1) {
@@ -269,7 +274,7 @@ export function partialContentResponse (url: string, getSlice: PartialContent, r
   return response
 }
 
-function singleRangeResponse (url: string, getSlice: PartialContent, range: Range, documentSize: number | bigint, init?: ResponseOptions): Response {
+function singleRangeResponse (url: Resource, getSlice: PartialContent, range: Range, documentSize: number | bigint, init?: ResponseOptions): Response {
   try {
     // create headers object with any initial headers from init
     const headers = new Headers(init?.headers)
@@ -293,14 +298,14 @@ function singleRangeResponse (url: string, getSlice: PartialContent, range: Rang
       return notSatisfiableResponse(url, documentSize, init)
     }
 
-    return internalServerErrorResponse(url, '', init)
+    return internalServerErrorResponse(url, err, init)
   }
 }
 
 /**
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests
  */
-function multiRangeResponse (url: string, getSlice: PartialContent, range: RangeHeader, documentSize: number | bigint, init?: ResponseOptions): Response {
+function multiRangeResponse (url: Resource, getSlice: PartialContent, range: RangeHeader, documentSize: number | bigint, init?: ResponseOptions): Response {
   // create headers object with any initial headers from init
   const headers = new Headers(init?.headers)
 
@@ -375,7 +380,7 @@ function multiRangeResponse (url: string, getSlice: PartialContent, range: Range
  * - The range is invalid
  * - The range is not supported for the given type
  */
-export function notSatisfiableResponse (url: string, documentSize?: number | bigint | string, init?: ResponseInit): Response {
+export function notSatisfiableResponse (url: Resource, documentSize?: number | bigint | string, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers)
 
   if (documentSize != null) {
@@ -402,7 +407,7 @@ export function notSatisfiableResponse (url: string, documentSize?: number | big
  *
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#412-precondition-failed
  */
-export function preconditionFailedResponse (url: string, init?: ResponseInit): Response {
+export function preconditionFailedResponse (url: Resource, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers)
 
   const response = new Response('Precondition Failed', {

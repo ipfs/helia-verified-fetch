@@ -18,11 +18,6 @@ import type { Helia } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { StubbedInstance } from 'sinon-ts'
 
-const HTTP_PROTOCOLS = [
-  'http',
-  'https'
-]
-
 describe('url-resolver', () => {
   let ipnsResolver: StubbedInstance<IPNSResolver>
   let dnsLink: StubbedInstance<DNSLink>
@@ -33,14 +28,12 @@ describe('url-resolver', () => {
   let txtFileCID: CID
   let nestedDirectoryCID: CID
   let directoryCID: CID
-  let unicodeDirectoryCID: CID
-  let nestedDirectoryWithIPFSSegmentCID: CID
 
   /**
    * Assert that the passed url is matched to the passed protocol, cid, etc
    */
-  async function assertMatchUrl (urlString: string, match: { url: URL, cid: string | CID }): Promise<void> {
-    const parsed = await resolver.resolve(new URL(urlString), new ServerTiming(), {
+  async function assertMatchUrl (url: URL, match: { url: URL, cid: string | CID }): Promise<void> {
+    const parsed = await resolver.resolve(url, new ServerTiming(), {
       session: false
     })
 
@@ -57,12 +50,6 @@ describe('url-resolver', () => {
     const emptyDir = await fs.addDirectory()
     directoryCID = await fs.cp(txtFileCID, emptyDir, '1 - Barrel - Part 1 - alt.txt')
     nestedDirectoryCID = await fs.cp(directoryCID, emptyDir, '1 - Barrel - Part 1')
-
-    const iDirectoryCID = await fs.cp(txtFileCID, emptyDir, "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp")
-    unicodeDirectoryCID = await fs.cp(iDirectoryCID, emptyDir, 'I')
-
-    const ipfsDir = await fs.cp(txtFileCID, emptyDir, 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am')
-    nestedDirectoryWithIPFSSegmentCID = await fs.cp(ipfsDir, emptyDir, 'ipfs')
 
     ipnsResolver = stubInterface()
     dnsLink = stubInterface()
@@ -108,7 +95,7 @@ describe('url-resolver', () => {
 
     it('can parse a URL with CID only', async () => {
       await assertMatchUrl(
-        `ipfs://${txtFileCID}`, {
+        new URL(`ipfs://${txtFileCID}`), {
           cid: txtFileCID,
           url: new URL(`ipfs://${txtFileCID}`)
         }
@@ -117,7 +104,7 @@ describe('url-resolver', () => {
 
     it('can parse URL with CID+path', async () => {
       await assertMatchUrl(
-        `ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
+        new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`), {
           cid: txtFileCID,
           url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
         }
@@ -126,7 +113,7 @@ describe('url-resolver', () => {
 
     it('can parse URL with CID+queryString', async () => {
       await assertMatchUrl(
-        `ipfs://${nestedDirectoryCID}`, {
+        new URL(`ipfs://${nestedDirectoryCID}`), {
           cid: nestedDirectoryCID,
           url: new URL(`ipfs://${nestedDirectoryCID}`)
         }
@@ -135,7 +122,7 @@ describe('url-resolver', () => {
 
     it('can parse URL with CID, trailing slash and queryString', async () => {
       await assertMatchUrl(
-        `ipfs://${nestedDirectoryCID}/`, {
+        new URL(`ipfs://${nestedDirectoryCID}/`), {
           cid: nestedDirectoryCID,
           url: new URL(`ipfs://${nestedDirectoryCID}/`)
         }
@@ -144,7 +131,7 @@ describe('url-resolver', () => {
 
     it('can parse URL with CID+path+queryString', async () => {
       await assertMatchUrl(
-        `ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
+        new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`), {
           cid: txtFileCID,
           url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
         }
@@ -170,7 +157,7 @@ describe('url-resolver', () => {
       }])
 
       await assertMatchUrl(
-        'dnslink://mydomain.com', {
+        new URL('dnslink://mydomain.com'), {
           cid: txtFileCID,
           url: new URL('dnslink://mydomain.com')
         }
@@ -186,7 +173,7 @@ describe('url-resolver', () => {
       }])
 
       await assertMatchUrl(
-        'dnslink://mydomain.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt', {
+        new URL('dnslink://mydomain.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt'), {
           cid: txtFileCID,
           url: new URL('dnslink://mydomain.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt')
         }
@@ -202,7 +189,7 @@ describe('url-resolver', () => {
       }])
 
       await assertMatchUrl(
-        'dnslink://mydomain.com', {
+        new URL('dnslink://mydomain.com'), {
           cid: txtFileCID,
           url: new URL('dnslink://mydomain.com')
         }
@@ -218,7 +205,7 @@ describe('url-resolver', () => {
       }])
 
       await assertMatchUrl(
-        'dnslink://mydomain.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt', {
+        new URL('dnslink://mydomain.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt'), {
           cid: txtFileCID,
           url: new URL('dnslink://mydomain.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt')
         }
@@ -234,7 +221,7 @@ describe('url-resolver', () => {
       }])
 
       await assertMatchUrl(
-        'dnslink://mydomain.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?foo=bar', {
+        new URL('dnslink://mydomain.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?foo=bar'), {
           cid: txtFileCID,
           url: new URL('dnslink://mydomain.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?foo=bar')
         }
@@ -286,132 +273,6 @@ describe('url-resolver', () => {
     })
   })
 
-  describe.skip('/ipfs/<CID> URLs', () => {
-    it('should parse an IPFS Path with a CID only', async () => {
-      await assertMatchUrl(
-        `/ipfs/${nestedDirectoryCID}`, {
-          cid: nestedDirectoryCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}`)
-        }
-      )
-    })
-
-    it('can parse an IPFS Path with CID+path', async () => {
-      await assertMatchUrl(
-        `/ipfs/${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-          cid: txtFileCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-        }
-      )
-    })
-
-    it('can parse an IPFS Path with CID+queryString', async () => {
-      await assertMatchUrl(
-        `/ipfs/${nestedDirectoryCID}`, {
-          cid: nestedDirectoryCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}`)
-        }
-      )
-    })
-
-    it('can parse an IPFS Path with CID+path+queryString', async () => {
-      await assertMatchUrl(
-        `/ipfs/${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-          cid: txtFileCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-        }
-      )
-    })
-
-    // tests for https://github.com/ipfs-shipyard/service-worker-gateway/issues/83 issue
-    it('can parse an IPFS path with encodedURIComponents', async () => {
-      // spell-checker: disable-next-line
-      const rawPathLabel = "Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_–_Gallica_2011_(adjusted).jpg.webp"
-      await assertMatchUrl(
-        `/ipfs/${unicodeDirectoryCID}/I/${encodeURIComponent(rawPathLabel)}`, {
-          cid: txtFileCID,
-          url: new URL(`ipfs://${unicodeDirectoryCID}/I/${encodeURIComponent(rawPathLabel)}`)
-        }
-      )
-    })
-  })
-
-  describe.skip('http://example.com/ipfs/<CID> URLs', () => {
-    it('should parse an IPFS Gateway URL with a CID only', async () => {
-      await assertMatchUrl(
-        `http://example.com/ipfs/${nestedDirectoryCID}`, {
-          cid: nestedDirectoryCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}`)
-        }
-      )
-    })
-
-    it('can parse an IPFS Gateway URL with CID+path', async () => {
-      await assertMatchUrl(
-        `http://example.com/ipfs/${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-          cid: txtFileCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-        }
-      )
-    })
-
-    it('can parse an IPFS Gateway URL with CID+queryString', async () => {
-      await assertMatchUrl(
-        `http://example.com/ipfs/${nestedDirectoryCID}`, {
-          cid: nestedDirectoryCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}`)
-        }
-      )
-    })
-
-    it('can parse an IPFS Gateway URL with CID+path+queryString', async () => {
-      await assertMatchUrl(
-        `http://example.com/ipfs/${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-          cid: txtFileCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-        }
-      )
-    })
-  })
-
-  describe.skip('http://<CID>.ipfs.example.com URLs', () => {
-    it('should parse a IPFS Subdomain Gateway URL with a CID only', async () => {
-      await assertMatchUrl(
-        `http://${nestedDirectoryCID}.ipfs.example.com`, {
-          cid: nestedDirectoryCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}`)
-        }
-      )
-    })
-
-    it('can parse a IPFS Subdomain Gateway URL with CID+path', async () => {
-      await assertMatchUrl(
-        `http://${nestedDirectoryCID}.ipfs.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-          cid: txtFileCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-        }
-      )
-    })
-
-    it('can parse a IPFS Subdomain Gateway URL with CID+queryString', async () => {
-      await assertMatchUrl(
-        `http://${nestedDirectoryCID}.ipfs.example.com?foo=bar`, {
-          cid: nestedDirectoryCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}?foo=bar`)
-        }
-      )
-    })
-
-    it('can parse a IPFS Subdomain Gateway URL with CID+path+queryString', async () => {
-      await assertMatchUrl(
-        `http://${nestedDirectoryCID}.ipfs.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?foo=bar`, {
-          cid: txtFileCID,
-          url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt?foo=bar`)
-        }
-      )
-    })
-  })
-
   describe('ipns://<peerId> URLs', () => {
     let testPeerId: PeerId
     let base36CidPeerId: string
@@ -439,7 +300,7 @@ describe('url-resolver', () => {
       })
 
       await assertMatchUrl(
-        `ipns://${testPeerId}`, {
+        new URL(`ipns://${testPeerId}`), {
           cid: txtFileCID,
           url: new URL(`ipns://${testPeerId}`)
         }
@@ -454,7 +315,7 @@ describe('url-resolver', () => {
       })
 
       await assertMatchUrl(
-        `ipns://${base36CidPeerId}`, {
+        new URL(`ipns://${base36CidPeerId}`), {
           cid: txtFileCID,
           url: new URL(`ipns://${base36CidPeerId}`)
         }
@@ -469,7 +330,7 @@ describe('url-resolver', () => {
       })
 
       await assertMatchUrl(
-        `ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
+        new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`), {
           cid: txtFileCID,
           url: new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
         }
@@ -484,7 +345,7 @@ describe('url-resolver', () => {
       })
 
       await assertMatchUrl(
-        `ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt/`, {
+        new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt/`), {
           cid: txtFileCID,
           url: new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt/`)
         }
@@ -499,7 +360,7 @@ describe('url-resolver', () => {
       })
 
       await assertMatchUrl(
-        `ipns://${testPeerId}`, {
+        new URL(`ipns://${testPeerId}`), {
           cid: txtFileCID,
           url: new URL(`ipns://${testPeerId}`)
         }
@@ -514,7 +375,7 @@ describe('url-resolver', () => {
       })
 
       await assertMatchUrl(
-        `ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
+        new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`), {
           cid: txtFileCID,
           url: new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
         }
@@ -534,7 +395,7 @@ describe('url-resolver', () => {
       })
 
       await assertMatchUrl(
-        `ipns://${peerId}/${requestPath}`, {
+        new URL(`ipns://${peerId}/${requestPath}`), {
           cid: txtFileCID,
           url: new URL(`ipns://${peerId}/${requestPath}`)
         }
@@ -554,7 +415,7 @@ describe('url-resolver', () => {
       })
 
       await assertMatchUrl(
-        `ipns://${peerId}/${requestPath}`, {
+        new URL(`ipns://${peerId}/${requestPath}`), {
           cid: txtFileCID,
           url: new URL(`ipns://${peerId}/${requestPath}`)
         }
@@ -574,7 +435,7 @@ describe('url-resolver', () => {
       })
 
       await assertMatchUrl(
-        `ipns://${peerId}/${requestPath}`, {
+        new URL(`ipns://${peerId}/${requestPath}`), {
           cid: txtFileCID,
           url: new URL(`ipns://${peerId}/${requestPath}`)
         }
@@ -582,268 +443,10 @@ describe('url-resolver', () => {
     })
   })
 
-  describe.skip('/ipns/<PeerId> URLs', () => {
-    let peerId: PeerId
-
-    beforeEach(async () => {
-      const key = await generateKeyPair('Ed25519')
-      peerId = peerIdFromPrivateKey(key)
-
-      ipnsResolver.resolve.withArgs(peerId).resolves({
-        cid: nestedDirectoryCID,
-        path: '',
-        record: ipnsRecordStub({ peerId })
-      })
-    })
-
-    it('should parse an IPNS Path with a PeerId only', async () => {
-      await assertMatchUrl(
-        `/ipns/${peerId}/`, {
-          cid: nestedDirectoryCID,
-          url: new URL(`ipns://${peerId}/`)
-        }
-      )
-    })
-
-    it('can parse an IPNS Path with PeerId+path', async () => {
-      await assertMatchUrl(
-        `/ipns/${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-          cid: txtFileCID,
-          url: new URL(`ipns://${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-        }
-      )
-    })
-
-    it('can parse an IPNS Path with PeerId+directoryPath', async () => {
-      await assertMatchUrl(
-        `/ipns/${peerId}/1 - Barrel - Part 1/`, {
-          cid: directoryCID,
-          url: new URL(`ipns://${peerId}/1 - Barrel - Part 1/`)
-        }
-      )
-    })
-
-    it('can parse an IPNS Path with PeerId', async () => {
-      await assertMatchUrl(
-        `/ipns/${peerId}`, {
-          cid: nestedDirectoryCID,
-          url: new URL(`ipns://${peerId}`)
-        }
-      )
-    })
-
-    it('can parse an IPNS Path with PeerId+path', async () => {
-      await assertMatchUrl(
-        `/ipns/${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-          cid: txtFileCID,
-          url: new URL(`ipns://${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-        }
-      )
-    })
-
-    it('can parse an IPNS Path with PeerId+directoryPath', async () => {
-      await assertMatchUrl(
-        `/ipns/${peerId}/1 - Barrel - Part 1/`, {
-          cid: directoryCID,
-          url: new URL(`ipns://${peerId}/1 - Barrel - Part 1/`)
-        }
-      )
-    })
-  })
-
-  HTTP_PROTOCOLS.forEach(proto => {
-    describe.skip(`${proto}://example.com/ipfs/<CID> URLs`, () => {
-      let peerId: PeerId
-
-      beforeEach(async () => {
-        const key = await generateKeyPair('Ed25519')
-        peerId = peerIdFromPrivateKey(key)
-
-        ipnsResolver.resolve.withArgs(peerId).resolves({
-          cid: nestedDirectoryCID,
-          path: '',
-          record: ipnsRecordStub({ peerId })
-        })
-      })
-
-      it('should parse an IPFS Gateway URL with a CID only', async () => {
-        await assertMatchUrl(
-          `${proto}://example.com/ipns/${peerId}`, {
-            cid: nestedDirectoryCID,
-            url: new URL(`ipns://${peerId}`)
-          }
-        )
-      })
-
-      it('can parse an IPNS Gateway URL with CID+path', async () => {
-        await assertMatchUrl(
-          `${proto}://example.com/ipns/${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-            cid: txtFileCID,
-            url: new URL(`ipns://${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-          }
-        )
-      })
-
-      it('can parse an IPNS Gateway URL with CID+directoryPath', async () => {
-        await assertMatchUrl(
-          `${proto}://example.com/ipns/${peerId}/1 - Barrel - Part 1/`, {
-            cid: directoryCID,
-            url: new URL(`ipns://${peerId}/1 - Barrel - Part 1/`)
-          }
-        )
-      })
-
-      it('can parse an IPNS Gateway URL with CID', async () => {
-        await assertMatchUrl(
-          `${proto}://example.com/ipns/${peerId}`, {
-            cid: nestedDirectoryCID,
-            url: new URL(`ipns://${peerId}`)
-          }
-        )
-      })
-
-      it('can parse an IPNS Gateway URL with CID+path+queryString', async () => {
-        await assertMatchUrl(
-          `${proto}://example.com/ipns/${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-            cid: txtFileCID,
-            url: new URL(`ipns://${peerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-          }
-        )
-      })
-
-      it('can parse an IPNS Gateway URL with CID+directoryPath', async () => {
-        await assertMatchUrl(
-          `${proto}://example.com/ipns/${peerId}/1 - Barrel - Part 1/`, {
-            cid: directoryCID,
-            url: new URL(`ipns://${peerId}/1 - Barrel - Part 1/`)
-          }
-        )
-      })
-    })
-  })
-
-  const IPNS_TYPES = [
-    ['dnslink-encoded', (i: number) => `${i}-example-com`, (val: string) => val.replace(/-/g, '.')],
-    ['dnslink-decoded', (i: number) => `${i}.example.com`, (val: string) => val],
-    ['peerid', async () => {
-      const key = await generateKeyPair('Ed25519')
-      return peerIdFromPrivateKey(key)
-    }, (val: string) => val]
-  ] as const
-
-  IPNS_TYPES.flatMap(([type, fn, decodedFn]) => {
-    // merge IPNS_TYPES with HTTP_PROTOCOLS
-    return HTTP_PROTOCOLS.reduce<Array<[string, string, (i: number) => string | Promise<PeerId>, (val: string) => string]>>((acc, proto) => {
-      acc.push([proto, type, fn, decodedFn])
-      return acc
-    }, [])
-  }, []).forEach(([proto, type, getVal, getDecoded]) => {
-    describe.skip(`${proto}://<${type}>.ipns.example.com URLs`, () => {
-      let value: PeerId | string
-      let i = 0
-      let protocol: string
-      beforeEach(async () => {
-        value = await getVal(i++)
-
-        protocol = 'ipns'
-
-        if (type === 'peerid') {
-          ipnsResolver.resolve.withArgs((value as PeerId)).resolves({
-            cid: nestedDirectoryCID,
-            path: '',
-            record: ipnsRecordStub({ peerId: value as PeerId })
-          })
-        } else if (type === 'dnslink-encoded') {
-          protocol = 'dnslink'
-          dnsLink.resolve.withArgs(value.toString().replace(/-/g, '.')).resolves([{
-            namespace: 'ipfs',
-            cid: nestedDirectoryCID,
-            path: '',
-            answer: stubInterface<Answer>()
-          }])
-        } else {
-          protocol = 'dnslink'
-          dnsLink.resolve.withArgs(value.toString()).resolves([{
-            namespace: 'ipfs',
-            cid: nestedDirectoryCID,
-            path: '',
-            answer: stubInterface<Answer>()
-          }])
-        }
-      })
-
-      it('should parse a IPNS Subdomain Gateway URL with a CID only', async () => {
-        await assertMatchUrl(
-          `${proto}://${value}.ipns.example.com`, {
-            cid: nestedDirectoryCID,
-            url: new URL(`${protocol}://${getDecoded(value.toString())}`)
-          }
-        )
-      })
-
-      it('can parse a IPNS Subdomain Gateway URL with CID+path', async () => {
-        await assertMatchUrl(
-          `${proto}://${value}.ipns.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-            cid: txtFileCID,
-            url: new URL(`${protocol}://${getDecoded(value.toString())}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-          }
-        )
-      })
-
-      it('can parse a IPNS Subdomain Gateway URL with CID+directoryPath', async () => {
-        await assertMatchUrl(
-          `${proto}://${value.toString()}.ipns.example.com/1 - Barrel - Part 1/`, {
-            cid: directoryCID,
-            url: new URL(`${protocol}://${getDecoded(value.toString())}/1 - Barrel - Part 1/`)
-          }
-        )
-      })
-
-      it('can parse a IPNS Subdomain Gateway URL with CID+queryString', async () => {
-        await assertMatchUrl(
-          `${proto}://${value.toString()}.ipns.example.com`, {
-            cid: nestedDirectoryCID,
-            url: new URL(`${protocol}://${getDecoded(value.toString())}`)
-          }
-        )
-      })
-
-      it('can parse a IPNS Subdomain Gateway URL with CID+path+queryString', async () => {
-        await assertMatchUrl(
-          `${proto}://${value.toString()}.ipns.example.com/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`, {
-            cid: txtFileCID,
-            url: new URL(`${protocol}://${getDecoded(value.toString())}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
-          }
-        )
-      })
-
-      it('can parse a IPNS Subdomain Gateway URL with CID+directoryPath+queryString', async () => {
-        await assertMatchUrl(
-          `${proto}://${value}.ipns.example.com/1 - Barrel - Part 1/`, {
-            cid: directoryCID,
-            url: new URL(`${protocol}://${getDecoded(value.toString())}/1 - Barrel - Part 1/`)
-          }
-        )
-      })
-    })
-  })
-
-  describe.skip('subdomainURLs with paths', () => {
-    it('should correctly parse a subdomain that also has /ipfs in the path', async () => {
-      // straight from gateway-conformance test: http://bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am.ipfs.localhost:3441/ipfs/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am
-      await assertMatchUrl(
-        `http://${nestedDirectoryWithIPFSSegmentCID}.ipfs.localhost:3441/ipfs/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am`, {
-          cid: txtFileCID,
-          url: new URL(`ipfs://${nestedDirectoryWithIPFSSegmentCID}/ipfs/bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am`)
-        }
-      )
-    })
-  })
-
-  describe.skip('url fragments', () => {
+  describe('url fragments', () => {
     it('can parse an HTTP URL with a fragment', async () => {
       await assertMatchUrl(
-        `http://${nestedDirectoryCID}.ipfs.localhost:1234/#hello-fragment`, {
+        new URL(`ipfs://${nestedDirectoryCID}/#hello-fragment`), {
           cid: nestedDirectoryCID,
           url: new URL(`ipfs://${nestedDirectoryCID}/#hello-fragment`)
         }
@@ -852,7 +455,7 @@ describe('url-resolver', () => {
 
     it('can parse an HTTP URL with a fragment and a path', async () => {
       await assertMatchUrl(
-        `http://${nestedDirectoryCID}.ipfs.localhost:1234/1 - Barrel - Part 1/#hello-fragment`, {
+        new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/#hello-fragment`), {
           cid: directoryCID,
           url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/#hello-fragment`)
         }
@@ -861,7 +464,7 @@ describe('url-resolver', () => {
 
     it('can parse an HTTP URL with a fragment and a path and a query', async () => {
       await assertMatchUrl(
-        `http://${nestedDirectoryCID}.ipfs.localhost:1234/1 - Barrel - Part 1/?foo=bar#hello-fragment`, {
+        new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/?foo=bar#hello-fragment`), {
           cid: directoryCID,
           url: new URL(`ipfs://${nestedDirectoryCID}/1 - Barrel - Part 1/?foo=bar#hello-fragment`)
         }

@@ -1,12 +1,9 @@
 import { expect } from 'aegir/chai'
-import { encodeDNSLinkLabel } from '../../src/utils/dnslink-label.ts'
-import { parseURLString } from '../../src/utils/parse-url-string.ts'
+import { stringToIpfsUrl } from '../../src/utils/parse-resource.ts'
 
 const schemes = {
   Path: '/{scheme}/{key}',
-  URL: '{scheme}://{key}',
-  'Path Gateway': 'https://example.org/{scheme}/{key}',
-  'Subdomain Gateway': 'https://{key}.{scheme}.example.org'
+  URL: '{scheme}://{key}'
 }
 
 const types = [
@@ -148,15 +145,7 @@ describe('parse-url-string', () => {
       for (const [key, value] of Object.entries(keys[type])) {
         for (const [name, test] of Object.entries(testCases)) {
           it(`should parse ${type.toUpperCase()} ${scheme} with ${key} ${name}`, () => {
-            const isIPNSSubdomainTest = protocol === 'ipns' && scheme.includes('Subdomain') && key === 'domain'
-            let val = value
-
-            // have to encode DNSLink label if it's going in a subdomain
-            if (isIPNSSubdomainTest) {
-              val = encodeDNSLinkLabel(value)
-            }
-
-            expect(parseURLString(`${uri.replace('{scheme}', protocol).replace('{key}', val)}${test.ref}`))
+            expect(stringToIpfsUrl(`${uri.replace('{scheme}', protocol).replace('{key}', value)}${test.ref}`))
               .to.deep.equal(new URL(`${type}://${value}${test.ref}`))
           })
         }

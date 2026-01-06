@@ -52,14 +52,6 @@ describe('dag-walk', () => {
     expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${root}/hello/world.txt`, 'included fragment in x-ipfs-path header')
   }
 
-  it('should omit fragments from an HTTP URL', async () => {
-    await testUrl(`http://${root}.ipfs.localhost/hello/world.txt${FRAGMENT}`)
-  })
-
-  it('should omit fragments from an HTTP URL with query parameters', async () => {
-    await testUrl(`http://${root}.ipfs.localhost/hello/world.txt?foo=bar&baz=qux${FRAGMENT}`)
-  })
-
   it('should omit fragments from an IPFS URL', async () => {
     await testUrl(`ipfs://${root}/hello/world.txt${FRAGMENT}`)
   })

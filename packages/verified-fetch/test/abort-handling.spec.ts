@@ -106,7 +106,11 @@ describe('abort-handling', function () {
   })
 
   it('should abort a request while looking for cid', async function () {
-    await expect(makeAbortedRequest(verifiedFetch, [notPublishedCid, { headers: { accept: 'application/octet-stream' } }], blockBrokerRetrieveCalled.promise)).to.eventually.be.rejectedWith('aborted')
+    await expect(makeAbortedRequest(verifiedFetch, [notPublishedCid, {
+      headers: {
+        accept: 'application/octet-stream'
+      }
+    }], blockBrokerRetrieveCalled.promise)).to.eventually.be.rejectedWith('aborted')
 
     expect(peerIdResolver.callCount).to.equal(0) // not called because parseResource never passes the resource to parseUrlString
     expect(dnsLinkResolver.callCount).to.equal(0) // not called because parseResource never passes the resource to parseUrlString

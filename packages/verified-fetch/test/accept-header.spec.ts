@@ -13,6 +13,7 @@ import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
+import type { IPNSPublishResult } from '@helia/ipns'
 
 interface Codec {
   encode(obj: any): Uint8Array
@@ -28,6 +29,7 @@ interface AcceptCborTestArgs {
 describe('accept header', () => {
   let helia: Awaited<ReturnType<typeof createHelia>>
   let verifiedFetch: VerifiedFetch
+  let record: IPNSPublishResult
 
   function shouldNotAcceptCborWith ({ obj, type, codec = ipldDagCbor }: AcceptCborTestArgs): void {
     // skipped pending https://github.com/ipfs/specs/pull/524
@@ -62,6 +64,14 @@ describe('accept header', () => {
   beforeEach(async () => {
     helia = await createHelia()
     verifiedFetch = new VerifiedFetch(helia)
+
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+    const i = ipns(helia)
+    record = await i.publish('record-to-fetch', cid)
   })
 
   afterEach(async () => {
@@ -285,61 +295,82 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.raw')
   })
 
-  it('should support fetching IPNS records', async () => {
-    const obj = {
-      hello: 'world'
-    }
-    const c = dagCbor(helia)
-    const cid = await c.add(obj)
-
-    const i = ipns(helia)
-    const record = await i.publish('record-to-fetch', cid)
-
-    const resp = await verifiedFetch.fetch(`ipns://${record.publicKey.toString()}`, {
+  it('should support fetching IPNS records by IPNS URL and public key (base58btc multihash)', async () => {
+    const resp = await verifiedFetch.fetch(`ipns://${record.publicKey}`, {
       headers: {
         accept: 'application/vnd.ipfs.ipns-record'
       }
     })
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
-    const buf = await resp.arrayBuffer()
 
+    const buf = await resp.arrayBuffer()
     expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
   })
 
-  it('should support fetching IPNS records for a ipns subdomain', async () => {
-    const obj = {
-      hello: 'world'
-    }
-    const c = dagCbor(helia)
-    const cid = await c.add(obj)
-
-    const i = ipns(helia)
-    const record = await i.publish('subdomain-record-to-fetch', cid)
-
-    /**
-     * Works with k51... peerIds
-     */
-    let resp = await verifiedFetch.fetch(`http://${record.publicKey.toCID().toString(base36)}.ipns.example.com`, {
+  it('should support fetching IPNS records by IPNS URL and base36 CID', async () => {
+    const resp = await verifiedFetch.fetch(`ipns://${record.publicKey.toCID().toString(base36)}`, {
       headers: {
         accept: 'application/vnd.ipfs.ipns-record'
       }
     })
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
-    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(marshalIPNSRecord(record.record))
 
-    /**
-     * Works with default CID peerIds
-     */
-    resp = await verifiedFetch.fetch(`http://${record.publicKey.toCID().toString()}.ipns.example.com`, {
+    const buf = await resp.arrayBuffer()
+    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+  })
+
+  it('should support fetching IPNS records by IPNS URL and default CID', async () => {
+    const resp = await verifiedFetch.fetch(`ipns://${record.publicKey.toCID()}`, {
       headers: {
         accept: 'application/vnd.ipfs.ipns-record'
       }
     })
     expect(resp.status).to.equal(200)
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
-    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(marshalIPNSRecord(record.record))
+
+    const buf = await resp.arrayBuffer()
+    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+  })
+
+  it('should support fetching IPNS records by IPNS path and public key (base58btc multihash)', async () => {
+    const resp = await verifiedFetch.fetch(`/ipns/${record.publicKey}`, {
+      headers: {
+        accept: 'application/vnd.ipfs.ipns-record'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
+
+    const buf = await resp.arrayBuffer()
+    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+  })
+
+  it('should support fetching IPNS records by IPNS path and base36 CID', async () => {
+    const resp = await verifiedFetch.fetch(`/ipns/${record.publicKey.toCID().toString(base36)}`, {
+      headers: {
+        accept: 'application/vnd.ipfs.ipns-record'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
+
+    const buf = await resp.arrayBuffer()
+    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+  })
+
+  it('should support fetching IPNS records by IPNS path and default CID', async () => {
+    const resp = await verifiedFetch.fetch(`/ipns/${record.publicKey.toCID()}`, {
+      headers: {
+        accept: 'application/vnd.ipfs.ipns-record'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
+
+    const buf = await resp.arrayBuffer()
+    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
   })
 
   shouldNotAcceptCborWith({

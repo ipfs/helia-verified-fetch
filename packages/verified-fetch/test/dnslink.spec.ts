@@ -31,7 +31,7 @@ describe('dnslink', () => {
     await stop(helia)
   })
 
-  it('should resolve an inline dnslink url', async () => {
+  it('should resolve a dnslink url', async () => {
     const obj = {
       hello: 'world'
     }
@@ -45,15 +45,37 @@ describe('dnslink', () => {
       answer: stubInterface()
     }])
 
-    const resp = await fetch('http://dnslink--test-example-org.ipns.local')
+    const resp = await fetch(`ipns://${domain}`)
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
-    expect(resp.url).to.equal('http://dnslink--test-example-org.ipns.local')
+    expect(resp.url).to.equal('ipns://dnslink-test.example.org')
     expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
   })
 
-  it('should redirect an inline dnslink url to a directory', async () => {
+  it('should resolve a dnslink path', async () => {
+    const obj = {
+      hello: 'world'
+    }
+    const c = dagCbor(helia)
+    const cid = await c.add(obj)
+    const domain = 'dnslink-test.example.org'
+    dnsLink.resolve.withArgs(domain).resolves([{
+      namespace: 'ipfs',
+      cid,
+      path: '',
+      answer: stubInterface()
+    }])
+
+    const resp = await fetch(`/ipns/${domain}`)
+    expect(resp).to.be.ok()
+    expect(resp.status).to.equal(200)
+    expect(resp.redirected).to.be.false()
+    expect(resp.url).to.equal('/ipns/dnslink-test.example.org')
+    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
+  })
+
+  it('should redirect a dnslink url to a directory', async () => {
     const fs = unixfs(helia)
     const cid = await fs.addDirectory()
 
@@ -65,11 +87,11 @@ describe('dnslink', () => {
       answer: stubInterface()
     }])
 
-    const resp = await fetch('http://local:3000/ipns/dnslink-test.example.org')
+    const resp = await fetch('ipns://dnslink-test.example.org')
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.true()
-    expect(resp.url).to.equal('http://local:3000/ipns/dnslink-test.example.org/')
+    expect(resp.url).to.equal('ipns://dnslink-test.example.org/')
     expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
   })
 })

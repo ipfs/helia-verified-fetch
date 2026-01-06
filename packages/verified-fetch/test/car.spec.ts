@@ -13,6 +13,7 @@ import { CID } from 'multiformats/cid'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import { createRandomDataChunks } from './fixtures/create-random-data-chunks.js'
+import { HAMT_DIRECTORY_BLOCK, HAMT_DIRECTORY_CID, HAMT_FILE_CHILD_0_BLOCK, HAMT_FILE_CHILD_0_CID, HAMT_FILE_CHILD_1_BLOCK, HAMT_FILE_CHILD_1_CID, HAMT_FILE_CHILD_2_BLOCK, HAMT_FILE_CHILD_2_CID, HAMT_FILE_CHILD_3_BLOCK, HAMT_FILE_CHILD_3_CID, HAMT_FILE_CID, HAMT_FILE_ROOT, HAMT_INTERMEDIATE_BLOCK, HAMT_INTERMEDIATE_CID, HAMT_ROOT_BLOCK, HAMT_ROOT_CID } from './fixtures/hamt.ts'
 import type { Helia } from '@helia/interface'
 
 describe('car files', () => {
@@ -442,6 +443,40 @@ describe('car files', () => {
       const reader = await CarReader.fromBytes(buf)
       expect(await reader.getRoots()).to.deep.equal([fileCid])
       expect(await all(reader.cids())).to.deep.equal([rootCid, fileCid, ...fileChunkCids], 'did not contain root and all large file blocks')
+    })
+
+    it.skip('includes intermediate nodes in HAMT shards', async () => {
+      await helia.blockstore.put(HAMT_ROOT_CID, HAMT_ROOT_BLOCK)
+      await helia.blockstore.put(HAMT_INTERMEDIATE_CID, HAMT_INTERMEDIATE_BLOCK)
+      await helia.blockstore.put(HAMT_DIRECTORY_CID, HAMT_DIRECTORY_BLOCK)
+      await helia.blockstore.put(HAMT_FILE_CID, HAMT_FILE_ROOT)
+      await helia.blockstore.put(HAMT_FILE_CHILD_0_CID, HAMT_FILE_CHILD_0_BLOCK)
+      await helia.blockstore.put(HAMT_FILE_CHILD_1_CID, HAMT_FILE_CHILD_1_BLOCK)
+      await helia.blockstore.put(HAMT_FILE_CHILD_2_CID, HAMT_FILE_CHILD_2_BLOCK)
+      await helia.blockstore.put(HAMT_FILE_CHILD_3_CID, HAMT_FILE_CHILD_3_BLOCK)
+
+      const resp = await verifiedFetch.fetch(`ipfs://${HAMT_ROOT_CID}/685.txt`, {
+        headers: {
+          accept: 'application/vnd.ipld.car'
+        }
+      })
+      expect(resp.status).to.equal(200)
+      expect(resp.headers.get('content-type')).to.include('application/vnd.ipld.car; version=1')
+      expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${HAMT_ROOT_CID}_685.txt.car"`)
+
+      const buf = new Uint8Array(await resp.arrayBuffer())
+      const reader = await CarReader.fromBytes(buf)
+      expect(await reader.getRoots()).to.deep.equal([HAMT_DIRECTORY_CID])
+      expect(await all(reader.cids())).to.deep.equal([
+        HAMT_ROOT_CID,
+        HAMT_INTERMEDIATE_CID,
+        HAMT_DIRECTORY_CID,
+        HAMT_FILE_CID,
+        HAMT_FILE_CHILD_0_CID,
+        HAMT_FILE_CHILD_1_CID,
+        HAMT_FILE_CHILD_2_CID,
+        HAMT_FILE_CHILD_3_CID
+      ], 'did not contain shard file and all intermediate blocks')
     })
   })
 })

@@ -9,20 +9,21 @@ import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_DAG_PB } from '../utils/content-typ
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
 import { badGatewayResponse, movedPermanentlyResponse, partialContentResponse, okResponse } from '../utils/responses.js'
 import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from '../index.js'
+import type { PluginContext, Resource } from '../index.js'
 import type { RangeHeader } from '../utils/get-range-header.ts'
 import type { AbortOptions } from '@libp2p/interface'
 import type { IdentityNode, RawNode, UnixFSEntry, UnixFSFile } from 'ipfs-unixfs-exporter'
+import type { CID } from 'multiformats/cid'
 
 /**
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
  */
-function getRedirectUrl (resource: string, url: URL, terminalElement: UnixFSEntry): string | undefined {
+function getRedirectUrl (resource: Resource, url: URL, terminalElement: UnixFSEntry): string | undefined {
   let uri: URL
 
   try {
     // try the requested resource
-    uri = new URL(resource)
+    uri = new URL(resource.toString())
   } catch {
     // fall back to the canonical URL
     uri = url
@@ -99,7 +100,7 @@ export class UnixFSPlugin extends BasePlugin {
 
           this.log.trace('found directory index at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
 
-          return await this.streamFile(resource, entry, filename, redirected, context.range, context.options)
+          return await this.streamFile(resource, entry, filename, ipfsRoots, redirected, context.range, context.options)
         } catch (err: any) {
           if (err.name !== 'NotFoundError') {
             this.log.error('error loading path %c/%s - %e', dirCid, rootFilePath, err)
@@ -125,14 +126,14 @@ export class UnixFSPlugin extends BasePlugin {
       })
     } else if (terminalElement.type === 'file' || terminalElement.type === 'raw' || terminalElement.type === 'identity') {
       this.log('streaming file')
-      return this.streamFile(resource, terminalElement, filename, redirected, context.range, context.options)
+      return this.streamFile(resource, terminalElement, filename, ipfsRoots, redirected, context.range, context.options)
     } else {
       this.log.error('cannot stream terminal element type %s', terminalElement.type)
       return badGatewayResponse(resource, 'Unable to stream content')
     }
   }
 
-  private async streamFile (resource: string, entry: UnixFSFile | RawNode | IdentityNode, filename: string, redirected?: boolean, rangeHeader?: RangeHeader, options?: AbortOptions): Promise<Response> {
+  private async streamFile (resource: Resource, entry: UnixFSFile | RawNode | IdentityNode, filename: string, ipfsRoots: CID[], redirected?: boolean, rangeHeader?: RangeHeader, options?: AbortOptions): Promise<Response> {
     let contentType = MEDIA_TYPE_OCTET_STREAM
 
     // only detect content type for non-range requests to avoid loading blocks
@@ -154,7 +155,7 @@ export class UnixFSPlugin extends BasePlugin {
           'content-disposition': `inline; ${
             getContentDispositionFilename(filename)
           }`,
-          'x-ipfs-roots': entry.cid.toString(),
+          'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(','),
           'accept-ranges': 'bytes'
         },
         redirected
@@ -170,7 +171,7 @@ export class UnixFSPlugin extends BasePlugin {
         'content-disposition': `inline; ${
           getContentDispositionFilename(filename)
         }`,
-        'x-ipfs-roots': entry.cid.toString(),
+        'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(','),
         'accept-ranges': 'bytes'
       },
       redirected

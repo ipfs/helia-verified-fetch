@@ -180,13 +180,13 @@ describe('@helia/verified-fetch', () => {
       const stat = await fs.stat(res.cid)
       expect(stat.type).to.equal('directory')
 
-      const ipfsResponse = await verifiedFetch.fetch(`https://ipfs.local/ipfs/${res.cid}`, {
+      const ipfsResponse = await verifiedFetch.fetch(`/ipfs/${res.cid}`, {
         redirect: 'manual'
       })
       expect(ipfsResponse).to.be.ok()
       expect(ipfsResponse.status).to.equal(301)
-      expect(ipfsResponse.headers.get('location')).to.equal(`https://ipfs.local/ipfs/${res.cid}/`)
-      expect(ipfsResponse.url).to.equal(`https://ipfs.local/ipfs/${res.cid}`)
+      expect(ipfsResponse.headers.get('location')).to.equal(`ipfs://${res.cid}/`)
+      expect(ipfsResponse.url).to.equal(`/ipfs/${res.cid}`)
     })
 
     it('should return a 301 with a trailing slash when a gateway directory is requested without a trailing slash', async () => {
@@ -207,13 +207,13 @@ describe('@helia/verified-fetch', () => {
       const stat = await fs.stat(res.cid)
       expect(stat.type).to.equal('directory')
 
-      const ipfsResponse = await verifiedFetch.fetch(`https://ipfs.local/ipfs/${res.cid}/foo`, {
+      const ipfsResponse = await verifiedFetch.fetch(`/ipfs/${res.cid}/foo`, {
         redirect: 'manual'
       })
       expect(ipfsResponse).to.be.ok()
       expect(ipfsResponse.status).to.equal(301)
-      expect(ipfsResponse.headers.get('location')).to.equal(`https://ipfs.local/ipfs/${res.cid}/foo/`)
-      expect(ipfsResponse.url).to.equal(`https://ipfs.local/ipfs/${res.cid}/foo`)
+      expect(ipfsResponse.headers.get('location')).to.equal(`ipfs://${res.cid}/foo/`)
+      expect(ipfsResponse.url).to.equal(`/ipfs/${res.cid}/foo`)
     })
 
     it('should return a 301 with a trailing slash when a subdomain gateway directory is requested without a trailing slash', async () => {
@@ -234,13 +234,13 @@ describe('@helia/verified-fetch', () => {
       const stat = await fs.stat(res.cid)
       expect(stat.type).to.equal('directory')
 
-      const ipfsResponse = await verifiedFetch.fetch(`https://${res.cid}.ipfs.local/foo`, {
+      const ipfsResponse = await verifiedFetch.fetch(`ipfs://${res.cid}/foo`, {
         redirect: 'manual'
       })
       expect(ipfsResponse).to.be.ok()
       expect(ipfsResponse.status).to.equal(301)
-      expect(ipfsResponse.headers.get('location')).to.equal(`https://${res.cid}.ipfs.local/foo/`)
-      expect(ipfsResponse.url).to.equal(`https://${res.cid}.ipfs.local/foo`)
+      expect(ipfsResponse.headers.get('location')).to.equal(`ipfs://${res.cid}/foo/`)
+      expect(ipfsResponse.url).to.equal(`ipfs://${res.cid}/foo`)
     })
 
     it('should simulate following a redirect to a path with a slash when a directory is requested without a trailing slash', async () => {
@@ -292,20 +292,6 @@ describe('@helia/verified-fetch', () => {
       expect(ipfsResponse.status).to.equal(200)
       expect(ipfsResponse.redirected).to.be.false()
       expect(ipfsResponse.url).to.equal(`ipfs://${res.cid}/foo/`)
-    })
-
-    it.skip('should redirect to a libp2p-key CID when a base36 CIDv1 dag-pb IPNS name is requested', async () => {
-      // spell-checker: disable-next-line
-      const base36str = 'k50rm9yjlt0jey4fqg6wafvqprktgbkpgkqdg27tpqje6iimzxewnhvtin9hhq'
-      // const cid = CID.parse('k50rm9yjlt0jey4fqg6wafvqprktgbkpgkqdg27tpqje6iimzxewnhvtin9hhq')
-
-      const ipfsResponse = await verifiedFetch.fetch(`https://${base36str}.ipns.local`, {
-        redirect: 'manual'
-      })
-      expect(ipfsResponse).to.be.ok()
-      expect(ipfsResponse.status).to.equal(301)
-      expect(ipfsResponse.headers.get('location')).to.equal(`https://${base36str}.ipfs.local`)
-      expect(ipfsResponse.url).to.equal(`https://${base36str}.ipfs.local`)
     })
 
     it('should allow use as a stream', async () => {
@@ -837,7 +823,7 @@ describe('@helia/verified-fetch', () => {
       const c = dagCbor(helia)
       const cid = await c.add(obj)
 
-      const resp = await verifiedFetch.fetch(`http://example.com/ipfs/${cid}/foo/i-do-not-exist`)
+      const resp = await verifiedFetch.fetch(`/ipfs/${cid}/foo/i-do-not-exist`)
       expect(resp.status).to.equal(404)
     })
 
@@ -859,21 +845,21 @@ describe('@helia/verified-fetch', () => {
       expect(resp.status).to.equal(404)
     })
 
-    it('returns a 404 when requesting CID path from raw CID subdomain', async () => {
+    it('returns a 404 when requesting IPFS path from IPFS URL', async () => {
       const fs = unixfs(helia)
       const cid = await fs.addBytes(Uint8Array.from([0x01, 0x02, 0x03]))
 
-      const resp = await verifiedFetch.fetch(`https://${cid}.ipfs.localhost:3441/ipfs/${cid}`)
+      const resp = await verifiedFetch.fetch(`ipfs://${cid}/ipfs/${cid}`)
       expect(resp.status).to.equal(404)
     })
 
-    it('returns a 404 when requesting CID path from dag-pb CID subdomain', async () => {
+    it('returns a 404 when requesting CID path from dag-pb IPFS URL', async () => {
       const fs = unixfs(helia)
       const cid = await fs.addBytes(Uint8Array.from([0x01, 0x02, 0x03]), {
         rawLeaves: false
       })
 
-      const resp = await verifiedFetch.fetch(`https://${cid}.ipfs.localhost:3441/ipfs/${cid}`)
+      const resp = await verifiedFetch.fetch(`ipfs://${cid}/ipfs/${cid}`)
       expect(resp.status).to.equal(404)
     })
   })
@@ -903,7 +889,7 @@ describe('@helia/verified-fetch', () => {
         return originalCreateSession(root, options)
       })
 
-      const p = verifiedFetch.fetch('http://example.com/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA', {
+      const p = verifiedFetch.fetch('/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA', {
         signal: controller.signal
       })
 
@@ -927,7 +913,7 @@ describe('@helia/verified-fetch', () => {
         return originalGet(cid, options)
       })
 
-      const p = verifiedFetch.fetch('http://example.com/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN/foo/i-do-not-exist', {
+      const p = verifiedFetch.fetch('/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN/foo/i-do-not-exist', {
         signal: controller.signal,
         session: false
       })

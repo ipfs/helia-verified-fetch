@@ -10,7 +10,6 @@ import * as json from 'multiformats/codecs/json'
 import * as raw from 'multiformats/codecs/raw'
 import QuickLRU from 'quick-lru'
 import { SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS, CODEC_CBOR, CODEC_IDENTITY } from './constants.ts'
-import { resourceToSessionCacheKey } from './utils/resource-to-cache-key.ts'
 import { ServerTiming } from './utils/server-timing.ts'
 import type { ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
 import type { DNSLink } from '@helia/dnslink'
@@ -118,7 +117,7 @@ export class URLResolver implements URLResolverInterface {
       return this.components.helia.blockstore
     }
 
-    const key = resourceToSessionCacheKey(root)
+    const key = `ipfs:${root}`
     let session = this.blockstoreSessions.get(key)
 
     if (session == null) {
