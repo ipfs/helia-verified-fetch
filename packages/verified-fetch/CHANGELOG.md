@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-v6.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.1.1...@helia/verified-fetch-6.0.0) (2026-01-06)
+
+### ⚠ BREAKING CHANGES
+
+* resources must be fetched by IPFS/IPNS URLs or paths, e.g: `ipfs://...` or `/ipfs/...`
+
+### Bug Fixes
+
+* remove gateway url support ([#307](https://github.com/ipfs/helia-verified-fetch/issues/307)) ([c1b6fc3](https://github.com/ipfs/helia-verified-fetch/commit/c1b6fc3f2d35ad8f73cb4a8ce57e94373728bf0e))
+
 ## [@helia/verified-fetch-v5.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.1.0...@helia/verified-fetch-5.1.1) (2025-12-27)
 
 ### Bug Fixes
