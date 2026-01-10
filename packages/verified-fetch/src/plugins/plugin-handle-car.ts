@@ -1,6 +1,7 @@
 import { BlockExporter, car, CIDPath, depthFirstWalker, naturalOrderWalker, SubgraphExporter, UnixFSExporter } from '@helia/car'
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { createScalableCuckooFilter } from '@libp2p/utils'
+import { exporter } from 'ipfs-unixfs-exporter'
 import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { CONTENT_TYPE_CAR, MEDIA_TYPE_CAR } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
@@ -111,9 +112,13 @@ export class CarPlugin extends BasePlugin {
           listingOnly: true
         }
 
-        const slice = entityBytesToOffsetAndLength(terminalElement.size, url.searchParams.get('entity-bytes'))
-        options.offset = slice.offset
-        options.length = slice.length
+        const entry = await exporter(terminalElement.cid, blockstore, context.options)
+
+        if (entry.type === 'file') {
+          const slice = entityBytesToOffsetAndLength(entry.size, url.searchParams.get('entity-bytes'))
+          options.offset = slice.offset
+          options.length = slice.length
+        }
 
         carExportOptions.exporter = new UnixFSExporter(options)
       } else {

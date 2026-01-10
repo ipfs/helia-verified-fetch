@@ -1,15 +1,9 @@
 import { DoesNotExistError } from '@helia/unixfs/errors'
-import * as dagCbor from '@ipld/dag-cbor'
-import * as dagJson from '@ipld/dag-json'
-import * as dagPb from '@ipld/dag-pb'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { InvalidParametersError, walkPath } from 'ipfs-unixfs-exporter'
-import toBuffer from 'it-to-buffer'
 import { CID } from 'multiformats/cid'
-import * as json from 'multiformats/codecs/json'
-import * as raw from 'multiformats/codecs/raw'
 import QuickLRU from 'quick-lru'
-import { SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS, CODEC_CBOR, CODEC_IDENTITY } from './constants.ts'
+import { SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS } from './constants.ts'
 import { ServerTiming } from './utils/server-timing.ts'
 import type { ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
 import type { DNSLink } from '@helia/dnslink'
@@ -17,26 +11,10 @@ import type { IPNSResolver } from '@helia/ipns'
 import type { AbortOptions } from '@libp2p/interface'
 import type { Helia, SessionBlockstore } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
-import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { PathEntry } from 'ipfs-unixfs-exporter'
 
 // 1 year in seconds for ipfs content
 const IPFS_CONTENT_TTL = 29030400
-
-const ENTITY_CODECS = [
-  CODEC_CBOR,
-  json.code,
-  raw.code
-]
-
-/**
- * These are supported by the UnixFS exporter
- */
-const EXPORTABLE_CODECS = [
-  dagPb.code,
-  dagCbor.code,
-  dagJson.code,
-  raw.code
-]
 
 interface GetBlockstoreOptions extends AbortOptions {
   session?: boolean
@@ -44,22 +22,19 @@ interface GetBlockstoreOptions extends AbortOptions {
 
 export interface WalkPathResult {
   ipfsRoots: CID[]
-  terminalElement: UnixFSEntry
+  terminalElement: PathEntry
   blockstore: Blockstore
 }
 
-function basicEntry (type: 'raw' | 'object', cid: CID, bytes: Uint8Array): UnixFSEntry {
+function basicEntry (cid: CID): PathEntry {
   return {
+    cid,
     name: cid.toString(),
     path: cid.toString(),
-    depth: 0,
-    type,
-    node: bytes,
-    cid,
-    size: BigInt(bytes.byteLength),
-    content: async function * () {
-      yield bytes
-    }
+    roots: [
+      cid
+    ],
+    remainder: []
   }
 }
 
@@ -77,7 +52,6 @@ export interface URLResolverInit {
 export interface ResolveURLOptions extends AbortOptions {
   session?: boolean
   isRawBlockRequest?: boolean
-  onlyIfCached?: boolean
 }
 
 export class URLResolver implements URLResolverInterface {
@@ -195,16 +169,14 @@ export class URLResolver implements URLResolverInterface {
     const cid = CID.parse(url.hostname)
     const blockstore = this.getBlockstore(cid, options)
 
-    if (EXPORTABLE_CODECS.includes(cid.code)) {
+    try {
       const ipfsRoots: CID[] = []
-      let terminalElement: UnixFSEntry | undefined
+      let terminalElement: PathEntry | undefined
       const ipfsPath = toIPFSPath(url)
 
-      // @ts-expect-error offline is a helia option
       for await (const entry of walkPath(ipfsPath, blockstore, {
         ...options,
-        offline: options.onlyIfCached === true,
-        extended: options.isRawBlockRequest !== true
+        yieldSubShards: true
       })) {
         ipfsRoots.push(entry.cid)
         terminalElement = entry
@@ -219,31 +191,17 @@ export class URLResolver implements URLResolverInterface {
         terminalElement,
         blockstore
       }
-    }
-
-    let bytes: Uint8Array
-
-    if (cid.multihash.code === CODEC_IDENTITY) {
-      bytes = cid.multihash.digest
-    } else {
-      bytes = await toBuffer(blockstore.get(cid, options))
-    }
-
-    // entity codecs contain all the bytes for an entity in one block and no
-    // path walking outside of that block is possible
-    if (ENTITY_CODECS.includes(cid.code)) {
-      return {
-        ipfsRoots: [cid],
-        terminalElement: basicEntry('object', cid, bytes),
-        blockstore
+    } catch (err: any) {
+      if (err.name === 'NoResolverError') {
+        // may be an unknown codec
+        return {
+          ipfsRoots: [cid],
+          terminalElement: basicEntry(cid),
+          blockstore
+        }
       }
-    }
 
-    // may be an unknown codec
-    return {
-      ipfsRoots: [cid],
-      terminalElement: basicEntry('raw', cid, bytes),
-      blockstore
+      throw err
     }
   }
 }

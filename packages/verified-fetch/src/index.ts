@@ -791,7 +791,7 @@ import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { HeliaInit } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
-import type { ExporterProgressEvents, UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { ExporterProgressEvents, PathEntry } from 'ipfs-unixfs-exporter'
 import type { Libp2pOptions } from 'libp2p'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
@@ -1215,6 +1215,14 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<Verified
    * @default true
    */
   supportWebRedirects?: boolean
+
+  /**
+   * If true, only operate on the local blockstore, do not perform any network
+   * operations.
+   *
+   * @default false
+   */
+  offline?: boolean
 }
 
 export type URLProtocols = 'ipfs' | 'ipns' | 'dnslink'
@@ -1228,7 +1236,7 @@ export interface ResolveURLResult {
   ttl: number
   blockstore: Blockstore
   ipfsRoots: CID[]
-  terminalElement: UnixFSEntry
+  terminalElement: PathEntry
 }
 
 export interface URLResolver {
