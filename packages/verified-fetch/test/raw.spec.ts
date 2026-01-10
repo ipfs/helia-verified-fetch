@@ -108,6 +108,50 @@ describe('raw blocks', () => {
     expect(buf).to.equalBytes(block)
   })
 
+  it('should support fetching a raw block of an unsupported codec as raw', async () => {
+    const block = Uint8Array.from([0, 1, 2, 3, 4])
+    const digest = await sha256.digest(block)
+    // zcash-block, unsupported by default configuration
+    const cid = CID.createV1(0xc0, digest)
+    await helia.blockstore.put(cid, block)
+
+    const res = await verifiedFetch.fetch(`ipfs://${cid}`, {
+      headers: {
+        accept: 'application/vnd.ipld.raw'
+      }
+    })
+    expect(res.status).to.equal(200)
+    expect(res.headers.get('content-type')).to.equal('application/vnd.ipld.raw')
+    expect(res.headers.get('content-length')).to.equal(block.byteLength.toString())
+    expect(res.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
+
+    const buf = new Uint8Array(await res.arrayBuffer())
+    expect(buf).to.equalBytes(block)
+  })
+
+  it('should support fetching a raw block of an unsupported codec as octet-stream', async () => {
+    const block = Uint8Array.from([0, 1, 2, 3, 4])
+    const digest = await sha256.digest(block)
+    // zcash-block, unsupported by default configuration
+    const cid = CID.createV1(0xc0, digest)
+    await helia.blockstore.put(cid, block)
+
+    const res = await verifiedFetch.fetch(`ipfs://${cid}`, {
+      headers: {
+        accept: 'application/octet-stream'
+      }
+    })
+    expect(res.status).to.equal(200)
+    expect(res.headers.get('content-type')).to.equal('application/octet-stream')
+    expect(res.headers.get('content-length')).to.equal(block.byteLength.toString())
+    expect(res.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
+    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
+
+    const buf = new Uint8Array(await res.arrayBuffer())
+    expect(buf).to.equalBytes(block)
+  })
+
   for (const format of FORMATS) {
     // eslint-disable-next-line no-loop-func
     it(`should support fetching a raw block as ${format.name}`, async () => {

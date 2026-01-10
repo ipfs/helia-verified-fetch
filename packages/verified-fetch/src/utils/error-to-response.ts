@@ -26,7 +26,7 @@ export function errorToResponse (resource: Resource | string, err: any, init?: R
   }
 
   // path was not under DAG root
-  if (['ERR_NO_PROP', 'ERR_NO_TERMINAL_ELEMENT', 'ERR_NOT_FOUND'].includes(err.code)) {
+  if (['ERR_BAD_PATH', 'ERR_NO_TERMINAL_ELEMENT', 'ERR_NOT_FOUND'].includes(err.code)) {
     return notFoundResponse(resource)
   }
 

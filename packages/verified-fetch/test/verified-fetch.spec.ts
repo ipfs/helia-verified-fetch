@@ -93,12 +93,11 @@ describe('@helia/verified-fetch', () => {
       expect(onProgressEvents[0]).to.include({ type: 'verified-fetch:request:start' }).and.to.have.property('detail').that.deep.equals({
         resource: `ipfs://${cid}`
       })
-      expect(onProgressEvents[1]).to.include({ type: 'blocks:get:blockstore:get' }).and.to.have.property('detail').that.deep.equals(cid)
-      expect(onProgressEvents[2]).to.include({ type: 'verified-fetch:request:resolve' }).and.to.have.property('detail').that.deep.equals({
+      expect(onProgressEvents[1]).to.include({ type: 'verified-fetch:request:resolve' }).and.to.have.property('detail').that.deep.equals({
         cid,
         path: ''
       })
-
+      expect(onProgressEvents[2]).to.include({ type: 'blocks:get:blockstore:get' }).and.to.have.property('detail').that.deep.equals(cid)
       expect(onProgressEvents[3]).to.include({ type: 'unixfs:exporter:progress:raw' })
       expect(onProgressEvents[4]).to.include({ type: 'verified-fetch:request:end' }).and.to.have.property('detail').that.deep.equals({
         cid,

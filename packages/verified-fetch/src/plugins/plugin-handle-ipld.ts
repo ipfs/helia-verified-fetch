@@ -6,7 +6,7 @@ import * as json from 'multiformats/codecs/json'
 import * as raw from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
 import { CODEC_CBOR } from '../constants.ts'
-import { getContentTypesForCid, MEDIA_TYPE_CBOR, MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_DAG_JSON, MEDIA_TYPE_JSON, MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from '../utils/content-types.ts'
+import { getContentTypesForCid, MEDIA_TYPE_CBOR, MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_DAG_JSON, MEDIA_TYPE_JSON } from '../utils/content-types.ts'
 import { convertOutput } from '../utils/convert-output.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
 import { notAcceptableResponse, okResponse, partialContentResponse } from '../utils/responses.js'
@@ -34,9 +34,7 @@ export class IpldPlugin extends BasePlugin {
       accept.some(header => header.contentType.mediaType === MEDIA_TYPE_CBOR ||
         header.contentType.mediaType === MEDIA_TYPE_DAG_CBOR ||
         header.contentType.mediaType === MEDIA_TYPE_JSON ||
-        header.contentType.mediaType === MEDIA_TYPE_DAG_JSON ||
-        header.contentType.mediaType === MEDIA_TYPE_RAW ||
-        header.contentType.mediaType === MEDIA_TYPE_OCTET_STREAM
+        header.contentType.mediaType === MEDIA_TYPE_DAG_JSON
       )
 
     return supportsCid && supportsAccept
@@ -45,16 +43,8 @@ export class IpldPlugin extends BasePlugin {
   async handle (context: PluginContext): Promise<Response> {
     const { url, resource, accept, ipfsRoots, terminalElement, blockstore, options, requestedMimeTypes } = context
 
-    this.log.trace('fetching %c/%s', terminalElement.cid, url.pathname)
-    let block: Uint8Array
-    if (terminalElement.node == null) {
-      block = await toBuffer(blockstore.get(terminalElement.cid, options))
-    } else if (terminalElement.type === 'object' || terminalElement.type === 'raw' || terminalElement.type === 'identity') {
-      block = terminalElement.node
-    } else {
-      block = dagPb.encode(terminalElement.node)
-    }
-
+    this.log.trace('fetching %c%s', terminalElement.cid, url.pathname)
+    let block = await toBuffer(blockstore.get(terminalElement.cid, options))
     let contentType: ContentType
 
     try {
