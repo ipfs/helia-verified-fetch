@@ -93,6 +93,68 @@ describe('tar files', () => {
       async source => all(source)
     )
 
+    // ensure order is consistent
+    entries.sort((a, b) => a.header.name.localeCompare(b.header.name))
+
+    expect(entries).to.have.lengthOf(5)
+    expect(entries[0]).to.have.nested.property('header.name', importResult.cid.toString())
+
+    expect(entries[1]).to.have.nested.property('header.name', `${importResult.cid}/${directory[1].path}`)
+    await expect(toBuffer(entries[1].body)).to.eventually.deep.equal(directory[1].content)
+
+    expect(entries[2]).to.have.nested.property('header.name', `${importResult.cid}/${directory[2].path?.split('/')[0]}`)
+
+    expect(entries[3]).to.have.nested.property('header.name', `${importResult.cid}/${directory[2].path}`)
+    await expect(toBuffer(entries[3].body)).to.eventually.deep.equal(directory[2].content)
+
+    expect(entries[4]).to.have.nested.property('header.name', `${importResult.cid}/${directory[0].path}`)
+    await expect(toBuffer(entries[4].body)).to.eventually.deep.equal(directory[0].content)
+  })
+
+  it('should support fetching a TAR file containing a HAMT sharded directory', async () => {
+    const directory: FileCandidate[] = [{
+      path: 'foo.txt',
+      content: Uint8Array.from([0, 1, 2, 3, 4])
+    }, {
+      path: 'bar.txt',
+      content: Uint8Array.from([5, 6, 7, 8, 9])
+    }, {
+      path: 'baz/qux.txt',
+      content: Uint8Array.from([1, 2, 3, 4, 5])
+    }]
+
+    const fs = unixfs(helia)
+    const importResult = await last(fs.addAll(directory, {
+      wrapWithDirectory: true,
+      shardSplitThresholdBytes: 0
+    }))
+
+    if (importResult == null) {
+      throw new Error('Import failed')
+    }
+
+    const resp = await verifiedFetch.fetch(importResult.cid, {
+      headers: {
+        accept: 'application/x-tar'
+      }
+    })
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-type')).to.equal('application/x-tar')
+    expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${importResult.cid.toString()}.tar"`)
+
+    if (resp.body == null) {
+      throw new Error('Download failed')
+    }
+
+    const entries = await pipe(
+      browserReadableStreamToIt(resp.body),
+      extract(),
+      async source => all(source)
+    )
+
+    // ensure order is consistent
+    entries.sort((a, b) => a.header.name.localeCompare(b.header.name))
+
     expect(entries).to.have.lengthOf(5)
     expect(entries[0]).to.have.nested.property('header.name', importResult.cid.toString())
 

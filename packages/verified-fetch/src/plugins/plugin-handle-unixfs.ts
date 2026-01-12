@@ -1,7 +1,8 @@
 import { code as dagPbCode } from '@ipld/dag-pb'
 import { isPromise } from '@libp2p/utils'
-import { exporter } from 'ipfs-unixfs-exporter'
+import { exporter, walkPath } from 'ipfs-unixfs-exporter'
 import first from 'it-first'
+import last from 'it-last'
 import itToBrowserReadableStream from 'it-to-browser-readablestream'
 import toBuffer from 'it-to-buffer'
 import * as raw from 'multiformats/codecs/raw'
@@ -18,7 +19,7 @@ import type { CID } from 'multiformats/cid'
 /**
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
  */
-function getRedirectUrl (resource: Resource, url: URL, terminalElement: UnixFSEntry): string | undefined {
+function getDirectoryRedirectUrl (resource: Resource, url: URL): string | undefined {
   let uri: URL
 
   try {
@@ -30,7 +31,7 @@ function getRedirectUrl (resource: Resource, url: URL, terminalElement: UnixFSEn
   }
 
   // directories must be requested with a trailing slash
-  if (terminalElement?.type === 'directory' && !uri.pathname.endsWith('/')) {
+  if (!uri.pathname.endsWith('/')) {
     // make sure we append slash to end of the path
     uri.pathname += '/'
 
@@ -55,12 +56,27 @@ export class UnixFSPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    let { url, resource, terminalElement, ipfsRoots } = context
+    let { url, resource, terminalElement, ipfsRoots, blockstore } = context
     let filename = url.searchParams.get('filename') ?? terminalElement.name
     let redirected: undefined | true
+    let entry: UnixFSEntry
 
-    if (terminalElement.type === 'directory') {
-      const redirectUrl = getRedirectUrl(resource, url, terminalElement)
+    try {
+      entry = await exporter(terminalElement.cid, blockstore, context.options)
+    } catch (err: any) {
+      // throw abort error if signal was aborted
+      context?.options?.signal?.throwIfAborted()
+
+      if (err.name === 'BlockNotFoundWhileOfflineError') {
+        throw err
+      }
+
+      this.log.error('could not export %c - $e', terminalElement.cid, err)
+      return badGatewayResponse(resource, 'Unable to stream content')
+    }
+
+    if (entry.type === 'directory') {
+      const redirectUrl = getDirectoryRedirectUrl(resource, url)
 
       if (redirectUrl != null) {
         this.log.trace('directory url normalization spec requires redirect')
@@ -87,20 +103,26 @@ export class UnixFSPlugin extends BasePlugin {
         const rootFilePath = 'index.html'
 
         try {
-          this.log.trace('found directory at %c/%s, looking for index.html', dirCid, url.pathname)
+          this.log.trace('found directory at %c%s, looking for index.html', dirCid, url.pathname)
 
-          const entry = await context.serverTiming.time('exporter-dir', '', exporter(`/ipfs/${dirCid}/${rootFilePath}`, context.blockstore, context.options))
+          const indexFile = await context.serverTiming.time('exporter-dir', '', last(walkPath(`/ipfs/${dirCid}/${rootFilePath}`, context.blockstore, context.options)))
 
-          if (entry.type === 'directory' || entry.type === 'object') {
+          if (indexFile == null) {
+            return badGatewayResponse(resource, 'Unable to stream content')
+          }
+
+          const indexFileEntry = await context.serverTiming.time('exporter-dir', '', exporter(indexFile.cid, context.blockstore, context.options))
+
+          if (indexFileEntry.type !== 'file' && indexFileEntry.type !== 'raw' && indexFileEntry.type !== 'identity') {
             return badGatewayResponse(resource, 'Unable to stream content')
           }
 
           // use `index.html` as the file name to help with content types
           filename = rootFilePath
 
-          this.log.trace('found directory index at %c/%s with cid %c', dirCid, rootFilePath, entry.cid)
+          this.log.trace('found directory index at %c%s with cid %c', dirCid, rootFilePath, entry.cid)
 
-          return await this.streamFile(resource, entry, filename, ipfsRoots, redirected, context.range, context.options)
+          return await this.streamFile(resource, indexFileEntry, filename, ipfsRoots, redirected, context.range, context.options)
         } catch (err: any) {
           if (err.name !== 'NotFoundError') {
             this.log.error('error loading path %c/%s - %e', dirCid, rootFilePath, err)
@@ -124,11 +146,11 @@ export class UnixFSPlugin extends BasePlugin {
         },
         redirected
       })
-    } else if (terminalElement.type === 'file' || terminalElement.type === 'raw' || terminalElement.type === 'identity') {
+    } else if (entry.type === 'file' || entry.type === 'raw' || entry.type === 'identity') {
       this.log('streaming file')
-      return this.streamFile(resource, terminalElement, filename, ipfsRoots, redirected, context.range, context.options)
+      return this.streamFile(resource, entry, filename, ipfsRoots, redirected, context.range, context.options)
     } else {
-      this.log.error('cannot stream terminal element type %s', terminalElement.type)
+      this.log.error('cannot stream terminal element type %s', entry.type)
       return badGatewayResponse(resource, 'Unable to stream content')
     }
   }

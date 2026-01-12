@@ -1,6 +1,6 @@
 import { dnsLink } from '@helia/dnslink'
 import { ipnsResolver } from '@helia/ipns'
-import { AbortError, isPeerId, isPublicKey } from '@libp2p/interface'
+import { isPeerId, isPublicKey } from '@libp2p/interface'
 import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
@@ -8,6 +8,7 @@ import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { IpldPlugin } from './plugins/plugin-handle-ipld.js'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
+import { RawPlugin } from './plugins/plugin-handle-raw.ts'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { UnixFSPlugin } from './plugins/plugin-handle-unixfs.js'
 import { URLResolver } from './url-resolver.ts'
@@ -19,7 +20,7 @@ import { getETag, ifNoneMatches } from './utils/get-e-tag.js'
 import { getRangeHeader } from './utils/get-range-header.ts'
 import { stringToIpfsUrl } from './utils/parse-resource.ts'
 import { setCacheControlHeader } from './utils/response-headers.js'
-import { internalServerErrorResponse, notAcceptableResponse, notImplementedResponse, notModifiedResponse } from './utils/responses.js'
+import { notAcceptableResponse, notImplementedResponse, notModifiedResponse } from './utils/responses.js'
 import { ServerTiming } from './utils/server-timing.js'
 import type { AcceptHeader, CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions, VerifiedFetchPlugin, PluginContext, PluginOptions } from './index.js'
 import type { DNSLink } from '@helia/dnslink'
@@ -108,7 +109,8 @@ export class VerifiedFetch {
       new IpldPlugin(pluginOptions),
       new CarPlugin(pluginOptions),
       new TarPlugin(pluginOptions),
-      new IpnsRecordPlugin(pluginOptions)
+      new IpnsRecordPlugin(pluginOptions),
+      new RawPlugin(pluginOptions)
     ]
 
     const customPlugins = init.plugins?.map((pluginFactory) => pluginFactory(pluginOptions)) ?? []
@@ -148,6 +150,10 @@ export class VerifiedFetch {
       const options = convertOptions(opts)
       const headers = new Headers(options?.headers)
       const serverTiming = new ServerTiming()
+
+      if (options != null) {
+        options.offline ??= headers.get('cache-control') === 'only-if-cached'
+      }
 
       options?.onProgress?.(new CustomProgressEvent<ResourceDetail>('verified-fetch:request:start', { resource }))
 
@@ -201,8 +207,7 @@ export class VerifiedFetch {
 
       const resolveResult = await this.urlResolver.resolve(url, serverTiming, {
         ...options,
-        isRawBlockRequest: isRawBlockRequest(headers),
-        onlyIfCached: headers.get('cache-control') === 'only-if-cached'
+        isRawBlockRequest: isRawBlockRequest(headers)
       })
 
       options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', {
@@ -408,21 +413,21 @@ export class VerifiedFetch {
     let pluginHandled = false
 
     for (const plugin of plugins) {
-      try {
-        this.log('invoking plugin: %s', plugin.id)
-        pluginsUsed.add(plugin.id)
+      // try {
+      this.log('invoking plugin: %s', plugin.id)
+      pluginsUsed.add(plugin.id)
 
-        const maybeResponse = await plugin.handle(context)
+      const maybeResponse = await plugin.handle(context)
 
-        this.log('plugin response %s %o', plugin.id, maybeResponse)
+      this.log('plugin response %s %o', plugin.id, maybeResponse)
 
-        if (maybeResponse != null) {
-          // if a plugin returns a final Response, short-circuit
-          finalResponse = maybeResponse
-          pluginHandled = true
-          break
-        }
-      } catch (err: any) {
+      if (maybeResponse != null) {
+        // if a plugin returns a final Response, short-circuit
+        finalResponse = maybeResponse
+        pluginHandled = true
+        break
+      }
+      /* } catch (err: any) {
         if (context.options?.signal?.aborted) {
           throw new AbortError(context.options?.signal?.reason)
         }
@@ -430,7 +435,7 @@ export class VerifiedFetch {
         this.log.error('error in plugin %s - %e', plugin.id, err)
 
         return internalServerErrorResponse(context.resource, err)
-      }
+      } */
 
       if (finalResponse != null) {
         this.log.trace('plugin %s produced final response', plugin.id)

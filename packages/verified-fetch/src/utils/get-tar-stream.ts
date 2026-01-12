@@ -1,5 +1,7 @@
 import { NotUnixFSError } from '@helia/unixfs/errors'
-import { exporter, recursive } from 'ipfs-unixfs-exporter'
+import { InvalidParametersError } from '@libp2p/interface'
+import { exporter, recursive, walkPath } from 'ipfs-unixfs-exporter'
+import last from 'it-last'
 import map from 'it-map'
 import { pipe } from 'it-pipe'
 import { pack } from 'it-tar'
@@ -10,9 +12,14 @@ import type { TarEntryHeader, TarImportCandidate } from 'it-tar'
 
 const EXPORTABLE = ['file', 'raw', 'directory']
 
-function toHeader (file: UnixFSEntry): Partial<TarEntryHeader> & { name: string } {
+function toHeader (file: UnixFSEntry, path: string): Partial<TarEntryHeader> & { name: string } {
   let mode: number | undefined
   let mtime: Date | undefined
+  let size = 0n
+
+  if (file.type === 'file' || file.type === 'raw' || file.type === 'identity') {
+    size = file.size
+  }
 
   if (file.type === 'file' || file.type === 'directory') {
     mode = file.unixfs.mode
@@ -20,21 +27,21 @@ function toHeader (file: UnixFSEntry): Partial<TarEntryHeader> & { name: string 
   }
 
   return {
-    name: file.path,
+    name: path,
     mode,
     mtime,
-    size: Number(file.size),
+    size: Number(size),
     type: file.type === 'directory' ? 'directory' : 'file'
   }
 }
 
-function toTarImportCandidate (entry: UnixFSEntry): TarImportCandidate {
+function toTarImportCandidate (entry: UnixFSEntry, path: string): TarImportCandidate {
   if (!EXPORTABLE.includes(entry.type)) {
     throw new NotUnixFSError(`${entry.type} is not a UnixFS node`)
   }
 
   const candidate: TarImportCandidate = {
-    header: toHeader(entry)
+    header: toHeader(entry, path)
   }
 
   if (entry.type === 'file' || entry.type === 'raw') {
@@ -45,11 +52,17 @@ function toTarImportCandidate (entry: UnixFSEntry): TarImportCandidate {
 }
 
 export async function * tarStream (ipfsPath: string, blockstore: Blockstore, options?: AbortOptions): AsyncGenerator<Uint8Array> {
-  const file = await exporter(ipfsPath, blockstore, options)
+  const entry = await last(walkPath(ipfsPath, blockstore, options))
+
+  if (entry == null) {
+    throw new InvalidParametersError(`Could not walk path "${ipfsPath}"`)
+  }
+
+  const file = await exporter(entry.cid, blockstore, options)
 
   if (file.type === 'file' || file.type === 'raw') {
     yield * pipe(
-      [toTarImportCandidate(file)],
+      [toTarImportCandidate(file, entry.path)],
       pack()
     )
 
@@ -58,8 +71,11 @@ export async function * tarStream (ipfsPath: string, blockstore: Blockstore, opt
 
   if (file.type === 'directory') {
     yield * pipe(
-      recursive(ipfsPath, blockstore, options),
-      (source) => map(source, (entry) => toTarImportCandidate(entry)),
+      recursive(file.cid, blockstore, options),
+      (source) => map(source, async (entry) => {
+        const file = await exporter(entry.cid, blockstore, options)
+        return toTarImportCandidate(file, entry.path)
+      }),
       pack()
     )
 
