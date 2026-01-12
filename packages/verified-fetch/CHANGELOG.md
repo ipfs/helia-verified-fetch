@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.0.0...@helia/verified-fetch-6.1.0) (2026-01-12)
+
+### Features
+
+* add offline option and support intermediate shards in cars ([#308](https://github.com/ipfs/helia-verified-fetch/issues/308)) ([1237d4e](https://github.com/ipfs/helia-verified-fetch/commit/1237d4e963f7e50959c2b67a09cfba13f172b93a))
+
 ## [@helia/verified-fetch-v6.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-5.1.1...@helia/verified-fetch-6.0.0) (2026-01-06)
 
 ### ⚠ BREAKING CHANGES
