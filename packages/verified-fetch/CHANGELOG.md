@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.1.0...@helia/verified-fetch-6.1.1) (2026-01-12)
+
+### Dependencies
+
+* update @helia/unixfs to v7 ([#310](https://github.com/ipfs/helia-verified-fetch/issues/310)) ([ea34996](https://github.com/ipfs/helia-verified-fetch/commit/ea3499678b90c7c6166363c60860fa71eac78c7f))
+
 ## [@helia/verified-fetch-v6.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.0.0...@helia/verified-fetch-6.1.0) (2026-01-12)
 
 ### Features
