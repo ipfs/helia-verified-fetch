@@ -166,11 +166,11 @@
   "dependencies": {
     "@helia/block-brokers": "^5.0.4",
     "@helia/car": "^5.3.4",
-    "@helia/delegated-routing-v1-http-api-client": "^5.0.0",
+    "@helia/delegated-routing-v1-http-api-client": "^6.0.0",
     "@helia/dnslink": "^1.0.1",
     "@helia/interface": "^6.0.0",
     "@helia/ipns": "^9.0.0",
-    "@helia/routers": "^4.0.0",
+    "@helia/routers": "^5.0.0",
     "@helia/unixfs": "^7.0.0",
     "@ipld/dag-cbor": "^9.2.3",
     "@ipld/dag-json": "^10.2.4",
