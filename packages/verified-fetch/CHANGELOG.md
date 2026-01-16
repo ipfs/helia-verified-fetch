@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.1.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.1.1...@helia/verified-fetch-6.1.2) (2026-01-16)
+
+### Dependencies
+
+* update delegated routing ([#312](https://github.com/ipfs/helia-verified-fetch/issues/312)) ([46d6b2f](https://github.com/ipfs/helia-verified-fetch/commit/46d6b2f16381b09ea0eef1594323345993e6d79a))
+
 ## [@helia/verified-fetch-v6.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.1.0...@helia/verified-fetch-6.1.1) (2026-01-12)
 
 ### Dependencies
