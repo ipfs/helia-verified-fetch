@@ -141,7 +141,9 @@ const fetch = await createVerifiedFetch(
       trustlessGateway()
     ],
     routers: [
-      delegatedHTTPRouting('http://delegated-ipfs.dev'),
+      delegatedHTTPRouting({
+        url: 'http://delegated-ipfs.dev'
+      }),
       httpGatewayRouting({
         gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
       })
