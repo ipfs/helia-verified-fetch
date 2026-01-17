@@ -1249,7 +1249,7 @@ export interface URLResolver {
 }
 
 /**
- * Create and return a Helia node
+ * Create and return a VerifiedFetch instance with the specified configuration
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
   let libp2p: Libp2p<any> | undefined
@@ -1293,7 +1293,16 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
     init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config: %j', libp2pConfig)
   }
 
-  const verifiedFetchInstance = new VerifiedFetchClass(init, options)
+  return createVerifiedFetchWithHelia(init, options)
+}
+
+/**
+ * Similar to `createVerifiedFetch`, call this method if you have a
+ * pre-configured Helia node as it allow bundlers to tree shake the default
+ * libp2p config resulting in a smaller bundle size.
+ */
+export async function createVerifiedFetchWithHelia (helia: Helia, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
+  const verifiedFetchInstance = new VerifiedFetchClass(helia, options)
   async function verifiedFetch (resource: Resource, options?: VerifiedFetchInit): Promise<Response> {
     return verifiedFetchInstance.fetch(resource, options)
   }
