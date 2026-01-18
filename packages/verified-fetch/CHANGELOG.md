@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.1.2...@helia/verified-fetch-6.2.0) (2026-01-18)
+
+### Features
+
+* add tree-shaking-friendly factory function ([#313](https://github.com/ipfs/helia-verified-fetch/issues/313)) ([636bc20](https://github.com/ipfs/helia-verified-fetch/commit/636bc20b9eeb870917f2cd261622c6c2b2004f10))
+
 ## [@helia/verified-fetch-v6.1.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.1.1...@helia/verified-fetch-6.1.2) (2026-01-16)
 
 ### Dependencies
