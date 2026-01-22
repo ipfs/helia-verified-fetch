@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-interop-v4.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.0.0...@helia/verified-fetch-interop-4.0.1) (2026-01-22)
+
+### Bug Fixes
+
+* requesting json or cbor should be a no-op ([#315](https://github.com/ipfs/helia-verified-fetch/issues/315)) ([18f25fc](https://github.com/ipfs/helia-verified-fetch/commit/18f25fcdc6d6117f838dc77578e83551d4552943))
+
+### Trivial Changes
+
+* update sibling dep ([6433c80](https://github.com/ipfs/helia-verified-fetch/commit/6433c80ac46596dcaa54cc8911e0401da37efb3b))
+
 ## [@helia/verified-fetch-interop-v4.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-3.0.0...@helia/verified-fetch-interop-4.0.0) (2026-01-06)
 
 ### ⚠ BREAKING CHANGES
