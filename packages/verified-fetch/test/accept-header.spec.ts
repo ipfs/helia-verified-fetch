@@ -172,7 +172,7 @@ describe('accept header', () => {
     expect(output).to.deep.equal(obj)
   })
 
-  it('should transform DAG-JSON to CBOR', async () => {
+  it('should not transform block when requesting CBOR', async () => {
     const obj = {
       hello: 'world'
     }
@@ -186,8 +186,7 @@ describe('accept header', () => {
     })
     expect(resp.headers.get('content-type')).to.equal('application/cbor')
 
-    const output = ipldDagCbor.decode(new Uint8Array(await resp.arrayBuffer()))
-    expect(output).to.deep.equal(obj)
+    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(ipldDagJson.encode(obj))
   })
 
   it('should return 406 Not Acceptable if the accept header cannot be adhered to', async () => {

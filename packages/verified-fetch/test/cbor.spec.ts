@@ -4,7 +4,6 @@ import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import * as cbor from 'cborg'
 import { CID } from 'multiformats'
-import * as json from 'multiformats/codecs/json'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { CODEC_CBOR } from '../src/constants.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
@@ -127,7 +126,7 @@ describe('cbor', () => {
     expect(decoded).to.deep.equal(obj)
   })
 
-  it('can download CBOR blocks as JSON', async () => {
+  it('should not transform block when requesting JSON', async () => {
     const obj = {
       hello: 'world'
     }
@@ -146,10 +145,7 @@ describe('cbor', () => {
     expect(res.headers.get('content-type')).to.equal('application/json')
     expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
-    const body = await res.arrayBuffer()
-    const decoded = json.decode(new Uint8Array(body))
-
-    expect(decoded).to.deep.equal(obj)
+    expect(new Uint8Array(await res.arrayBuffer())).to.equalBytes(buf)
   })
 
   it('can download CBOR blocks as DAG-CBOR', async () => {
