@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.2.0...@helia/verified-fetch-6.2.1) (2026-01-22)
+
+### Bug Fixes
+
+* requesting json or cbor should be a no-op ([#315](https://github.com/ipfs/helia-verified-fetch/issues/315)) ([18f25fc](https://github.com/ipfs/helia-verified-fetch/commit/18f25fcdc6d6117f838dc77578e83551d4552943))
+
 ## [@helia/verified-fetch-v6.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.1.2...@helia/verified-fetch-6.2.0) (2026-01-18)
 
 ### Features
