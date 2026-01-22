@@ -35,7 +35,8 @@ describe('custom dns-resolvers', () => {
       isRawBlockRequest: false,
       types: [
         RecordType.TXT
-      ]
+      ],
+      logger: undefined
     })).to.be.true()
   })
 
@@ -66,7 +67,8 @@ describe('custom dns-resolvers', () => {
       isRawBlockRequest: false,
       types: [
         RecordType.TXT
-      ]
+      ],
+      logger: undefined
     }])
   })
 })

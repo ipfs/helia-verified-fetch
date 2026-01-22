@@ -1,4 +1,3 @@
-/* eslint-env mocha */
 import { createVerifiedFetch, MEDIA_TYPE_DAG_PB } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
 import { filetypemime } from 'magic-bytes.js'

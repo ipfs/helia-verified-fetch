@@ -358,10 +358,13 @@ export class VerifiedFetch {
     // set CORS headers. If hosting your own gateway with verified-fetch behind
     // the scenes, you can alter these before you send the response to the
     // client.
+    //
+    // n.b. the values here must align with the conformance testing suite:
+    // @see https://github.com/ipfs/gateway-conformance/blob/5106287edf36898b77fa5fac23f555638a16d778/tests/path_gateway_cors_test.go#L22-L34
     response.headers.set('access-control-allow-origin', '*')
     response.headers.set('access-control-allow-methods', 'GET, HEAD, OPTIONS')
-    response.headers.set('access-control-allow-headers', 'Range, X-Requested-With')
-    response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Stream-Output')
+    response.headers.set('access-control-allow-headers', 'Content-Type, Range, User-Agent, X-Requested-With')
+    response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Chunked-Output, X-Stream-Output')
 
     if (context?.terminalElement.cid != null && response.headers.get('etag') == null) {
       const etag = getETag({

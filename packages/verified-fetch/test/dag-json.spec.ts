@@ -13,37 +13,37 @@ import type { Helia } from 'helia'
 
 interface Fixture {
   contentType: ContentType
-  verify (obj: any, cid: CID, res: Response): Promise<void>
+  verify (obj: any, cid: CID, block: Uint8Array, res: Response): Promise<void>
 }
 
 const fixtures: Fixture[] = [{
   contentType: CONTENT_TYPE_DAG_JSON,
-  async verify (obj, cid, res) {
+  async verify (obj, cid, block, res) {
     const body = await res.arrayBuffer()
     const decoded = dagJson.decode(new Uint8Array(body))
     expect(decoded).to.deep.equal(obj)
   }
 }, {
   contentType: CONTENT_TYPE_JSON,
-  async verify (obj, cid, res) {
+  async verify (obj, cid, block, res) {
     const body = await res.arrayBuffer()
-    expect(new Uint8Array(body)).to.equalBytes(dagJson.encode(obj))
+    expect(new Uint8Array(body)).to.equalBytes(block)
   }
 }, {
   contentType: CONTENT_TYPE_CBOR,
-  async verify (obj, cid, res) {
+  async verify (obj, cid, block, res) {
     const body = await res.arrayBuffer()
-    expect(new Uint8Array(body)).to.equalBytes(dagCbor.encode(obj))
+    expect(new Uint8Array(body)).to.equalBytes(block)
   }
 }, {
   contentType: CONTENT_TYPE_DAG_CBOR,
-  async verify (obj, cid, res) {
+  async verify (obj, cid, block, res) {
     const body = await res.arrayBuffer()
     expect(new Uint8Array(body)).to.equalBytes(dagCbor.encode(obj))
   }
 }, {
   contentType: CONTENT_TYPE_RAW,
-  async verify (obj, cid, res) {
+  async verify (obj, cid, block, res) {
     const body = await res.arrayBuffer()
     expect(new Uint8Array(body)).to.equalBytes(dagJson.encode(obj))
   }
@@ -109,7 +109,7 @@ describe('dag-json', () => {
       expect(res.headers.get('x-content-type-options')).to.equal('nosniff')
       expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
-      await fixture.verify(obj, cid, res)
+      await fixture.verify(obj, cid, buf, res)
     })
   }
 
