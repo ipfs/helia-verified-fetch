@@ -166,7 +166,14 @@ export class URLResolver implements URLResolverInterface {
   }
 
   private async walkPath (url: URL, options: ResolveURLOptions = {}): Promise<WalkPathResult> {
-    const cid = CID.parse(url.hostname)
+    let cid: CID
+
+    try {
+      cid = CID.parse(url.hostname)
+    } catch (err) {
+      throw new InvalidParametersError(`Could not parse CID - ${err}`)
+    }
+
     const blockstore = this.getBlockstore(cid, options)
 
     try {
