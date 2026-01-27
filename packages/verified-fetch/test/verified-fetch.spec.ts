@@ -52,6 +52,16 @@ describe('@helia/verified-fetch', () => {
     expect(helia.start.callCount).to.equal(1)
   })
 
+  it('returns a 400 for invalid CIDs', async () => {
+    const helia = stubInterface<Helia>({
+      logger: defaultLogger()
+    })
+    const verifiedFetch = new VerifiedFetch(helia)
+
+    const response = await verifiedFetch.fetch('ipfs://bafkqablimvwgy3yasdfasdff32')
+    expect(response).to.have.property('status', 400)
+  })
+
   describe('implicit format', () => {
     let verifiedFetch: VerifiedFetch
 
