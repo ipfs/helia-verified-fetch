@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.2.1...@helia/verified-fetch-6.2.2) (2026-01-27)
+
+### Bug Fixes
+
+* return 400 status for invalid parameters ([#316](https://github.com/ipfs/helia-verified-fetch/issues/316)) ([097f950](https://github.com/ipfs/helia-verified-fetch/commit/097f9500fb4f08b8ebf86a7be5f71418a9717b61))
+
 ## [@helia/verified-fetch-v6.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.2.0...@helia/verified-fetch-6.2.1) (2026-01-22)
 
 ### Bug Fixes
