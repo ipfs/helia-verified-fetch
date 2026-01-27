@@ -140,6 +140,9 @@ export class VerifiedFetch {
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s %s', opts?.method ?? 'GET', resource)
 
+    // Create serverTiming outside try block so it's accessible in catch
+    const serverTiming = new ServerTiming()
+
     try {
       if (opts?.method === 'OPTIONS') {
         return this.handleFinalResponse(new Response(null, {
@@ -149,7 +152,6 @@ export class VerifiedFetch {
 
       const options = convertOptions(opts)
       const headers = new Headers(options?.headers)
-      const serverTiming = new ServerTiming()
 
       if (options != null) {
         options.offline ??= headers.get('cache-control') === 'only-if-cached'
@@ -252,7 +254,17 @@ export class VerifiedFetch {
       return this.handleFinalResponse(response, Boolean(options?.withServerTiming) || Boolean(this.withServerTiming), context)
     } catch (err: any) {
       this.log.error('error fetching resource %s - %e', resource, err)
-      return this.handleFinalResponse(errorToResponse(resource, err, opts))
+      try {
+        return this.handleFinalResponse(errorToResponse(resource, err, opts))
+      } catch (rethrowErr: any) {
+        // Attach server timing to rethrown errors (e.g., AbortError)
+        // so callers can access timing data even when the request was aborted
+        const timingHeader = serverTiming.getHeader()
+        if (timingHeader !== '') {
+          rethrowErr.serverTiming = timingHeader
+        }
+        throw rethrowErr
+      }
     }
   }
 
