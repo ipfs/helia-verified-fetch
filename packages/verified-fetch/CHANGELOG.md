@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.3.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.2.2...@helia/verified-fetch-6.3.0) (2026-02-02)
+
+### Features
+
+* allow passing providers to fetch ([#318](https://github.com/ipfs/helia-verified-fetch/issues/318)) ([e887d90](https://github.com/ipfs/helia-verified-fetch/commit/e887d90f52c794c3f6fddfd995599f00766e3bc4))
+
 ## [@helia/verified-fetch-v6.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.2.1...@helia/verified-fetch-6.2.2) (2026-01-27)
 
 ### Bug Fixes
