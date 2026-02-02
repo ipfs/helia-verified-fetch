@@ -5,7 +5,7 @@ import { CID } from 'multiformats/cid'
 import QuickLRU from 'quick-lru'
 import { SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS } from './constants.ts'
 import { ServerTiming } from './utils/server-timing.ts'
-import type { ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
+import type { ResolveURLOptions, ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
 import type { DNSLink } from '@helia/dnslink'
 import type { IPNSResolver } from '@helia/ipns'
 import type { AbortOptions } from '@libp2p/interface'
@@ -47,11 +47,6 @@ export interface URLResolverComponents {
 export interface URLResolverInit {
   sessionCacheSize?: number
   sessionTTLms?: number
-}
-
-export interface ResolveURLOptions extends AbortOptions {
-  session?: boolean
-  isRawBlockRequest?: boolean
 }
 
 export class URLResolver implements URLResolverInterface {
