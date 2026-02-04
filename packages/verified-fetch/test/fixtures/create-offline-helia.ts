@@ -7,6 +7,8 @@ export async function createHelia (init: Partial<HeliaHTTPInit> = {}): Promise<R
     blockBrokers: [
       () => {
         return {
+          name: 'aborting-block-broker',
+
           // a block broker that fails to find a block after a few seconds
           retrieve: async (cid, options) => {
             return raceSignal(new Promise((resolve, reject) => {
