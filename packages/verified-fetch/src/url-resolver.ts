@@ -8,15 +8,15 @@ import { ServerTiming } from './utils/server-timing.ts'
 import type { ResolveURLOptions, ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
 import type { DNSLink } from '@helia/dnslink'
 import type { IPNSResolver } from '@helia/ipns'
-import type { AbortOptions } from '@libp2p/interface'
-import type { Helia, SessionBlockstore } from 'helia'
+import type { AbortOptions, Logger } from '@libp2p/interface'
+import type { Helia, ProviderOptions, SessionBlockstore } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { PathEntry } from 'ipfs-unixfs-exporter'
 
 // 1 year in seconds for ipfs content
 const IPFS_CONTENT_TTL = 29030400
 
-interface GetBlockstoreOptions extends AbortOptions {
+interface GetBlockstoreOptions extends AbortOptions, ProviderOptions {
   session?: boolean
 }
 
@@ -50,12 +50,14 @@ export interface URLResolverInit {
 }
 
 export class URLResolver implements URLResolverInterface {
+  private log: Logger
   private readonly components: URLResolverComponents
   private readonly blockstoreSessions: QuickLRU<string, SessionBlockstore>
 
   constructor (components: URLResolverComponents, init: URLResolverInit = {}) {
     this.components = components
 
+    this.log = components.helia.logger.forComponent('helia-verified-fetch:url-resolver')
     this.blockstoreSessions = new QuickLRU({
       maxSize: init.sessionCacheSize ?? SESSION_CACHE_MAX_SIZE,
       maxAge: init.sessionTTLms ?? SESSION_CACHE_TTL_MS,
@@ -81,17 +83,35 @@ export class URLResolver implements URLResolverInterface {
     throw new InvalidParametersError(`Invalid resource. Unsupported protocol in URL, must be ipfs:, ipns:, or dnslink: ${url}`)
   }
 
-  private getBlockstore (root: CID, options: GetBlockstoreOptions = {}): Blockstore {
+  private async getBlockstore (root: CID, options: GetBlockstoreOptions = {}): Promise<Blockstore> {
     if (options.session === false) {
       return this.components.helia.blockstore
     }
 
     const key = `ipfs:${root}`
     let session = this.blockstoreSessions.get(key)
+    let createdSession = false
 
     if (session == null) {
+      createdSession = true
       session = this.components.helia.blockstore.createSession(root, options)
       this.blockstoreSessions.set(key, session)
+    }
+
+    if (!createdSession && options.providers != null && options.providers.length > 0) {
+      this.log('adding %d providers to existing session for root %c', options.providers.length, root)
+
+      try {
+        const res = await Promise.all(
+          options.providers.map(async peer => {
+            await session.addPeer(peer, options)
+          }) ?? []
+        )
+
+        this.log('result was %o', res)
+      } catch (err) {
+        this.log.error('could not add provs - %e', err)
+      }
     }
 
     return session
@@ -169,7 +189,7 @@ export class URLResolver implements URLResolverInterface {
       throw new InvalidParametersError(`Could not parse CID - ${err}`)
     }
 
-    const blockstore = this.getBlockstore(cid, options)
+    const blockstore = await this.getBlockstore(cid, options)
 
     try {
       const ipfsRoots: CID[] = []

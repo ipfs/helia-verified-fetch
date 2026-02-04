@@ -12,7 +12,7 @@ import { createHelia } from './fixtures/create-offline-helia.js'
 import { getAbortablePromise } from './fixtures/get-abortable-promise.js'
 import { makeAbortedRequest } from './fixtures/make-aborted-request.js'
 import type { DNSLink, DNSLinkIPFSResult, DNSLinkIPNSResult } from '@helia/dnslink'
-import type { BlockBroker, Helia } from '@helia/interface'
+import type { Helia, SessionBlockBroker } from '@helia/interface'
 import type { IPNSResolver, IPNSResolveResult } from '@helia/ipns'
 import type { StubbedInstance } from 'sinon-ts'
 
@@ -32,7 +32,7 @@ describe('abort-handling', function () {
   /**
    * Stubbed networking components
    */
-  let blockRetriever: StubbedInstance<Required<Pick<BlockBroker, 'retrieve'>>>
+  let blockRetriever: StubbedInstance<Required<SessionBlockBroker>>
   let dnsLinkResolver: Sinon.SinonStub<any[], Promise<Array<DNSLinkIPFSResult | DNSLinkIPNSResult>>>
   let peerIdResolver: Sinon.SinonStub<any[], Promise<IPNSResolveResult>>
 
@@ -58,7 +58,7 @@ describe('abort-handling', function () {
       peerIdResolverCalled.resolve()
       return getAbortablePromise(options.signal)
     })
-    blockRetriever = stubInterface<Required<Pick<BlockBroker, 'retrieve' | 'createSession'>>>({
+    blockRetriever = stubInterface<Required<SessionBlockBroker>>({
       retrieve: sandbox.stub().callsFake(async (cid, options) => {
         blockBrokerRetrieveCalled.resolve()
         return getAbortablePromise(options.signal)
