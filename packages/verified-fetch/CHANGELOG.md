@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.3.0...@helia/verified-fetch-6.3.1) (2026-02-04)
+
+### Bug Fixes
+
+* add providers to session ([#319](https://github.com/ipfs/helia-verified-fetch/issues/319)) ([ec1c339](https://github.com/ipfs/helia-verified-fetch/commit/ec1c339be4a3e1aba0b407b88366d680bcd05029))
+
 ## [@helia/verified-fetch-v6.3.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.2.2...@helia/verified-fetch-6.3.0) (2026-02-02)
 
 ### Features
