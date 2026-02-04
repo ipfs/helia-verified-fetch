@@ -100,8 +100,6 @@ export class URLResolver implements URLResolverInterface {
 
     if (!createdSession && options.providers != null && options.providers.length > 0) {
       this.log('adding %d providers to existing session for root %c', options.providers.length, root)
-      console.info('session', session)
-      console.info('add prov', session.addPeer)
 
       try {
         const res = await Promise.all(
