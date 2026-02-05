@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.3.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.3.1...@helia/verified-fetch-6.3.2) (2026-02-05)
+
+### Bug Fixes
+
+* log initial session peers ([#320](https://github.com/ipfs/helia-verified-fetch/issues/320)) ([9ef4538](https://github.com/ipfs/helia-verified-fetch/commit/9ef4538b69188d7972903c63431b640dd41efff9))
+
 ## [@helia/verified-fetch-v6.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.3.0...@helia/verified-fetch-6.3.1) (2026-02-04)
 
 ### Bug Fixes
