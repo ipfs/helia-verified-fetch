@@ -93,6 +93,7 @@ export class URLResolver implements URLResolverInterface {
     let createdSession = false
 
     if (session == null) {
+      this.log('create session with %d initial providers for root %c', options.providers?.length ?? 0, root)
       createdSession = true
       session = this.components.helia.blockstore.createSession(root, options)
       this.blockstoreSessions.set(key, session)
