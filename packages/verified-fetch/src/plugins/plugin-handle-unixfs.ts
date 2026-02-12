@@ -71,7 +71,7 @@ export class UnixFSPlugin extends BasePlugin {
         throw err
       }
 
-      this.log.error('could not export %c - $e', terminalElement.cid, err)
+      this.log.error('could not export %c - %e', terminalElement.cid, err)
       return badGatewayResponse(resource, 'Unable to stream content')
     }
 

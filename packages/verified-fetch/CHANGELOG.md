@@ -1,3 +1,33 @@
+## [@helia/verified-fetch-v6.3.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.3.1...@helia/verified-fetch-6.3.2) (2026-02-05)
+
+### Bug Fixes
+
+* log initial session peers ([#320](https://github.com/ipfs/helia-verified-fetch/issues/320)) ([9ef4538](https://github.com/ipfs/helia-verified-fetch/commit/9ef4538b69188d7972903c63431b640dd41efff9))
+
+## [@helia/verified-fetch-v6.3.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.3.0...@helia/verified-fetch-6.3.1) (2026-02-04)
+
+### Bug Fixes
+
+* add providers to session ([#319](https://github.com/ipfs/helia-verified-fetch/issues/319)) ([ec1c339](https://github.com/ipfs/helia-verified-fetch/commit/ec1c339be4a3e1aba0b407b88366d680bcd05029))
+
+## [@helia/verified-fetch-v6.3.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.2.2...@helia/verified-fetch-6.3.0) (2026-02-02)
+
+### Features
+
+* allow passing providers to fetch ([#318](https://github.com/ipfs/helia-verified-fetch/issues/318)) ([e887d90](https://github.com/ipfs/helia-verified-fetch/commit/e887d90f52c794c3f6fddfd995599f00766e3bc4))
+
+## [@helia/verified-fetch-v6.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.2.1...@helia/verified-fetch-6.2.2) (2026-01-27)
+
+### Bug Fixes
+
+* return 400 status for invalid parameters ([#316](https://github.com/ipfs/helia-verified-fetch/issues/316)) ([097f950](https://github.com/ipfs/helia-verified-fetch/commit/097f9500fb4f08b8ebf86a7be5f71418a9717b61))
+
+## [@helia/verified-fetch-v6.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.2.0...@helia/verified-fetch-6.2.1) (2026-01-22)
+
+### Bug Fixes
+
+* requesting json or cbor should be a no-op ([#315](https://github.com/ipfs/helia-verified-fetch/issues/315)) ([18f25fc](https://github.com/ipfs/helia-verified-fetch/commit/18f25fcdc6d6117f838dc77578e83551d4552943))
+
 ## [@helia/verified-fetch-v6.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.1.2...@helia/verified-fetch-6.2.0) (2026-01-18)
 
 ### Features

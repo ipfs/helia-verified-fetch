@@ -1,4 +1,4 @@
-import { badGatewayResponse, gatewayTimeoutResponse, internalServerErrorResponse, notFoundResponse, preconditionFailedResponse } from './responses.js'
+import { badGatewayResponse, badRequestResponse, gatewayTimeoutResponse, internalServerErrorResponse, notFoundResponse, preconditionFailedResponse } from './responses.js'
 import type { Resource } from '../index.js'
 
 export function errorToResponse (resource: Resource | string, err: any, init?: RequestInit): Response {
@@ -6,8 +6,13 @@ export function errorToResponse (resource: Resource | string, err: any, init?: R
   init?.signal?.throwIfAborted()
 
   // rethrow these errors
-  if (['AbortError', 'InvalidParametersError'].includes(err.name)) {
+  if (['AbortError'].includes(err.name)) {
     throw err
+  }
+
+  // caused by user input
+  if (['InvalidParametersError'].includes(err.name)) {
+    return badRequestResponse(resource, err)
   }
 
   // could not reach an upstream server, bad connection or offline

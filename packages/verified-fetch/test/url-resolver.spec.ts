@@ -1,5 +1,6 @@
 import { unixfs } from '@helia/unixfs'
 import { generateKeyPair } from '@libp2p/crypto/keys'
+import { defaultLogger } from '@libp2p/logger'
 import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import { MemoryBlockstore } from 'blockstore-core'
@@ -55,7 +56,8 @@ describe('url-resolver', () => {
     dnsLink = stubInterface()
     helia = stubInterface<Helia>({
       // @ts-expect-error incomplete implementation
-      blockstore
+      blockstore,
+      logger: defaultLogger()
     })
 
     resolver = new URLResolver({
@@ -82,7 +84,7 @@ describe('url-resolver', () => {
   describe('ipfs://<CID> URLs', async () => {
     it('handles invalid CIDs', async () => {
       await expect(resolver.resolve(new URL('ipfs://QmQJ8fxavY54CUsxMSx9aE9Rdcmvhx8awJK2jzJp4i'))).to.eventually.be.rejected
-        .with.property('message', 'Invalid CID version 26')
+        .with.property('message').that.contain('Invalid CID version 26')
     })
 
     it('should return an empty path for bare CIDs', async () => {

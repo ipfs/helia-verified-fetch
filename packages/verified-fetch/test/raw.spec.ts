@@ -53,8 +53,8 @@ const FORMATS: Format[] = [{
     return cborg.encode(obj)
   },
   verify: async (obj, block, res) => {
-    expect(res.headers.get('content-length')).to.equal(cborg.encode(block).byteLength.toString())
-    expect(cborg.decode(new Uint8Array(await res.arrayBuffer()))).to.deep.equal(cborg.encode(obj))
+    expect(res.headers.get('content-length')).to.equal(block.byteLength.toString())
+    expect(new Uint8Array(await res.arrayBuffer())).to.equalBytes(block)
   }
 }, {
   name: 'DAG-CBOR',

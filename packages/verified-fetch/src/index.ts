@@ -786,7 +786,7 @@ import type { RangeHeader } from './utils/get-range-header.ts'
 import type { ServerTiming } from './utils/server-timing.ts'
 import type { RequestedMimeType } from './verified-fetch.js'
 import type { DNSLink, ResolveProgressEvents as ResolveDNSLinkProgressEvents } from '@helia/dnslink'
-import type { GetBlockProgressEvents, Helia, Routing } from '@helia/interface'
+import type { GetBlockProgressEvents, Helia, ProviderOptions, Routing } from '@helia/interface'
 import type { ResolveProgressEvents as ResolveIPNSNameProgressEvents, IPNSRoutingProgressEvents, IPNSResolver } from '@helia/ipns'
 import type { AbortOptions, Libp2p, ServiceMap, Logger, PeerId, PublicKey } from '@libp2p/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
@@ -1150,7 +1150,7 @@ export type VerifiedFetchProgressEvents =
  * passed to `fetch` in browsers, plus an `onProgress` option to listen for
  * progress events.
  */
-export interface VerifiedFetchInit extends RequestInit, ProgressOptions<VerifiedFetchProgressEvents> {
+export interface VerifiedFetchInit extends RequestInit, ProgressOptions<VerifiedFetchProgressEvents>, ProviderOptions {
   /**
    * If true, try to create a blockstore session - this can reduce overall
    * network traffic by first querying for a set of peers that have the data we
@@ -1229,7 +1229,14 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<Verified
 
 export type URLProtocols = 'ipfs' | 'ipns' | 'dnslink'
 
-export interface ResolveURLOptions extends AbortOptions {
+export interface ResolveURLOptions extends AbortOptions, ProviderOptions {
+  /**
+   * If true, only peers that are found to have the root block of a DAG will be
+   * queried for subsequent blocks. If no peers in the session have a subsequent
+   * block the routing will be queried for more peers to add to the session.
+   *
+   * @default true
+   */
   session?: boolean
 }
 

@@ -7,7 +7,6 @@ import { expect } from 'aegir/chai'
 import toBuffer from 'it-to-buffer'
 import { CID } from 'multiformats'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_JSON, MEDIA_TYPE_RAW, MEDIA_TYPE_DAG_PB, MEDIA_TYPE_DAG_JSON, MEDIA_TYPE_CBOR } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.js'
@@ -62,50 +61,32 @@ const fixtures: Record<string, UnixFSFixtures> = {
       raw: {
         async verify (res, cid, helia) {
           expect(new Uint8Array(await res.arrayBuffer()))
-            .to.equalBytes(
+            .to.deep.equal(
               await toBuffer(helia.blockstore.get(cid))
             )
         }
       },
       file: {
         async verify (res, cid, helia) {
-          expect(await res.json())
+          expect(new Uint8Array(await res.arrayBuffer()))
             .to.deep.equal(
-              JSON.parse(
-                uint8ArrayToString(
-                  dagJson.encode(
-                    dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
-                  )
-                )
-              )
+              await toBuffer(helia.blockstore.get(cid))
             )
         }
       },
       directory: {
         async verify (res, cid, helia) {
-          expect(await res.json())
-            .to.deep.equal(
-              JSON.parse(
-                uint8ArrayToString(
-                  dagJson.encode(
-                    dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
-                  )
-                )
-              )
+          expect(new Uint8Array(await res.arrayBuffer()))
+            .to.equalBytes(
+              await toBuffer(helia.blockstore.get(cid))
             )
         }
       },
       shard: {
         async verify (res, cid, helia) {
-          expect(await res.json())
-            .to.deep.equal(
-              JSON.parse(
-                uint8ArrayToString(
-                  dagJson.encode(
-                    dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
-                  )
-                )
-              )
+          expect(new Uint8Array(await res.arrayBuffer()))
+            .to.equalBytes(
+              await toBuffer(helia.blockstore.get(cid))
             )
         }
       }
@@ -155,7 +136,7 @@ const fixtures: Record<string, UnixFSFixtures> = {
     fixtures: {
       raw: {
         async verify (res, cid, helia) {
-          expect(dagCbor.decode(new Uint8Array(await res.arrayBuffer())))
+          expect(new Uint8Array(await res.arrayBuffer()))
             .to.deep.equal(
               await toBuffer(helia.blockstore.get(cid))
             )
@@ -163,25 +144,25 @@ const fixtures: Record<string, UnixFSFixtures> = {
       },
       file: {
         async verify (res, cid, helia) {
-          expect(dagCbor.decode(new Uint8Array(await res.arrayBuffer())))
+          expect(new Uint8Array(await res.arrayBuffer()))
             .to.deep.equal(
-              dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
+              await toBuffer(helia.blockstore.get(cid))
             )
         }
       },
       directory: {
         async verify (res, cid, helia) {
-          expect(dagCbor.decode(new Uint8Array(await res.arrayBuffer())))
+          expect(new Uint8Array(await res.arrayBuffer()))
             .to.deep.equal(
-              dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
+              await toBuffer(helia.blockstore.get(cid))
             )
         }
       },
       shard: {
         async verify (res, cid, helia) {
-          expect(dagCbor.decode(new Uint8Array(await res.arrayBuffer())))
+          expect(new Uint8Array(await res.arrayBuffer()))
             .to.deep.equal(
-              dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
+              await toBuffer(helia.blockstore.get(cid))
             )
         }
       }

@@ -1,4 +1,3 @@
-/* eslint-env mocha */
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import { expect } from 'aegir/chai'
 import type { VerifiedFetch } from '@helia/verified-fetch'

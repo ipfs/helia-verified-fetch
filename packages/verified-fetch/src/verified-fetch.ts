@@ -13,7 +13,7 @@ import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { UnixFSPlugin } from './plugins/plugin-handle-unixfs.js'
 import { URLResolver } from './url-resolver.ts'
 import { contentTypeParser } from './utils/content-type-parser.js'
-import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, MEDIA_TYPE_IPNS_RECORD, MEDIA_TYPE_RAW, CONTENT_TYPE_IPNS } from './utils/content-types.ts'
+import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, MEDIA_TYPE_IPNS_RECORD, CONTENT_TYPE_IPNS } from './utils/content-types.ts'
 import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag, ifNoneMatches } from './utils/get-e-tag.js'
@@ -56,21 +56,6 @@ function isIPNSRecordRequest (headers: Headers): boolean {
   const mediaType = acceptHeaders[0].split(';')[0]
 
   return mediaType === MEDIA_TYPE_IPNS_RECORD
-}
-
-/**
- * Returns true if the quest is only for an IPNS record
- */
-function isRawBlockRequest (headers: Headers): boolean {
-  const acceptHeaders = headers.get('accept')?.split(',') ?? []
-
-  if (acceptHeaders.length !== 1) {
-    return false
-  }
-
-  const mediaType = acceptHeaders[0].split(';')[0]
-
-  return mediaType === MEDIA_TYPE_RAW
 }
 
 export class VerifiedFetch {
@@ -207,10 +192,7 @@ export class VerifiedFetch {
         }))
       }
 
-      const resolveResult = await this.urlResolver.resolve(url, serverTiming, {
-        ...options,
-        isRawBlockRequest: isRawBlockRequest(headers)
-      })
+      const resolveResult = await this.urlResolver.resolve(url, serverTiming, options)
 
       options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', {
         cid: resolveResult.terminalElement.cid,
@@ -370,10 +352,13 @@ export class VerifiedFetch {
     // set CORS headers. If hosting your own gateway with verified-fetch behind
     // the scenes, you can alter these before you send the response to the
     // client.
+    //
+    // n.b. the values here must align with the conformance testing suite:
+    // @see https://github.com/ipfs/gateway-conformance/blob/5106287edf36898b77fa5fac23f555638a16d778/tests/path_gateway_cors_test.go#L22-L34
     response.headers.set('access-control-allow-origin', '*')
     response.headers.set('access-control-allow-methods', 'GET, HEAD, OPTIONS')
-    response.headers.set('access-control-allow-headers', 'Range, X-Requested-With')
-    response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Stream-Output')
+    response.headers.set('access-control-allow-headers', 'Content-Type, Range, User-Agent, X-Requested-With')
+    response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Chunked-Output, X-Stream-Output')
 
     if (context?.terminalElement.cid != null && response.headers.get('etag') == null) {
       const etag = getETag({
@@ -439,15 +424,6 @@ export class VerifiedFetch {
         pluginHandled = true
         break
       }
-      /* } catch (err: any) {
-        if (context.options?.signal?.aborted) {
-          throw new AbortError(context.options?.signal?.reason)
-        }
-
-        this.log.error('error in plugin %s - %e', plugin.id, err)
-
-        return internalServerErrorResponse(context.resource, err)
-      } */
 
       if (finalResponse != null) {
         this.log.trace('plugin %s produced final response', plugin.id)

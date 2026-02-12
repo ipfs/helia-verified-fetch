@@ -11,17 +11,17 @@ import type { CID } from 'multiformats/cid'
 
 const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array>> = {
   [dagCbor.code]: {
+    [MEDIA_TYPE_CBOR]: (buf) => {
+      return buf
+    },
+    [MEDIA_TYPE_DAG_CBOR]: (buf) => {
+      return buf
+    },
     [MEDIA_TYPE_JSON]: (buf) => {
       return dagJson.encode(dagCbor.decode(buf))
     },
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return dagJson.encode(dagCbor.decode(buf))
-    },
-    [MEDIA_TYPE_DAG_CBOR]: (buf) => {
-      return buf
-    },
-    [MEDIA_TYPE_CBOR]: (buf) => {
-      return buf
     },
     [MEDIA_TYPE_RAW]: (buf) => {
       return buf
@@ -31,17 +31,17 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     }
   },
   [CODEC_CBOR]: {
-    [MEDIA_TYPE_JSON]: (buf) => {
-      return dagJson.encode(dagCbor.decode(buf))
-    },
-    [MEDIA_TYPE_DAG_JSON]: (buf) => {
-      return dagJson.encode(dagCbor.decode(buf))
+    [MEDIA_TYPE_CBOR]: (buf) => {
+      return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
       return buf
     },
-    [MEDIA_TYPE_CBOR]: (buf) => {
+    [MEDIA_TYPE_JSON]: (buf) => {
       return buf
+    },
+    [MEDIA_TYPE_DAG_JSON]: (buf) => {
+      return dagJson.encode(dagCbor.decode(buf))
     },
     [MEDIA_TYPE_RAW]: (buf) => {
       return buf
@@ -52,15 +52,15 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
   },
   [dagJson.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
-      return dagCbor.encode(dagJson.decode(buf))
+      return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
       return dagCbor.encode(dagJson.decode(buf))
     },
-    [MEDIA_TYPE_DAG_JSON]: (buf) => {
+    [MEDIA_TYPE_JSON]: (buf) => {
       return buf
     },
-    [MEDIA_TYPE_JSON]: (buf) => {
+    [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return buf
     },
     [MEDIA_TYPE_RAW]: (buf) => {
@@ -72,15 +72,15 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
   },
   [json.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
-      return dagCbor.encode(json.decode(buf))
+      return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
       return dagCbor.encode(json.decode(buf))
     },
-    [MEDIA_TYPE_DAG_JSON]: (buf) => {
+    [MEDIA_TYPE_JSON]: (buf) => {
       return buf
     },
-    [MEDIA_TYPE_JSON]: (buf) => {
+    [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return buf
     },
     [MEDIA_TYPE_RAW]: (buf) => {
@@ -92,13 +92,13 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
   },
   [dagPb.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
-      return dagCbor.encode(dagPb.decode(buf))
+      return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
       return dagCbor.encode(dagPb.decode(buf))
     },
     [MEDIA_TYPE_JSON]: (buf) => {
-      return dagJson.encode(dagPb.decode(buf))
+      return buf
     },
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return dagJson.encode(dagPb.decode(buf))
@@ -112,7 +112,7 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
   },
   [raw.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
-      return dagCbor.encode(buf)
+      return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
       return dagCbor.encode(buf)
@@ -132,13 +132,13 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
   },
   [identity.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
-      return dagCbor.encode(buf)
+      return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
       return dagCbor.encode(buf)
     },
     [MEDIA_TYPE_JSON]: (buf) => {
-      return dagJson.encode(buf)
+      return buf
     },
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
       return dagJson.encode(buf)

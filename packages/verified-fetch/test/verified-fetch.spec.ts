@@ -6,6 +6,7 @@ import * as ipldDagCbor from '@ipld/dag-cbor'
 import * as ipldDagJson from '@ipld/dag-json'
 import { stop } from '@libp2p/interface'
 import { defaultLogger } from '@libp2p/logger'
+import { peerIdFromString } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import last from 'it-last'
 import toBuffer from 'it-to-buffer'
@@ -50,6 +51,16 @@ describe('@helia/verified-fetch', () => {
     await verifiedFetch.stop()
     expect(helia.stop.callCount).to.equal(1)
     expect(helia.start.callCount).to.equal(1)
+  })
+
+  it('returns a 400 for invalid CIDs', async () => {
+    const helia = stubInterface<Helia>({
+      logger: defaultLogger()
+    })
+    const verifiedFetch = new VerifiedFetch(helia)
+
+    const response = await verifiedFetch.fetch('ipfs://bafkqablimvwgy3yasdfasdff32')
+    expect(response).to.have.property('status', 400)
   })
 
   describe('implicit format', () => {
@@ -920,6 +931,39 @@ describe('@helia/verified-fetch', () => {
       await deferred.promise
 
       expect(sessionSpy.called).to.be.false()
+
+      controller.abort()
+      await expect(p).to.eventually.be.rejected()
+    })
+
+    it('should pass providers to session', async () => {
+      const createSessionSpy = Sinon.spy(helia.blockstore, 'createSession')
+      const deferred = Promise.withResolvers<void>()
+      const controller = new AbortController()
+      const originalCreateSession = helia.blockstore.createSession.bind(helia.blockstore)
+
+      // blockstore.createSession is called, blockstore.get is not
+      helia.blockstore.createSession = Sinon.stub().callsFake((root, options) => {
+        deferred.resolve()
+        return originalCreateSession(root, options)
+      })
+
+      const providers = [
+        peerIdFromString('12D3KooWRBy97UB99e3J6hiPesre1MZeuNQvfan4gBziswrRJsNK')
+      ]
+
+      const p = verifiedFetch.fetch('/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA', {
+        signal: controller.signal,
+        providers
+      })
+
+      await deferred.promise
+
+      expect(createSessionSpy.calledWith(CID.parse('QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA'), {
+        signal: controller.signal,
+        providers,
+        offline: false
+      })).to.be.true()
 
       controller.abort()
       await expect(p).to.eventually.be.rejected()
