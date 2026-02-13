@@ -920,6 +920,11 @@ export interface PluginContext extends ResolveURLResult {
    * The blockstore is used to load data from the IPFS network
    */
   blockstore: Blockstore
+
+  /**
+   * If true a redirect was processed while resolving the URL to a CID and path
+   */
+  redirected: boolean
 }
 
 export interface VerifiedFetchPlugin {
@@ -1238,6 +1243,18 @@ export interface ResolveURLOptions extends AbortOptions, ProviderOptions {
    * @default true
    */
   session?: boolean
+
+  /**
+   * If true, this resolve action is occurring while processing a redirect from
+   * a _redirects file - if it fails, do not attempt to fall back to the
+   * _redirects file again
+   */
+  redirected?: boolean
+
+  /**
+   * Allows control of how redirects are processed
+   */
+  redirect?: RequestInit['redirect']
 }
 
 export interface ResolveURLResult {
@@ -1246,13 +1263,15 @@ export interface ResolveURLResult {
   blockstore: Blockstore
   ipfsRoots: CID[]
   terminalElement: PathEntry
+  redirected: boolean
 }
 
 export interface URLResolver {
   /**
-   * Resolve the passed resource to a CID and associated metadata
+   * Resolve the passed resource to a CID and associated metadata or returns a
+   * redirect or error response
    */
-  resolve (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult>
+  resolve (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult | Response>
 }
 
 /**

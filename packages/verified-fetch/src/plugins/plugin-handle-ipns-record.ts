@@ -19,7 +19,7 @@ export class IpnsRecordPlugin extends BasePlugin {
     return accept.some(header => header.contentType.mediaType === MEDIA_TYPE_IPNS_RECORD)
   }
 
-  async handle (context: Pick<PluginContext, 'resource' | 'url' | 'options' | 'range'>): Promise<Response> {
+  async handle (context: Pick<PluginContext, 'resource' | 'url' | 'options' | 'range' | 'redirected'>): Promise<Response> {
     const { resource, url, options, range } = context
     const { ipnsResolver } = this.pluginOptions
 
@@ -47,6 +47,7 @@ export class IpnsRecordPlugin extends BasePlugin {
     const block = marshalIPNSRecord(result.record)
 
     return okResponse(resource, block, {
+      redirected: context.redirected,
       headers: {
         'content-length': `${block.byteLength}`,
         'content-type': CONTENT_TYPE_IPNS.mediaType,
