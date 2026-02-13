@@ -186,11 +186,16 @@ export class VerifiedFetch {
           range,
           url,
           resource,
-          options
+          options,
+          redirected: false
         }))
       }
 
       const resolveResult = await this.urlResolver.resolve(url, serverTiming, options)
+
+      if (resolveResult instanceof Response) {
+        return this.handleFinalResponse(resolveResult)
+      }
 
       options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', {
         cid: resolveResult.terminalElement.cid,

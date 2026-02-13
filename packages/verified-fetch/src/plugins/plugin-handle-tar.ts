@@ -35,6 +35,7 @@ export class TarPlugin extends BasePlugin {
     const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${terminalElement.cid}${url.pathname}`, blockstore, options))
 
     return okResponse(resource, stream, {
+      redirected: context.redirected,
       headers: {
         'content-type': MEDIA_TYPE_TAR,
         'content-disposition': `attachment; ${

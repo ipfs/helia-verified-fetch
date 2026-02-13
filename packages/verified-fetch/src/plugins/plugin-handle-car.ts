@@ -133,6 +133,7 @@ export class CarPlugin extends BasePlugin {
     const stream = toBrowserReadableStream(c.export(target, carExportOptions))
 
     return okResponse(resource, stream, {
+      redirected: context.redirected,
       headers: {
         'content-type': `${MEDIA_TYPE_CAR}; version=1; order=${order}; dups=${duplicates ? 'y' : 'n'}`,
         'content-disposition': `attachment; ${

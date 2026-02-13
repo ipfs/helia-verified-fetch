@@ -38,6 +38,10 @@ describe('url-resolver', () => {
       session: false
     })
 
+    if (parsed instanceof Response) {
+      throw new Error('Response not expected')
+    }
+
     expect(parsed.url).to.deep.equal(match.url)
     expect(parsed.terminalElement.cid.toString()).to.equal(match.cid.toString())
   }
@@ -252,6 +256,11 @@ describe('url-resolver', () => {
       const result = await resolver.resolve(new URL('dnslink://example.com/'), new ServerTiming(), {
         session: false
       })
+
+      if (result instanceof Response) {
+        throw new Error('Response not expected')
+      }
+
       expect(result.ttl).to.equal(oneHourInSeconds)
     })
 
@@ -271,6 +280,11 @@ describe('url-resolver', () => {
       const result = await resolver.resolve(new URL(`ipns://${testPeerId}`), new ServerTiming(), {
         session: false
       })
+
+      if (result instanceof Response) {
+        throw new Error('Response not expected')
+      }
+
       expect(result.ttl).to.equal(oneHourInSeconds)
     })
   })

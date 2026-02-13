@@ -72,11 +72,13 @@ export class IpldPlugin extends BasePlugin {
       return partialContentResponse(resource, async function * (offset, length) {
         yield block.subarray(offset, offset + length)
       }, context.range, block.byteLength, {
+        redirected: context.redirected,
         headers
       })
     }
 
     return okResponse(resource, block, {
+      redirected: context.redirected,
       headers
     })
   }
