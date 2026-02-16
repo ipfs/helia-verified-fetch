@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v6.4.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.3.2...@helia/verified-fetch-6.4.0) (2026-02-16)
+
+### Features
+
+* support _redirects file ([#321](https://github.com/ipfs/helia-verified-fetch/issues/321)) ([2a4ece5](https://github.com/ipfs/helia-verified-fetch/commit/2a4ece5e18df339de7d8099e98757dd2a67f1a04))
+
 ## [@helia/verified-fetch-v6.3.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.3.1...@helia/verified-fetch-6.3.2) (2026-02-05)
 
 ### Bug Fixes
