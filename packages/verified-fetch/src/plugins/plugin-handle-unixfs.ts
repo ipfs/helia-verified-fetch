@@ -58,7 +58,7 @@ export class UnixFSPlugin extends BasePlugin {
   async handle (context: PluginContext): Promise<Response> {
     let { url, resource, terminalElement, ipfsRoots, blockstore } = context
     let filename = url.searchParams.get('filename') ?? terminalElement.name
-    let redirected: undefined | true
+    let redirected = context.redirected
     let entry: UnixFSEntry
 
     try {

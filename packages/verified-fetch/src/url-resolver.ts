@@ -1,9 +1,12 @@
 import { DoesNotExistError } from '@helia/unixfs/errors'
 import { peerIdFromString } from '@libp2p/peer-id'
-import { InvalidParametersError, walkPath } from 'ipfs-unixfs-exporter'
+import { exporter, InvalidParametersError, walkPath } from 'ipfs-unixfs-exporter'
+import toBuffer from 'it-to-buffer'
 import { CID } from 'multiformats/cid'
 import QuickLRU from 'quick-lru'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS } from './constants.ts'
+import { applyRedirects } from './utils/apply-redirect.ts'
 import { ServerTiming } from './utils/server-timing.ts'
 import type { ResolveURLOptions, ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
 import type { DNSLink } from '@helia/dnslink'
@@ -11,7 +14,7 @@ import type { IPNSResolver } from '@helia/ipns'
 import type { AbortOptions, Logger } from '@libp2p/interface'
 import type { Helia, ProviderOptions, SessionBlockstore } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
-import type { PathEntry } from 'ipfs-unixfs-exporter'
+import type { PathEntry, UnixFSEntry } from 'ipfs-unixfs-exporter'
 
 // 1 year in seconds for ipfs content
 const IPFS_CONTENT_TTL = 29030400
@@ -24,6 +27,7 @@ export interface WalkPathResult {
   ipfsRoots: CID[]
   terminalElement: PathEntry
   blockstore: Blockstore
+  redirected: boolean
 }
 
 function basicEntry (cid: CID): PathEntry {
@@ -67,7 +71,7 @@ export class URLResolver implements URLResolverInterface {
     })
   }
 
-  async resolve (url: URL, serverTiming: ServerTiming = new ServerTiming(), options: ResolveURLOptions = {}): Promise<ResolveURLResult> {
+  async resolve (url: URL, serverTiming: ServerTiming = new ServerTiming(), options: ResolveURLOptions = {}): Promise<ResolveURLResult | Response> {
     if (url.protocol === 'ipfs:') {
       return this.resolveIPFSPath(url, serverTiming, options)
     }
@@ -118,7 +122,7 @@ export class URLResolver implements URLResolverInterface {
     return session
   }
 
-  private async resolveDNSLink (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult> {
+  private async resolveDNSLink (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult | Response> {
     const results = await serverTiming.time('dnsLink.resolve', `Resolve DNSLink ${url.hostname}`, this.components.dnsLink.resolve(url.hostname, options))
     const result = results?.[0]
 
@@ -144,6 +148,10 @@ export class URLResolver implements URLResolverInterface {
     const ipfsUrl = new URL(`ipfs://${result.cid}/${url.pathname}`)
     const ipfsResult = await this.resolveIPFSPath(ipfsUrl, serverTiming, options)
 
+    if (ipfsResult instanceof Response) {
+      return ipfsResult
+    }
+
     return {
       ...ipfsResult,
       url,
@@ -151,7 +159,7 @@ export class URLResolver implements URLResolverInterface {
     }
   }
 
-  private async resolveIPNSName (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult> {
+  private async resolveIPNSName (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult | Response> {
     const peerId = peerIdFromString(url.hostname)
     const result = await serverTiming.time('ipns.resolve', `Resolve IPNS name ${peerId}`, this.components.ipnsResolver.resolve(peerId, options))
 
@@ -162,6 +170,10 @@ export class URLResolver implements URLResolverInterface {
     const ipfsUrl = new URL(`ipfs://${result.cid}/${url.pathname}`)
     const ipfsResult = await this.resolveIPFSPath(ipfsUrl, serverTiming, options)
 
+    if (ipfsResult instanceof Response) {
+      return ipfsResult
+    }
+
     return {
       ...ipfsResult,
       url,
@@ -170,8 +182,12 @@ export class URLResolver implements URLResolverInterface {
     }
   }
 
-  private async resolveIPFSPath (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult> {
+  private async resolveIPFSPath (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult | Response> {
     const walkPathResult = await serverTiming.time('ipfs.resolve', '', this.walkPath(url, options))
+
+    if (walkPathResult instanceof Response) {
+      return walkPathResult
+    }
 
     return {
       ...walkPathResult,
@@ -181,7 +197,7 @@ export class URLResolver implements URLResolverInterface {
     }
   }
 
-  private async walkPath (url: URL, options: ResolveURLOptions = {}): Promise<WalkPathResult> {
+  private async walkPath (url: URL, options: ResolveURLOptions = {}): Promise<WalkPathResult | Response> {
     let cid: CID
 
     try {
@@ -212,15 +228,49 @@ export class URLResolver implements URLResolverInterface {
       return {
         ipfsRoots,
         terminalElement,
-        blockstore
+        blockstore,
+        redirected: options.redirected === true
       }
     } catch (err: any) {
+      if (err.name === 'NotFoundError' && options.redirected !== true) {
+        // if the path did not exist, check for the existence of a _redirects
+        // file and apply if any of the contained rules are applicable
+        // @see https://specs.ipfs.tech/http-gateways/web-redirects-file/#no-forced-redirects
+
+        let redirectsEntry: UnixFSEntry | undefined
+
+        try {
+          redirectsEntry = await exporter(`${cid}/_redirects`, blockstore, options)
+        } catch (err: any) {
+          // ignore missing _redirects file
+          if (err.name !== 'NotFoundError') {
+            throw err
+          }
+        }
+
+        if (redirectsEntry?.type === 'file' || redirectsEntry?.type === 'raw') {
+          const redirects = uint8ArrayToString(await toBuffer(redirectsEntry.content(options)))
+          const redirectResponse = applyRedirects(url, redirects, options)
+
+          if (redirectResponse instanceof Response) {
+            return redirectResponse
+          } else if (redirectResponse instanceof URL) {
+            // follow redirect
+            return this.walkPath(redirectResponse, {
+              ...options,
+              redirected: true
+            })
+          }
+        }
+      }
+
       if (err.name === 'NoResolverError') {
         // may be an unknown codec
         return {
           ipfsRoots: [cid],
           terminalElement: basicEntry(cid),
-          blockstore
+          blockstore,
+          redirected: false
         }
       }
 
