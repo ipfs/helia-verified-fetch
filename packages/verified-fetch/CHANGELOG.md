@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-v7.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.4.0...@helia/verified-fetch-7.0.0) (2026-02-18)
+
+### ⚠ BREAKING CHANGES
+
+* Using the accept header to convert between DAG-CBOR and DAG-JSON is no longer possible
+
+### Bug Fixes
+
+* IPIP-524 remove cross-codec conversions ([#322](https://github.com/ipfs/helia-verified-fetch/issues/322)) ([e520f58](https://github.com/ipfs/helia-verified-fetch/commit/e520f588ef27f89554f5b01384047866325c92ba))
+
 ## [@helia/verified-fetch-v6.4.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.3.2...@helia/verified-fetch-6.4.0) (2026-02-16)
 
 ### Features
