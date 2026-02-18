@@ -20,3 +20,4 @@ filev
 byteranges
 dups
 zcash
+unavail

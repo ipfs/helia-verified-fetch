@@ -18,6 +18,11 @@ export class RedirectsFileTooLargeError extends Error {
   name = 'RedirectsFileTooLargeError'
 }
 
+export class InvalidRedirectsFileError extends Error {
+  static name = 'InvalidRedirectsFileError'
+  name = 'InvalidRedirectsFileError'
+}
+
 export class InvalidRedirectStatusCodeError extends Error {
   static name = 'InvalidRedirectStatusCodeError'
   name = 'InvalidRedirectStatusCodeError'

@@ -118,7 +118,7 @@ describe('accept header', () => {
     expect(output).to.deep.equal(obj)
   })
 
-  it('should transform DAG-CBOR to DAG-JSON', async () => {
+  it('should not transform DAG-CBOR to DAG-JSON', async () => {
     const obj = {
       hello: 'world'
     }
@@ -130,10 +130,7 @@ describe('accept header', () => {
         accept: 'application/vnd.ipld.dag-json'
       }
     })
-    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
-
-    const output = ipldDagJson.decode(new Uint8Array(await resp.arrayBuffer()))
-    expect(output).to.deep.equal(obj)
+    expect(resp.status).to.equal(406)
   })
 
   it('should transform DAG-CBOR to JSON', async () => {
@@ -154,7 +151,7 @@ describe('accept header', () => {
     expect(output).to.deep.equal(obj)
   })
 
-  it('should transform DAG-JSON to DAG-CBOR', async () => {
+  it('should not transform DAG-JSON to DAG-CBOR', async () => {
     const obj = {
       hello: 'world'
     }
@@ -166,10 +163,7 @@ describe('accept header', () => {
         accept: 'application/vnd.ipld.dag-cbor'
       }
     })
-    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.dag-cbor')
-
-    const output = ipldDagCbor.decode(new Uint8Array(await resp.arrayBuffer()))
-    expect(output).to.deep.equal(obj)
+    expect(resp.status).to.equal(406)
   })
 
   it('should not transform block when requesting CBOR', async () => {

@@ -8,7 +8,7 @@ import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_DAG_JSON } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
@@ -33,20 +33,6 @@ const FORMATS: Format[] = [{
     expect(new Uint8Array(await res.arrayBuffer())).to.equalBytes(block)
   }
 }, {
-  name: 'DAG-JSON',
-  accept: 'application/vnd.ipld.dag-json',
-  block: (obj) => {
-    return uint8ArrayFromString(JSON.stringify(obj))
-  },
-  verify: async (obj, block, res) => {
-    expect(res.headers.get('content-length')).to.equal('41')
-    expect(await res.json()).to.deep.equal({
-      '/': {
-        bytes: uint8ArrayToString(block, 'base64')
-      }
-    })
-  }
-}, {
   name: 'CBOR',
   accept: 'application/cbor',
   block: (obj) => {
@@ -55,16 +41,6 @@ const FORMATS: Format[] = [{
   verify: async (obj, block, res) => {
     expect(res.headers.get('content-length')).to.equal(block.byteLength.toString())
     expect(new Uint8Array(await res.arrayBuffer())).to.equalBytes(block)
-  }
-}, {
-  name: 'DAG-CBOR',
-  accept: 'application/vnd.ipld.dag-cbor',
-  block: (obj) => {
-    return cborg.encode(obj)
-  },
-  verify: async (obj, block, res) => {
-    expect(res.headers.get('content-length')).to.equal(cborg.encode(block).byteLength.toString())
-    expect(cborg.decode(new Uint8Array(await res.arrayBuffer()))).to.deep.equal(cborg.encode(obj))
   }
 }]
 
@@ -176,4 +152,32 @@ describe('raw blocks', () => {
       await format.verify(obj, block, res)
     })
   }
+
+  it('should not support fetching a raw block as DAG-CBOR', async () => {
+    const block = Uint8Array.from([0, 1, 2, 3, 4])
+    const hash = await sha256.digest(block)
+    const cid = CID.createV1(raw.code, hash)
+    await helia.blockstore.put(cid, block)
+
+    const res = await verifiedFetch.fetch(`ipfs://${cid}`, {
+      headers: {
+        accept: MEDIA_TYPE_DAG_CBOR
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
+
+  it('should not support fetching a raw block as DAG-JSON', async () => {
+    const block = Uint8Array.from([0, 1, 2, 3, 4])
+    const hash = await sha256.digest(block)
+    const cid = CID.createV1(raw.code, hash)
+    await helia.blockstore.put(cid, block)
+
+    const res = await verifiedFetch.fetch(`ipfs://${cid}`, {
+      headers: {
+        accept: MEDIA_TYPE_DAG_JSON
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
 })
