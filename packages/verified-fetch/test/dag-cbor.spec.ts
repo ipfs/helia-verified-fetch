@@ -4,7 +4,7 @@ import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats'
 import { sha256 } from 'multiformats/hashes/sha2'
-import { MEDIA_TYPE_DAG_CBOR } from '../src/index.ts'
+import { MEDIA_TYPE_CBOR, MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_DAG_JSON, MEDIA_TYPE_JSON, MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from 'helia'
@@ -27,11 +27,11 @@ describe('dag-cbor', () => {
       hello: 'world',
       link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
     }
-    const buf = dagCbor.encode(obj)
-    const digest = await sha256.digest(buf)
+    const block = dagCbor.encode(obj)
+    const digest = await sha256.digest(block)
     const cid = CID.createV1(dagCbor.code, digest)
 
-    await helia.blockstore.put(cid, buf)
+    await helia.blockstore.put(cid, block)
 
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`)
     expect(res.ok).to.be.true()
@@ -49,15 +49,15 @@ describe('dag-cbor', () => {
       hello: 'world',
       link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
     }
-    const buf = dagCbor.encode(obj)
-    const digest = await sha256.digest(buf)
+    const block = dagCbor.encode(obj)
+    const digest = await sha256.digest(block)
     const cid = CID.createV1(dagCbor.code, digest)
 
-    await helia.blockstore.put(cid, buf)
+    await helia.blockstore.put(cid, block)
 
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`, {
       headers: {
-        accept: 'application/octet-stream'
+        accept: MEDIA_TYPE_OCTET_STREAM
       }
     })
     expect(res.ok).to.be.true()
@@ -75,15 +75,15 @@ describe('dag-cbor', () => {
       hello: 'world',
       link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
     }
-    const buf = dagCbor.encode(obj)
-    const digest = await sha256.digest(buf)
+    const block = dagCbor.encode(obj)
+    const digest = await sha256.digest(block)
     const cid = CID.createV1(dagCbor.code, digest)
 
-    await helia.blockstore.put(cid, buf)
+    await helia.blockstore.put(cid, block)
 
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`, {
       headers: {
-        accept: 'application/vnd.ipld.raw'
+        accept: MEDIA_TYPE_RAW
       }
     })
     expect(res.ok).to.be.true()
@@ -101,15 +101,15 @@ describe('dag-cbor', () => {
       hello: 'world',
       link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
     }
-    const buf = dagCbor.encode(obj)
-    const digest = await sha256.digest(buf)
+    const block = dagCbor.encode(obj)
+    const digest = await sha256.digest(block)
     const cid = CID.createV1(dagCbor.code, digest)
 
-    await helia.blockstore.put(cid, buf)
+    await helia.blockstore.put(cid, block)
 
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`, {
       headers: {
-        accept: 'application/cbor'
+        accept: MEDIA_TYPE_CBOR
       }
     })
     expect(res.ok).to.be.true()
@@ -127,15 +127,15 @@ describe('dag-cbor', () => {
       hello: 'world',
       link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
     }
-    const buf = dagCbor.encode(obj)
-    const digest = await sha256.digest(buf)
+    const block = dagCbor.encode(obj)
+    const digest = await sha256.digest(block)
     const cid = CID.createV1(dagCbor.code, digest)
 
-    await helia.blockstore.put(cid, buf)
+    await helia.blockstore.put(cid, block)
 
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`, {
       headers: {
-        accept: 'application/json'
+        accept: MEDIA_TYPE_JSON
       }
     })
     expect(res.ok).to.be.true()
@@ -148,28 +148,22 @@ describe('dag-cbor', () => {
     expect(decoded).to.deep.equal(obj)
   })
 
-  it('can download DAG-CBOR blocks as DAG-JSON', async () => {
+  it('can not download DAG-CBOR blocks as DAG-JSON', async () => {
     const obj = {
       hello: 'world',
       link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
     }
-    const buf = dagCbor.encode(obj)
-    const digest = await sha256.digest(buf)
+    const block = dagCbor.encode(obj)
+    const digest = await sha256.digest(block)
     const cid = CID.createV1(dagCbor.code, digest)
 
-    await helia.blockstore.put(cid, buf)
+    await helia.blockstore.put(cid, block)
 
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`, {
       headers: {
-        accept: 'application/vnd.ipld.dag-json'
+        accept: MEDIA_TYPE_DAG_JSON
       }
     })
-    expect(res.ok).to.be.true()
-    expect(res.headers.get('content-type')).to.equal('application/vnd.ipld.dag-json')
-    expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
-
-    const body = await res.arrayBuffer()
-    const decoded = dagJson.decode(new Uint8Array(body))
-    expect(decoded).to.deep.equal(obj)
+    expect(res.status).to.equal(406)
   })
 })

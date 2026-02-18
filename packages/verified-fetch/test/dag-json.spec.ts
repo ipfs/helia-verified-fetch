@@ -5,7 +5,7 @@ import { expect } from 'aegir/chai'
 import { CID } from 'multiformats'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { MEDIA_TYPE_DAG_CBOR } from '../src/index.ts'
-import { CONTENT_TYPE_CBOR, CONTENT_TYPE_DAG_CBOR, CONTENT_TYPE_DAG_JSON, CONTENT_TYPE_JSON, CONTENT_TYPE_RAW } from '../src/utils/content-types.ts'
+import { CONTENT_TYPE_CBOR, CONTENT_TYPE_DAG_JSON, CONTENT_TYPE_JSON, CONTENT_TYPE_RAW } from '../src/utils/content-types.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { ContentType } from '../src/index.ts'
@@ -34,12 +34,6 @@ const fixtures: Fixture[] = [{
   async verify (obj, cid, block, res) {
     const body = await res.arrayBuffer()
     expect(new Uint8Array(body)).to.equalBytes(block)
-  }
-}, {
-  contentType: CONTENT_TYPE_DAG_CBOR,
-  async verify (obj, cid, block, res) {
-    const body = await res.arrayBuffer()
-    expect(new Uint8Array(body)).to.equalBytes(dagCbor.encode(obj))
   }
 }, {
   contentType: CONTENT_TYPE_RAW,
@@ -91,11 +85,11 @@ describe('dag-json', () => {
         hello: 'world',
         link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
       }
-      const buf = dagJson.encode(obj)
-      const digest = await sha256.digest(buf)
+      const block = dagJson.encode(obj)
+      const digest = await sha256.digest(block)
       const cid = CID.createV1(dagJson.code, digest)
 
-      await helia.blockstore.put(cid, buf)
+      await helia.blockstore.put(cid, block)
 
       const res = await verifiedFetch.fetch(`/ipfs/${cid}`, {
         headers: {
@@ -109,20 +103,38 @@ describe('dag-json', () => {
       expect(res.headers.get('x-content-type-options')).to.equal('nosniff')
       expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
-      await fixture.verify(obj, cid, buf, res)
+      await fixture.verify(obj, cid, block, res)
     })
   }
+
+  it('should not support fetching a raw block as DAG-CBOR', async () => {
+    const obj = {
+      hello: 'world',
+      link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
+    }
+    const block = dagJson.encode(obj)
+    const digest = await sha256.digest(block)
+    const cid = CID.createV1(dagJson.code, digest)
+    await helia.blockstore.put(cid, block)
+
+    const res = await verifiedFetch.fetch(`ipfs://${cid}`, {
+      headers: {
+        accept: MEDIA_TYPE_DAG_CBOR
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
 
   it.skip('should 501 when there is a path remainder', async () => {
     const obj = {
       hello: 'world',
       link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
     }
-    const buf = dagCbor.encode(obj)
-    const digest = await sha256.digest(buf)
+    const block = dagCbor.encode(obj)
+    const digest = await sha256.digest(block)
     const cid = CID.createV1(dagCbor.code, digest)
 
-    await helia.blockstore.put(cid, buf)
+    await helia.blockstore.put(cid, block)
 
     const res = await verifiedFetch.fetch(`/ipfs/${cid}/link`)
     expect(res).to.have.property('status', 501)

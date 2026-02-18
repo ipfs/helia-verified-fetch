@@ -1,5 +1,5 @@
 import escape from 'regexp.escape'
-import { DuplicatePlaceholderError, InvalidRedirectStatusCodeError, RedirectsFileTooLargeError } from '../errors.ts'
+import { DuplicatePlaceholderError, InvalidRedirectsFileError, InvalidRedirectStatusCodeError, RedirectsFileTooLargeError } from '../errors.ts'
 import { errorToObject } from './error-to-object.ts'
 
 /**
@@ -36,7 +36,7 @@ export function applyRedirects (url: URL, _redirects: string, options: ApplyRedi
   try {
     // @see https://specs.ipfs.tech/http-gateways/web-redirects-file/#max-file-size
     if (_redirects.length > MAX_REDIRECTS_FILE_SIZE) {
-      throw new RedirectsFileTooLargeError('_redirects file too large')
+      throw new RedirectsFileTooLargeError(`_redirects file size cannot exceed ${MAX_REDIRECTS_FILE_SIZE} bytes`)
     }
 
     const redirects: Redirect[] = _redirects
@@ -47,7 +47,13 @@ export function applyRedirects (url: URL, _redirects: string, options: ApplyRedi
         return line !== '' && !line.startsWith('#')
       })
       .map(line => {
-        const [from, to, status] = line.split(/\s+/)
+        const [from, to, status] = line
+          .split(/\s+/)
+          .map(s => s.trim())
+
+        if (status != null && status !== '' && !status.match(/^\d+$/)) {
+          throw new InvalidRedirectsFileError('Invalid status code in _redirects file')
+        }
 
         let statusCode = parseInt(status)
 

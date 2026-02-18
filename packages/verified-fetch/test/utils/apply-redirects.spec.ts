@@ -11,6 +11,45 @@ describe('apply-redirects', () => {
     expect(result).to.deep.equal(new URL('ipfs://bafybeichqiz32cw5c3vdpvh2xtfgl42veqbsr6sw2g6c7ffz6atvh2vise/bar.html'))
   })
 
+  it('should fail to parse invalid _redirects file', async () => {
+    const request = new URL('ipfs://bafybeichqiz32cw5c3vdpvh2xtfgl42veqbsr6sw2g6c7ffz6atvh2vise/foo.html')
+    const _redirects = '/foo.html /bar.html 302!'
+
+    const result = applyRedirects(request, _redirects)
+
+    if (!(result instanceof Response)) {
+      throw new Error('Response expected')
+    }
+
+    expect(result).to.have.property('status', 500)
+    expect(await result.text()).to.include('InvalidRedirectsFileError')
+  })
+
+  it('should redirect with a deep wildcard', async () => {
+    const request = new URL('ipfs://bafybeiesjgoros75o5meijhfvnxmy7kzkynhqijlzmypw3nry6nvsjqkzy/unavail/has-no-redirects-entry')
+    const _redirects = `/redirect-one /one.html
+/301-redirect-one /one.html 301
+/302-redirect-two /two.html 302
+/200-index /index.html 200
+/posts/:year/:month/:day/:title /articles/:year/:month/:day/:title 301
+/splat/* /redirected-splat/:splat 301
+/not-found/* /404.html 404
+/gone/* /410.html 410
+/unavail/* /451.html 451
+/* /index.html 200`
+
+    const result = applyRedirects(request, _redirects, {
+      redirect: 'manual'
+    })
+
+    if (!(result instanceof Response)) {
+      throw new Error('Response expected')
+    }
+
+    expect(result).to.have.property('status', 451)
+    expect(result.headers.get('location')).to.equal('ipfs://bafybeiesjgoros75o5meijhfvnxmy7kzkynhqijlzmypw3nry6nvsjqkzy/451.html')
+  })
+
   it('should preserve query params', () => {
     const request = new URL('ipfs://bafybeichqiz32cw5c3vdpvh2xtfgl42veqbsr6sw2g6c7ffz6atvh2vise/foo.html?foo=bar')
     const _redirects = '/foo.html /bar.html 302'

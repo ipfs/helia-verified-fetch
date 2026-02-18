@@ -20,8 +20,8 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     [MEDIA_TYPE_JSON]: (buf) => {
       return dagJson.encode(dagCbor.decode(buf))
     },
-    [MEDIA_TYPE_DAG_JSON]: (buf) => {
-      return dagJson.encode(dagCbor.decode(buf))
+    [MEDIA_TYPE_DAG_JSON]: () => {
+      throw new Error('Cannot perform conversion since IPIP-0524')
     },
     [MEDIA_TYPE_RAW]: (buf) => {
       return buf
@@ -54,8 +54,8 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     [MEDIA_TYPE_CBOR]: (buf) => {
       return buf
     },
-    [MEDIA_TYPE_DAG_CBOR]: (buf) => {
-      return dagCbor.encode(dagJson.decode(buf))
+    [MEDIA_TYPE_DAG_CBOR]: () => {
+      throw new Error('Cannot perform conversion since IPIP-0524')
     },
     [MEDIA_TYPE_JSON]: (buf) => {
       return buf
@@ -94,14 +94,14 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
     [MEDIA_TYPE_CBOR]: (buf) => {
       return buf
     },
-    [MEDIA_TYPE_DAG_CBOR]: (buf) => {
-      return dagCbor.encode(dagPb.decode(buf))
+    [MEDIA_TYPE_DAG_CBOR]: () => {
+      throw new Error('Cannot perform conversion since IPIP-0524')
     },
     [MEDIA_TYPE_JSON]: (buf) => {
       return buf
     },
-    [MEDIA_TYPE_DAG_JSON]: (buf) => {
-      return dagJson.encode(dagPb.decode(buf))
+    [MEDIA_TYPE_DAG_JSON]: () => {
+      throw new Error('Cannot perform conversion since IPIP-0524')
     },
     [MEDIA_TYPE_RAW]: (buf) => {
       return buf
@@ -115,13 +115,13 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
       return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
-      return dagCbor.encode(buf)
+      throw new Error('Cannot perform conversion since IPIP-0524')
     },
     [MEDIA_TYPE_JSON]: (buf) => {
       return buf
     },
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
-      return dagJson.encode(buf)
+      throw new Error('Cannot perform conversion since IPIP-0524')
     },
     [MEDIA_TYPE_RAW]: (buf) => {
       return buf

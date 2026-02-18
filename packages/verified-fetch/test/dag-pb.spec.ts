@@ -1,6 +1,4 @@
 import { unixfs } from '@helia/unixfs'
-import * as dagCbor from '@ipld/dag-cbor'
-import * as dagJson from '@ipld/dag-json'
 import * as dagPb from '@ipld/dag-pb'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
@@ -92,45 +90,6 @@ const fixtures: Record<string, UnixFSFixtures> = {
       }
     }
   },
-  'DAG-JSON': {
-    accept: MEDIA_TYPE_DAG_JSON,
-    fixtures: {
-      raw: {
-        async verify (res, cid, helia) {
-          expect(dagJson.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(
-              dagJson.decode(
-                dagJson.encode(await toBuffer(helia.blockstore.get(cid)))
-              )
-            )
-        }
-      },
-      file: {
-        async verify (res, cid, helia) {
-          expect(dagJson.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(
-              dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
-            )
-        }
-      },
-      directory: {
-        async verify (res, cid, helia) {
-          expect(dagJson.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(
-              dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
-            )
-        }
-      },
-      shard: {
-        async verify (res, cid, helia) {
-          expect(dagJson.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(
-              dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
-            )
-        }
-      }
-    }
-  },
   CBOR: {
     accept: MEDIA_TYPE_CBOR,
     fixtures: {
@@ -163,43 +122,6 @@ const fixtures: Record<string, UnixFSFixtures> = {
           expect(new Uint8Array(await res.arrayBuffer()))
             .to.deep.equal(
               await toBuffer(helia.blockstore.get(cid))
-            )
-        }
-      }
-    }
-  },
-  'DAG-CBOR': {
-    accept: MEDIA_TYPE_DAG_CBOR,
-    fixtures: {
-      raw: {
-        async verify (res, cid, helia) {
-          expect(dagCbor.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(
-              await toBuffer(helia.blockstore.get(cid))
-            )
-        }
-      },
-      file: {
-        async verify (res, cid, helia) {
-          expect(dagCbor.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(
-              dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
-            )
-        }
-      },
-      directory: {
-        async verify (res, cid, helia) {
-          expect(dagCbor.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(
-              dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
-            )
-        }
-      },
-      shard: {
-        async verify (res, cid, helia) {
-          expect(dagCbor.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(
-              dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
             )
         }
       }
@@ -309,4 +231,76 @@ describe('dag-pb', () => {
       })
     }
   }
+
+  it('should not support fetching a raw node as DAG-CBOR', async () => {
+    const res = await verifiedFetch.fetch(`ipfs://${cids.raw}`, {
+      headers: {
+        accept: 'application/vnd.ipld.dag-cbor'
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
+
+  it('should not support fetching a raw node as DAG-JSON', async () => {
+    const res = await verifiedFetch.fetch(`ipfs://${cids.file}`, {
+      headers: {
+        accept: 'application/vnd.ipld.dag-json'
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
+
+  it('should not support fetching a file node as DAG-CBOR', async () => {
+    const res = await verifiedFetch.fetch(`ipfs://${cids.file}`, {
+      headers: {
+        accept: 'application/vnd.ipld.dag-cbor'
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
+
+  it('should not support fetching a file node as DAG-JSON', async () => {
+    const res = await verifiedFetch.fetch(`ipfs://${cids.file}`, {
+      headers: {
+        accept: 'application/vnd.ipld.dag-json'
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
+
+  it('should not support fetching a directory node as DAG-CBOR', async () => {
+    const res = await verifiedFetch.fetch(`ipfs://${cids.directory}`, {
+      headers: {
+        accept: 'application/vnd.ipld.dag-cbor'
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
+
+  it('should not support fetching a directory node as DAG-JSON', async () => {
+    const res = await verifiedFetch.fetch(`ipfs://${cids.directory}`, {
+      headers: {
+        accept: 'application/vnd.ipld.dag-json'
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
+
+  it('should not support fetching a shard node as DAG-CBOR', async () => {
+    const res = await verifiedFetch.fetch(`ipfs://${cids.shard}`, {
+      headers: {
+        accept: MEDIA_TYPE_DAG_CBOR
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
+
+  it('should not support fetching a shard node as DAG-JSON', async () => {
+    const res = await verifiedFetch.fetch(`ipfs://${cids.shard}`, {
+      headers: {
+        accept: MEDIA_TYPE_DAG_JSON
+      }
+    })
+    expect(res.status).to.equal(406)
+  })
 })
