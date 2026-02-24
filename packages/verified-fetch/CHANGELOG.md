@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.0.0...@helia/verified-fetch-7.0.1) (2026-02-24)
+
+### Bug Fixes
+
+* resolve IPNS name embedded in DNSLink record ([#323](https://github.com/ipfs/helia-verified-fetch/issues/323)) ([4fa3882](https://github.com/ipfs/helia-verified-fetch/commit/4fa38823a9ea91f66d9fb93dc61bf61d73f54ccb))
+
 ## [@helia/verified-fetch-v7.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-6.4.0...@helia/verified-fetch-7.0.0) (2026-02-18)
 
 ### ⚠ BREAKING CHANGES
