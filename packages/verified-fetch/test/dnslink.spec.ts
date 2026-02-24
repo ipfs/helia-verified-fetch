@@ -98,6 +98,37 @@ describe('DNSLink', () => {
     expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
   })
 
+  it('should resolve a url with a DNSLink record that resolves to an IPNS record with a subpath', async () => {
+    const fs = unixfs(helia)
+    const fileCid = await fs.addBytes(Uint8Array.from([0, 1, 2, 3]))
+    const dirCid = await fs.addDirectory()
+    const cid = await fs.cp(fileCid, dirCid, 'foo.bin')
+
+    const privateKey = await generateKeyPair('Ed25519')
+    const record = await createIPNSRecord(privateKey, cid, 1, 10_000)
+    const peerId = peerIdFromPrivateKey(privateKey)
+
+    ipnsResolver.resolve.withArgs(peerId).resolves({
+      cid,
+      record
+    })
+
+    const domain = 'dnslink-test.example.org'
+    dnsLink.resolve.withArgs(domain).resolves([{
+      namespace: 'ipns',
+      peerId,
+      path: '',
+      answer: stubInterface()
+    }])
+
+    const resp = await fetch(`ipns://${domain}/foo.bin`)
+    expect(resp).to.be.ok()
+    expect(resp.status).to.equal(200)
+    expect(resp.redirected).to.be.false()
+    expect(resp.url).to.equal('ipns://dnslink-test.example.org/foo.bin')
+    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
+  })
+
   it('should resolve a url with a DNSLink record that resolves to an IPNS record', async () => {
     const obj = {
       hello: 'world'

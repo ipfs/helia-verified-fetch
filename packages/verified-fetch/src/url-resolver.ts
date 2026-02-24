@@ -142,12 +142,12 @@ export class URLResolver implements URLResolverInterface {
       resolveResult = await this.resolveIPNSName(ipnsUrl, serverTiming, options)
     } else if (result.namespace === 'ipfs') {
       // dnslink resolved to CID
-      const ipfsUrl = new URL(`ipfs://${result.cid}/${url.pathname}`)
+      const ipfsUrl = new URL(`ipfs://${result.cid}${url.pathname}`)
       resolveResult = await this.resolveIPFSPath(ipfsUrl, serverTiming, options)
     } else {
       // @ts-expect-error @helia/dnslink follows recursive DNSLink records so
       // result namespace should only be ipns or ipfs
-      throw new TypeError(`Invalid resource. Unexpected DNSLink namespace ${result.namespace} from domain: ${domain}`)
+      throw new TypeError(`Invalid resource. Unexpected DNSLink namespace ${result.namespace} from domain: ${url.hostname}`)
     }
 
     if (resolveResult instanceof Response) {
@@ -169,7 +169,7 @@ export class URLResolver implements URLResolverInterface {
       // path conflict?
     }
 
-    const ipfsUrl = new URL(`ipfs://${result.cid}/${url.pathname}`)
+    const ipfsUrl = new URL(`ipfs://${result.cid}${url.pathname}`)
     const ipfsResult = await this.resolveIPFSPath(ipfsUrl, serverTiming, options)
 
     if (ipfsResult instanceof Response) {
