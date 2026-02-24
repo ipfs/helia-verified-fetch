@@ -98,6 +98,29 @@ describe('DNSLink', () => {
     expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
   })
 
+  it('should redirect a DNSLink url to a file in a directory', async () => {
+    const fs = unixfs(helia)
+    const fileCid = await fs.addBytes(Uint8Array.from([0, 1, 2, 3]))
+    const dirCid = await fs.addDirectory()
+    const cid = await fs.cp(fileCid, dirCid, 'foo.bin')
+
+    const domain = 'dnslink-test.example.org'
+    dnsLink.resolve.withArgs(domain).resolves([{
+      namespace: 'ipfs',
+      cid,
+      path: '/foo.bin',
+      answer: stubInterface()
+    }])
+
+    const resp = await fetch('ipns://dnslink-test.example.org')
+    expect(resp).to.be.ok()
+    expect(resp.status).to.equal(200)
+    expect(resp.redirected).to.be.false()
+    expect(resp.url).to.equal('ipns://dnslink-test.example.org')
+    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
+    expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid},${fileCid}`)
+  })
+
   it('should resolve a url with a DNSLink record that resolves to an IPNS record', async () => {
     const obj = {
       hello: 'world'
