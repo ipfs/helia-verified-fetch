@@ -130,17 +130,6 @@ export class URLResolver implements URLResolverInterface {
       throw new TypeError(`Invalid resource. Cannot resolve DNSLink from domain: ${url.hostname}`)
     }
 
-    // dnslink resolved to IPNS name
-    if (result.namespace === 'ipns') {
-      return this.resolveIPNSName(url, serverTiming, options)
-    }
-
-    // dnslink resolved to CID
-    if (result.namespace !== 'ipfs') {
-      // @ts-expect-error result namespace should only be ipns or ipfs
-      throw new TypeError(`Invalid resource. Unexpected DNSLink namespace ${result.namespace} from domain: ${domain}`)
-    }
-
     if (result.path != null && (url.pathname !== '' && url.pathname !== '/')) {
       // path conflict?
     }
