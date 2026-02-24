@@ -126,7 +126,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org/foo.bin')
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}`)
+    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}/foo.bin`)
   })
 
   it('should resolve a url with a DNSLink record that resolves to an IPNS record', async () => {
