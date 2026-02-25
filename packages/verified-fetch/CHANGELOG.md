@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.0.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.0.2...@helia/verified-fetch-7.0.3) (2026-02-25)
+
+### Bug Fixes
+
+* do not use undeclared domain variable ([#326](https://github.com/ipfs/helia-verified-fetch/issues/326)) ([cbe1c5d](https://github.com/ipfs/helia-verified-fetch/commit/cbe1c5dbba65bdc57b015c7aee0e117e05de0eee)), closes [#324](https://github.com/ipfs/helia-verified-fetch/issues/324)
+
 ## [@helia/verified-fetch-v7.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.0.1...@helia/verified-fetch-7.0.2) (2026-02-25)
 
 ### Bug Fixes
