@@ -294,8 +294,21 @@ function toIPFSPath (url: URL): string {
   return `/ipfs/${url.hostname}${decodeURI(url.pathname)}`
 }
 
+/**
+ * E.g.
+ *
+ * `''` -> `''`
+ * `'/'` -> `''`
+ * `'///'` -> `''`
+ * `'/foo/bar/'` -> `'/foo/bar'`
+ * `'foo/bar'` -> `'/foo/bar'`
+ * etc
+ */
 function normalizePath (path: string): string {
-  path = path.split('/').map(s => s.trim()).filter(Boolean).join('/')
+  path = path.split('/')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .join('/')
 
   if (path !== '') {
     return `/${path}`
