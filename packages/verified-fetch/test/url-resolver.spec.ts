@@ -404,8 +404,13 @@ describe('url-resolver', () => {
       const recordPath = 'foo'
       const requestPath = '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt'
 
+      // '/ipns/${name}/foo/1 - Barrel - Part 1/1 -...' exists
+      const fs = unixfs(helia)
+      const dirCid = await fs.addDirectory()
+      const cid = await fs.cp(nestedDirectoryCID, dirCid, recordPath)
+
       ipnsResolver.resolve.withArgs(peerId).resolves({
-        cid: nestedDirectoryCID,
+        cid,
         path: recordPath,
         record: ipnsRecordStub({ peerId: testPeerId })
       })
@@ -424,8 +429,13 @@ describe('url-resolver', () => {
       const recordPath = 'foo/'
       const requestPath = '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt'
 
+      // '/ipns/${name}/foo/1 - Barrel - Part 1/1 -...' exists
+      const fs = unixfs(helia)
+      const dirCid = await fs.addDirectory()
+      const cid = await fs.cp(nestedDirectoryCID, dirCid, 'foo')
+
       ipnsResolver.resolve.withArgs(peerId).resolves({
-        cid: nestedDirectoryCID,
+        cid,
         path: recordPath,
         record: ipnsRecordStub({ peerId: testPeerId })
       })
@@ -444,8 +454,14 @@ describe('url-resolver', () => {
       const recordPath = '/foo/////bar//'
       const requestPath = '1 - Barrel - Part 1////////1 - Barrel - Part 1 - alt.txt'
 
+      // '/ipns/${name}/foo/1 - Barrel - Part 1/1 -...' exists
+      const fs = unixfs(helia)
+      const dirCid = await fs.addDirectory()
+      const barCid = await fs.cp(nestedDirectoryCID, dirCid, 'bar')
+      const cid = await fs.cp(barCid, dirCid, 'foo')
+
       ipnsResolver.resolve.withArgs(peerId).resolves({
-        cid: nestedDirectoryCID,
+        cid,
         path: recordPath,
         record: ipnsRecordStub({ peerId: testPeerId })
       })
