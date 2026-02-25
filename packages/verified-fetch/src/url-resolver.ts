@@ -1,11 +1,11 @@
 import { DoesNotExistError } from '@helia/unixfs/errors'
-import { peerIdFromString } from '@libp2p/peer-id'
+import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
 import { exporter, InvalidParametersError, walkPath } from 'ipfs-unixfs-exporter'
 import toBuffer from 'it-to-buffer'
 import { CID } from 'multiformats/cid'
 import QuickLRU from 'quick-lru'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
-import { SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS } from './constants.ts'
+import { CODEC_LIBP2P_KEY, SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS } from './constants.ts'
 import { applyRedirects } from './utils/apply-redirect.ts'
 import { ServerTiming } from './utils/server-timing.ts'
 import type { ResolveURLOptions, ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
@@ -130,19 +130,16 @@ export class URLResolver implements URLResolverInterface {
       throw new TypeError(`Invalid resource. Cannot resolve DNSLink from domain: ${url.hostname}`)
     }
 
-    if (result.path != null && (url.pathname !== '' && url.pathname !== '/')) {
-      // path conflict?
-    }
-
     let resolveResult: ResolveURLResult | Response
+    const path = normalizePath(`${result.path}/${url.pathname}`)
 
     if (result.namespace === 'ipns') {
       // dnslink resolved to IPNS name
-      const ipnsUrl = new URL(`ipns://${result.peerId.toCID()}${url.pathname}`)
+      const ipnsUrl = new URL(`ipns://${result.peerId}${path}`)
       resolveResult = await this.resolveIPNSName(ipnsUrl, serverTiming, options)
     } else if (result.namespace === 'ipfs') {
       // dnslink resolved to CID
-      const ipfsUrl = new URL(`ipfs://${result.cid}${url.pathname}`)
+      const ipfsUrl = new URL(`ipfs://${result.cid}${path}`)
       resolveResult = await this.resolveIPFSPath(ipfsUrl, serverTiming, options)
     } else {
       // @ts-expect-error @helia/dnslink follows recursive DNSLink records so
@@ -164,12 +161,9 @@ export class URLResolver implements URLResolverInterface {
   private async resolveIPNSName (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult | Response> {
     const peerId = peerIdFromString(url.hostname)
     const result = await serverTiming.time('ipns.resolve', `Resolve IPNS name ${peerId}`, this.components.ipnsResolver.resolve(peerId, options))
+    const path = normalizePath(`${result.path ?? ''}/${url.pathname}`)
 
-    if (result.path != null && (url.pathname !== '' && url.pathname !== '/')) {
-      // path conflict?
-    }
-
-    const ipfsUrl = new URL(`ipfs://${result.cid}${url.pathname}`)
+    const ipfsUrl = new URL(`ipfs://${result.cid}${path}`)
     const ipfsResult = await this.resolveIPFSPath(ipfsUrl, serverTiming, options)
 
     if (ipfsResult instanceof Response) {
@@ -189,6 +183,21 @@ export class URLResolver implements URLResolverInterface {
 
     if (walkPathResult instanceof Response) {
       return walkPathResult
+    }
+
+    if (walkPathResult.terminalElement.cid.code === CODEC_LIBP2P_KEY) {
+      // special case, peer id encoded as libp2p key CID - interpret as IPNS
+      const ipnsUrl = new URL(`ipns://${peerIdFromCID(walkPathResult.terminalElement.cid)}`)
+      const ipnsResult = await this.resolveIPNSName(ipnsUrl, serverTiming, options)
+
+      if (ipnsResult instanceof Response) {
+        return ipnsResult
+      }
+
+      return {
+        ...ipnsResult,
+        url
+      }
     }
 
     return {
@@ -283,4 +292,27 @@ export class URLResolver implements URLResolverInterface {
 
 function toIPFSPath (url: URL): string {
   return `/ipfs/${url.hostname}${decodeURI(url.pathname)}`
+}
+
+/**
+ * E.g.
+ *
+ * `''` -> `''`
+ * `'/'` -> `''`
+ * `'///'` -> `''`
+ * `'/foo/bar/'` -> `'/foo/bar'`
+ * `'foo/bar'` -> `'/foo/bar'`
+ * etc
+ */
+function normalizePath (path: string): string {
+  path = path.split('/')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .join('/')
+
+  if (path !== '') {
+    return `/${path}`
+  }
+
+  return ''
 }
