@@ -144,7 +144,7 @@ export class URLResolver implements URLResolverInterface {
     } else {
       // @ts-expect-error @helia/dnslink follows recursive DNSLink records so
       // result namespace should only be ipns or ipfs
-      throw new TypeError(`Invalid resource. Unexpected DNSLink namespace ${result.namespace} from domain: ${domain}`)
+      throw new TypeError(`Invalid resource. Unexpected DNSLink namespace ${result.namespace} from domain: ${url.hostname}`)
     }
 
     if (resolveResult instanceof Response) {
