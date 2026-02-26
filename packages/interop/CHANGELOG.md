@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-interop-v4.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.0.1...@helia/verified-fetch-interop-4.0.2) (2026-02-26)
+
+### Dependencies
+
+* bump kubo in the kubo-deps group across 1 directory ([#327](https://github.com/ipfs/helia-verified-fetch/issues/327)) ([129770a](https://github.com/ipfs/helia-verified-fetch/commit/129770a7bc3dcdc6219699e570a1d656d98b3f41))
+
 ## [@helia/verified-fetch-interop-v4.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.0.0...@helia/verified-fetch-interop-4.0.1) (2026-01-22)
 
 ### Bug Fixes
