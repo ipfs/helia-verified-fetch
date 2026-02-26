@@ -62,10 +62,10 @@ export class UnixFSPlugin extends BasePlugin {
     let entry: UnixFSEntry
 
     try {
-      entry = await exporter(terminalElement.cid, blockstore, context.options)
+      entry = await exporter(terminalElement.cid, blockstore, context)
     } catch (err: any) {
       // throw abort error if signal was aborted
-      context?.options?.signal?.throwIfAborted()
+      context?.signal?.throwIfAborted()
 
       if (err.name === 'BlockNotFoundWhileOfflineError') {
         throw err
@@ -81,10 +81,10 @@ export class UnixFSPlugin extends BasePlugin {
       if (redirectUrl != null) {
         this.log.trace('directory url normalization spec requires redirect')
 
-        if (context.options?.redirect === 'error') {
+        if (context?.redirect === 'error') {
           this.log('could not redirect to %s as redirect option was set to "error"', redirectUrl)
           throw new TypeError('Failed to fetch')
-        } else if (context.options?.redirect === 'manual') {
+        } else if (context?.redirect === 'manual') {
           this.log('returning 301 permanent redirect to %s', redirectUrl)
           return movedPermanentlyResponse(context.resource, redirectUrl)
         }
@@ -99,19 +99,19 @@ export class UnixFSPlugin extends BasePlugin {
       const dirCid = terminalElement.cid
 
       // if not disabled, search the directory for an index.html file
-      if (context.options?.supportDirectoryIndexes !== false) {
+      if (context?.supportDirectoryIndexes !== false) {
         const rootFilePath = 'index.html'
 
         try {
           this.log.trace('found directory at %c%s, looking for index.html', dirCid, url.pathname)
 
-          const indexFile = await context.serverTiming.time('exporter-dir', '', last(walkPath(`/ipfs/${dirCid}/${rootFilePath}`, context.blockstore, context.options)))
+          const indexFile = await context.serverTiming.time('exporter-dir', '', last(walkPath(`/ipfs/${dirCid}/${rootFilePath}`, context.blockstore, context)))
 
           if (indexFile == null) {
             return badGatewayResponse(resource, 'Unable to stream content')
           }
 
-          const indexFileEntry = await context.serverTiming.time('exporter-dir', '', exporter(indexFile.cid, context.blockstore, context.options))
+          const indexFileEntry = await context.serverTiming.time('exporter-dir', '', exporter(indexFile.cid, context.blockstore, context))
 
           if (indexFileEntry.type !== 'file' && indexFileEntry.type !== 'raw' && indexFileEntry.type !== 'identity') {
             return badGatewayResponse(resource, 'Unable to stream content')
@@ -122,7 +122,7 @@ export class UnixFSPlugin extends BasePlugin {
 
           this.log.trace('found directory index at %c%s with cid %c', dirCid, rootFilePath, entry.cid)
 
-          return await this.streamFile(resource, indexFileEntry, filename, ipfsRoots, redirected, context.range, context.options)
+          return await this.streamFile(resource, indexFileEntry, filename, ipfsRoots, redirected, context.range, context)
         } catch (err: any) {
           if (err.name !== 'NotFoundError') {
             this.log.error('error loading path %c/%s - %e', dirCid, rootFilePath, err)
@@ -132,7 +132,7 @@ export class UnixFSPlugin extends BasePlugin {
       }
 
       // no index file found, return the directory listing
-      const block = await toBuffer(context.blockstore.get(dirCid, context.options))
+      const block = await toBuffer(context.blockstore.get(dirCid, context))
 
       return okResponse(resource, block, {
         headers: {
@@ -148,7 +148,7 @@ export class UnixFSPlugin extends BasePlugin {
       })
     } else if (entry.type === 'file' || entry.type === 'raw' || entry.type === 'identity') {
       this.log('streaming file')
-      return this.streamFile(resource, entry, filename, ipfsRoots, redirected, context.range, context.options)
+      return this.streamFile(resource, entry, filename, ipfsRoots, redirected, context.range, context)
     } else {
       this.log.error('cannot stream terminal element type %s', entry.type)
       return badGatewayResponse(resource, 'Unable to stream content')

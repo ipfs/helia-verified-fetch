@@ -15,11 +15,12 @@ import type { AbortOptions, Logger } from '@libp2p/interface'
 import type { Helia, ProviderOptions, SessionBlockstore } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { PathEntry, UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { ProgressOptions } from 'progress-events'
 
 // 1 year in seconds for ipfs content
 const IPFS_CONTENT_TTL = 29030400
 
-interface GetBlockstoreOptions extends AbortOptions, ProviderOptions {
+interface GetBlockstoreOptions extends AbortOptions, ProviderOptions, ProgressOptions {
   session?: boolean
 }
 

@@ -183,10 +183,10 @@ export class VerifiedFetch {
         }
 
         return this.handleFinalResponse(await ipnsRecordPlugin.handle({
+          ...options,
           range,
           url,
           resource,
-          options,
           redirected: false
         }))
       }
@@ -212,12 +212,11 @@ export class VerifiedFetch {
       }
 
       const context: PluginContext = {
+        ...options,
         ...resolveResult,
         resource,
         accept,
         range,
-        options,
-        onProgress: options?.onProgress,
         serverTiming,
         headers,
         requestedMimeTypes
@@ -367,7 +366,7 @@ export class VerifiedFetch {
       }
     }
 
-    if (context?.options?.method === 'HEAD') {
+    if (context?.method === 'HEAD') {
       // don't send the body for HEAD requests
       return new Response(null, {
         status: 200,

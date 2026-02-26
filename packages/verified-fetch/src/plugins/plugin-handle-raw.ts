@@ -21,10 +21,10 @@ export class RawPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { url, resource, accept, ipfsRoots, terminalElement, blockstore, options } = context
+    const { url, resource, accept, ipfsRoots, terminalElement, blockstore } = context
 
     this.log.trace('fetching %c%s', terminalElement.cid, url.pathname)
-    const block = await toBuffer(blockstore.get(terminalElement.cid, options))
+    const block = await toBuffer(blockstore.get(terminalElement.cid, context))
 
     const headers = {
       'content-length': `${block.byteLength}`,

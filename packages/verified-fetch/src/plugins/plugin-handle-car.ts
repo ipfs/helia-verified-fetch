@@ -54,7 +54,7 @@ export class CarPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { options, url, accept, resource, blockstore, range, ipfsRoots, terminalElement, requestedMimeTypes } = context
+    const { url, accept, resource, blockstore, range, ipfsRoots, terminalElement, requestedMimeTypes } = context
 
     if (range != null) {
       return badRequestResponse(resource, new Error('Range requests are not supported for CAR files'))
@@ -87,7 +87,7 @@ export class CarPlugin extends BasePlugin {
     })
 
     const carExportOptions: ExportCarOptions = {
-      ...options,
+      ...context,
       includeTraversalBlocks: true
     }
 
@@ -112,7 +112,7 @@ export class CarPlugin extends BasePlugin {
           listingOnly: true
         }
 
-        const entry = await exporter(terminalElement.cid, blockstore, context.options)
+        const entry = await exporter(terminalElement.cid, blockstore, context)
 
         if (entry.type === 'file') {
           const slice = entityBytesToOffsetAndLength(entry.size, url.searchParams.get('entity-bytes'))
