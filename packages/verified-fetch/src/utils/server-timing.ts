@@ -18,7 +18,11 @@ export class ServerTiming {
       const endTime = performance.now()
       const duration = (endTime - startTime).toFixed(1) // Duration in milliseconds
 
-      this.headers.push(`${name};dur=${duration};desc="${description}"`)
+      this.add(name, description, duration)
     }
+  }
+
+  add (name: string, description: string, duration: number | string): void {
+    this.headers.push(`${name};dur=${duration};desc="${description}"`)
   }
 }

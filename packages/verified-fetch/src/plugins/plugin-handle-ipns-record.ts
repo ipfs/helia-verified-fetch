@@ -19,8 +19,8 @@ export class IpnsRecordPlugin extends BasePlugin {
     return accept.some(header => header.contentType.mediaType === MEDIA_TYPE_IPNS_RECORD)
   }
 
-  async handle (context: Pick<PluginContext, 'resource' | 'url' | 'options' | 'range' | 'redirected'>): Promise<Response> {
-    const { resource, url, options, range } = context
+  async handle (context: Pick<PluginContext, 'resource' | 'url' | 'range' | 'redirected' | 'signal' | 'onProgress'>): Promise<Response> {
+    const { resource, url, range } = context
     const { ipnsResolver } = this.pluginOptions
 
     if ((url.pathname !== '' && url.pathname !== '/') || url.protocol !== 'ipns:') {
@@ -43,7 +43,7 @@ export class IpnsRecordPlugin extends BasePlugin {
       return badRequestResponse(resource, err)
     }
 
-    const result = await ipnsResolver.resolve(peerId, options)
+    const result = await ipnsResolver.resolve(peerId, context)
     const block = marshalIPNSRecord(result.record)
 
     return okResponse(resource, block, {

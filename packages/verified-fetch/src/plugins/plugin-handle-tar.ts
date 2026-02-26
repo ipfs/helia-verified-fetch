@@ -22,7 +22,7 @@ export class TarPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { terminalElement, url, resource, options, blockstore, range } = context
+    const { terminalElement, url, resource, blockstore, range } = context
 
     if (terminalElement.cid.code !== dagPbCode && terminalElement.cid.code !== rawCode) {
       return badRequestResponse(resource, new NotUnixFSError('Only UnixFS data can be returned in a TAR file'))
@@ -32,7 +32,7 @@ export class TarPlugin extends BasePlugin {
       return badRequestResponse(resource, new Error('Range requests are not supported for TAR files'))
     }
 
-    const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${terminalElement.cid}${url.pathname}`, blockstore, options))
+    const stream = toBrowserReadableStream<Uint8Array>(tarStream(`/ipfs/${terminalElement.cid}${url.pathname}`, blockstore, context))
 
     return okResponse(resource, stream, {
       redirected: context.redirected,

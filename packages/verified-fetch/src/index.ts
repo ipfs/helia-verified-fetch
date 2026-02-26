@@ -872,7 +872,7 @@ export interface PluginOptions {
  * - Shared Data: Allows plugins to communicate partial results, discovered data, or interim errors.
  * - Ephemeral: Typically discarded once fetch(...) completes.
  */
-export interface PluginContext extends ResolveURLResult {
+export interface PluginContext extends ResolveURLResult, Omit<VerifiedFetchInit, 'signal'>, AbortOptions {
   /**
    * The resource that was requested by the user
    */
@@ -904,11 +904,6 @@ export interface PluginContext extends ResolveURLResult {
    * A callback that receives progress events
    */
   onProgress?(evt: ProgressEvent): void
-
-  /**
-   * Onward options to pass to async operations
-   */
-  options?: Omit<VerifiedFetchInit, 'signal'> & AbortOptions
 
   /**
    * Any async operations should be invoked using server timings to allow
@@ -1234,7 +1229,7 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<Verified
 
 export type URLProtocols = 'ipfs' | 'ipns' | 'dnslink'
 
-export interface ResolveURLOptions extends AbortOptions, ProviderOptions {
+export interface ResolveURLOptions extends AbortOptions, ProviderOptions, ProgressOptions {
   /**
    * If true, only peers that are found to have the root block of a DAG will be
    * queried for subsequent blocks. If no peers in the session have a subsequent
@@ -1255,6 +1250,11 @@ export interface ResolveURLOptions extends AbortOptions, ProviderOptions {
    * Allows control of how redirects are processed
    */
   redirect?: RequestInit['redirect']
+
+  /**
+   * Record timing information in a response header
+   */
+  serverTiming?: ServerTiming
 }
 
 export interface ResolveURLResult {

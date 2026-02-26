@@ -41,10 +41,10 @@ export class IpldPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { url, resource, accept, ipfsRoots, terminalElement, blockstore, options, requestedMimeTypes } = context
+    const { url, resource, accept, ipfsRoots, terminalElement, blockstore, requestedMimeTypes } = context
 
     this.log.trace('fetching %c%s', terminalElement.cid, url.pathname)
-    let block = await toBuffer(blockstore.get(terminalElement.cid, options))
+    let block = await toBuffer(blockstore.get(terminalElement.cid, context))
     let contentType: ContentType
 
     try {
