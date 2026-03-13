@@ -1,3 +1,14 @@
+## [@helia/verified-fetch-v7.0.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.0.3...@helia/verified-fetch-7.0.4) (2026-03-13)
+
+### Bug Fixes
+
+* report server timings in ms ([#330](https://github.com/ipfs/helia-verified-fetch/issues/330)) ([c8d9c4a](https://github.com/ipfs/helia-verified-fetch/commit/c8d9c4a08f3931ab2ebaf96eb10563e85518e059)), closes [#956](https://github.com/ipfs/helia-verified-fetch/issues/956)
+
+### Trivial Changes
+
+* add tests for DNSLink/IPNS records with paths ([#324](https://github.com/ipfs/helia-verified-fetch/issues/324)) ([e8eae79](https://github.com/ipfs/helia-verified-fetch/commit/e8eae7929f31cd64c5d543794a989f7fbfce7366))
+* flatten context options ([#328](https://github.com/ipfs/helia-verified-fetch/issues/328)) ([840f810](https://github.com/ipfs/helia-verified-fetch/commit/840f810dfbd7e9e84c67fbe246fb513c9f1ffa36))
+
 ## [@helia/verified-fetch-v7.0.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.0.2...@helia/verified-fetch-7.0.3) (2026-02-25)
 
 ### Bug Fixes
