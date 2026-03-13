@@ -30,7 +30,7 @@ describe('serverTiming', () => {
 
     const [timingName, timingDuration, timingDesc] = serverTiming.getHeader().split(';')
     expect(timingName).to.equal(name)
-    expect(timingDuration).to.match(/^dur=\d+(\.\d)?$/)
+    expect(timingDuration).to.match(/^dur=\d+(\.\d{3,})?$/)
     expect(timingDesc).to.equal(`desc="${description}"`)
   })
 
@@ -46,7 +46,7 @@ describe('serverTiming', () => {
 
     const [timingName, timingDuration, timingDesc] = serverTiming.getHeader().split(';')
     expect(timingName).to.equal(name)
-    expect(timingDuration).to.match(/^dur=\d+(\.\d)?$/)
+    expect(timingDuration).to.match(/^dur=\d+(\.\d{3,})?$/)
     expect(timingDesc).to.equal(`desc="${description}"`)
   })
 
