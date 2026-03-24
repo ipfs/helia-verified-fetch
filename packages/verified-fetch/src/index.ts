@@ -1219,6 +1219,17 @@ export interface VerifiedFetchInit extends RequestInit, ProgressOptions<Verified
   supportWebRedirects?: boolean
 
   /**
+   * If a HAMT-sharded directory is encountered, paths will be translated
+   * automatically, e.g. a request for `QmHamt/bar.txt` will be translated to
+   * `QmHamt/F0/A1bar.txt` internally, pass `false` here to not perform this
+   * translation which will then treat HAMT shard structures as
+   * regular directories.
+   *
+   * @default true
+   */
+  translateHAMTPath?: boolean
+
+  /**
    * If true, only operate on the local blockstore, do not perform any network
    * operations.
    *
