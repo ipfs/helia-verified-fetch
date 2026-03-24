@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.0.4...@helia/verified-fetch-7.1.0) (2026-03-24)
+
+### Features
+
+* expose option to ignore hamt translation ([#332](https://github.com/ipfs/helia-verified-fetch/issues/332)) ([81662c6](https://github.com/ipfs/helia-verified-fetch/commit/81662c6e193fdd71a107862fe342f3beb0592f14))
+
 ## [@helia/verified-fetch-v7.0.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.0.3...@helia/verified-fetch-7.0.4) (2026-03-13)
 
 ### Bug Fixes
