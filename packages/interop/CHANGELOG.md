@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-interop-v4.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.0.2...@helia/verified-fetch-interop-4.1.0) (2026-03-24)
+
+### Features
+
+* expose option to ignore hamt translation ([#332](https://github.com/ipfs/helia-verified-fetch/issues/332)) ([81662c6](https://github.com/ipfs/helia-verified-fetch/commit/81662c6e193fdd71a107862fe342f3beb0592f14))
+
+### Trivial Changes
+
+* update sibling dep ([#331](https://github.com/ipfs/helia-verified-fetch/issues/331)) ([97b546f](https://github.com/ipfs/helia-verified-fetch/commit/97b546f5dd12c4595024d4cc32ec7be4d00f0b5b))
+
 ## [@helia/verified-fetch-interop-v4.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.0.1...@helia/verified-fetch-interop-4.0.2) (2026-02-26)
 
 ### Dependencies
