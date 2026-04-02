@@ -693,16 +693,10 @@ Plugins are executed in a chain (a **plugin pipeline**):
 
 2. **Pipeline Execution:**
 
-   - The pipeline repeatedly checks, up to a maximum number of passes (default = 3), which plugins
-     are currently able to handle the request by calling each plugin’s `canHandle()` method.
+   - The pipeline checks which plugins can handle the request by calling each plugin’s `canHandle()` method.
    - Plugins that have not yet been called in the current run and return `true` for `canHandle()`
      are invoked in sequence.
-     - If a plugin returns a final `Response` or throws a `PluginFatalError`, the pipeline immediately
-       stops and that response is returned.
-     - If a plugin returns `null`, it may have updated the context (for example, by
-       performing path walking), other plugins that said they `canHandle` will run.
-   - If no plugin modifies the context (i.e. no change to `context.modified`) and no final response is
-     produced after iterating through all plugins, the pipeline exits and a default “Not Supported”
+   - If no plugin can handle the request, the pipeline exits and a “Not Supported”
      response is returned.
 
    **Diagram of the Plugin Pipeline:**
@@ -810,6 +804,77 @@ To add your own plugin:
   - Any thrown error immediately stops the pipeline and returns the error response.
 
 For a detailed explanation of the pipeline, please refer to the discussion in [Issue #167](https://github.com/ipfs/helia-verified-fetch/issues/167).
+
+### Server-Timing
+
+Detailed timing is found in the [Server-Timing](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Server-Timing)
+HTTP header that is returned with every response when a resource is requested
+with the `withServerTiming` init option set to `true`.
+
+To prevent the header value growing too large, PeerIDs/CIDs are truncated to
+their first 10 characters and common strings are abbreviated.
+
+The values you may expect to see are described in the following table. Note
+that not all of them may be present in a given response.
+
+Router, block broker and transport abbreviations used in the `desc` fields
+follow.
+
+| Timing metric | Elaboration     | Detail                                                                                                                                                                                                | Example                                        |
+| ------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| d             | DNSLink.resolve | Resolving a DNSLink to an IPFS path or IPNS name                                                                                                                                                      | `d;dur=0.200`                                  |
+| i             | IPFS.resolve    | Resolving a CID + path to a CID                                                                                                                                                                       | `i;dur=0.200`                                  |
+| n             | IPNS.resolve    | Resolving an IPNS name to an IPFS path                                                                                                                                                                | `n;dur=0.200`                                  |
+| p             | Provider        | A provider was found. The `desc` field contains the routing system that found the provider and the first 10 characters of the PeerId                                                                  | `p;dur=0.000;desc="h,bagqbeaawn"`              |
+| f             | Find Providers  | The total duration of the routing systems Find Providers operation. The `desc` field contains the routing system and how many providers were found                                                    | `f;dur=2.000;desc="h,4"`                       |
+| c             | Connect         | How long it took to connect to a provider. The `desc` field contains the type of provider, the first 10 characters of their PeerId and the transport used                                             | `b;dur=0.000;desc="t,bagqbeaa7n,bafybeigoc,t"` |
+| b             | Block           | How long it took to retrieve a block from the provider once connected. The `desc` field contains the type of provider, the first 10 characters of their PeerId and the first 10 characters of the CID | `b;dur=0.000;desc="t,bagqbeaa7n,bafybeigoc"`   |
+
+A full header might look like:
+
+```
+i;dur=0.000,p;dur=0.000;desc="h,bagqbeaawn",p;dur=0.000;desc="h,bagqbeaawn",p;dur=1.000;desc="h,bagqbeaa7n",p;dur=1.000;desc="h,bagqbeaa7n",f;dur=1.000;desc="h,4",f;dur=1.000;desc="h,4",f;dur=144.000;desc="l,0",f;dur=144.000;desc="l,0",c;dur=206.000;desc="t,bagqbeaa7n,h",b;dur=1.000;desc="t,bagqbeaa7n,bafybeigoc"
+```
+
+Here resolving a CID to a CID+path took less than a millisecond (e.g. a bare
+CID was requested).
+
+Two HTTP Gateway providers were found in the routing (`bagqbeaawn` and
+`bagqbeaa7n`). They are found twice because two block brokers are configured
+(bitswap and trustless-gateway) which both make a routing request (results
+are cached internally so the duration to find them the second time differs).
+
+It took 206ms to connect to `bagqbeaa7n` over HTTP, and 1s to retrieve the
+block for the CID `bafybeigo` from the Trustless Gateway `bagqbeaa7n`.
+
+All PeerIDs and CIDs above are truncated to 10 characters.
+
+#### Router abbreviations
+
+| Router | Elaboration           |
+| ------ | --------------------- |
+| h      | HTTP Gateway          |
+| l      | Libp2p (e.g. Kad-DHT) |
+
+#### Block broker abbreviations
+
+| Block Broker | Elaboration       |
+| ------------ | ----------------- |
+| t            | Trustless Gateway |
+| b            | Bitswap           |
+
+#### Transport abbreviations
+
+| Transport | Elaboration   |
+| --------- | ------------- |
+| t         | TCP           |
+| h         | HTTP          |
+| w         | WebSockets    |
+| r         | WebRTC        |
+| d         | WebRTC-Direct |
+| q         | QUIC          |
+| b         | WebTransport  |
+| u         | Unknown       |
 
 # Install
 
