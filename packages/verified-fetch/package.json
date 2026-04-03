@@ -214,7 +214,7 @@
     "aegir": "^47.0.24",
     "blockstore-core": "^6.1.1",
     "browser-readablestream-to-it": "^2.0.9",
-    "cborg": "^4.2.11",
+    "cborg": "^5.0.1",
     "ipfs-unixfs-importer": "^16.0.1",
     "it-all": "^3.0.8",
     "magic-bytes.js": "^1.12.1",
