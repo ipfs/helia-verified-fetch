@@ -313,7 +313,7 @@ export class VerifiedFetch {
       return this.handleFinalResponse(response, withServerTiming, context)
     } catch (err: any) {
       if (err?.name === 'AbortError') {
-        err.timing = serverTiming.getHeader()
+        err.serverTiming = serverTiming.getHeader()
       }
 
       this.log.error('error fetching resource %s - %e', resource, err)

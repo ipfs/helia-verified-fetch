@@ -36,5 +36,5 @@ export class DuplicatePlaceholderError extends Error {
 }
 
 export function isAbortWithServerTimingError (obj?: any): obj is AbortError & { serverTiming: string } {
-  return typeof obj?.timing === 'string' && obj?.name === 'AbortError'
+  return typeof obj?.serverTiming === 'string' && obj?.name === 'AbortError'
 }
