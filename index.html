@@ -665,6 +665,11 @@ block for the CID <code>bafybeigo</code> from the Trustless Gateway <code>bagqbe
 </tr>
 </tbody>
 </table>
+<p>If you seen an <code>Unknown</code> transport type, it's likely a PR needs to be filled
+in <a href="https://github.com/multiformats/js-multiaddr-matcher">@multiformats/multiaddr-matcher</a>
+to be able to detect the multiaddr type - please <a href="https://github.com/ipfs/helia-verified-fetch/issues">open an issue</a>
+with the provider details if you have them, or the <code>CID</code> you are trying to
+fetch if not.</p>
 <h1 id="install" class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
 <pre><code class="console"><span class="hl-1">$ npm i @helia/verified-fetch</span>
 </code><button type="button">Copy</button></pre>
