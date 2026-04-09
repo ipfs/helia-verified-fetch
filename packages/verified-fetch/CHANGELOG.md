@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-v7.2.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.3...@helia/verified-fetch-7.2.4) (2026-04-09)
+
+### Bug Fixes
+
+* attach server timing to abort errors and error responses ([#340](https://github.com/ipfs/helia-verified-fetch/issues/340)) ([c5e708c](https://github.com/ipfs/helia-verified-fetch/commit/c5e708c591d9e0ceba540830a2bf35b9feae04b3)), closes [#219](https://github.com/ipfs/helia-verified-fetch/issues/219)
+
+### Documentation
+
+* readme update ([4c9e290](https://github.com/ipfs/helia-verified-fetch/commit/4c9e2904c817a32e20313ff2d512b2a1343fbad1))
+
 ## [@helia/verified-fetch-v7.2.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.2...@helia/verified-fetch-7.2.3) (2026-04-09)
 
 ### Documentation
