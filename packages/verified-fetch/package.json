@@ -184,7 +184,7 @@
     "@multiformats/dns": "^1.0.6",
     "@multiformats/multiaddr": "^13.0.1",
     "@multiformats/multiaddr-matcher": "^3.0.2",
-    "file-type": "^22.0.0",
+    "file-type": "^22.0.1",
     "helia": "^6.1.1",
     "interface-blockstore": "^6.0.1",
     "ipfs-unixfs-exporter": "^15.0.2",
