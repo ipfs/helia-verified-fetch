@@ -811,6 +811,8 @@ Detailed timing is found in the [Server-Timing](https://developer.mozilla.org/en
 HTTP header that is returned with every response when a resource is requested
 with the `withServerTiming` init option set to `true`.
 
+The `dur` field is in milliseconds, so `dur=100` took 100ms.
+
 To prevent the header value growing too large, PeerIDs/CIDs are truncated to
 their first 10 characters and common strings are abbreviated.
 
@@ -833,7 +835,7 @@ follow.
 A full header might look like:
 
 ```
-i;dur=0.000,p;dur=0.000;desc="h,bagqbeaawn",p;dur=0.000;desc="h,bagqbeaawn",p;dur=1.000;desc="h,bagqbeaa7n",p;dur=1.000;desc="h,bagqbeaa7n",f;dur=1.000;desc="h,4",f;dur=1.000;desc="h,4",f;dur=144.000;desc="l,0",f;dur=144.000;desc="l,0",c;dur=206.000;desc="t,bagqbeaa7n,h",b;dur=1.000;desc="t,bagqbeaa7n,bafybeigoc"
+i;dur=0,p;dur=0;desc="h,bagqbeaawn",p;dur=0;desc="h,bagqbeaawn",p;dur=1;desc="h,bagqbeaa7n",p;dur=1;desc="h,bagqbeaa7n",f;dur=1;desc="h,4",f;dur=1;desc="h,4",f;dur=144;desc="l,0",f;dur=144;desc="l,0",c;dur=206;desc="t,bagqbeaa7n,h",b;dur=1;desc="t,bagqbeaa7n,bafybeigoc"
 ```
 
 Here resolving a CID to a CID+path took less than a millisecond (e.g. a bare

@@ -1,10 +1,8 @@
 export class ServerTiming {
   private headers: string[]
-  private precision: number
 
   constructor () {
     this.headers = []
-    this.precision = 3
   }
 
   getHeader (): string {
@@ -25,6 +23,6 @@ export class ServerTiming {
   }
 
   add (name: string, description: string, ms: number): void {
-    this.headers.push(`${name};dur=${(ms / 1000).toFixed(this.precision)}${description === '' ? '' : `;desc="${description}"`}`)
+    this.headers.push(`${name};dur=${Math.round(ms)}${description === '' ? '' : `;desc="${description}"`}`)
   }
 }
