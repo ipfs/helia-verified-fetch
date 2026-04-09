@@ -234,7 +234,7 @@ export class VerifiedFetch {
 
           if (evt.type === 'helia:routing:find-providers:start') {
             routingTimers[evt.detail.routing] = {
-              start: Date.now(),
+              start: performance.now(),
               found: 0
             }
           } else if (evt.type === 'helia:routing:find-providers:provider') {
@@ -244,7 +244,7 @@ export class VerifiedFetch {
 
             routingTimers[evt.detail.routing].found++
 
-            serverTiming.add(abbreviate('found-provider'), `${abbreviate(evt.detail.routing)},${truncate(evt.detail.provider.id)}`, Date.now() - routingTimers[evt.detail.routing].start)
+            serverTiming.add(abbreviate('found-provider'), `${abbreviate(evt.detail.routing)},${truncate(evt.detail.provider.id)}`, performance.now() - routingTimers[evt.detail.routing].start)
           } else if (evt.type === 'helia:routing:find-providers:end') {
             const routing = routingTimers[evt.detail.routing]
 
@@ -252,10 +252,10 @@ export class VerifiedFetch {
               return
             }
 
-            serverTiming.add(abbreviate('find-providers'), `${abbreviate(evt.detail.routing)},${routing.found}`, Date.now() - routing.start)
+            serverTiming.add(abbreviate('find-providers'), `${abbreviate(evt.detail.routing)},${routing.found}`, performance.now() - routing.start)
           } else if (evt.type === 'helia:block-broker:connect') {
             connectTimers[`connect-${evt.detail.broker}-${evt.detail.provider}`] = {
-              start: Date.now(),
+              start: performance.now(),
               transport: ''
             }
           } else if (evt.type === 'helia:block-broker:connected') {
@@ -265,9 +265,9 @@ export class VerifiedFetch {
               return
             }
 
-            serverTiming.add(abbreviate('connect'), `${abbreviate(evt.detail.broker)},${truncate(evt.detail.provider)},${abbreviateAddress(evt.detail.address)}`, Date.now() - start.start)
+            serverTiming.add(abbreviate('connect'), `${abbreviate(evt.detail.broker)},${truncate(evt.detail.provider)},${abbreviateAddress(evt.detail.address)}`, performance.now() - start.start)
           } else if (evt.type === 'helia:block-broker:request-block') {
-            blockTimers[`block-${evt.detail.broker}-${evt.detail.cid}-${evt.detail.provider}`] = Date.now()
+            blockTimers[`block-${evt.detail.broker}-${evt.detail.cid}-${evt.detail.provider}`] = performance.now()
           } else if (evt.type === 'helia:block-broker:receive-block') {
             const start = blockTimers[`block-${evt.detail.broker}-${evt.detail.cid}-${evt.detail.provider}`]
 
@@ -275,7 +275,7 @@ export class VerifiedFetch {
               return
             }
 
-            serverTiming.add(abbreviate('block'), `${abbreviate(evt.detail.broker)},${truncate(evt.detail.provider)},${truncate(evt.detail.cid)}`, Date.now() - start)
+            serverTiming.add(abbreviate('block'), `${abbreviate(evt.detail.broker)},${truncate(evt.detail.provider)},${truncate(evt.detail.cid)}`, performance.now() - start)
           }
         }
       }
