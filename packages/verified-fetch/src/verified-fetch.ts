@@ -130,16 +130,23 @@ export class VerifiedFetch {
   async fetch (resource: Resource, opts?: VerifiedFetchOptions): Promise<Response> {
     this.log('fetch %s %s', opts?.method ?? 'GET', resource)
 
+    // Create serverTiming outside try block so it's accessible in catch
+    const serverTiming = new ServerTiming()
+    const withServerTiming = Boolean(opts?.withServerTiming) || Boolean(this.withServerTiming)
+
     try {
+      opts?.signal?.throwIfAborted()
+
       if (opts?.method === 'OPTIONS') {
         return this.handleFinalResponse(new Response(null, {
           status: 200
-        }))
+        }), withServerTiming, {
+          serverTiming
+        })
       }
 
       const options = convertOptions(opts)
       const headers = new Headers(options?.headers)
-      const serverTiming = new ServerTiming()
 
       if (options != null) {
         options.offline ??= headers.get('cache-control') === 'only-if-cached'
@@ -151,7 +158,9 @@ export class VerifiedFetch {
 
       if (range instanceof Response) {
         // invalid range request
-        return this.handleFinalResponse(range)
+        return this.handleFinalResponse(range, withServerTiming, {
+          serverTiming
+        })
       }
 
       const url = this.parseResource(resource)
@@ -161,10 +170,12 @@ export class VerifiedFetch {
         // check the if-none-match header and maybe return a 304 without needing
         // to load any blocks
         if (ifNoneMatches(`"${url.hostname}"`, headers)) {
-          return notModifiedResponse(resource, new Headers({
+          return this.handleFinalResponse(notModifiedResponse(resource, new Headers({
             etag: `"${url.hostname}"`,
             'cache-control': 'public, max-age=29030400, immutable'
-          }))
+          })), withServerTiming, {
+            serverTiming
+          })
         }
       }
 
@@ -193,13 +204,17 @@ export class VerifiedFetch {
           url,
           resource,
           redirected: false
-        }))
+        }), withServerTiming, {
+          serverTiming
+        })
       }
 
       const resolveResult = await this.urlResolver.resolve(url, serverTiming, options)
 
       if (resolveResult instanceof Response) {
-        return this.handleFinalResponse(resolveResult)
+        return this.handleFinalResponse(resolveResult, withServerTiming, {
+          serverTiming
+        })
       }
 
       options?.onProgress?.(new CustomProgressEvent<CIDDetail>('verified-fetch:request:resolve', {
@@ -213,7 +228,9 @@ export class VerifiedFetch {
         this.log('allowed media types for requested CID did not contain anything the client can understand')
 
         // invalid accept header
-        return this.handleFinalResponse(accept)
+        return this.handleFinalResponse(accept, withServerTiming, {
+          serverTiming
+        })
       }
 
       const routingTimers: Record<string, { start: number, found: number }> = {}
@@ -293,10 +310,27 @@ export class VerifiedFetch {
         this.log.error('no plugin could handle request for %s', resource)
       }
 
-      return this.handleFinalResponse(response, Boolean(options?.withServerTiming) || Boolean(this.withServerTiming), context)
+      return this.handleFinalResponse(response, withServerTiming, context)
     } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        err.serverTiming = serverTiming.getHeader()
+      }
+
       this.log.error('error fetching resource %s - %e', resource, err)
-      return this.handleFinalResponse(errorToResponse(resource, err, opts))
+
+      try {
+        return this.handleFinalResponse(errorToResponse(resource, err, opts), withServerTiming, {
+          serverTiming
+        })
+      } catch (rethrowErr: any) {
+        // Attach server timing to rethrown errors (e.g., AbortError)
+        // so callers can access timing data even when the request was aborted
+        const timingHeader = serverTiming.getHeader()
+        if (timingHeader !== '') {
+          rethrowErr.serverTiming = timingHeader
+        }
+        throw rethrowErr
+      }
     }
   }
 
@@ -372,7 +406,7 @@ export class VerifiedFetch {
    * if it has been collected. It should be used for any final processing of the
    * response before it is returned to the user.
    */
-  private handleFinalResponse (response: Response, withServerTiming?: boolean, context?: PluginContext): Response {
+  private handleFinalResponse (response: Response, withServerTiming: boolean, context: Partial<PluginContext>): Response {
     const contentType = getContentType(response.headers.get('content-type')) ?? CONTENT_TYPE_OCTET_STREAM
 
     if (withServerTiming === true && context?.serverTiming != null) {
@@ -391,7 +425,7 @@ export class VerifiedFetch {
       })
     }
 
-    if (context?.terminalElement.cid != null) {
+    if (context?.terminalElement?.cid != null && context?.url != null) {
       // headers can ony contain extended ASCII but IPFS paths can be unicode
       const decodedPath = decodeURI(context?.url.pathname)
       const path = uint8ArrayToString(uint8ArrayFromString(decodedPath), 'ascii')
@@ -410,7 +444,7 @@ export class VerifiedFetch {
     response.headers.set('access-control-allow-headers', 'Content-Type, Range, User-Agent, X-Requested-With')
     response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Chunked-Output, X-Stream-Output')
 
-    if (context?.terminalElement.cid != null && response.headers.get('etag') == null) {
+    if (context?.terminalElement?.cid != null && response.headers.get('etag') == null) {
       const etag = getETag({
         cid: context.terminalElement.cid,
         contentType,

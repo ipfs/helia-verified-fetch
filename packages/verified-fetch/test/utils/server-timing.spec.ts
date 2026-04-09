@@ -3,6 +3,7 @@ import { expect } from 'aegir/chai'
 import { CID } from 'multiformats/cid'
 import * as raw from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
+import { isAbortWithServerTimingError } from '../../src/errors.js'
 import { createVerifiedFetch } from '../../src/index.js'
 import { ServerTiming } from '../../src/utils/server-timing.js'
 import { createHelia } from '../fixtures/create-offline-helia.js'
@@ -96,6 +97,23 @@ describe('serverTiming', () => {
         withServerTiming: true
       })
       expect(response.headers.get('Server-Timing')).to.be.a('string')
+    })
+
+    it('should include server timing when requests error', async () => {
+      const response = await vFetch(`ipfs://${cid}invalid`, {
+        withServerTiming: true
+      })
+      expect(response.headers.get('Server-Timing')).to.be.a('string')
+    })
+
+    it('should include server timing in thrown error when aborted', async function () {
+      const controller = new AbortController()
+      controller.abort()
+
+      await expect(vFetch('ipns://example.com', {
+        signal: controller.signal
+      })).to.eventually.be.rejected
+        .that.satisfies((err: any) => isAbortWithServerTimingError(err))
     })
   })
 })
