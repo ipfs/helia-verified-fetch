@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.1...@helia/verified-fetch-7.2.2) (2026-04-09)
+
+### Documentation
+
+* update readme with timings ([#339](https://github.com/ipfs/helia-verified-fetch/issues/339)) ([3429e3e](https://github.com/ipfs/helia-verified-fetch/commit/3429e3e815e834a9e0db04dae322d3fb9f4fcb5c))
+
 ## [@helia/verified-fetch-v7.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.0...@helia/verified-fetch-7.2.1) (2026-04-09)
 
 ### Bug Fixes
