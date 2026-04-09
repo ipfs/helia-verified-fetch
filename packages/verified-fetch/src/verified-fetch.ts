@@ -12,6 +12,7 @@ import { RawPlugin } from './plugins/plugin-handle-raw.ts'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { UnixFSPlugin } from './plugins/plugin-handle-unixfs.js'
 import { URLResolver } from './url-resolver.ts'
+import { abbreviate, abbreviateAddress } from './utils/abbreviate.ts'
 import { contentTypeParser } from './utils/content-type-parser.js'
 import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, MEDIA_TYPE_IPNS_RECORD, CONTENT_TYPE_IPNS } from './utils/content-types.ts'
 import { errorToObject } from './utils/error-to-object.ts'
@@ -56,6 +57,10 @@ function isIPNSRecordRequest (headers: Headers): boolean {
   const mediaType = acceptHeaders[0].split(';')[0]
 
   return mediaType === MEDIA_TYPE_IPNS_RECORD
+}
+
+function truncate (obj?: any): string {
+  return `${obj}`.substring(0, 10)
 }
 
 export class VerifiedFetch {
@@ -211,6 +216,10 @@ export class VerifiedFetch {
         return this.handleFinalResponse(accept)
       }
 
+      const routingTimers: Record<string, { start: number, found: number }> = {}
+      const connectTimers: Record<string, { start: number, transport: string }> = {}
+      const blockTimers: Record<string, number> = {}
+
       const context: PluginContext = {
         ...options,
         ...resolveResult,
@@ -219,7 +228,56 @@ export class VerifiedFetch {
         range,
         serverTiming,
         headers,
-        requestedMimeTypes
+        requestedMimeTypes,
+        onProgress: (evt) => {
+          options?.onProgress?.(evt)
+
+          if (evt.type === 'helia:routing:find-providers:start') {
+            routingTimers[evt.detail.routing] = {
+              start: Date.now(),
+              found: 0
+            }
+          } else if (evt.type === 'helia:routing:find-providers:provider') {
+            if (routingTimers[evt.detail.routing] == null) {
+              return
+            }
+
+            routingTimers[evt.detail.routing].found++
+
+            serverTiming.add(abbreviate('found-provider'), `${abbreviate(evt.detail.routing)},${truncate(evt.detail.provider.id)}`, Date.now() - routingTimers[evt.detail.routing].start)
+          } else if (evt.type === 'helia:routing:find-providers:end') {
+            const routing = routingTimers[evt.detail.routing]
+
+            if (routing == null) {
+              return
+            }
+
+            serverTiming.add(abbreviate('find-providers'), `${abbreviate(evt.detail.routing)},${routing.found}`, Date.now() - routing.start)
+          } else if (evt.type === 'helia:block-broker:connect') {
+            connectTimers[`connect-${evt.detail.broker}-${evt.detail.provider}`] = {
+              start: Date.now(),
+              transport: ''
+            }
+          } else if (evt.type === 'helia:block-broker:connected') {
+            const start = connectTimers[`connect-${evt.detail.broker}-${evt.detail.provider}`]
+
+            if (start == null) {
+              return
+            }
+
+            serverTiming.add(abbreviate('connect'), `${abbreviate(evt.detail.broker)},${truncate(evt.detail.provider)},${abbreviateAddress(evt.detail.address)}`, Date.now() - start.start)
+          } else if (evt.type === 'helia:block-broker:request-block') {
+            blockTimers[`block-${evt.detail.broker}-${evt.detail.cid}-${evt.detail.provider}`] = Date.now()
+          } else if (evt.type === 'helia:block-broker:receive-block') {
+            const start = blockTimers[`block-${evt.detail.broker}-${evt.detail.cid}-${evt.detail.provider}`]
+
+            if (start == null) {
+              return
+            }
+
+            serverTiming.add(abbreviate('block'), `${abbreviate(evt.detail.broker)},${truncate(evt.detail.provider)},${truncate(evt.detail.cid)}`, Date.now() - start)
+          }
+        }
       }
 
       this.log.trace('finding handler for cid code "0x%s" and response content types %s', resolveResult.terminalElement.cid.code.toString(16), accept.map(header => header.contentType.mediaType).join(', '))

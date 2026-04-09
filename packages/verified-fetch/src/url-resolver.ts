@@ -6,6 +6,7 @@ import { CID } from 'multiformats/cid'
 import QuickLRU from 'quick-lru'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CODEC_LIBP2P_KEY, SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS } from './constants.ts'
+import { abbreviate } from './utils/abbreviate.ts'
 import { applyRedirects } from './utils/apply-redirect.ts'
 import { ServerTiming } from './utils/server-timing.ts'
 import type { ResolveURLOptions, ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
@@ -124,7 +125,7 @@ export class URLResolver implements URLResolverInterface {
   }
 
   private async resolveDNSLink (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult | Response> {
-    const results = await serverTiming.time('dnsLink.resolve', `Resolve DNSLink ${url.hostname}`, this.components.dnsLink.resolve(url.hostname, options))
+    const results = await serverTiming.time(abbreviate('dnsLink.resolve'), '', this.components.dnsLink.resolve(url.hostname, options))
     const result = results?.[0]
 
     if (result == null) {
@@ -161,7 +162,7 @@ export class URLResolver implements URLResolverInterface {
 
   private async resolveIPNSName (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult | Response> {
     const peerId = peerIdFromString(url.hostname)
-    const result = await serverTiming.time('ipns.resolve', `Resolve IPNS name ${peerId}`, this.components.ipnsResolver.resolve(peerId, options))
+    const result = await serverTiming.time(abbreviate('ipns.resolve'), '', this.components.ipnsResolver.resolve(peerId, options))
     const path = normalizePath(`${result.path ?? ''}/${url.pathname}`)
 
     const ipfsUrl = new URL(`ipfs://${result.cid}${path}`)
@@ -180,7 +181,7 @@ export class URLResolver implements URLResolverInterface {
   }
 
   private async resolveIPFSPath (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult | Response> {
-    const walkPathResult = await serverTiming.time('ipfs.resolve', '', this.walkPath(url, options))
+    const walkPathResult = await serverTiming.time(abbreviate('ipfs.resolve'), '', this.walkPath(url, options))
 
     if (walkPathResult instanceof Response) {
       return walkPathResult

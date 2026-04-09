@@ -25,6 +25,6 @@ export class ServerTiming {
   }
 
   add (name: string, description: string, duration: number | string): void {
-    this.headers.push(`${name};dur=${Number(duration).toFixed(this.precision)};desc="${description}"`)
+    this.headers.push(`${name};dur=${Number(duration).toFixed(this.precision)}${description === '' ? '' : `;desc="${description}"`}`)
   }
 }
