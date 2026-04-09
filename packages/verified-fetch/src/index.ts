@@ -887,6 +887,8 @@ export {
   MEDIA_TYPE_DAG_PB
 } from './utils/content-types.js'
 
+export * from './errors.js'
+
 export interface ContentType {
   /**
    * The media type of this content type

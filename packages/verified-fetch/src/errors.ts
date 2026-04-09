@@ -1,3 +1,5 @@
+import { AbortError } from '@libp2p/interface'
+
 export class InvalidRangeError extends Error {
   static name = 'InvalidRangeError'
   name = 'InvalidRangeError'
@@ -31,4 +33,8 @@ export class InvalidRedirectStatusCodeError extends Error {
 export class DuplicatePlaceholderError extends Error {
   static name = 'DuplicatePlaceholderError'
   name = 'DuplicatePlaceholderError'
+}
+
+export function isAbortWithServerTimingError (obj?: any): obj is AbortError & { serverTiming: string } {
+  return typeof obj?.timing === 'string' && obj?.name === 'AbortError'
 }
