@@ -811,7 +811,10 @@ Detailed timing is found in the [Server-Timing](https://developer.mozilla.org/en
 HTTP header that is returned with every response when a resource is requested
 with the `withServerTiming` init option set to `true`.
 
-The `dur` field is in milliseconds, so `dur=100` took 100ms.
+The `dur` field is in milliseconds, so `dur=100` took 100ms. It is possible
+to measure in greater precision, but given these are network operations it's
+better to limit the precision and have a smaller header size, since
+downloading the headers impacts the time to first byte.
 
 To prevent the header value growing too large, PeerIDs/CIDs are truncated to
 their first 10 characters and common strings are abbreviated.
