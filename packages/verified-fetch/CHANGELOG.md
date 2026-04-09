@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.2...@helia/verified-fetch-7.2.3) (2026-04-09)
+
+### Documentation
+
+* readme update ([4fbdd76](https://github.com/ipfs/helia-verified-fetch/commit/4fbdd76ec40de7681ad516cf90cb3caf516e7cce))
+
 ## [@helia/verified-fetch-v7.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.1...@helia/verified-fetch-7.2.2) (2026-04-09)
 
 ### Documentation
