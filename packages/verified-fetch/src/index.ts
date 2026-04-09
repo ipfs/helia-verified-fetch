@@ -806,7 +806,7 @@
  * A full header might look like:
  *
  * ```
- * i;dur=0,p;dur=0;desc="h,bagqbeaawn",p;dur=0;desc="h,bagqbeaawn",p;dur=1;desc="h,bagqbeaa7n",p;dur=1;desc="h,bagqbeaa7n",f;dur=1;desc="h,4",f;dur=1;desc="h,4",f;dur=144;desc="l,0",f;dur=144;desc="l,0",c;dur=206;desc="t,bagqbeaa7n,h",b;dur=1;desc="t,bagqbeaa7n,bafybeigoc"
+ * i;dur=0,p;dur=0;desc="h,bagqbeaawn",p;dur=0;desc="h,bagqbeaawn",p;dur=1;desc="h,bagqbeaa7n",p;dur=1;desc="h,bagqbeaa7n",f;dur=1;desc="h,4",f;dur=1;desc="h,4",f;dur=144;desc="l,0",f;dur=144;desc="l,0",c;dur=206;desc="t,bagqbeaa7n,h",b;dur=1000;desc="t,bagqbeaa7n,bafybeigoc"
  * ```
  *
  * Here resolving a CID to a CID+path took less than a millisecond (e.g. a bare
