@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.4...@helia/verified-fetch-7.2.5) (2026-04-09)
+
+### Dependencies
+
+* bump file-type from 21.3.4 to 22.0.0 ([#333](https://github.com/ipfs/helia-verified-fetch/issues/333)) ([a1dd363](https://github.com/ipfs/helia-verified-fetch/commit/a1dd3631270d23e8f4ba2189d8f3b4d88168e41d))
+
 ## [@helia/verified-fetch-v7.2.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.3...@helia/verified-fetch-7.2.4) (2026-04-09)
 
 ### Bug Fixes
