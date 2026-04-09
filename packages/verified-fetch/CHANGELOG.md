@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.0...@helia/verified-fetch-7.2.1) (2026-04-09)
+
+### Bug Fixes
+
+* use performance.now() for server timing headers ([#338](https://github.com/ipfs/helia-verified-fetch/issues/338)) ([1de86ed](https://github.com/ipfs/helia-verified-fetch/commit/1de86ed241289d5ced7eb17e56dba4268764c3d0))
+
 ## [@helia/verified-fetch-v7.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.1.0...@helia/verified-fetch-7.2.0) (2026-04-09)
 
 ### Features
