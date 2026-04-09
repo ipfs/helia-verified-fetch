@@ -848,6 +848,12 @@
  * | q         | QUIC          |
  * | b         | WebTransport  |
  * | u         | Unknown       |
+ *
+ * If you seen an `Unknown` transport type, it's likely a PR needs to be filled
+ * in [@multiformats/multiaddr-matcher](https://github.com/multiformats/js-multiaddr-matcher)
+ * to be able to detect the multiaddr type - please [open an issue](https://github.com/ipfs/helia-verified-fetch/issues)
+ * with the provider details if you have them, or the `CID` you are trying to
+ * fetch if not.
  */
 
 import { bitswap, trustlessGateway } from '@helia/block-brokers'
