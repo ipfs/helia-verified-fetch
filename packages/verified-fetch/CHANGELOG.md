@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.6](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.5...@helia/verified-fetch-7.2.6) (2026-04-13)
+
+### Bug Fixes
+
+* support require ([#341](https://github.com/ipfs/helia-verified-fetch/issues/341)) ([29f75ae](https://github.com/ipfs/helia-verified-fetch/commit/29f75ae2abbeac8a3c34e22f7c21763f0be720b5))
+
 ## [@helia/verified-fetch-v7.2.5](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.4...@helia/verified-fetch-7.2.5) (2026-04-09)
 
 ### Dependencies
