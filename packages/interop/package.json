@@ -32,7 +32,8 @@
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
-      "import": "./dist/src/index.js"
+      "import": "./dist/src/index.js",
+      "module-sync": "./dist/src/index.js"
     }
   },
   "release": {
@@ -144,16 +145,16 @@
     "release": "aegir release"
   },
   "dependencies": {
-    "@helia/delegated-routing-v1-http-api-server": "^5.0.0",
-    "@helia/verified-fetch": "^7.0.4",
-    "aegir": "^47.0.24",
-    "execa": "^9.5.3",
-    "glob": "^13.0.0",
-    "ipfsd-ctl": "^16.0.0",
-    "kubo": "^0.40.0",
-    "kubo-rpc-client": "^6.0.1",
-    "magic-bytes.js": "^1.12.1",
-    "multiformats": "^13.3.6",
+    "@helia/delegated-routing-v1-http-api-server": "^5.2.1",
+    "@helia/verified-fetch": "^7.0.0",
+    "aegir": "^47.1.5",
+    "execa": "^9.6.1",
+    "glob": "^13.0.6",
+    "ipfsd-ctl": "^16.0.3",
+    "kubo": "^0.40.1",
+    "kubo-rpc-client": "^6.1.0",
+    "magic-bytes.js": "^1.13.0",
+    "multiformats": "^13.4.2",
     "sinon-ts": "^2.0.0",
     "wherearewe": "^2.0.1"
   },
