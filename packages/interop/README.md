@@ -15,13 +15,28 @@
 
 # About
 
-Runs interop tests between Helia and Kubo.
+<!--
+
+!IMPORTANT!
+
+Everything in this README between "# About" and "# Install" is automatically
+generated and will be overwritten the next time the doc generator is run.
+
+To make changes to this section, please update the @packageDocumentation section
+of src/index.js or src/index.ts
+
+To experiment with formatting, please run "npm run docs" from the root of this
+repo and examine the changes made.
+
+-->
+
+Runs interop tests between @helia/verified-fetch and Kubo.
 
 ## Example - Testing a new Kubo release
 
 ```console
-$ npm i @helia/interop
-$ KUBO_BINARY=/path/to/kubo helia-interop
+$ npm i @helia/verified-fetch-interop
+$ KUBO_BINARY=/path/to/kubo helia-verified-fetch-interop
 ```
 
 # Install
@@ -37,6 +52,10 @@ Loading this module through a script tag will make its exports available as `Hel
 ```html
 <script src="https://unpkg.com/@helia/verified-fetch-interop/dist/index.min.js"></script>
 ```
+
+# API Docs
+
+- <https://ipfs.github.io/helia-verified-fetch/modules/_helia_verified-fetch-interop.html>
 
 # License
 

@@ -1,7 +1,9 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "name": "Helia Verified Fetch",
-  "exclude": [
-    "packages/interop"
-  ]
+  "name": "helia-verified-fetch",
+  "readme": "./README.md",
+  "headings": {
+    "readme": false,
+    "document": false
+  }
 }

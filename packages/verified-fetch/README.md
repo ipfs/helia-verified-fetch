@@ -903,7 +903,7 @@ Loading this module through a script tag will make its exports available as `Hel
 
 # API Docs
 
-- <https://ipfs.github.io/helia-verified-fetch/modules/_helia_verified_fetch.html>
+- <https://ipfs.github.io/helia-verified-fetch/modules/_helia_verified-fetch.html>
 
 # License
 
