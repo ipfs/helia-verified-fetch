@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-interop-v4.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.2.0...@helia/verified-fetch-interop-4.2.1) (2026-04-13)
+
+### Bug Fixes
+
+* support require ([#341](https://github.com/ipfs/helia-verified-fetch/issues/341)) ([29f75ae](https://github.com/ipfs/helia-verified-fetch/commit/29f75ae2abbeac8a3c34e22f7c21763f0be720b5))
+
 ## [@helia/verified-fetch-interop-v4.2.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.1.0...@helia/verified-fetch-interop-4.2.0) (2026-04-09)
 
 ### Features
