@@ -26,9 +26,12 @@ export class RawPlugin extends BasePlugin {
     this.log.trace('fetching %c%s', terminalElement.cid, url.pathname)
     const block = await toBuffer(blockstore.get(terminalElement.cid, context))
 
+    const contentType = accept
+      .find(value => value.contentType.mediaType === MEDIA_TYPE_RAW || value.contentType.mediaType === MEDIA_TYPE_OCTET_STREAM)?.contentType.mediaType ?? MEDIA_TYPE_RAW
+
     const headers = {
       'content-length': `${block.byteLength}`,
-      'content-type': accept.some(value => value.contentType.mediaType === MEDIA_TYPE_RAW) ? MEDIA_TYPE_RAW : MEDIA_TYPE_OCTET_STREAM,
+      'content-type': contentType,
       'content-disposition': `${url.searchParams.get('download') === 'false' ? 'inline' : 'attachment'}; ${
         getContentDispositionFilename(url.searchParams.get('filename') ?? `${terminalElement.cid}.raw`)
       }`,

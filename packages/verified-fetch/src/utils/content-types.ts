@@ -29,7 +29,7 @@ export const CONTENT_TYPE_OCTET_STREAM: ContentType = {
 
 export const CONTENT_TYPE_DAG_CBOR: ContentType = {
   mediaType: MEDIA_TYPE_DAG_CBOR,
-  codecs: [dagCborCode, CODEC_CBOR, dagJsonCode, jsonCode, dagPbCode, rawCode],
+  codecs: [dagCborCode, rawCode, dagPbCode],
   immutable: true,
   extension: '.cbor',
   etag: '.dag-cbor',
@@ -38,7 +38,7 @@ export const CONTENT_TYPE_DAG_CBOR: ContentType = {
 
 export const CONTENT_TYPE_CBOR: ContentType = {
   mediaType: MEDIA_TYPE_CBOR,
-  codecs: [CODEC_CBOR, dagCborCode, dagJsonCode, jsonCode, dagPbCode, rawCode],
+  codecs: [CODEC_CBOR, dagCborCode, rawCode, dagPbCode],
   immutable: true,
   extension: '.cbor',
   etag: '.cbor',
@@ -47,7 +47,7 @@ export const CONTENT_TYPE_CBOR: ContentType = {
 
 export const CONTENT_TYPE_DAG_JSON: ContentType = {
   mediaType: MEDIA_TYPE_DAG_JSON,
-  codecs: [dagJsonCode, jsonCode, dagCborCode, CODEC_CBOR, dagPbCode, rawCode],
+  codecs: [dagJsonCode, rawCode, dagPbCode],
   immutable: true,
   extension: '.json',
   etag: '.dag-json',
@@ -56,7 +56,7 @@ export const CONTENT_TYPE_DAG_JSON: ContentType = {
 
 export const CONTENT_TYPE_JSON: ContentType = {
   mediaType: MEDIA_TYPE_JSON,
-  codecs: [jsonCode, dagJsonCode, dagCborCode, CODEC_CBOR, dagPbCode, rawCode],
+  codecs: [jsonCode, dagJsonCode, rawCode, dagPbCode],
   immutable: true,
   extension: '.json',
   etag: '.json',

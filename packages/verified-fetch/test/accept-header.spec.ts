@@ -2,7 +2,6 @@ import { dagCbor } from '@helia/dag-cbor'
 import { dagJson } from '@helia/dag-json'
 import { ipns } from '@helia/ipns'
 import * as ipldDagCbor from '@ipld/dag-cbor'
-import * as ipldDagJson from '@ipld/dag-json'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import * as cborg from 'cborg'
@@ -133,7 +132,7 @@ describe('accept header', () => {
     expect(resp.status).to.equal(406)
   })
 
-  it('should transform DAG-CBOR to JSON', async () => {
+  it('should not transform DAG-CBOR to JSON', async () => {
     const obj = {
       hello: 'world'
     }
@@ -145,10 +144,7 @@ describe('accept header', () => {
         accept: 'application/json'
       }
     })
-    expect(resp.headers.get('content-type')).to.equal('application/json')
-
-    const output = ipldDagJson.decode(new Uint8Array(await resp.arrayBuffer()))
-    expect(output).to.deep.equal(obj)
+    expect(resp.status).to.equal(406)
   })
 
   it('should not transform DAG-JSON to DAG-CBOR', async () => {
@@ -166,7 +162,7 @@ describe('accept header', () => {
     expect(resp.status).to.equal(406)
   })
 
-  it('should not transform block when requesting CBOR', async () => {
+  it('should not transform DAG-JSON to CBOR', async () => {
     const obj = {
       hello: 'world'
     }
@@ -178,9 +174,7 @@ describe('accept header', () => {
         accept: 'application/cbor'
       }
     })
-    expect(resp.headers.get('content-type')).to.equal('application/cbor')
-
-    expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(ipldDagJson.encode(obj))
+    expect(resp.status).to.equal(406)
   })
 
   it('should return 406 Not Acceptable if the accept header cannot be adhered to', async () => {
@@ -219,16 +213,16 @@ describe('accept header', () => {
     const obj = {
       hello: 'world'
     }
-    const c = dagCbor(helia)
-    const cid = await c.add(obj)
+    const j = dagJson(helia)
+    const cid = await j.add(obj)
 
     const resp = await verifiedFetch.fetch(cid, {
       headers: {
-        accept: '*/json, application/vnd.ipld.raw'
+        accept: '*/vnd.ipld.raw, application/vnd.ipld.dag-json'
       }
     })
     expect(resp.status).to.equal(200)
-    expect(resp.headers.get('content-type')).to.equal('application/json')
+    expect(resp.headers.get('content-type')).to.equal('application/vnd.ipld.raw')
   })
 
   it('should support subtype wildcards', async () => {
@@ -251,8 +245,8 @@ describe('accept header', () => {
     const obj = {
       hello: 'world'
     }
-    const c = dagCbor(helia)
-    const cid = await c.add(obj)
+    const j = dagJson(helia)
+    const cid = await j.add(obj)
 
     const resp = await verifiedFetch.fetch(cid, {
       headers: {
@@ -260,7 +254,7 @@ describe('accept header', () => {
         // application/octet-stream has a higher weighting so it should win
         accept: [
           'application/json;q=0.1',
-          'application/application/vnd.ipld.raw;q=0.5',
+          'application/vnd.ipld.raw;q=0.5',
           'application/octet-stream;q=0.8'
         ].join(', ')
       }

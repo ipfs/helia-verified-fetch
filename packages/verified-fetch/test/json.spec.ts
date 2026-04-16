@@ -1,15 +1,15 @@
-import * as dagCbor from '@ipld/dag-cbor'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import { CID } from 'multiformats'
+import * as json from 'multiformats/codecs/json'
 import { sha256 } from 'multiformats/hashes/sha2'
-import { MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from '../src/index.ts'
+import { MEDIA_TYPE_JSON, MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
-import { DAG_CBOR_TRANSLATIONS } from './fixtures/codecs.ts'
+import { JSON_TRANSLATIONS } from './fixtures/codecs.ts'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from 'helia'
 
-describe('dag-cbor', () => {
+describe('json', () => {
   let helia: Helia
   let verifiedFetch: VerifiedFetch
 
@@ -22,29 +22,28 @@ describe('dag-cbor', () => {
     await stop(helia, verifiedFetch)
   })
 
-  it('should download DAG-CBOR blocks as application/vnd.ipld.dag-cbor by default', async () => {
+  it('should download JSON blocks as application/json by default', async () => {
     const obj = {
-      hello: 'world',
-      link: CID.parse('bafkqaddimvwgy3zao5xxe3debi')
+      hello: 'world'
     }
-    const block = dagCbor.encode(obj)
+    const block = json.encode(obj)
     const digest = await sha256.digest(block)
-    const cid = CID.createV1(dagCbor.code, digest)
+    const cid = CID.createV1(json.code, digest)
 
     await helia.blockstore.put(cid, block)
 
     const res = await verifiedFetch.fetch(`/ipfs/${cid}`)
     expect(res.ok).to.be.true()
-    expect(res.headers.get('content-type')).to.equal(MEDIA_TYPE_DAG_CBOR)
+    expect(res.headers.get('content-type')).to.equal(MEDIA_TYPE_JSON)
     expect(res.headers.get('cache-control')).to.equal('public, max-age=29030400, immutable')
 
     const body = await res.arrayBuffer()
-    const decoded = dagCbor.decode(new Uint8Array(body))
+    const decoded = json.decode(new Uint8Array(body))
 
     expect(decoded).to.deep.equal(obj)
   })
 
-  for (const translation of DAG_CBOR_TRANSLATIONS) {
+  for (const translation of JSON_TRANSLATIONS) {
     // eslint-disable-next-line no-loop-func
     it(`${translation.ok ? 'can' : 'can not'} download ${translation.input.name} blocks as ${translation.output.name}`, async () => {
       const buf = translation.input.encoded()
