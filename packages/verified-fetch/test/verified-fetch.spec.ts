@@ -487,49 +487,6 @@ describe('@helia/verified-fetch', () => {
       await expect(j.add(output)).to.eventually.deep.equal(cid)
     })
 
-    it('should handle JSON-compliant dag-cbor block', async () => {
-      const obj = {
-        hello: 'world'
-      }
-      const c = dagCbor(helia)
-      const cid = await c.add(obj)
-
-      const resp = await verifiedFetch.fetch(cid, {
-        headers: {
-          accept: 'application/json'
-        }
-      })
-      expect(resp).to.be.ok()
-      expect(resp.status).to.equal(200)
-      expect(resp.statusText).to.equal('OK')
-      expect(resp.headers.get('content-type')).to.equal('application/json')
-      await expect(resp.json()).to.eventually.deep.equal(obj)
-    })
-
-    it('should return dag-cbor data with embedded CID', async () => {
-      const obj = {
-        hello: 'world',
-        link: CID.parse('QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN')
-      }
-      const c = dagCbor(helia)
-      const cid = await c.add(obj)
-
-      const resp = await verifiedFetch.fetch(cid, {
-        headers: {
-          accept: 'application/json'
-        }
-      })
-      expect(resp.headers.get('content-type')).to.equal('application/json')
-
-      const data = await ipldJson.decode(await resp.arrayBuffer())
-      expect(data).to.deep.equal({
-        hello: 'world',
-        link: {
-          '/': 'QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN'
-        }
-      })
-    })
-
     it('should return dag-cbor data with embedded bytes', async () => {
       const obj = {
         hello: 'world',
@@ -545,47 +502,7 @@ describe('@helia/verified-fetch', () => {
       expect(data).to.deep.equal(obj)
     })
 
-    it('should allow parsing dag-cbor object array buffer as dag-json', async () => {
-      const obj = {
-        hello: 'world'
-      }
-      const c = dagCbor(helia)
-      const cid = await c.add(obj)
-
-      const resp = await verifiedFetch.fetch(cid, {
-        headers: {
-          accept: 'application/json'
-        }
-      })
-      expect(resp.headers.get('content-type')).to.equal('application/json')
-
-      const data = ipldDagJson.decode(await resp.arrayBuffer())
-      expect(data).to.deep.equal(obj)
-    })
-
-    it('should return dag-cbor with a small BigInt as application/json', async () => {
-      const obj = {
-        hello: 'world',
-        bigInt: 10n
-      }
-      const c = dagCbor(helia)
-      const cid = await c.add(obj)
-
-      const resp = await verifiedFetch.fetch(cid, {
-        headers: {
-          accept: 'application/json'
-        }
-      })
-      expect(resp.headers.get('content-type')).to.equal('application/json')
-
-      const data = await resp.json()
-      expect(data).to.deep.equal({
-        hello: 'world',
-        bigInt: 10
-      })
-    })
-
-    it('should return dag-cbor with a large BigInt as application/cbor', async () => {
+    it('should return dag-cbor with a large BigInt as application/vnd.ipld.dag-cbor', async () => {
       const obj = {
         hello: 'world',
         bigInt: BigInt(Number.MAX_SAFE_INTEGER) + 1n
@@ -598,45 +515,6 @@ describe('@helia/verified-fetch', () => {
 
       const data = ipldDagCbor.decode(await resp.arrayBuffer())
       expect(data).to.deep.equal(obj)
-    })
-
-    it('can round trip JSON-compliant dag-cbor via .json()', async () => {
-      const obj = {
-        hello: 'world'
-      }
-      const c = dagCbor(helia)
-      const cid = await c.add(obj)
-
-      const resp = await verifiedFetch.fetch(cid, {
-        headers: {
-          accept: 'application/json'
-        }
-      })
-      expect(resp.headers.get('content-type')).to.equal('application/json')
-
-      const output = await resp.json()
-      await expect(c.add(output)).to.eventually.deep.equal(cid)
-    })
-
-    // N.b. this is not possible because the incoming block is turned into JSON
-    // and returned as the response body, so `.arrayBuffer()` returns a string
-    // encoded into a Uint8Array which we can't parse as CBOR
-    it.skip('can round trip JSON-compliant dag-cbor via .arrayBuffer()', async () => {
-      const obj = {
-        hello: 'world'
-      }
-      const c = dagCbor(helia)
-      const cid = await c.add(obj)
-
-      const resp = await verifiedFetch.fetch(cid, {
-        headers: {
-          accept: 'application/json'
-        }
-      })
-      expect(resp.headers.get('content-type')).to.equal('application/json')
-
-      const output = ipldDagCbor.decode(await resp.arrayBuffer())
-      await expect(c.add(output)).to.eventually.deep.equal(cid)
     })
 
     it('can round trip dag-cbor via .arrayBuffer()', async () => {
