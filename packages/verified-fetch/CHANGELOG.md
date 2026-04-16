@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.7](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.6...@helia/verified-fetch-7.2.7) (2026-04-16)
+
+### Bug Fixes
+
+* IPIP-0524 restrict content type conversion ([#342](https://github.com/ipfs/helia-verified-fetch/issues/342)) ([76d563e](https://github.com/ipfs/helia-verified-fetch/commit/76d563e30e8da2606069111dc1dd0973f77dc098))
+
 ## [@helia/verified-fetch-v7.2.6](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.5...@helia/verified-fetch-7.2.6) (2026-04-13)
 
 ### Bug Fixes
