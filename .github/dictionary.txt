@@ -23,3 +23,8 @@ zcash
 unavail
 bagqbeaawn
 bagqbeaa
+JFIF
+ftyp
+isom
+EBML
+matroska
