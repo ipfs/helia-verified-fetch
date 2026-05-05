@@ -1,3 +1,4 @@
+import { isPromise } from '@libp2p/utils'
 import toBuffer from 'it-to-buffer'
 import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
@@ -21,13 +22,34 @@ export class RawPlugin extends BasePlugin {
   }
 
   async handle (context: PluginContext): Promise<Response> {
-    const { url, resource, accept, ipfsRoots, terminalElement, blockstore } = context
+    const { url, resource, accept, ipfsRoots, terminalElement, blockstore, requestedMimeTypes } = context
 
     this.log.trace('fetching %c%s', terminalElement.cid, url.pathname)
     const block = await toBuffer(blockstore.get(terminalElement.cid, context))
 
-    const contentType = accept
+    let contentType = accept
       .find(value => value.contentType.mediaType === MEDIA_TYPE_RAW || value.contentType.mediaType === MEDIA_TYPE_OCTET_STREAM)?.contentType.mediaType ?? MEDIA_TYPE_RAW
+
+    // path-gateway spec §3.2.4: sniff bytes unless the request explicitly carries raw or octet-stream
+    const userAcceptedRaw = requestedMimeTypes.some(value =>
+      value.mediaType === MEDIA_TYPE_RAW || value.mediaType === MEDIA_TYPE_OCTET_STREAM
+    )
+
+    if (contentType === MEDIA_TYPE_RAW && !userAcceptedRaw && this.pluginOptions.contentTypeParser != null) {
+      const filename = url.searchParams.get('filename') ?? undefined
+
+      try {
+        const parsed = this.pluginOptions.contentTypeParser(block, filename)
+        const sniffed = isPromise(parsed) ? await parsed : parsed
+
+        if (sniffed != null) {
+          this.log.trace('sniffed content type %s for raw block %c', sniffed, terminalElement.cid)
+          contentType = sniffed
+        }
+      } catch (err) {
+        this.log.error('error parsing content type - %e', err)
+      }
+    }
 
     const headers = {
       'content-length': `${block.byteLength}`,
