@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.8](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.7...@helia/verified-fetch-7.2.8) (2026-05-05)
+
+### Bug Fixes
+
+* sniff content-type in plugin-handle-raw ([#344](https://github.com/ipfs/helia-verified-fetch/issues/344)) ([de2a88f](https://github.com/ipfs/helia-verified-fetch/commit/de2a88fc091f7d3e192a988c097b945eedb43a26))
+
 ## [@helia/verified-fetch-v7.2.7](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.6...@helia/verified-fetch-7.2.7) (2026-04-16)
 
 ### Bug Fixes
