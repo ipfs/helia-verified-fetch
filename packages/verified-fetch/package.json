@@ -203,7 +203,7 @@
     "progress-events": "^1.1.0",
     "quick-lru": "^7.3.0",
     "regexp.escape": "^2.0.1",
-    "uint8arrays": "^5.1.1"
+    "uint8arrays": "^6.0.0"
   },
   "devDependencies": {
     "@helia/dag-cbor": "^5.1.1",
