@@ -143,7 +143,10 @@ export class UnixFSPlugin extends BasePlugin {
         for await (const dirEntry of entry.entries()) {
           links.push({
             Name: dirEntry.name,
-            Hash: dirEntry.cid
+            Hash: dirEntry.cid,
+
+            // @ts-expect-error needs https://github.com/ipfs/js-ipfs-unixfs/pull/484
+            Tsize: dirEntry.size
           })
         }
 
