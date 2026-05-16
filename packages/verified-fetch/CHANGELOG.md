@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.11](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.10...@helia/verified-fetch-7.2.11) (2026-05-16)
+
+### Bug Fixes
+
+* list shard entries ([#360](https://github.com/ipfs/helia-verified-fetch/issues/360)) ([7a5da76](https://github.com/ipfs/helia-verified-fetch/commit/7a5da7684bfc4c22584926b2fc2c7d3b86b9bce5))
+
 ## [@helia/verified-fetch-v7.2.10](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.9...@helia/verified-fetch-7.2.10) (2026-05-16)
 
 ### Bug Fixes
