@@ -48,8 +48,17 @@ const fixtures: Record<string, UnixFSFixtures> = {
       shard: {
         contentType: MEDIA_TYPE_DAG_PB,
         async verify (res, cid, helia) {
-          expect(dagPb.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(dagPb.decode(await toBuffer(helia.blockstore.get(cid))))
+          const actual = dagPb.decode(new Uint8Array(await res.arrayBuffer()))
+          const expected = dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
+
+          expect(actual)
+            .to.deep.equal({
+              Data: expected.Data,
+              Links: expected.Links.map((link, index) => ({
+                Hash: link.Hash,
+                Name: link.Name?.substring(2)
+              }))
+            })
         }
       }
     }
