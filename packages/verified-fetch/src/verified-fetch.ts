@@ -3,16 +3,15 @@ import { ipnsResolver } from '@helia/ipns'
 import { isPeerId, isPublicKey } from '@libp2p/interface'
 import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CarPlugin } from './plugins/plugin-handle-car.js'
 import { IpldPlugin } from './plugins/plugin-handle-ipld.js'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
 import { RawPlugin } from './plugins/plugin-handle-raw.ts'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { UnixFSPlugin } from './plugins/plugin-handle-unixfs.js'
-import { URLResolver } from './url-resolver.ts'
+import { toIPFSPath, URLResolver } from './url-resolver.ts'
 import { abbreviate, abbreviateAddress } from './utils/abbreviate.ts'
+import { constrainToExtendedAscii } from './utils/ascii.ts'
 import { contentTypeParser } from './utils/content-type-parser.js'
 import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, MEDIA_TYPE_IPNS_RECORD, CONTENT_TYPE_IPNS } from './utils/content-types.ts'
 import { errorToObject } from './utils/error-to-object.ts'
@@ -427,10 +426,9 @@ export class VerifiedFetch {
 
     if (context?.terminalElement?.cid != null && context?.url != null) {
       // headers can ony contain extended ASCII but IPFS paths can be unicode
-      const decodedPath = decodeURI(context?.url.pathname)
-      const path = uint8ArrayToString(uint8ArrayFromString(decodedPath), 'ascii')
-
-      response.headers.set('x-ipfs-path', `/${context.url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${context?.url.hostname}${path === '/' ? '' : path}`)
+      const ipfsPath = toIPFSPath(context.url)
+      const path = constrainToExtendedAscii(ipfsPath)
+      response.headers.set('x-ipfs-path', path)
     }
 
     // set CORS headers. If hosting your own gateway with verified-fetch behind

@@ -319,5 +319,6 @@ describe('dag-pb', () => {
 
     const res = await verifiedFetch.fetch(`ipfs://${directory.cid}/${encodeURIComponent(fileName)}`)
     expect(res.status).to.equal(200)
+    expect(res.headers.get('x-ipfs-path')).to.equal(`/ipfs/${directory.cid}/${fileName}`)
   })
 })
