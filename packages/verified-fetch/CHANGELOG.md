@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.10](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.9...@helia/verified-fetch-7.2.10) (2026-05-16)
+
+### Bug Fixes
+
+* update override version ([15f0662](https://github.com/ipfs/helia-verified-fetch/commit/15f066246e6790ed41dbe3186a22c5842fb18cd4))
+
 ## [@helia/verified-fetch-v7.2.9](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.8...@helia/verified-fetch-7.2.9) (2026-05-16)
 
 ### Bug Fixes
