@@ -11,7 +11,7 @@ import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.js'
 import { RawPlugin } from './plugins/plugin-handle-raw.ts'
 import { TarPlugin } from './plugins/plugin-handle-tar.js'
 import { UnixFSPlugin } from './plugins/plugin-handle-unixfs.js'
-import { toIPFSPath, URLResolver } from './url-resolver.ts'
+import { URLResolver } from './url-resolver.ts'
 import { abbreviate, abbreviateAddress } from './utils/abbreviate.ts'
 import { contentTypeParser } from './utils/content-type-parser.js'
 import { getContentType, getSupportedContentTypes, CONTENT_TYPE_OCTET_STREAM, MEDIA_TYPE_IPNS_RECORD, CONTENT_TYPE_IPNS } from './utils/content-types.ts'
@@ -427,9 +427,14 @@ export class VerifiedFetch {
 
     if (context?.terminalElement?.cid != null && context?.url != null) {
       // headers can ony contain extended ASCII but IPFS paths can be unicode
-      const ipfsPath = toIPFSPath(context.url)
-      const path = uint8ArrayToString(uint8ArrayFromString(ipfsPath, 'ascii'), 'ascii')
-      response.headers.set('x-ipfs-path', path)
+      const decodedPath = context.url.pathname.split('/')
+        .map(component => decodeURIComponent(component))
+        .join('/')
+        .trim()
+
+      const path = uint8ArrayToString(uint8ArrayFromString(decodedPath, 'ascii'), 'ascii')
+
+      response.headers.set('x-ipfs-path', `/${context.url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${context?.url.hostname}${path === '/' ? '' : path}`)
     }
 
     // set CORS headers. If hosting your own gateway with verified-fetch behind
