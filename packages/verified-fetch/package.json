@@ -229,5 +229,8 @@
   "browser": {
     "./dist/src/utils/libp2p-defaults.js": "./dist/src/utils/libp2p-defaults.browser.js"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "overrides": {
+    "multiformats": "^13.0.0"
+  }
 }

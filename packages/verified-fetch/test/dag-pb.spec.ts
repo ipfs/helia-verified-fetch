@@ -2,6 +2,7 @@ import { unixfs } from '@helia/unixfs'
 import * as dagPb from '@ipld/dag-pb'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
+import all from 'it-all'
 import toBuffer from 'it-to-buffer'
 import { CID } from 'multiformats'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
@@ -302,5 +303,21 @@ describe('dag-pb', () => {
       }
     })
     expect(res.status).to.equal(406)
+  })
+
+  it('should fetch files with URL-unfriendly characters', async () => {
+    const fs = unixfs(helia)
+    const fileName = 'h#e£l%l?o@-:w~o`rld.txt'
+
+    const [, directory] = await all(fs.addAll([{
+      path: `/${fileName}`,
+      content: uint8ArrayFromString('hello world\n')
+    }], {
+      wrapWithDirectory: true,
+      rawLeaves: true
+    }))
+
+    const res = await verifiedFetch.fetch(`ipfs://${directory.cid}/${encodeURIComponent(fileName)}`)
+    expect(res.status).to.equal(200)
   })
 })

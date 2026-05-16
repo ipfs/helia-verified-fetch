@@ -293,7 +293,16 @@ export class URLResolver implements URLResolverInterface {
 }
 
 function toIPFSPath (url: URL): string {
-  return `/ipfs/${url.hostname}${decodeURI(url.pathname)}`
+  let pathname = url.pathname.split('/')
+    .map(component => decodeURIComponent(component))
+    .join('/')
+    .trim()
+
+  if (pathname.length > 0 && !pathname.startsWith('/')) {
+    pathname = `/${pathname}`
+  }
+
+  return `/ipfs/${url.hostname}${pathname}`
 }
 
 /**
