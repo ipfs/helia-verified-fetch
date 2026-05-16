@@ -163,6 +163,6 @@
     "kubo": false
   },
   "overrides": {
-    "multiformats": "^13.0.0"
+    "multiformats": "^13.4.2"
   }
 }
