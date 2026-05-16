@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.9](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.8...@helia/verified-fetch-7.2.9) (2026-05-16)
+
+### Bug Fixes
+
+* decode path segments before fetching ([#359](https://github.com/ipfs/helia-verified-fetch/issues/359)) ([4bb992c](https://github.com/ipfs/helia-verified-fetch/commit/4bb992cc2d6abba55b66824e8e0ea23d5f7e7043))
+
 ## [@helia/verified-fetch-v7.2.8](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.7...@helia/verified-fetch-7.2.8) (2026-05-05)
 
 ### Bug Fixes
