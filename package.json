@@ -44,5 +44,8 @@
   "type": "module",
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "overrides": {
+    "multiformats": "^13.0.0"
+  }
 }

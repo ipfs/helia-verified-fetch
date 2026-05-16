@@ -161,5 +161,8 @@
   "browser": {
     "./dist/src/fixtures/create-kubo.js": "./dist/src/fixtures/create-kubo.browser.js",
     "kubo": false
+  },
+  "overrides": {
+    "multiformats": "^13.0.0"
   }
 }
