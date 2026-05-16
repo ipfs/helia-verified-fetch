@@ -18,8 +18,8 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import Sinon from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { MEDIA_TYPE_DAG_PB } from '../src/index.ts'
-import { constrainToExtendedAscii } from '../src/utils/ascii.ts'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
@@ -678,7 +678,7 @@ describe('@helia/verified-fetch', () => {
       expect(resp.statusText).to.equal('OK')
 
       const decodedPath = decodeURI(new URL(url).pathname)
-      const asAscii = constrainToExtendedAscii(decodedPath)
+      const asAscii = uint8ArrayToString(uint8ArrayFromString(decodedPath, 'ascii'), 'ascii')
 
       expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipfs/${cid}${asAscii}`)
 
