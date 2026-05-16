@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.11...@helia/verified-fetch-7.2.12) (2026-05-16)
+
+### Bug Fixes
+
+* include size estimate ([bb69fed](https://github.com/ipfs/helia-verified-fetch/commit/bb69fed7d4202fcf25b53d42f0e681711ffae3df))
+
 ## [@helia/verified-fetch-v7.2.11](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.10...@helia/verified-fetch-7.2.11) (2026-05-16)
 
 ### Bug Fixes
