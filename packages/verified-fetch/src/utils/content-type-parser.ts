@@ -67,7 +67,9 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
     case 'html':
       return 'text/html; charset=utf-8'
     case 'js':
-      return 'application/javascript'
+    case 'mjs':
+    case 'cjs':
+      return 'text/javascript'
     case 'json':
       return 'application/json'
     case 'txt':

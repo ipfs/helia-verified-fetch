@@ -2,6 +2,7 @@ import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import { fileTypeFromBuffer } from 'file-type'
+import last from 'it-last'
 import { filetypemime } from 'magic-bytes.js'
 import { CID } from 'multiformats/cid'
 import Sinon from 'sinon'
@@ -10,15 +11,17 @@ import { createVerifiedFetch } from '../src/index.js'
 import { VerifiedFetch } from '../src/verified-fetch.js'
 import { createHelia } from './fixtures/create-offline-helia.js'
 import type { Helia } from '@helia/interface'
+import type { UnixFS } from '@helia/unixfs'
 
 describe('content-type-parser', () => {
   let helia: Helia
   let cid: CID
   let verifiedFetch: VerifiedFetch
+  let fs: UnixFS
 
   beforeEach(async () => {
     helia = await createHelia()
-    const fs = unixfs(helia)
+    fs = unixfs(helia)
     cid = await fs.addByteStream((async function * () {
       yield uint8ArrayFromString('H4sICIlTHVIACw', 'base64')
     })())
@@ -60,8 +63,49 @@ describe('content-type-parser', () => {
     expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
   })
 
+  it('should detect js as text/javascript', async () => {
+    const result = await last(fs.addAll([{
+      path: '/hello.js',
+      content: uint8ArrayFromString('')
+    }], {
+      wrapWithDirectory: true
+    }))
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/hello.js`)
+    expect(resp.headers.get('content-type')).to.equal('text/javascript')
+    expect(resp.headers.get('content-disposition')).to.include('filename="hello.js"')
+  })
+
+  it('should detect mjs as text/javascript', async () => {
+    const result = await last(fs.addAll([{
+      path: '/hello.mjs',
+      content: uint8ArrayFromString('')
+    }], {
+      wrapWithDirectory: true
+    }))
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/hello.mjs`)
+    expect(resp.headers.get('content-type')).to.equal('text/javascript')
+    expect(resp.headers.get('content-disposition')).to.include('filename="hello.mjs"')
+  })
+
+  it('should detect cjs as text/javascript', async () => {
+    const result = await last(fs.addAll([{
+      path: '/hello.cjs',
+      content: uint8ArrayFromString('')
+    }], {
+      wrapWithDirectory: true
+    }))
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/hello.cjs`)
+    expect(resp.headers.get('content-type')).to.equal('text/javascript')
+    expect(resp.headers.get('content-disposition')).to.include('filename="hello.cjs"')
+  })
+
   it('is passed a filename if it is available', async () => {
-    const fs = unixfs(helia)
     const dir = await fs.addDirectory()
     const index = await fs.addBytes(uint8ArrayFromString('<html><body>Hello world</body></html>'))
     const dirCid = await fs.cp(index, dir, 'index.html')
@@ -75,8 +119,6 @@ describe('content-type-parser', () => {
   })
 
   it('is passed a filename from a deep traversal if it is available', async () => {
-    const fs = unixfs(helia)
-
     let barDir = await fs.addDirectory({ path: './bar' })
     const aFileHtml = await fs.addBytes(uint8ArrayFromString('<html><body>Hello world</body></html>'))
     barDir = await fs.cp(aFileHtml, barDir, 'a-file.html')
