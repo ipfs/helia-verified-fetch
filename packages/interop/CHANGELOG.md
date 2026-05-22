@@ -1,3 +1,15 @@
+## [@helia/verified-fetch-interop-v4.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.2.1...@helia/verified-fetch-interop-4.2.2) (2026-05-22)
+
+### Bug Fixes
+
+* decode path segments before fetching ([#359](https://github.com/ipfs/helia-verified-fetch/issues/359)) ([4bb992c](https://github.com/ipfs/helia-verified-fetch/commit/4bb992cc2d6abba55b66824e8e0ea23d5f7e7043))
+* update override version ([15f0662](https://github.com/ipfs/helia-verified-fetch/commit/15f066246e6790ed41dbe3186a22c5842fb18cd4))
+
+### Dependencies
+
+* bump aegir from 47.2.0 to 48.0.4 ([#351](https://github.com/ipfs/helia-verified-fetch/issues/351)) ([2fa0fb9](https://github.com/ipfs/helia-verified-fetch/commit/2fa0fb9100b69ef229962b7b1806ace5ad6fafc3))
+* bump kubo from 0.40.1 to 0.41.0 in the kubo-deps group ([#343](https://github.com/ipfs/helia-verified-fetch/issues/343)) ([c93f4fc](https://github.com/ipfs/helia-verified-fetch/commit/c93f4fcdbb0bcc6d09c7905dec79ceec326d0250))
+
 ## [@helia/verified-fetch-interop-v4.2.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.2.0...@helia/verified-fetch-interop-4.2.1) (2026-04-13)
 
 ### Bug Fixes
