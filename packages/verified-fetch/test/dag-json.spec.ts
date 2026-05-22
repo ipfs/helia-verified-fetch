@@ -6,7 +6,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import { MEDIA_TYPE_DAG_JSON, MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from '../src/utils/content-types.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { DAG_JSON_TRANSLATIONS } from './fixtures/codecs.ts'
-import { createHelia } from './fixtures/create-offline-helia.js'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from 'helia'
 
 describe('dag-json', () => {

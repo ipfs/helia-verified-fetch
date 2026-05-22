@@ -7,7 +7,7 @@ import { CODEC_CBOR } from '../src/constants.ts'
 import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { CBOR_TRANSLATIONS } from './fixtures/codecs.ts'
-import { createHelia } from './fixtures/create-offline-helia.js'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from 'helia'
 
 describe('cbor', () => {

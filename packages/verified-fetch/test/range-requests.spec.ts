@@ -7,8 +7,8 @@ import { CID } from 'multiformats/cid'
 import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { VerifiedFetch } from '../src/verified-fetch.js'
-import { createHelia } from './fixtures/create-offline-helia.js'
+import { VerifiedFetch } from '../src/verified-fetch.ts'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from '@helia/interface'
 
 /**

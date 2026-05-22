@@ -20,8 +20,8 @@ import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { MEDIA_TYPE_DAG_PB } from '../src/index.ts'
-import { VerifiedFetch } from '../src/verified-fetch.js'
-import { createHelia } from './fixtures/create-offline-helia.js'
+import { VerifiedFetch } from '../src/verified-fetch.ts'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from '@helia/interface'
 
 describe('@helia/verified-fetch', () => {

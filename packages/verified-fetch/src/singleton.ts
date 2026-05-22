@@ -1,5 +1,5 @@
-import { createVerifiedFetch } from './index.js'
-import type { Resource, VerifiedFetch, VerifiedFetchInit } from './index.js'
+import { createVerifiedFetch } from './index.ts'
+import type { Resource, VerifiedFetch, VerifiedFetchInit } from './index.ts'
 
 let impl: VerifiedFetch | undefined
 

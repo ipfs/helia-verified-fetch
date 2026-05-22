@@ -1,5 +1,5 @@
-import { badGatewayResponse, badRequestResponse, gatewayTimeoutResponse, internalServerErrorResponse, notFoundResponse, preconditionFailedResponse } from './responses.js'
-import type { Resource } from '../index.js'
+import { badGatewayResponse, badRequestResponse, gatewayTimeoutResponse, internalServerErrorResponse, notFoundResponse, preconditionFailedResponse } from './responses.ts'
+import type { Resource } from '../index.ts'
 
 export function errorToResponse (resource: Resource | string, err: any, init?: RequestInit): Response {
   // throw an AbortError if the passed signal has aborted

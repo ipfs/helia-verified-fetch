@@ -862,11 +862,11 @@ import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
 import { dns } from '@multiformats/dns'
 import { createHelia } from 'helia'
 import { createLibp2p } from 'libp2p'
-import { getLibp2pConfig } from './utils/libp2p-defaults.js'
-import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.js'
+import { getLibp2pConfig } from './utils/libp2p-defaults.ts'
+import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.ts'
 import type { RangeHeader } from './utils/get-range-header.ts'
 import type { ServerTiming } from './utils/server-timing.ts'
-import type { RequestedMimeType } from './verified-fetch.js'
+import type { RequestedMimeType } from './verified-fetch.ts'
 import type { DNSLink, ResolveProgressEvents as ResolveDNSLinkProgressEvents } from '@helia/dnslink'
 import type { GetBlockProgressEvents, Helia, ProviderOptions, Routing } from '@helia/interface'
 import type { ResolveProgressEvents as ResolveIPNSNameProgressEvents, IPNSRoutingProgressEvents, IPNSResolver } from '@helia/ipns'
@@ -891,9 +891,9 @@ export {
   MEDIA_TYPE_CAR,
   MEDIA_TYPE_TAR,
   MEDIA_TYPE_DAG_PB
-} from './utils/content-types.js'
+} from './utils/content-types.ts'
 
-export * from './errors.js'
+export * from './errors.ts'
 
 export interface ContentType {
   /**
@@ -1433,8 +1433,8 @@ export async function createVerifiedFetchWithHelia (helia: Helia, options?: Crea
   return verifiedFetch
 }
 
-export { verifiedFetch } from './singleton.js'
-export * from './plugins/index.js'
+export { verifiedFetch } from './singleton.ts'
+export * from './plugins/index.ts'
 
 function isHelia (obj: any): obj is Helia {
   // test for the presence of known Helia properties, return a boolean value

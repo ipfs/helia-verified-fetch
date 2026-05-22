@@ -6,9 +6,9 @@ import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { CONTENT_TYPE_CAR, MEDIA_TYPE_CAR } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
 import { entityBytesToOffsetAndLength } from '../utils/get-offset-and-length.ts'
-import { badRequestResponse, notAcceptableResponse, okResponse } from '../utils/responses.js'
-import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from '../index.js'
+import { badRequestResponse, notAcceptableResponse, okResponse } from '../utils/responses.ts'
+import { BasePlugin } from './plugin-base.ts'
+import type { PluginContext } from '../index.ts'
 import type { ExportCarOptions, UnixFSExporterOptions } from '@helia/car'
 
 function getFilename (ipfsPath: string): string {

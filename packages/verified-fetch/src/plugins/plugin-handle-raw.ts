@@ -2,8 +2,8 @@ import { isPromise } from '@libp2p/utils'
 import toBuffer from 'it-to-buffer'
 import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
-import { okResponse, partialContentResponse } from '../utils/responses.js'
-import { BasePlugin } from './plugin-base.js'
+import { okResponse, partialContentResponse } from '../utils/responses.ts'
+import { BasePlugin } from './plugin-base.ts'
 import type { PluginContext } from '../index.ts'
 
 /**

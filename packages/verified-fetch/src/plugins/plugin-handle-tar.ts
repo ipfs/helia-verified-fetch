@@ -4,10 +4,10 @@ import toBrowserReadableStream from 'it-to-browser-readablestream'
 import { code as rawCode } from 'multiformats/codecs/raw'
 import { MEDIA_TYPE_TAR } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
-import { tarStream } from '../utils/get-tar-stream.js'
-import { badRequestResponse, okResponse } from '../utils/responses.js'
-import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from '../index.js'
+import { tarStream } from '../utils/get-tar-stream.ts'
+import { badRequestResponse, okResponse } from '../utils/responses.ts'
+import { BasePlugin } from './plugin-base.ts'
+import type { PluginContext } from '../index.ts'
 
 /**
  * Accepts a UnixFS `CID` and returns a `.tar` file containing the file or

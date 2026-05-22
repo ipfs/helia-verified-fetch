@@ -6,7 +6,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import { MEDIA_TYPE_JSON, MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { JSON_TRANSLATIONS } from './fixtures/codecs.ts'
-import { createHelia } from './fixtures/create-offline-helia.js'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from 'helia'
 
 describe('json', () => {

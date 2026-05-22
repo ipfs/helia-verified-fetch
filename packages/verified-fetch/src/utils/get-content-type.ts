@@ -1,6 +1,6 @@
-import { defaultMimeType } from './content-type-parser.js'
-import { isPromise } from './type-guards.js'
-import type { ContentTypeParser } from '../index.js'
+import { defaultMimeType } from './content-type-parser.ts'
+import { isPromise } from './type-guards.ts'
+import type { ContentTypeParser } from '../index.ts'
 import type { Logger } from '@libp2p/interface'
 
 export interface GetContentTypeOptions {

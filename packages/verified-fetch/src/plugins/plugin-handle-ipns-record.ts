@@ -2,9 +2,9 @@ import { peerIdFromString } from '@libp2p/peer-id'
 import { marshalIPNSRecord } from 'ipns'
 import { CONTENT_TYPE_IPNS, MEDIA_TYPE_IPNS_RECORD } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
-import { badRequestResponse, okResponse } from '../utils/responses.js'
-import { BasePlugin } from './plugin-base.js'
-import type { PluginContext } from '../index.js'
+import { badRequestResponse, okResponse } from '../utils/responses.ts'
+import { BasePlugin } from './plugin-base.ts'
+import type { PluginContext } from '../index.ts'
 import type { PeerId } from '@libp2p/interface'
 
 /**

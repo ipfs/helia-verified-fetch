@@ -1,1 +1,1 @@
-export { BasePlugin } from './plugin-base.js'
+export { BasePlugin } from './plugin-base.ts'

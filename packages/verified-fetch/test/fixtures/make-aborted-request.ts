@@ -1,4 +1,4 @@
-import type { VerifiedFetch } from '../../src/verified-fetch.js'
+import type { VerifiedFetch } from '../../src/verified-fetch.ts'
 
 export async function makeAbortedRequest (verifiedFetch: VerifiedFetch, [resource, options = {}]: Parameters<typeof verifiedFetch.fetch>, promise: Promise<any>): Promise<Response> {
   const controller = new AbortController()

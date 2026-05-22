@@ -1,5 +1,5 @@
 import { expect } from 'aegir/chai'
-import { getContentDispositionFilename } from '../../src/utils/get-content-disposition-filename.js'
+import { getContentDispositionFilename } from '../../src/utils/get-content-disposition-filename.ts'
 
 describe('get-content-disposition-filename', () => {
   it('should support ascii-only filenames', () => {

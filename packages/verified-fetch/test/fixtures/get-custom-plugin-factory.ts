@@ -1,5 +1,5 @@
-import { BasePlugin } from '../../src/plugins/plugin-base.js'
-import type { PluginContext, PluginOptions, VerifiedFetchPluginFactory } from '../../src/index.js'
+import { BasePlugin } from '../../src/plugins/plugin-base.ts'
+import type { PluginContext, PluginOptions, VerifiedFetchPluginFactory } from '../../src/index.ts'
 
 export interface PluginFixtureOptions {
   codes?: number[]

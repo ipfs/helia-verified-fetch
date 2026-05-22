@@ -1,4 +1,4 @@
-import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from '../index.js'
+import type { VerifiedFetchPlugin, PluginContext, PluginOptions } from '../index.ts'
 import type { Logger } from '@libp2p/interface'
 
 /**

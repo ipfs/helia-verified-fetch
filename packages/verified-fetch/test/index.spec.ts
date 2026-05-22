@@ -1,7 +1,7 @@
 import { createHeliaHTTP } from '@helia/http'
 import { expect } from 'aegir/chai'
 import { createHelia } from 'helia'
-import { createVerifiedFetch, verifiedFetch } from '../src/index.js'
+import { createVerifiedFetch, verifiedFetch } from '../src/index.ts'
 
 describe('createVerifiedFetch', () => {
   it('can be constructed with a HeliaHttp instance', async () => {
