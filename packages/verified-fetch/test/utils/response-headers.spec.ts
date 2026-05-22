@@ -1,5 +1,5 @@
 import { expect } from 'aegir/chai'
-import { getContentRangeHeader } from '../../src/utils/response-headers.js'
+import { getContentRangeHeader } from '../../src/utils/response-headers.ts'
 
 describe('response-headers', () => {
   describe('getContentRangeHeader', () => {

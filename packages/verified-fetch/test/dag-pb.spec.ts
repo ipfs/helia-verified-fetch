@@ -7,7 +7,7 @@ import { CID } from 'multiformats'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_JSON, MEDIA_TYPE_RAW, MEDIA_TYPE_DAG_PB, MEDIA_TYPE_DAG_JSON, MEDIA_TYPE_CBOR } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
-import { createHelia } from './fixtures/create-offline-helia.js'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from 'helia'
 
 const FILE_DATA = uint8ArrayFromString('hello world\n')

@@ -9,8 +9,8 @@ import { CODEC_CBOR } from '../constants.ts'
 import { getContentTypesForCid, MEDIA_TYPE_CBOR, MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_DAG_JSON, MEDIA_TYPE_JSON } from '../utils/content-types.ts'
 import { convertOutput } from '../utils/convert-output.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
-import { notAcceptableResponse, okResponse, partialContentResponse } from '../utils/responses.js'
-import { BasePlugin } from './plugin-base.js'
+import { notAcceptableResponse, okResponse, partialContentResponse } from '../utils/responses.ts'
+import { BasePlugin } from './plugin-base.ts'
 import type { ContentType, PluginContext } from '../index.ts'
 
 /**

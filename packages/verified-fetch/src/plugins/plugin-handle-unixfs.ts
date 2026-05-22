@@ -8,9 +8,9 @@ import toBuffer from 'it-to-buffer'
 import * as raw from 'multiformats/codecs/raw'
 import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_DAG_PB } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
-import { badGatewayResponse, movedPermanentlyResponse, partialContentResponse, okResponse } from '../utils/responses.js'
-import { BasePlugin } from './plugin-base.js'
-import type { PluginContext, Resource } from '../index.js'
+import { badGatewayResponse, movedPermanentlyResponse, partialContentResponse, okResponse } from '../utils/responses.ts'
+import { BasePlugin } from './plugin-base.ts'
+import type { PluginContext, Resource } from '../index.ts'
 import type { RangeHeader } from '../utils/get-range-header.ts'
 import type { AbortOptions } from '@libp2p/interface'
 import type { IdentityNode, RawNode, UnixFSEntry, UnixFSFile } from 'ipfs-unixfs-exporter'
@@ -62,7 +62,7 @@ export class UnixFSPlugin extends BasePlugin {
     let entry: UnixFSEntry
 
     try {
-      entry = await exporter(terminalElement.cid, blockstore, context)
+      entry = await exporter(`/ipfs/${terminalElement.cid}`, blockstore, context)
     } catch (err: any) {
       // throw abort error if signal was aborted
       context?.signal?.throwIfAborted()

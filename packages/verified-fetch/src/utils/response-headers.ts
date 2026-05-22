@@ -1,4 +1,4 @@
-import { InvalidRangeError } from '../errors.js'
+import { InvalidRangeError } from '../errors.ts'
 
 interface CacheControlHeaderOptions {
   /**

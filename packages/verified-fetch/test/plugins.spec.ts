@@ -1,9 +1,9 @@
 import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
-import { VerifiedFetch } from '../src/verified-fetch.js'
-import { createHelia } from './fixtures/create-offline-helia.js'
-import { getCustomPluginFactory } from './fixtures/get-custom-plugin-factory.js'
+import { VerifiedFetch } from '../src/verified-fetch.ts'
+import { createHelia } from './fixtures/create-offline-helia.ts'
+import { getCustomPluginFactory } from './fixtures/get-custom-plugin-factory.ts'
 import type { Helia } from '@helia/interface'
 import type { CID } from 'multiformats/cid'
 

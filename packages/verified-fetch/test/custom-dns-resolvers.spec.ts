@@ -2,9 +2,9 @@ import { stop } from '@libp2p/interface'
 import { dns, RecordType } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
 import Sinon from 'sinon'
-import { createVerifiedFetch } from '../src/index.js'
-import { createHelia } from './fixtures/create-offline-helia.js'
-import type { VerifiedFetch } from '../src/index.js'
+import { createVerifiedFetch } from '../src/index.ts'
+import { createHelia } from './fixtures/create-offline-helia.ts'
+import type { VerifiedFetch } from '../src/index.ts'
 import type { Helia } from 'helia'
 
 describe('custom dns-resolvers', () => {

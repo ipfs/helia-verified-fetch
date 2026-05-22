@@ -6,9 +6,9 @@ import { filetypemime } from 'magic-bytes.js'
 import { CID } from 'multiformats/cid'
 import Sinon from 'sinon'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { createVerifiedFetch } from '../src/index.js'
-import { VerifiedFetch } from '../src/verified-fetch.js'
-import { createHelia } from './fixtures/create-offline-helia.js'
+import { createVerifiedFetch } from '../src/index.ts'
+import { VerifiedFetch } from '../src/verified-fetch.ts'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from '@helia/interface'
 
 describe('content-type-parser', () => {

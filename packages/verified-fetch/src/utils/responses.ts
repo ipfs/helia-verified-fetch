@@ -3,7 +3,7 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { errorToObject } from './error-to-object.ts'
 import { rangeToOffsetAndLength } from './get-offset-and-length.ts'
 import { getContentRangeHeader } from './response-headers.ts'
-import type { SupportedBodyTypes, ContentType, Resource } from '../index.js'
+import type { SupportedBodyTypes, ContentType, Resource } from '../index.ts'
 import type { Range, RangeHeader } from './get-range-header.ts'
 
 function setField (response: Response, name: string, value: string | boolean): void {
@@ -38,12 +38,56 @@ function setRedirected (response: Response): void {
   setField(response, 'redirected', true)
 }
 
+function isArrayBufferBacked (buf: Uint8Array): buf is Uint8Array<ArrayBuffer> {
+  return buf.buffer instanceof ArrayBuffer
+}
+
+function withArrayBuffer (buf: Uint8Array): Uint8Array<ArrayBuffer> {
+  if (isArrayBufferBacked(buf)) {
+    return buf
+  }
+
+  const arr = new ArrayBuffer(buf.byteLength)
+  const u8a = new Uint8Array(arr)
+  u8a.set(buf)
+
+  return u8a
+}
+
+function isReadableStream <T> (obj?: any): obj is ReadableStream<T> {
+  if (obj == null) {
+    return false
+  }
+
+  return typeof obj.pipeThrough === 'function' && typeof obj.getReader === 'function'
+}
+
+function normalizeBody (body?: SupportedBodyTypes): string | Uint8Array<ArrayBuffer> | ArrayBuffer | Blob | ReadableStream<Uint8Array<ArrayBuffer>> | null | undefined {
+  if (body == null) {
+    return body
+  }
+
+  if (body instanceof Uint8Array) {
+    return withArrayBuffer(body)
+  }
+
+  if (isReadableStream(body)) {
+    return body.pipeThrough(new TransformStream({
+      transform (chunk, controller) {
+        controller.enqueue(withArrayBuffer(chunk))
+      }
+    }))
+  }
+
+  return body
+}
+
 export interface ResponseOptions extends ResponseInit {
   redirected?: boolean
 }
 
 export function okResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseOptions): Response {
-  const response = new Response(body, {
+  const response = new Response(normalizeBody(body), {
     ...(init ?? {}),
     status: 200,
     statusText: 'OK'
@@ -81,7 +125,7 @@ export function internalServerErrorResponse (url: Resource, err: Error, init?: R
  * A 504 Gateway Timeout for when a request made to an upstream server timed out
  */
 export function gatewayTimeoutResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseInit): Response {
-  const response = new Response(body, {
+  const response = new Response(normalizeBody(body), {
     ...(init ?? {}),
     status: 504,
     statusText: 'Gateway Timeout'
@@ -98,7 +142,7 @@ export function gatewayTimeoutResponse (url: Resource, body?: SupportedBodyTypes
  * upstream server.
  */
 export function badGatewayResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseInit): Response {
-  const response = new Response(body, {
+  const response = new Response(normalizeBody(body), {
     ...(init ?? {}),
     status: 502,
     statusText: 'Bad Gateway'
@@ -111,7 +155,7 @@ export function badGatewayResponse (url: Resource, body?: SupportedBodyTypes, in
 }
 
 export function notImplementedResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseInit): Response {
-  const response = new Response(body, {
+  const response = new Response(normalizeBody(body), {
     ...(init ?? {}),
     status: 501,
     statusText: 'Not Implemented'
@@ -145,7 +189,7 @@ export function notAcceptableResponse (url: Resource, requested: Array<Pick<Cont
 }
 
 export function notFoundResponse (url: Resource, body?: SupportedBodyTypes, init?: ResponseInit): Response {
-  const response = new Response(body, {
+  const response = new Response(normalizeBody(body), {
     ...(init ?? {}),
     status: 404,
     statusText: 'Not Found'

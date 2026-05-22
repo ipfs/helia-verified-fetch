@@ -4,7 +4,7 @@ import { expect } from 'aegir/chai'
 import { CID } from 'multiformats'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
-import { createHelia } from './fixtures/create-offline-helia.js'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from 'helia'
 
 describe('if-none-match', () => {
