@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.13](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.12...@helia/verified-fetch-7.2.13) (2026-05-22)
+
+### Dependencies
+
+* bump aegir from 47.2.0 to 48.0.4 ([#351](https://github.com/ipfs/helia-verified-fetch/issues/351)) ([2fa0fb9](https://github.com/ipfs/helia-verified-fetch/commit/2fa0fb9100b69ef229962b7b1806ace5ad6fafc3))
+
 ## [@helia/verified-fetch-v7.2.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.11...@helia/verified-fetch-7.2.12) (2026-05-16)
 
 ### Bug Fixes
