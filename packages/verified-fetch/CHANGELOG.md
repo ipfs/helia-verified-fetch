@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.14](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.13...@helia/verified-fetch-7.2.14) (2026-05-22)
+
+### Bug Fixes
+
+* detect .mjs and .cjs as js files ([#362](https://github.com/ipfs/helia-verified-fetch/issues/362)) ([07bce3a](https://github.com/ipfs/helia-verified-fetch/commit/07bce3aeea3462eaca698102a0d2871395606352))
+
 ## [@helia/verified-fetch-v7.2.13](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.12...@helia/verified-fetch-7.2.13) (2026-05-22)
 
 ### Dependencies
