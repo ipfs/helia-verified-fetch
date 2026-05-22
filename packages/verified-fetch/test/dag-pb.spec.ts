@@ -2,6 +2,7 @@ import { unixfs } from '@helia/unixfs'
 import * as dagPb from '@ipld/dag-pb'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
+import all from 'it-all'
 import toBuffer from 'it-to-buffer'
 import { CID } from 'multiformats'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
@@ -47,8 +48,20 @@ const fixtures: Record<string, UnixFSFixtures> = {
       shard: {
         contentType: MEDIA_TYPE_DAG_PB,
         async verify (res, cid, helia) {
-          expect(dagPb.decode(new Uint8Array(await res.arrayBuffer())))
-            .to.deep.equal(dagPb.decode(await toBuffer(helia.blockstore.get(cid))))
+          const actual = dagPb.decode(new Uint8Array(await res.arrayBuffer()))
+          const expected = dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
+
+          expect(actual)
+            .to.deep.equal({
+              Data: expected.Data,
+              Links: expected.Links.map((link) => ({
+                Hash: link.Hash,
+                Name: link.Name?.substring(2)
+
+                // TODO: enable after https://github.com/ipfs/js-ipfs-unixfs/pull/484
+                // Tsize: link.Tsize
+              }))
+            })
         }
       }
     }
@@ -302,5 +315,22 @@ describe('dag-pb', () => {
       }
     })
     expect(res.status).to.equal(406)
+  })
+
+  it('should fetch files with URL-unfriendly characters', async () => {
+    const fs = unixfs(helia)
+    const fileName = 'h#e£l%l?o@-:w~o`rld.txt'
+
+    const [, directory] = await all(fs.addAll([{
+      path: `/${fileName}`,
+      content: uint8ArrayFromString('hello world\n')
+    }], {
+      wrapWithDirectory: true,
+      rawLeaves: true
+    }))
+
+    const res = await verifiedFetch.fetch(`ipfs://${directory.cid}/${encodeURIComponent(fileName)}`)
+    expect(res.status).to.equal(200)
+    expect(res.headers.get('x-ipfs-path')).to.equal(`/ipfs/${directory.cid}/${fileName}`)
   })
 })

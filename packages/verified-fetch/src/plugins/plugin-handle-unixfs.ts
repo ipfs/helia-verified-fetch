@@ -1,4 +1,4 @@
-import { code as dagPbCode } from '@ipld/dag-pb'
+import * as dagPb from '@ipld/dag-pb'
 import { isPromise } from '@libp2p/utils'
 import { exporter, walkPath } from 'ipfs-unixfs-exporter'
 import first from 'it-first'
@@ -44,7 +44,7 @@ function getDirectoryRedirectUrl (resource: Resource, url: URL): string | undefi
  */
 export class UnixFSPlugin extends BasePlugin {
   readonly id = 'unixfs-plugin'
-  readonly codes = [dagPbCode, raw.code]
+  readonly codes = [dagPb.code, raw.code]
 
   canHandle ({ terminalElement, accept }: PluginContext): boolean {
     const supportsCid = this.codes.includes(terminalElement.cid.code)
@@ -132,7 +132,29 @@ export class UnixFSPlugin extends BasePlugin {
       }
 
       // no index file found, return the directory listing
-      const block = await toBuffer(context.blockstore.get(dirCid, context))
+      let block = await toBuffer(context.blockstore.get(dirCid, context))
+
+      // if it's a shard, load all entries
+      // TODO: partial shard responses
+      if (entry.unixfs.type === 'hamt-sharded-directory') {
+        const links: dagPb.PBLink[] = []
+        const data = dagPb.decode(block)
+
+        for await (const dirEntry of entry.entries()) {
+          links.push({
+            Name: dirEntry.name,
+            Hash: dirEntry.cid,
+
+            // @ts-expect-error needs https://github.com/ipfs/js-ipfs-unixfs/pull/484
+            Tsize: dirEntry.size
+          })
+        }
+
+        block = dagPb.encode({
+          Data: data.Data,
+          Links: links.sort((a, b) => a.Name?.localeCompare(b.Name ?? '') ?? 0)
+        })
+      }
 
       return okResponse(resource, block, {
         headers: {
@@ -142,7 +164,8 @@ export class UnixFSPlugin extends BasePlugin {
             getContentDispositionFilename(`${dirCid}.dir`)
           }`,
           'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(','),
-          'accept-ranges': 'bytes'
+          'accept-ranges': 'bytes',
+          'x-unixfs-type': entry.unixfs.type
         },
         redirected
       })
@@ -178,7 +201,8 @@ export class UnixFSPlugin extends BasePlugin {
             getContentDispositionFilename(filename)
           }`,
           'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(','),
-          'accept-ranges': 'bytes'
+          'accept-ranges': 'bytes',
+          'x-unixfs-type': entry.type
         },
         redirected
       })
@@ -194,7 +218,8 @@ export class UnixFSPlugin extends BasePlugin {
           getContentDispositionFilename(filename)
         }`,
         'x-ipfs-roots': ipfsRoots.map(cid => cid.toV1()).join(','),
-        'accept-ranges': 'bytes'
+        'accept-ranges': 'bytes',
+        'x-unixfs-type': entry.type
       },
       redirected
     })

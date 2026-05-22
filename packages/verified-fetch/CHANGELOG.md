@@ -1,3 +1,27 @@
+## [@helia/verified-fetch-v7.2.12](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.11...@helia/verified-fetch-7.2.12) (2026-05-16)
+
+### Bug Fixes
+
+* include size estimate ([bb69fed](https://github.com/ipfs/helia-verified-fetch/commit/bb69fed7d4202fcf25b53d42f0e681711ffae3df))
+
+## [@helia/verified-fetch-v7.2.11](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.10...@helia/verified-fetch-7.2.11) (2026-05-16)
+
+### Bug Fixes
+
+* list shard entries ([#360](https://github.com/ipfs/helia-verified-fetch/issues/360)) ([7a5da76](https://github.com/ipfs/helia-verified-fetch/commit/7a5da7684bfc4c22584926b2fc2c7d3b86b9bce5))
+
+## [@helia/verified-fetch-v7.2.10](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.9...@helia/verified-fetch-7.2.10) (2026-05-16)
+
+### Bug Fixes
+
+* update override version ([15f0662](https://github.com/ipfs/helia-verified-fetch/commit/15f066246e6790ed41dbe3186a22c5842fb18cd4))
+
+## [@helia/verified-fetch-v7.2.9](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.8...@helia/verified-fetch-7.2.9) (2026-05-16)
+
+### Bug Fixes
+
+* decode path segments before fetching ([#359](https://github.com/ipfs/helia-verified-fetch/issues/359)) ([4bb992c](https://github.com/ipfs/helia-verified-fetch/commit/4bb992cc2d6abba55b66824e8e0ea23d5f7e7043))
+
 ## [@helia/verified-fetch-v7.2.8](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.7...@helia/verified-fetch-7.2.8) (2026-05-05)
 
 ### Bug Fixes

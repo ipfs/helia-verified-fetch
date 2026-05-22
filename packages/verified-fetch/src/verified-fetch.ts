@@ -427,8 +427,12 @@ export class VerifiedFetch {
 
     if (context?.terminalElement?.cid != null && context?.url != null) {
       // headers can ony contain extended ASCII but IPFS paths can be unicode
-      const decodedPath = decodeURI(context?.url.pathname)
-      const path = uint8ArrayToString(uint8ArrayFromString(decodedPath), 'ascii')
+      const decodedPath = context.url.pathname.split('/')
+        .map(component => decodeURIComponent(component))
+        .join('/')
+        .trim()
+
+      const path = uint8ArrayToString(uint8ArrayFromString(decodedPath, 'ascii'), 'ascii')
 
       response.headers.set('x-ipfs-path', `/${context.url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${context?.url.hostname}${path === '/' ? '' : path}`)
     }

@@ -678,7 +678,7 @@ describe('@helia/verified-fetch', () => {
       expect(resp.statusText).to.equal('OK')
 
       const decodedPath = decodeURI(new URL(url).pathname)
-      const asAscii = uint8ArrayToString(uint8ArrayFromString(decodedPath), 'ascii')
+      const asAscii = uint8ArrayToString(uint8ArrayFromString(decodedPath, 'ascii'), 'ascii')
 
       expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipfs/${cid}${asAscii}`)
 
