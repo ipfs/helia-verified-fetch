@@ -183,7 +183,7 @@ export class UnixFSPlugin extends BasePlugin {
 
     // only detect content type for non-range requests to avoid loading blocks
     // we aren't going to stream to the user
-    if (rangeHeader == null) {
+    if (rangeHeader == null && entry.size > 0n) {
       contentType = await this.detectContentType(entry, filename, options)
     }
 

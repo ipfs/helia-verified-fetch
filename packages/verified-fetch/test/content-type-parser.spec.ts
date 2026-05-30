@@ -105,6 +105,17 @@ describe('content-type-parser', () => {
     expect(resp.headers.get('content-disposition')).to.include('filename="hello.cjs"')
   })
 
+  it('should detect empty file as application/octet-stream', async () => {
+    const cid = await fs.addBytes(new Uint8Array(0))
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}`)
+    expect(resp.status).to.equal(200)
+    expect(resp.headers.get('content-length')).to.equal('0')
+    expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
+    expect(resp.headers.get('content-disposition')).to.include(`filename="${cid}"`)
+  })
+
   it('is passed a filename if it is available', async () => {
     const dir = await fs.addDirectory()
     const index = await fs.addBytes(uint8ArrayFromString('<html><body>Hello world</body></html>'))
