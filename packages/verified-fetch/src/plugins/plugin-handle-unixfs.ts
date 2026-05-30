@@ -16,6 +16,8 @@ import type { AbortOptions } from '@libp2p/interface'
 import type { IdentityNode, RawNode, UnixFSEntry, UnixFSFile } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
+const EMPTY = new Uint8Array(0)
+
 /**
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
  */
@@ -183,7 +185,7 @@ export class UnixFSPlugin extends BasePlugin {
 
     // only detect content type for non-range requests to avoid loading blocks
     // we aren't going to stream to the user
-    if (rangeHeader == null && entry.size > 0n) {
+    if (rangeHeader == null) {
       contentType = await this.detectContentType(entry, filename, options)
     }
 
@@ -236,7 +238,7 @@ export class UnixFSPlugin extends BasePlugin {
     }
 
     if (buf == null) {
-      throw new Error('stream ended before first block was read')
+      buf = EMPTY
     }
 
     let contentType: string | undefined
