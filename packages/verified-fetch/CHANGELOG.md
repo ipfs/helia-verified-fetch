@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.15](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.14...@helia/verified-fetch-7.2.15) (2026-05-31)
+
+### Bug Fixes
+
+* return empty 200 for empty files ([#364](https://github.com/ipfs/helia-verified-fetch/issues/364)) ([b216022](https://github.com/ipfs/helia-verified-fetch/commit/b216022ac8f36d780038939da4472538d956ce5c))
+
 ## [@helia/verified-fetch-v7.2.14](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.13...@helia/verified-fetch-7.2.14) (2026-05-22)
 
 ### Bug Fixes
