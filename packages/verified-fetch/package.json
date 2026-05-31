@@ -189,7 +189,7 @@
     "file-type": "^22.0.1",
     "helia": "^6.1.2",
     "interface-blockstore": "^6.0.2",
-    "ipfs-unixfs-exporter": "^15.0.4",
+    "ipfs-unixfs-exporter": "^16.0.2",
     "ipns": "^10.1.6",
     "it-first": "^3.0.11",
     "it-last": "^3.0.11",
