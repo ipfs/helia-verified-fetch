@@ -16,6 +16,8 @@ import type { AbortOptions } from '@libp2p/interface'
 import type { IdentityNode, RawNode, UnixFSEntry, UnixFSFile } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
 
+const EMPTY = new Uint8Array(0)
+
 /**
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#use-in-directory-url-normalization
  */
@@ -236,7 +238,7 @@ export class UnixFSPlugin extends BasePlugin {
     }
 
     if (buf == null) {
-      throw new Error('stream ended before first block was read')
+      buf = EMPTY
     }
 
     let contentType: string | undefined
