@@ -223,7 +223,7 @@
     "it-all": "^3.0.11",
     "magic-bytes.js": "^1.13.0",
     "race-signal": "^2.0.0",
-    "sinon": "^21.1.2",
+    "sinon": "^22.0.0",
     "sinon-ts": "^2.0.0"
   },
   "browser": {
