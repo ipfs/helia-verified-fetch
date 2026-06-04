@@ -51,7 +51,7 @@ export function setCacheControlHeader ({ ttl, expires, protocol, response }: Cac
 
   if (expires != null) {
     const lifetimeRemaining = Math.round((expires.getTime() - Date.now()) / 1000)
-    cacheControl += ` stale-while-revalidate=${lifetimeRemaining}, stale-if-error=${lifetimeRemaining}`
+    cacheControl += `, stale-while-revalidate=${lifetimeRemaining}, stale-if-error=${lifetimeRemaining}`
 
     // add the expires header if it's not been set by a plugin
     if (!response.headers.has('expires')) {
