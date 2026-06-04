@@ -63,7 +63,7 @@ export class IpnsRecordPlugin extends BasePlugin {
       const eol = new Date(result.record.validity)
       headers.expires = eol.toUTCString()
 
-      const lifetimeRemaining = Math.round(((eol.getTime() - Date.now()) / 1000))
+      const lifetimeRemaining = Math.max(0, Math.round((eol.getTime() - Date.now()) / 1000))
 
       headers['cache-control'] += `, stale-while-revalidate=${lifetimeRemaining}, stale-if-error=${lifetimeRemaining}`
     }
