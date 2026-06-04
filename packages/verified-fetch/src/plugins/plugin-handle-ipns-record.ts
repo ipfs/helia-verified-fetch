@@ -46,7 +46,7 @@ export class IpnsRecordPlugin extends BasePlugin {
     const result = await ipnsResolver.resolve(peerId, context)
     const block = marshalIPNSRecord(result.record)
 
-    const maxAge = Number((result.record.ttl ?? 0n) / BigInt(1e9))
+    const maxAge = Math.round(Number((result.record.ttl ?? 0n) / BigInt(1e9)))
 
     const headers: Record<string, string> = {
       'content-length': `${block.byteLength}`,
@@ -63,7 +63,7 @@ export class IpnsRecordPlugin extends BasePlugin {
       const eol = new Date(result.record.validity)
       headers.expires = eol.toUTCString()
 
-      const lifetimeRemaining = parseInt(((eol.getTime() - Date.now()) / 1000).toString())
+      const lifetimeRemaining = Math.round(((eol.getTime() - Date.now()) / 1000))
 
       headers['cache-control'] += `, stale-while-revalidate=${lifetimeRemaining}, stale-if-error=${lifetimeRemaining}`
     }
