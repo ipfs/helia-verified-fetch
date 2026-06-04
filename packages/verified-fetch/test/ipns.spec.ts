@@ -53,6 +53,10 @@ describe('IPNS', () => {
     expect(resp.url).to.equal(`ipns://${peerId}`)
     expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${peerId}`)
     expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid}`)
+    expect(resp.headers.get('cache-control')).to.contain(`public, max-age=${parseInt(Number((record.ttl ?? 0n) / BigInt(1e9)).toString())}`)
+    expect(resp.headers.get('cache-control')).to.contain('stale-while-revalidate=')
+    expect(resp.headers.get('cache-control')).to.contain('stale-if-error=')
+    expect(resp.headers.get('expires')).to.equal(new Date(record.validity).toUTCString())
   })
 
   it('should resolve an IPNS name with a path', async () => {

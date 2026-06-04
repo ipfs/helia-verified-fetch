@@ -4,42 +4,62 @@ interface CacheControlHeaderOptions {
   /**
    * This should be seconds as a number.
    *
-   * See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#response_directives
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#response_directives
    */
   ttl?: number
+
+  /**
+   * This can represent an IPNS record's EOL validity
+   */
+  expires?: Date
   protocol: string
   response: Response
 }
 
 /**
- * Implementations may place an upper bound on any TTL received, as noted in Section 8 of [rfc2181].
+ * Implementations may place an upper bound on any TTL received, as noted in
+ * Section 8 of [rfc2181].
+ *
  * If TTL value is unknown, implementations should not send a Cache-Control
- * No matter if TTL value is known or not, implementations should always send a Last-Modified header with the timestamp of the record resolution.
+ *
+ * No matter if TTL value is known or not, implementations should always send a
+ * Last-Modified header with the timestamp of the record resolution.
  *
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#cache-control-response-header
  */
-export function setCacheControlHeader ({ ttl, protocol, response }: CacheControlHeaderOptions): void {
+export function setCacheControlHeader ({ ttl, expires, protocol, response }: CacheControlHeaderOptions): void {
   if (response.headers.has('cache-control')) {
     // don't set the header if it's already set by a plugin
     return
   }
 
-  let headerValue: string
+  let cacheControl: string
 
   if (protocol === 'ipfs:') {
-    headerValue = 'public, max-age=29030400, immutable'
+    cacheControl = 'public, max-age=29030400, immutable'
   } else if (ttl == null) {
     /**
-     * default limit for unknown TTL: "use 5 minute as default fallback when it is not available."
+     * default limit for unknown TTL: "use 5 minute as default fallback when it
+     * is not available."
      *
      * @see https://github.com/ipfs/boxo/issues/329#issuecomment-1995236409
      */
-    headerValue = 'public, max-age=300'
+    cacheControl = 'public, max-age=300'
   } else {
-    headerValue = `public, max-age=${ttl}`
+    cacheControl = `public, max-age=${ttl}`
   }
 
-  response.headers.set('cache-control', headerValue)
+  if (expires != null) {
+    const lifetimeRemaining = parseInt(((expires.getTime() - Date.now()) / 1000).toString())
+    cacheControl += ` stale-while-revalidate=${lifetimeRemaining}, stale-if-error=${lifetimeRemaining}`
+
+    // add the expires header if it's not been set by a plugin
+    if (!response.headers.has('expires')) {
+      response.headers.set('expires', expires.toUTCString())
+    }
+  }
+
+  response.headers.set('cache-control', cacheControl)
 }
 
 /**

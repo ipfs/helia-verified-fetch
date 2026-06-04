@@ -172,11 +172,18 @@ export class URLResolver implements URLResolverInterface {
       return ipfsResult
     }
 
+    let expires: Date | undefined
+
+    if (result.record.validityType === 'EOL') {
+      expires = new Date(result.record.validity)
+    }
+
     return {
       ...ipfsResult,
       url,
       // IPNS ttl is in nanoseconds, convert to seconds
-      ttl: Number((result.record.ttl ?? 0n) / BigInt(1e9))
+      ttl: Number((result.record.ttl ?? 0n) / BigInt(1e9)),
+      expires
     }
   }
 

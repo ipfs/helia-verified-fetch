@@ -46,18 +46,31 @@ export class IpnsRecordPlugin extends BasePlugin {
     const result = await ipnsResolver.resolve(peerId, context)
     const block = marshalIPNSRecord(result.record)
 
+    const maxAge = Number((result.record.ttl ?? 0n) / BigInt(1e9))
+
+    const headers: Record<string, string> = {
+      'content-length': `${block.byteLength}`,
+      'content-type': CONTENT_TYPE_IPNS.mediaType,
+      'content-disposition': `attachment; ${
+        getContentDispositionFilename(url.searchParams.get('filename') ?? `${peerId}${CONTENT_TYPE_IPNS.extension}`)
+      }`,
+      'x-ipfs-roots': result.cid.toV1().toString(),
+      'cache-control': `public, max-age=${maxAge}`,
+      'accept-ranges': 'none'
+    }
+
+    if (result.record.validityType === 'EOL') {
+      const eol = new Date(result.record.validity)
+      headers.expires = eol.toUTCString()
+
+      const lifetimeRemaining = parseInt(((eol.getTime() - Date.now()) / 1000).toString())
+
+      headers['cache-control'] += `, stale-while-revalidate=${lifetimeRemaining}, stale-if-error=${lifetimeRemaining}`
+    }
+
     return okResponse(resource, block, {
       redirected: context.redirected,
-      headers: {
-        'content-length': `${block.byteLength}`,
-        'content-type': CONTENT_TYPE_IPNS.mediaType,
-        'content-disposition': `attachment; ${
-          getContentDispositionFilename(url.searchParams.get('filename') ?? `${peerId}${CONTENT_TYPE_IPNS.extension}`)
-        }`,
-        'x-ipfs-roots': result.cid.toV1().toString(),
-        'cache-control': `public, max-age=${Number((result.record.ttl ?? 0n) / BigInt(1e9))}`,
-        'accept-ranges': 'none'
-      }
+      headers
     })
   }
 }

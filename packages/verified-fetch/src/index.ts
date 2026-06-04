@@ -1354,7 +1354,18 @@ export interface ResolveURLOptions extends AbortOptions, ProviderOptions, Progre
 
 export interface ResolveURLResult {
   url: URL
+
+  /**
+   * How long this result is valid for - in general re-resolving this URL will
+   * result in the same final URL within this many seconds
+   */
   ttl: number
+
+  /**
+   * This can represent an IPNS records EOL validity expiration
+   */
+  expires?: Date
+
   blockstore: Blockstore
   ipfsRoots: CID[]
   terminalElement: PathEntry

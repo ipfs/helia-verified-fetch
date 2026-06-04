@@ -421,6 +421,7 @@ export class VerifiedFetch {
       setCacheControlHeader({
         response,
         ttl: context.ttl,
+        expires: context.expires,
         protocol: context.url.protocol
       })
     }
