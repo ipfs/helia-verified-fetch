@@ -1359,7 +1359,7 @@ export interface ResolveURLResult {
    * How long this result is valid for - in general re-resolving this URL will
    * result in the same final URL within this many seconds
    */
-  ttl: number
+  ttl?: number
 
   /**
    * This can represent an IPNS records EOL validity expiration

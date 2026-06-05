@@ -28,11 +28,6 @@ interface CacheControlHeaderOptions {
  * @see https://specs.ipfs.tech/http-gateways/path-gateway/#cache-control-response-header
  */
 export function setCacheControlHeader ({ ttl, expires, protocol, response }: CacheControlHeaderOptions): void {
-  if (response.headers.has('cache-control')) {
-    // don't set the header if it's already set by a plugin
-    return
-  }
-
   let cacheControl: string
 
   if (protocol === 'ipfs:') {
@@ -59,7 +54,10 @@ export function setCacheControlHeader ({ ttl, expires, protocol, response }: Cac
     }
   }
 
-  response.headers.set('cache-control', cacheControl)
+  if (!response.headers.has('cache-control')) {
+    // don't set the cache-control header if it's already set by a plugin
+    response.headers.set('cache-control', cacheControl)
+  }
 }
 
 /**
