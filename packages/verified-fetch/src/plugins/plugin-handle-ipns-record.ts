@@ -19,7 +19,7 @@ export class IpnsRecordPlugin extends BasePlugin {
     return accept.some(header => header.contentType.mediaType === MEDIA_TYPE_IPNS_RECORD)
   }
 
-  async handle (context: Pick<PluginContext, 'resource' | 'url' | 'range' | 'redirected' | 'signal' | 'onProgress'>): Promise<Response> {
+  async handle (context: Pick<PluginContext, 'resource' | 'url' | 'range' | 'redirected' | 'signal' | 'onProgress' | 'ttl' | 'expires'>): Promise<Response> {
     const { resource, url, range } = context
     const { ipnsResolver } = this.pluginOptions
 
@@ -46,6 +46,13 @@ export class IpnsRecordPlugin extends BasePlugin {
     const result = await ipnsResolver.resolve(peerId, context)
     const block = marshalIPNSRecord(result.record)
 
+    if (result.record.validityType === 'EOL') {
+      const eol = new Date(result.record.validity)
+
+      context.expires = eol
+      context.ttl = Math.round(Number((result.record.ttl ?? 0n) / BigInt(1e9)))
+    }
+
     return okResponse(resource, block, {
       redirected: context.redirected,
       headers: {
@@ -55,7 +62,6 @@ export class IpnsRecordPlugin extends BasePlugin {
           getContentDispositionFilename(url.searchParams.get('filename') ?? `${peerId}${CONTENT_TYPE_IPNS.extension}`)
         }`,
         'x-ipfs-roots': result.cid.toV1().toString(),
-        'cache-control': `public, max-age=${Number((result.record.ttl ?? 0n) / BigInt(1e9))}`,
         'accept-ranges': 'none'
       }
     })

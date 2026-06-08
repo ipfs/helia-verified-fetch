@@ -198,15 +198,17 @@ export class VerifiedFetch {
           return notAcceptableResponse(resource, requestedMimeTypes, [])
         }
 
-        return this.handleFinalResponse(await ipnsRecordPlugin.handle({
+        const context = {
           ...options,
           range,
           url,
           resource,
-          redirected: false
-        }), withServerTiming, {
+          redirected: false,
           serverTiming
-        })
+        }
+
+        // @ts-expect-error headers type is wrong
+        return this.handleFinalResponse(await ipnsRecordPlugin.handle(context), withServerTiming, context)
       }
 
       const resolveResult = await this.urlResolver.resolve(url, serverTiming, options)
@@ -421,6 +423,7 @@ export class VerifiedFetch {
       setCacheControlHeader({
         response,
         ttl: context.ttl,
+        expires: context.expires,
         protocol: context.url.protocol
       })
     }

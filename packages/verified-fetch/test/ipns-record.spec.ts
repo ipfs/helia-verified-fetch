@@ -57,7 +57,9 @@ describe('ipns records', () => {
     expect(resp.headers.get('content-length')).to.equal(marshaledRecord.byteLength.toString())
     expect(resp.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
     expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${peerId}.bin"`)
-    expect(resp.headers.get('cache-control')).to.equal('public, max-age=300')
+    const maxAge = Math.round(Number((record.ttl ?? 0n) / BigInt(1e9)))
+    expect(resp.headers.get('cache-control')).to.match(new RegExp(`^public, max-age=${maxAge}, stale-while-revalidate=\\d+, stale-if-error=\\d+$`))
+    expect(resp.headers.get('expires')).to.equal(new Date(record.validity).toUTCString())
 
     const buf = new Uint8Array(await resp.arrayBuffer())
     expect(marshalIPNSRecord(record)).to.equalBytes(buf)
