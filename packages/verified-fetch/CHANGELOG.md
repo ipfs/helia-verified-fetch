@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v7.2.16](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.15...@helia/verified-fetch-7.2.16) (2026-06-08)
+
+### Bug Fixes
+
+* add cache-control directives and expires header to responses ([#365](https://github.com/ipfs/helia-verified-fetch/issues/365)) ([d3f6578](https://github.com/ipfs/helia-verified-fetch/commit/d3f6578f3330a512576eafd0c03f6caaa29156e6))
+
 ## [@helia/verified-fetch-v7.2.15](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.14...@helia/verified-fetch-7.2.15) (2026-05-31)
 
 ### Bug Fixes
