@@ -214,7 +214,7 @@
     "@libp2p/crypto": "^5.1.15",
     "@libp2p/logger": "^6.2.4",
     "@types/regexp.escape": "^2.0.0",
-    "@types/sinon": "^21.0.1",
+    "@types/sinon": "^22.0.0",
     "aegir": "^48.0.4",
     "blockstore-core": "^6.1.3",
     "browser-readablestream-to-it": "^2.0.12",
