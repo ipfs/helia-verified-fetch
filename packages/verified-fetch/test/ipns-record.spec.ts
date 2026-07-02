@@ -1,17 +1,18 @@
 import { dagCbor } from '@helia/dag-cbor'
+import { createIPNSRecord, IPNSEntry } from '@helia/ipns'
 import { ed25519Crypto } from '@ipshipyard/crypto'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
+import { base58btc } from 'multiformats/bases/base58'
 import { stubInterface } from 'sinon-ts'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { MEDIA_TYPE_IPNS_RECORD } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from '@helia/interface'
-import { createIPNSRecord, IPNSEntry, type IPNSResolver } from '@helia/ipns'
+import type { IPNSResolver } from '@helia/ipns'
 import type { StubbedInstance } from 'sinon-ts'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { base58btc } from 'multiformats/bases/base58'
 
 describe('ipns records', () => {
   let helia: Helia

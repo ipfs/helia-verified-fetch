@@ -1,16 +1,17 @@
 import { dagCbor } from '@helia/dag-cbor'
-import { stop } from '@libp2p/interface'
+import { createIPNSRecord } from '@helia/ipns'
 import { ed25519Crypto } from '@ipshipyard/crypto'
+import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
+import { base58btc } from 'multiformats/bases/base58'
 import { stubInterface } from 'sinon-ts'
 import { createVerifiedFetch } from '../src/index.ts'
 import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { VerifiedFetch } from '../src/index.ts'
 import type { DNSLink } from '@helia/dnslink'
 import type { Helia } from '@helia/interface'
-import { createIPNSRecord, type IPNSResolver } from '@helia/ipns'
+import type { IPNSResolver } from '@helia/ipns'
 import type { StubbedInstance } from 'sinon-ts'
-import { base58btc } from 'multiformats/bases/base58'
 
 describe('x-ipfs-path', () => {
   let helia: Helia

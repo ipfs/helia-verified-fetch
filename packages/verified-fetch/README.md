@@ -130,23 +130,19 @@ The [helia](https://www.npmjs.com/package/helia) module is configured with a lib
 You can see variations of Helia and js-libp2p configuration options at <https://ipfs.github.io/helia/interfaces/helia.HeliaInit.html>.
 
 ```typescript
-import { trustlessGateway } from '@helia/block-brokers'
-import { createHeliaHTTP } from '@helia/http'
+import { createHeliaLight } from 'helia'
+import { withHTTP } from '@helia/http'
 import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
 import { createVerifiedFetch } from '@helia/verified-fetch'
 
 const fetch = await createVerifiedFetch(
-  await createHeliaHTTP({
-    blockBrokers: [
-      trustlessGateway()
+  await withHTTP(createHeliaLight(), {
+    delegatedRouters: [
+      'http://delegated-ipfs.dev'
     ],
-    routers: [
-      delegatedHTTPRouting({
-        url: 'http://delegated-ipfs.dev'
-      }),
-      httpGatewayRouting({
-        gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
-      })
+    recursiveGateways: [
+      'https://mygateway.example.net',
+      'https://trustless-gateway.link'
     ]
   })
 )

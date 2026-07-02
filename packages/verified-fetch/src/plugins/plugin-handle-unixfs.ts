@@ -6,6 +6,7 @@ import last from 'it-last'
 import itToBrowserReadableStream from 'it-to-browser-readablestream'
 import toBuffer from 'it-to-buffer'
 import * as raw from 'multiformats/codecs/raw'
+import { withArrayBuffer } from 'uint8arrays/with-array-buffer'
 import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_DAG_PB } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
 import { badGatewayResponse, movedPermanentlyResponse, partialContentResponse, okResponse } from '../utils/responses.ts'
@@ -15,7 +16,6 @@ import type { RangeHeader } from '../utils/get-range-header.ts'
 import type { AbortOptions } from '@libp2p/interface'
 import type { IdentityNode, RawNode, UnixFSEntry, UnixFSFile } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
-import { withArrayBuffer } from 'uint8arrays/with-array-buffer'
 
 const EMPTY = new Uint8Array(0)
 

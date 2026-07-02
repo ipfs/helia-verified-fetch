@@ -4,11 +4,11 @@ import * as dagPb from '@ipld/dag-pb'
 import * as json from 'multiformats/codecs/json'
 import * as raw from 'multiformats/codecs/raw'
 import { identity } from 'multiformats/hashes/identity'
+import { withArrayBuffer } from 'uint8arrays/with-array-buffer'
 import { CODEC_CBOR } from '../constants.ts'
 import { getContentTypesForCid, MEDIA_TYPE_CBOR, MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_DAG_JSON, MEDIA_TYPE_JSON, MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from './content-types.ts'
 import type { AcceptHeader, ContentType } from '../index.ts'
 import type { CID } from 'multiformats/cid'
-import { withArrayBuffer } from 'uint8arrays/with-array-buffer'
 
 const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array<ArrayBuffer>) => Uint8Array<ArrayBuffer>>> = {
   [dagCbor.code]: {

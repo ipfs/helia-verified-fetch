@@ -1,5 +1,5 @@
-import { kadDHT } from '@libp2p/kad-dht'
 import { libp2pDefaults } from '@helia/libp2p'
+import { kadDHT } from '@libp2p/kad-dht'
 import type { ServiceFactoryMap } from './libp2p-types.ts'
 import type { DefaultLibp2pServices } from '@helia/libp2p'
 import type { Libp2pOptions } from 'libp2p'

@@ -1,4 +1,7 @@
+import { withHTTP } from '@helia/http'
+import { createIPNSRecord } from '@helia/ipns'
 import { unixfs } from '@helia/unixfs'
+import { ed25519Crypto } from '@ipshipyard/crypto'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import { createHelia } from 'helia'
@@ -6,12 +9,10 @@ import { stubInterface } from 'sinon-ts'
 import { createVerifiedFetch } from '../src/index.ts'
 import type { VerifiedFetch } from '../src/index.ts'
 import type { DNSLink } from '@helia/dnslink'
-import { createIPNSRecord, type IPNSResolver } from '@helia/ipns'
+import type { IPNSResolver } from '@helia/ipns'
 import type { Helia, PrivateKey } from 'helia'
 import type { CID } from 'multiformats'
 import type { StubbedInstance } from 'sinon-ts'
-import { withHTTP } from '@helia/http'
-import { ed25519Crypto } from '@ipshipyard/crypto'
 
 describe('DNSLink', () => {
   let helia: Helia

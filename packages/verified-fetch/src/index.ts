@@ -100,23 +100,19 @@
  * You can see variations of Helia and js-libp2p configuration options at <https://ipfs.github.io/helia/interfaces/helia.HeliaInit.html>.
  *
  * ```typescript
- * import { trustlessGateway } from '@helia/block-brokers'
- * import { createHeliaHTTP } from '@helia/http'
+ * import { createHeliaLight } from 'helia'
+ * import { withHTTP } from '@helia/http'
  * import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
  * import { createVerifiedFetch } from '@helia/verified-fetch'
  *
  * const fetch = await createVerifiedFetch(
- *   await createHeliaHTTP({
- *     blockBrokers: [
- *       trustlessGateway()
+ *   await withHTTP(createHeliaLight(), {
+ *     delegatedRouters: [
+ *       'http://delegated-ipfs.dev'
  *     ],
- *     routers: [
- *       delegatedHTTPRouting({
- *         url: 'http://delegated-ipfs.dev'
- *       }),
- *       httpGatewayRouting({
- *         gateways: ['https://mygateway.example.net', 'https://trustless-gateway.link']
- *       })
+ *     recursiveGateways: [
+ *       'https://mygateway.example.net',
+ *       'https://trustless-gateway.link'
  *     ]
  *   })
  * )
@@ -856,10 +852,16 @@
  * fetch if not.
  */
 
-import { delegatedRoutingV1HttpApiClient, delegatedRoutingV1HttpApiClientContentRouting, delegatedRoutingV1HttpApiClientPeerRouting } from '@helia/delegated-routing-v1-http-api-client'
+import { withBitswap } from '@helia/bitswap'
+import { delegatedRoutingV1HttpApiClientContentRouting, delegatedRoutingV1HttpApiClientPeerRouting } from '@helia/delegated-routing-v1-http-api-client'
+import { withHTTP } from '@helia/http'
+import { withLibp2p } from '@helia/libp2p'
+import * as dagCbor from '@ipld/dag-cbor'
+import * as dagJson from '@ipld/dag-json'
 import { dns } from '@multiformats/dns'
 import { createHeliaLight } from 'helia'
 import { createLibp2p } from 'libp2p'
+import * as json from 'multiformats/codecs/json'
 import { getLibp2pConfig } from './utils/libp2p-defaults.ts'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.ts'
 import type { RangeHeader } from './utils/get-range-header.ts'
@@ -877,12 +879,6 @@ import type { ExporterProgressEvents, PathEntry } from 'ipfs-unixfs-exporter'
 import type { Libp2pOptions } from 'libp2p'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
-import { withLibp2p } from '@helia/libp2p'
-import { withBitswap } from '@helia/bitswap'
-import * as dagCbor from '@ipld/dag-cbor'
-import * as dagJson from '@ipld/dag-json'
-import * as json from 'multiformats/codecs/json'
-import { withHTTP } from '@helia/http'
 
 export {
   MEDIA_TYPE_DAG_CBOR,
@@ -1102,7 +1098,7 @@ export interface CreateVerifiedFetchInit {
 
   /**
    * In order to parse DNSLink records, we need to resolve DNS queries. You can
-   * pass a list of DNS resolvers that we will provide to the @helia/ipns
+   * pass a list of DNS resolvers that we will provide to the `@helia/ipns`
    * instance for you. You must construct them using the `dnsJsonOverHttps` or
    * `dnsOverHttps` functions exported from `@helia/ipns/dns-resolvers`.
    *

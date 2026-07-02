@@ -1,3 +1,4 @@
+import { withHTTP } from '@helia/http'
 import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
@@ -10,7 +11,6 @@ import type { IPNSResolver } from '@helia/ipns'
 import type { Helia } from 'helia'
 import type { CID } from 'multiformats'
 import type { StubbedInstance } from 'sinon-ts'
-import { withHTTP } from '@helia/http'
 
 const FRAGMENT = '#a-fragment-should-be-ignored'
 

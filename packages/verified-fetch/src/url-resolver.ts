@@ -1,12 +1,17 @@
 import { DoesNotExistError } from '@helia/unixfs/errors'
+import * as cborg from 'cborg'
 import { exporter, InvalidParametersError, walkPath } from 'ipfs-unixfs-exporter'
+import last from 'it-last'
 import toBuffer from 'it-to-buffer'
-import { CID, type MultihashDigest } from 'multiformats/cid'
+import { base58btc } from 'multiformats/bases/base58'
+import { CID } from 'multiformats/cid'
+import * as Digest from 'multiformats/hashes/digest'
 import QuickLRU from 'quick-lru'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CODEC_LIBP2P_KEY, SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS } from './constants.ts'
 import { abbreviate } from './utils/abbreviate.ts'
 import { applyRedirects } from './utils/apply-redirect.ts'
+import { splitIPNSName } from './utils/ipfs-path-to-cid.ts'
 import { ServerTiming } from './utils/server-timing.ts'
 import type { ResolveURLOptions, ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
 import type { DNSLink } from '@helia/dnslink'
@@ -15,14 +20,8 @@ import type { AbortOptions, Logger } from '@libp2p/interface'
 import type { Helia, ProviderOptions, SessionBlockstore } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { PathEntry, UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { MultihashDigest } from 'multiformats/cid'
 import type { ProgressOptions } from 'progress-events'
-import last from 'it-last'
-import { splitIPNSName } from './utils/ipfs-path-to-cid.ts'
-import { base36 } from 'multiformats/bases/base36'
-import * as Digest from 'multiformats/hashes/digest'
-import { base58btc } from 'multiformats/bases/base58'
-import * as cborg from 'cborg'
-import { badRequestResponse } from './utils/responses.ts'
 
 // 1 year in seconds for ipfs content
 const IPFS_CONTENT_TTL = 29030400
@@ -171,7 +170,7 @@ export class URLResolver implements URLResolverInterface {
     const result = await serverTiming.time(abbreviate('ipns.resolve'), '', last(this.components.ipnsResolver.resolve(multihash, options)))
 
     if (result == null) {
-      throw new InvalidParametersError(`Could not resolve IPNS name`)
+      throw new InvalidParametersError('Could not resolve IPNS name')
     }
 
     const {
@@ -179,7 +178,7 @@ export class URLResolver implements URLResolverInterface {
     } = splitIPNSName(result.value)
 
     if (ns !== 'ipfs') {
-      throw new InvalidParametersError(`IPNS name resolved to non-IPFS path`)
+      throw new InvalidParametersError('IPNS name resolved to non-IPFS path')
     }
 
     const ipfsUrl = new URL(`ipfs://${name}${normalizePath(`${path ?? ''}/${url.pathname}`)}`)

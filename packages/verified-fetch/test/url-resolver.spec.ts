@@ -1,21 +1,22 @@
+import { createIPNSRecord } from '@helia/ipns'
 import { unixfs } from '@helia/unixfs'
+import { ed25519Crypto } from '@ipshipyard/crypto'
 import { defaultLogger } from '@libp2p/logger'
 import { expect } from 'aegir/chai'
 import { MemoryBlockstore } from 'blockstore-core'
 import { base36 } from 'multiformats/bases/base36'
+import { base58btc } from 'multiformats/bases/base58'
 import { CID } from 'multiformats/cid'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { URLResolver } from '../src/url-resolver.ts'
 import { ServerTiming } from '../src/utils/server-timing.ts'
 import type { DNSLink } from '@helia/dnslink'
-import { createIPNSRecord, type IPNSResolver } from '@helia/ipns'
+import type { IPNSResolver } from '@helia/ipns'
 import type { Answer } from '@multiformats/dns'
 import type { Helia, PrivateKey } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { StubbedInstance } from 'sinon-ts'
-import { ed25519Crypto } from '@ipshipyard/crypto'
-import { base58btc } from 'multiformats/bases/base58'
 
 describe('url-resolver', () => {
   let ipnsResolver: StubbedInstance<IPNSResolver>
@@ -145,6 +146,7 @@ describe('url-resolver', () => {
 
   describe('ipns://<dnsLinkDomain> URLs', () => {
     it('handles invalid DNSLinkDomains', async () => {
+      // eslint-disable-next-line require-yield
       ipnsResolver.resolve.returns((async function * () {
         throw new Error('Unexpected failure from ipns resolve method')
       })())
@@ -303,6 +305,7 @@ describe('url-resolver', () => {
     })
 
     it('handles valid PeerId resolve failures', async () => {
+      // eslint-disable-next-line require-yield
       ipnsResolver.resolve.returns((async function * () {
         throw new Error('Failure from ipns resolve method')
       })())

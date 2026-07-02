@@ -1,14 +1,15 @@
+import { IPNSEntry } from '@helia/ipns'
+import * as dagCbor from '@ipld/dag-cbor'
 import { peerIdFromString } from '@libp2p/peer-id'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CONTENT_TYPE_IPNS, MEDIA_TYPE_IPNS_RECORD } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
+import { splitIPNSName } from '../utils/ipfs-path-to-cid.ts'
 import { badRequestResponse, okResponse } from '../utils/responses.ts'
 import { BasePlugin } from './plugin-base.ts'
 import type { PluginContext } from '../index.ts'
+import type { IPNSRecordData, IPNSResolveResult } from '@helia/ipns'
 import type { PeerId } from '@libp2p/interface'
-import { IPNSEntry, type IPNSRecordData, type IPNSResolveResult } from '@helia/ipns'
-import { splitIPNSName } from '../utils/ipfs-path-to-cid.ts'
-import * as dagCbor from '@ipld/dag-cbor'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 
 /**
  * Accepts an `ipns://...`, `https?://<ipnsname>.ipns.<domain>`, or `https?://<domain>/ipns/...` URL as a string and

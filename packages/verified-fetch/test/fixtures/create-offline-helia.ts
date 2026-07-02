@@ -1,9 +1,10 @@
-import { createHeliaLight, type HeliaInit } from 'helia'
-import { type Helia, type SessionBlockBroker } from '@helia/interface'
-import { raceSignal } from 'race-signal'
 import * as dagCbor from '@ipld/dag-cbor'
 import * as dagJson from '@ipld/dag-json'
+import { createHeliaLight } from 'helia'
 import * as json from 'multiformats/codecs/json'
+import { raceSignal } from 'race-signal'
+import type { Helia, SessionBlockBroker } from '@helia/interface'
+import type { HeliaInit } from 'helia'
 
 export async function createHelia (init: HeliaInit = {}): Promise<Helia> {
   const abortingBlockBroker: SessionBlockBroker = {
@@ -47,9 +48,7 @@ export async function createHelia (init: HeliaInit = {}): Promise<Helia> {
       json
     ],
     ...init
-  })
-
-  await helia.start()
+  }).start()
 
   return helia
 }

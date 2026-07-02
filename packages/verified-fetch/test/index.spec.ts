@@ -4,7 +4,7 @@ import { createVerifiedFetch, verifiedFetch } from '../src/index.ts'
 
 describe('createVerifiedFetch', () => {
   it('can be constructed with a HeliaP2P instance', async () => {
-    const heliaP2P = await createHelia()
+    const heliaP2P = await createHelia().start()
     const verifiedFetch = await createVerifiedFetch(heliaP2P)
 
     expect(verifiedFetch).to.be.ok()

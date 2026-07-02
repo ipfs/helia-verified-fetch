@@ -54,6 +54,7 @@ describe('abort-handling', function () {
       dnsLinkResolverCalled.resolve()
       return getAbortablePromise(options.signal)
     })
+    // eslint-disable-next-line require-yield
     peerIdResolver.callsFake(async function * (peerId, options) {
       peerIdResolverCalled.resolve()
       await getAbortablePromise(options.signal)
