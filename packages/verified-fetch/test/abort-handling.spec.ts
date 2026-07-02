@@ -34,7 +34,7 @@ describe('abort-handling', function () {
    */
   let blockRetriever: StubbedInstance<Required<SessionBlockBroker>>
   let dnsLinkResolver: Sinon.SinonStub<any[], Promise<Array<DNSLinkIPFSResult | DNSLinkIPNSResult>>>
-  let peerIdResolver: Sinon.SinonStub<any[], Promise<IPNSResolveResult>>
+  let peerIdResolver: Sinon.SinonStub<any[], AsyncGenerator<IPNSResolveResult>>
 
   /**
    * used as promises to pass to makeAbortedRequest that will abort the request as soon as it's resolved.
@@ -54,9 +54,9 @@ describe('abort-handling', function () {
       dnsLinkResolverCalled.resolve()
       return getAbortablePromise(options.signal)
     })
-    peerIdResolver.callsFake(async (peerId, options) => {
+    peerIdResolver.callsFake(async function * (peerId, options) {
       peerIdResolverCalled.resolve()
-      return getAbortablePromise(options.signal)
+      await getAbortablePromise(options.signal)
     })
     blockRetriever = stubInterface<Required<SessionBlockBroker>>({
       retrieve: sandbox.stub().callsFake(async (cid, options) => {

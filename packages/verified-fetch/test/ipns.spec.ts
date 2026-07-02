@@ -1,22 +1,23 @@
 import { dagCbor } from '@helia/dag-cbor'
 import { unixfs } from '@helia/unixfs'
-import { generateKeyPair } from '@libp2p/crypto/keys'
 import { stop } from '@libp2p/interface'
-import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
-import { createHelia } from 'helia'
-import { createIPNSRecord } from 'ipns'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import { stubInterface } from 'sinon-ts'
 import { createVerifiedFetch } from '../src/index.ts'
 import type { VerifiedFetch } from '../src/index.ts'
-import type { IPNSResolver } from '@helia/ipns'
-import type { Helia } from 'helia'
+import { createIPNSRecord, type IPNSResolver } from '@helia/ipns'
+import type { Helia, PrivateKey } from 'helia'
 import type { StubbedInstance } from 'sinon-ts'
+import { ed25519Crypto } from '@ipshipyard/crypto'
+import { base58btc } from 'multiformats/bases/base58'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 
 describe('IPNS', () => {
   let helia: Helia
   let fetch: VerifiedFetch
   let ipnsResolver: StubbedInstance<IPNSResolver>
+  let privateKey: PrivateKey
 
   beforeEach(async () => {
     helia = await createHelia()
@@ -24,6 +25,7 @@ describe('IPNS', () => {
     fetch = await createVerifiedFetch(helia, {
       ipnsResolver
     })
+    privateKey = await ed25519Crypto().generatePrivateKey()
   })
 
   afterEach(async () => {
@@ -37,25 +39,27 @@ describe('IPNS', () => {
     const c = dagCbor(helia)
     const cid = await c.add(obj)
 
-    const privateKey = await generateKeyPair('Ed25519')
-    const record = await createIPNSRecord(privateKey, cid, 1, 10_000)
-    const peerId = peerIdFromPrivateKey(privateKey)
+    const value = `/ipfs/${cid}`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+    const name = base58btc.baseEncode(privateKey.publicKey.toMultihash().bytes)
 
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid,
-      record
-    })
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
-    const resp = await fetch(`ipns://${peerId}`)
+    const resp = await fetch(`ipns://${name}`)
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
-    expect(resp.url).to.equal(`ipns://${peerId}`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${peerId}`)
+    expect(resp.url).to.equal(`ipns://${name}`)
+    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${name}`)
     expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid}`)
     const maxAge = Math.round(Number((record.ttl ?? 0n) / BigInt(1e9)))
     expect(resp.headers.get('cache-control')).to.match(new RegExp(`^public, max-age=${maxAge}, stale-while-revalidate=\\d+, stale-if-error=\\d+$`))
-    expect(resp.headers.get('expires')).to.equal(new Date(record.validity).toUTCString())
+    expect(resp.headers.get('expires')).to.equal(new Date(uint8ArrayToString(record.validity ?? new Uint8Array(0))).toUTCString())
   })
 
   it('should resolve an IPNS name with a path', async () => {
@@ -65,22 +69,23 @@ describe('IPNS', () => {
     const dirCid = await fs.addDirectory()
     const cid = await fs.cp(fileCid, dirCid, path)
 
-    const privateKey = await generateKeyPair('Ed25519')
-    const record = await createIPNSRecord(privateKey, `/ipfs/${cid}/${path}`, 1, 10_000)
-    const peerId = peerIdFromPrivateKey(privateKey)
+    const value = `/ipfs/${cid}/${path}`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+    const name = base58btc.baseEncode(privateKey.publicKey.toMultihash().bytes)
 
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid,
-      path,
-      record
-    })
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
-    const resp = await fetch(`ipns://${peerId}/`)
+    const resp = await fetch(`ipns://${name}/`)
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
-    expect(resp.url).to.equal(`ipns://${peerId}/`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${peerId}`)
+    expect(resp.url).to.equal(`ipns://${name}/`)
+    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${name}`)
     expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid},${fileCid}`)
   })
 
@@ -88,21 +93,23 @@ describe('IPNS', () => {
     const fs = unixfs(helia)
     const cid = await fs.addDirectory()
 
-    const privateKey = await generateKeyPair('Ed25519')
-    const record = await createIPNSRecord(privateKey, `/ipfs/${cid}`, 1, 10_000)
-    const peerId = peerIdFromPrivateKey(privateKey)
+    const value = `/ipfs/${cid}`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+    const name = privateKey.publicKey.toCID().toString()
 
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid,
-      record
-    })
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
-    const resp = await fetch(`ipfs://${peerId.toCID()}/`)
+    const resp = await fetch(`ipfs://${name}/`)
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
-    expect(resp.url).to.equal(`ipfs://${peerId.toCID()}/`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${peerId.toCID()}`)
+    expect(resp.url).to.equal(`ipfs://${name}/`)
+    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${name}`)
     expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid}`)
   })
 
@@ -113,22 +120,23 @@ describe('IPNS', () => {
     const dirCid = await fs.addDirectory()
     const cid = await fs.cp(fileCid, dirCid, path)
 
-    const privateKey = await generateKeyPair('Ed25519')
-    const record = await createIPNSRecord(privateKey, `/ipfs/${cid}/${path}`, 1, 10_000)
-    const peerId = peerIdFromPrivateKey(privateKey)
+    const value = `/ipfs/${cid}/${path}`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+    const name = privateKey.publicKey.toCID().toString()
 
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid,
-      path,
-      record
-    })
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
-    const resp = await fetch(`ipfs://${peerId.toCID()}/`)
+    const resp = await fetch(`ipfs://${name}/`)
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
-    expect(resp.url).to.equal(`ipfs://${peerId.toCID()}/`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${peerId.toCID()}`)
+    expect(resp.url).to.equal(`ipfs://${name}/`)
+    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${name}`)
     expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid},${fileCid}`)
   })
 })

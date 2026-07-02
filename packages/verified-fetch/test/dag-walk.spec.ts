@@ -10,6 +10,7 @@ import type { IPNSResolver } from '@helia/ipns'
 import type { Helia } from 'helia'
 import type { CID } from 'multiformats'
 import type { StubbedInstance } from 'sinon-ts'
+import { withHTTP } from '@helia/http'
 
 const FRAGMENT = '#a-fragment-should-be-ignored'
 
@@ -22,7 +23,7 @@ describe('dag-walk', () => {
   let root: CID
 
   beforeEach(async () => {
-    helia = await createHelia()
+    helia = await withHTTP(createHelia()).start()
     dnsLink = stubInterface()
     ipnsResolver = stubInterface()
     fetch = await createVerifiedFetch(helia, {

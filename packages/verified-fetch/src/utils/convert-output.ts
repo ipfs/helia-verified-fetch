@@ -8,8 +8,9 @@ import { CODEC_CBOR } from '../constants.ts'
 import { getContentTypesForCid, MEDIA_TYPE_CBOR, MEDIA_TYPE_DAG_CBOR, MEDIA_TYPE_DAG_JSON, MEDIA_TYPE_JSON, MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_RAW } from './content-types.ts'
 import type { AcceptHeader, ContentType } from '../index.ts'
 import type { CID } from 'multiformats/cid'
+import { withArrayBuffer } from 'uint8arrays/with-array-buffer'
 
-const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array>> = {
+const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array<ArrayBuffer>) => Uint8Array<ArrayBuffer>>> = {
   [dagCbor.code]: {
     [MEDIA_TYPE_CBOR]: (buf) => {
       return buf
@@ -18,7 +19,8 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
       return buf
     },
     [MEDIA_TYPE_JSON]: (buf) => {
-      return dagJson.encode(dagCbor.decode(buf))
+      // TODO: remove withArrayBuffer when dag-json is explicit about it's return type
+      return withArrayBuffer(dagJson.encode(dagCbor.decode(buf)))
     },
     [MEDIA_TYPE_DAG_JSON]: () => {
       throw new Error('Cannot perform conversion since IPIP-0524')
@@ -41,7 +43,8 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
       return buf
     },
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
-      return dagJson.encode(dagCbor.decode(buf))
+      // TODO: remove withArrayBuffer when dag-json is explicit about it's return type
+      return withArrayBuffer(dagJson.encode(dagCbor.decode(buf)))
     },
     [MEDIA_TYPE_RAW]: (buf) => {
       return buf
@@ -75,7 +78,8 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
       return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
-      return dagCbor.encode(json.decode(buf))
+      // TODO: remove withArrayBuffer when dag-cbor is explicit about it's return type
+      return withArrayBuffer(dagCbor.encode(json.decode(buf)))
     },
     [MEDIA_TYPE_JSON]: (buf) => {
       return buf
@@ -135,13 +139,15 @@ const CONVERSIONS: Record<number, Record<string, (buf: Uint8Array) => Uint8Array
       return buf
     },
     [MEDIA_TYPE_DAG_CBOR]: (buf) => {
-      return dagCbor.encode(buf)
+      // TODO: remove withArrayBuffer when dag-cbor is explicit about it's return type
+      return withArrayBuffer(dagCbor.encode(buf))
     },
     [MEDIA_TYPE_JSON]: (buf) => {
       return buf
     },
     [MEDIA_TYPE_DAG_JSON]: (buf) => {
-      return dagJson.encode(buf)
+      // TODO: remove withArrayBuffer when dag-json is explicit about it's return type
+      return withArrayBuffer(dagJson.encode(buf))
     },
     [MEDIA_TYPE_RAW]: (buf) => {
       return buf
@@ -163,7 +169,7 @@ export interface ConvertedOutput {
  * the deserialized value to that format and serialize it back to a block -
  * return the first successful result.
  */
-export function convertOutput (cid: CID, block: Uint8Array, accept: AcceptHeader[]): { contentType: ContentType, output: Uint8Array } {
+export function convertOutput (cid: CID, block: Uint8Array<ArrayBuffer>, accept: AcceptHeader[]): { contentType: ContentType, output: Uint8Array<ArrayBuffer> } {
   if (accept.length === 0) {
     // return current format
     return {

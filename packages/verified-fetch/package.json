@@ -166,13 +166,14 @@
     "release": "aegir release"
   },
   "dependencies": {
-    "@helia/block-brokers": "^5.2.2",
+    "@helia/bitswap": "^4.0.0",
     "@helia/car": "^6.0.0",
     "@helia/delegated-routing-v1-http-api-client": "^9.0.0",
     "@helia/dnslink": "^2.0.0",
+    "@helia/http": "^4.0.2",
     "@helia/interface": "^7.0.0",
     "@helia/ipns": "^10.0.0",
-    "@helia/routers": "^5.1.1",
+    "@helia/libp2p": "^1.0.3",
     "@helia/unixfs": "^8.0.0",
     "@ipld/dag-cbor": "^10.0.1",
     "@ipld/dag-json": "^11.0.0",
@@ -186,11 +187,11 @@
     "@multiformats/dns": "^1.0.13",
     "@multiformats/multiaddr": "^13.0.1",
     "@multiformats/multiaddr-matcher": "^3.0.2",
+    "cborg": "^5.1.6",
     "file-type": "^22.0.1",
     "helia": "^7.0.0",
     "interface-blockstore": "^7.0.1",
     "ipfs-unixfs-exporter": "^16.0.2",
-    "ipns": "^11.0.0",
     "it-first": "^3.0.11",
     "it-last": "^3.0.11",
     "it-map": "^3.1.6",
@@ -208,9 +209,9 @@
   "devDependencies": {
     "@helia/dag-cbor": "^6.0.0",
     "@helia/dag-json": "^6.0.0",
-    "@helia/http": "^4.0.0",
     "@helia/json": "^6.0.0",
     "@ipld/car": "^5.4.3",
+    "@ipshipyard/crypto": "^1.1.0",
     "@libp2p/crypto": "^5.1.15",
     "@libp2p/logger": "^6.2.4",
     "@types/regexp.escape": "^2.0.0",
@@ -218,7 +219,6 @@
     "aegir": "^48.0.4",
     "blockstore-core": "^7.0.1",
     "browser-readablestream-to-it": "^2.0.12",
-    "cborg": "^5.1.0",
     "ipfs-unixfs-importer": "^17.0.1",
     "it-all": "^3.0.11",
     "magic-bytes.js": "^1.13.0",
@@ -229,8 +229,5 @@
   "browser": {
     "./dist/src/utils/libp2p-defaults.js": "./dist/src/utils/libp2p-defaults.browser.js"
   },
-  "sideEffects": false,
-  "overrides": {
-    "multiformats": "^14.0.2"
-  }
+  "sideEffects": false
 }

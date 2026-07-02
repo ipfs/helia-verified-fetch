@@ -15,6 +15,7 @@ import type { RangeHeader } from '../utils/get-range-header.ts'
 import type { AbortOptions } from '@libp2p/interface'
 import type { IdentityNode, RawNode, UnixFSEntry, UnixFSFile } from 'ipfs-unixfs-exporter'
 import type { CID } from 'multiformats/cid'
+import { withArrayBuffer } from 'uint8arrays/with-array-buffer'
 
 const EMPTY = new Uint8Array(0)
 
@@ -147,15 +148,17 @@ export class UnixFSPlugin extends BasePlugin {
             Name: dirEntry.name,
             Hash: dirEntry.cid,
 
-            // @ts-expect-error needs https://github.com/ipfs/js-ipfs-unixfs/pull/484
-            Tsize: dirEntry.size
+            // TODO: downcast bigint to number until @ipld/dag-pb supports the
+            // correct field type
+            Tsize: Number(dirEntry.size)
           })
         }
 
-        block = dagPb.encode({
+        // TODO: remove withArrayBuffer when dag-pb is explicit about it's return type
+        block = withArrayBuffer(dagPb.encode({
           Data: data.Data,
           Links: links.sort((a, b) => a.Name?.localeCompare(b.Name ?? '') ?? 0)
-        })
+        }))
       }
 
       return okResponse(resource, block, {

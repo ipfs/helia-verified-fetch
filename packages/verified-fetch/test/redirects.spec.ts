@@ -1,7 +1,7 @@
 import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
-import { createHelia } from 'helia'
+import { createHelia } from './fixtures/create-offline-helia.ts'
 import last from 'it-last'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { VerifiedFetch } from '../src/verified-fetch.ts'

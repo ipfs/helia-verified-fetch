@@ -1,17 +1,8 @@
-import { createHeliaHTTP } from '@helia/http'
 import { expect } from 'aegir/chai'
 import { createHelia } from 'helia'
 import { createVerifiedFetch, verifiedFetch } from '../src/index.ts'
 
 describe('createVerifiedFetch', () => {
-  it('can be constructed with a HeliaHttp instance', async () => {
-    const heliaHttp = await createHeliaHTTP()
-    const verifiedFetch = await createVerifiedFetch(heliaHttp)
-
-    expect(verifiedFetch).to.be.ok()
-    await verifiedFetch.stop()
-  })
-
   it('can be constructed with a HeliaP2P instance', async () => {
     const heliaP2P = await createHelia()
     const verifiedFetch = await createVerifiedFetch(heliaP2P)

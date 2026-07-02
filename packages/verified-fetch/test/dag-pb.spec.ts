@@ -56,10 +56,8 @@ const fixtures: Record<string, UnixFSFixtures> = {
               Data: expected.Data,
               Links: expected.Links.map((link) => ({
                 Hash: link.Hash,
-                Name: link.Name?.substring(2)
-
-                // TODO: enable after https://github.com/ipfs/js-ipfs-unixfs/pull/484
-                // Tsize: link.Tsize
+                Name: link.Name?.substring(2),
+                Tsize: link.Tsize
               }))
             })
         }

@@ -1,8 +1,7 @@
 import { DoesNotExistError } from '@helia/unixfs/errors'
-import { peerIdFromCID, peerIdFromString } from '@libp2p/peer-id'
 import { exporter, InvalidParametersError, walkPath } from 'ipfs-unixfs-exporter'
 import toBuffer from 'it-to-buffer'
-import { CID } from 'multiformats/cid'
+import { CID, type MultihashDigest } from 'multiformats/cid'
 import QuickLRU from 'quick-lru'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CODEC_LIBP2P_KEY, SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS } from './constants.ts'
@@ -17,6 +16,13 @@ import type { Helia, ProviderOptions, SessionBlockstore } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { PathEntry, UnixFSEntry } from 'ipfs-unixfs-exporter'
 import type { ProgressOptions } from 'progress-events'
+import last from 'it-last'
+import { splitIPNSName } from './utils/ipfs-path-to-cid.ts'
+import { base36 } from 'multiformats/bases/base36'
+import * as Digest from 'multiformats/hashes/digest'
+import { base58btc } from 'multiformats/bases/base58'
+import * as cborg from 'cborg'
+import { badRequestResponse } from './utils/responses.ts'
 
 // 1 year in seconds for ipfs content
 const IPFS_CONTENT_TTL = 29030400
@@ -137,7 +143,7 @@ export class URLResolver implements URLResolverInterface {
 
     if (result.namespace === 'ipns') {
       // dnslink resolved to IPNS name
-      const ipnsUrl = new URL(`ipns://${result.peerId}${path}`)
+      const ipnsUrl = new URL(`ipns://${base58btc.baseEncode(result.value.bytes)}${path}`)
       resolveResult = await this.resolveIPNSName(ipnsUrl, serverTiming, options)
     } else if (result.namespace === 'ipfs') {
       // dnslink resolved to CID
@@ -161,11 +167,22 @@ export class URLResolver implements URLResolverInterface {
   }
 
   private async resolveIPNSName (url: URL, serverTiming: ServerTiming, options?: ResolveURLOptions): Promise<ResolveURLResult | Response> {
-    const peerId = peerIdFromString(url.hostname)
-    const result = await serverTiming.time(abbreviate('ipns.resolve'), '', this.components.ipnsResolver.resolve(peerId, options))
-    const path = normalizePath(`${result.path ?? ''}/${url.pathname}`)
+    const multihash = parseMultihash(url.hostname)
+    const result = await serverTiming.time(abbreviate('ipns.resolve'), '', last(this.components.ipnsResolver.resolve(multihash, options)))
 
-    const ipfsUrl = new URL(`ipfs://${result.cid}${path}`)
+    if (result == null) {
+      throw new InvalidParametersError(`Could not resolve IPNS name`)
+    }
+
+    const {
+      ns, name, path
+    } = splitIPNSName(result.value)
+
+    if (ns !== 'ipfs') {
+      throw new InvalidParametersError(`IPNS name resolved to non-IPFS path`)
+    }
+
+    const ipfsUrl = new URL(`ipfs://${name}${normalizePath(`${path ?? ''}/${url.pathname}`)}`)
     const ipfsResult = await this.resolveIPFSPath(ipfsUrl, serverTiming, options)
 
     if (ipfsResult instanceof Response) {
@@ -173,9 +190,11 @@ export class URLResolver implements URLResolverInterface {
     }
 
     let expires: Date | undefined
+    const data = cborg.decode(result.record.data ?? new Uint8Array(0))
 
-    if (result.record.validityType === 'EOL') {
-      expires = new Date(result.record.validity)
+    // 0 is EOL
+    if (data.ValidityType === 0 && data.Validity instanceof Uint8Array) {
+      expires = new Date(uint8ArrayToString(data.Validity))
     }
 
     return {
@@ -197,7 +216,7 @@ export class URLResolver implements URLResolverInterface {
 
     if (walkPathResult.terminalElement.cid.code === CODEC_LIBP2P_KEY) {
       // special case, peer id encoded as libp2p key CID - interpret as IPNS
-      const ipnsUrl = new URL(`ipns://${peerIdFromCID(walkPathResult.terminalElement.cid)}`)
+      const ipnsUrl = new URL(`ipns://${base58btc.baseEncode(walkPathResult.terminalElement.cid.multihash.bytes)}`)
       const ipnsResult = await this.resolveIPNSName(ipnsUrl, serverTiming, options)
 
       if (ipnsResult instanceof Response) {
@@ -338,4 +357,12 @@ function normalizePath (path: string): string {
   }
 
   return ''
+}
+
+function parseMultihash (str: string): MultihashDigest {
+  if (str.startsWith('1') || str.startsWith('Q')) {
+    return Digest.decode(base58btc.baseDecode(str))
+  }
+
+  return CID.parse(str).multihash
 }

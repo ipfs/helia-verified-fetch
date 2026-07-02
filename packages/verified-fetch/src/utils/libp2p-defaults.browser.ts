@@ -1,8 +1,8 @@
 import { webRTCDirect } from '@libp2p/webrtc'
 import { webSockets } from '@libp2p/websockets'
-import { libp2pDefaults } from 'helia'
+import { libp2pDefaults } from '@helia/libp2p'
 import type { ServiceFactoryMap } from './libp2p-types.ts'
-import type { DefaultLibp2pServices } from 'helia'
+import type { DefaultLibp2pServices } from '@helia/libp2p'
 import type { Libp2pOptions } from 'libp2p'
 
 type ServiceMap = Pick<DefaultLibp2pServices, 'dcutr' | 'identify' | 'keychain' | 'ping'>

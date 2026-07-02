@@ -1,7 +1,5 @@
 import { unixfs } from '@helia/unixfs'
-import { generateKeyPair } from '@libp2p/crypto/keys'
 import { defaultLogger } from '@libp2p/logger'
-import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import { MemoryBlockstore } from 'blockstore-core'
 import { base36 } from 'multiformats/bases/base36'
@@ -10,14 +8,14 @@ import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { URLResolver } from '../src/url-resolver.ts'
 import { ServerTiming } from '../src/utils/server-timing.ts'
-import { ipnsRecordStub } from './fixtures/ipns-stubs.ts'
 import type { DNSLink } from '@helia/dnslink'
-import type { IPNSResolver } from '@helia/ipns'
-import type { PeerId } from '@libp2p/interface'
+import { createIPNSRecord, type IPNSResolver } from '@helia/ipns'
 import type { Answer } from '@multiformats/dns'
-import type { Helia } from 'helia'
+import type { Helia, PrivateKey } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { StubbedInstance } from 'sinon-ts'
+import { ed25519Crypto } from '@ipshipyard/crypto'
+import { base58btc } from 'multiformats/bases/base58'
 
 describe('url-resolver', () => {
   let ipnsResolver: StubbedInstance<IPNSResolver>
@@ -147,11 +145,13 @@ describe('url-resolver', () => {
 
   describe('ipns://<dnsLinkDomain> URLs', () => {
     it('handles invalid DNSLinkDomains', async () => {
-      ipnsResolver.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
-      dnsLink.resolve.rejects(new Error('Unexpected failure from ipns dns query'))
+      ipnsResolver.resolve.returns((async function * () {
+        throw new Error('Unexpected failure from ipns resolve method')
+      })())
+      dnsLink.resolve.rejects(new Error('IPNS dns query failed'))
 
       await expect(resolver.resolve(new URL('dnslink://mydomain.com'))).to.eventually.be.rejected
-        .with.property('message', 'Unexpected failure from ipns dns query')
+        .with.property('message', 'IPNS dns query failed')
     })
 
     it('can parse a URL with DNSLinkDomain only', async () => {
@@ -265,19 +265,21 @@ describe('url-resolver', () => {
     })
 
     it('should return the correct TTL from the IPNS answer', async () => {
-      const key = await generateKeyPair('Ed25519')
-      const testPeerId = peerIdFromPrivateKey(key)
-
-      ipnsResolver.resolve.withArgs(testPeerId).resolves({
-        cid: txtFileCID,
-        path: '',
-        record: ipnsRecordStub({
-          peerId: testPeerId,
-          ttl: oneHourInNanoseconds
-        })
+      const value = `/ipfs/${txtFileCID}`
+      const privateKey = await ed25519Crypto().generatePrivateKey()
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000, {
+        ttlNs: oneHourInNanoseconds
       })
+      const name = base58btc.baseEncode(privateKey.publicKey.toMultihash().bytes)
 
-      const result = await resolver.resolve(new URL(`ipns://${testPeerId}`), new ServerTiming(), {
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
+
+      const result = await resolver.resolve(new URL(`ipns://${name}`), new ServerTiming(), {
         session: false
       })
 
@@ -290,117 +292,141 @@ describe('url-resolver', () => {
   })
 
   describe('ipns://<peerId> URLs', () => {
-    let testPeerId: PeerId
-    let base36CidPeerId: string
+    let privateKey: PrivateKey
+    let base36Cid: string
+    let base58btcMultihash: string
 
     beforeEach(async () => {
-      const key = await generateKeyPair('Ed25519')
-      testPeerId = peerIdFromPrivateKey(key)
-
-      base36CidPeerId = key.publicKey.toCID().toString(base36)
+      privateKey = await ed25519Crypto().generatePrivateKey()
+      base36Cid = privateKey.publicKey.toCID().toString(base36)
+      base58btcMultihash = base58btc.baseEncode(privateKey.publicKey.toMultihash().bytes)
     })
 
     it('handles valid PeerId resolve failures', async () => {
-      ipnsResolver.resolve.rejects(new Error('Unexpected failure from ipns resolve method'))
+      ipnsResolver.resolve.returns((async function * () {
+        throw new Error('Failure from ipns resolve method')
+      })())
       dnsLink.resolve.rejects(new Error('Unexpected failure from ipns dns query'))
 
-      await expect(resolver.resolve(new URL(`ipns://${testPeerId}`))).to.eventually.be.rejected
-        .with.property('message', 'Unexpected failure from ipns resolve method')
+      await expect(resolver.resolve(new URL(`ipns://${base36Cid}`))).to.eventually.be.rejected
+        .with.property('message', 'Failure from ipns resolve method')
     })
 
     it('can parse a URL with PeerId only', async () => {
-      ipnsResolver.resolve.withArgs(testPeerId).resolves({
-        cid: txtFileCID,
-        path: '',
-        record: ipnsRecordStub({ peerId: testPeerId })
-      })
+      const value = `/ipfs/${txtFileCID}`
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
 
       await assertMatchUrl(
-        new URL(`ipns://${testPeerId}`), {
+        new URL(`ipns://${base36Cid}`), {
           cid: txtFileCID,
-          url: new URL(`ipns://${testPeerId}`)
+          url: new URL(`ipns://${base36Cid}`)
         }
       )
     })
 
     it('can parse a base36 PeerId CID', async () => {
-      ipnsResolver.resolve.withArgs(testPeerId).resolves({
-        cid: txtFileCID,
-        path: '',
-        record: ipnsRecordStub({ peerId: testPeerId })
-      })
+      const value = `/ipfs/${txtFileCID}`
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
 
       await assertMatchUrl(
-        new URL(`ipns://${base36CidPeerId}`), {
+        new URL(`ipns://${base36Cid}`), {
           cid: txtFileCID,
-          url: new URL(`ipns://${base36CidPeerId}`)
+          url: new URL(`ipns://${base36Cid}`)
         }
       )
     })
 
     it('can parse a URL with PeerId+path', async () => {
-      ipnsResolver.resolve.withArgs(testPeerId).resolves({
-        cid: nestedDirectoryCID,
-        path: '',
-        record: ipnsRecordStub({ peerId: testPeerId })
-      })
+      const value = `/ipfs/${nestedDirectoryCID}`
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
 
       await assertMatchUrl(
-        new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`), {
+        new URL(`ipns://${base58btcMultihash}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`), {
           cid: txtFileCID,
-          url: new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
+          url: new URL(`ipns://${base58btcMultihash}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
         }
       )
     })
 
     it('can parse a URL with PeerId+path with a trailing slash', async () => {
-      ipnsResolver.resolve.withArgs(testPeerId).resolves({
-        cid: nestedDirectoryCID,
-        path: '',
-        record: ipnsRecordStub({ peerId: testPeerId })
-      })
+      const value = `/ipfs/${nestedDirectoryCID}`
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
 
       await assertMatchUrl(
-        new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt/`), {
+        new URL(`ipns://${base58btcMultihash}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt/`), {
           cid: txtFileCID,
-          url: new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt/`)
+          url: new URL(`ipns://${base58btcMultihash}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt/`)
         }
       )
     })
 
     it('can parse a URL with PeerId+queryString', async () => {
-      ipnsResolver.resolve.withArgs(testPeerId).resolves({
-        cid: txtFileCID,
-        path: '',
-        record: ipnsRecordStub({ peerId: testPeerId })
-      })
+      const value = `/ipfs/${txtFileCID}`
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
 
       await assertMatchUrl(
-        new URL(`ipns://${testPeerId}`), {
+        new URL(`ipns://${base58btcMultihash}`), {
           cid: txtFileCID,
-          url: new URL(`ipns://${testPeerId}`)
+          url: new URL(`ipns://${base58btcMultihash}`)
         }
       )
     })
 
     it('can parse a URL with PeerId+path+queryString', async () => {
-      ipnsResolver.resolve.withArgs(testPeerId).resolves({
-        cid: nestedDirectoryCID,
-        path: '',
-        record: ipnsRecordStub({ peerId: testPeerId })
-      })
+      const value = `/ipfs/${nestedDirectoryCID}`
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
 
       await assertMatchUrl(
-        new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`), {
+        new URL(`ipns://${base58btcMultihash}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`), {
           cid: txtFileCID,
-          url: new URL(`ipns://${testPeerId}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
+          url: new URL(`ipns://${base58btcMultihash}/1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt`)
         }
       )
     })
 
     it('should parse an ipns:// url with a path that resolves to a CID with a path', async () => {
-      const key = await generateKeyPair('Ed25519')
-      const peerId = peerIdFromPrivateKey(key)
       const recordPath = 'foo'
       const requestPath = '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt'
 
@@ -409,23 +435,25 @@ describe('url-resolver', () => {
       const dirCid = await fs.addDirectory()
       const cid = await fs.cp(nestedDirectoryCID, dirCid, recordPath)
 
-      ipnsResolver.resolve.withArgs(peerId).resolves({
-        cid,
-        path: recordPath,
-        record: ipnsRecordStub({ peerId: testPeerId })
-      })
+      const value = `/ipfs/${cid}/${recordPath}`
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
 
       await assertMatchUrl(
-        new URL(`ipns://${peerId}/${requestPath}`), {
+        new URL(`ipns://${base58btcMultihash}/${requestPath}`), {
           cid: txtFileCID,
-          url: new URL(`ipns://${peerId}/${requestPath}`)
+          url: new URL(`ipns://${base58btcMultihash}/${requestPath}`)
         }
       )
     })
 
     it('should parse an ipns:// url with a path that resolves to a CID with a path with a trailing slash', async () => {
-      const key = await generateKeyPair('Ed25519')
-      const peerId = peerIdFromPrivateKey(key)
       const recordPath = 'foo/'
       const requestPath = '1 - Barrel - Part 1/1 - Barrel - Part 1 - alt.txt'
 
@@ -434,23 +462,25 @@ describe('url-resolver', () => {
       const dirCid = await fs.addDirectory()
       const cid = await fs.cp(nestedDirectoryCID, dirCid, 'foo')
 
-      ipnsResolver.resolve.withArgs(peerId).resolves({
-        cid,
-        path: recordPath,
-        record: ipnsRecordStub({ peerId: testPeerId })
-      })
+      const value = `/ipfs/${cid}/${recordPath}`
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
 
       await assertMatchUrl(
-        new URL(`ipns://${peerId}/${requestPath}`), {
+        new URL(`ipns://${base58btcMultihash}/${requestPath}`), {
           cid: txtFileCID,
-          url: new URL(`ipns://${peerId}/${requestPath}`)
+          url: new URL(`ipns://${base58btcMultihash}/${requestPath}`)
         }
       )
     })
 
     it('should parse an ipns:// url with a path that resolves to a CID with a path with a trailing slash', async () => {
-      const key = await generateKeyPair('Ed25519')
-      const peerId = peerIdFromPrivateKey(key)
       const recordPath = '/foo/////bar//'
       const requestPath = '1 - Barrel - Part 1////////1 - Barrel - Part 1 - alt.txt'
 
@@ -460,16 +490,20 @@ describe('url-resolver', () => {
       const barCid = await fs.cp(nestedDirectoryCID, dirCid, 'bar')
       const cid = await fs.cp(barCid, dirCid, 'foo')
 
-      ipnsResolver.resolve.withArgs(peerId).resolves({
-        cid,
-        path: recordPath,
-        record: ipnsRecordStub({ peerId: testPeerId })
-      })
+      const value = `/ipfs/${cid}/${recordPath}`
+      const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+      ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+        yield {
+          record,
+          value
+        }
+      })())
 
       await assertMatchUrl(
-        new URL(`ipns://${peerId}/${requestPath}`), {
+        new URL(`ipns://${base58btcMultihash}/${requestPath}`), {
           cid: txtFileCID,
-          url: new URL(`ipns://${peerId}/${requestPath}`)
+          url: new URL(`ipns://${base58btcMultihash}/${requestPath}`)
         }
       )
     })

@@ -1,16 +1,17 @@
 import { dagCbor } from '@helia/dag-cbor'
-import { generateKeyPair } from '@libp2p/crypto/keys'
+import { ed25519Crypto } from '@ipshipyard/crypto'
 import { stop } from '@libp2p/interface'
-import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
-import { createIPNSRecord, marshalIPNSRecord, unmarshalIPNSRecord } from 'ipns'
 import { stubInterface } from 'sinon-ts'
 import { MEDIA_TYPE_IPNS_RECORD } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from '@helia/interface'
-import type { IPNSResolver } from '@helia/ipns'
+import { createIPNSRecord, IPNSEntry, type IPNSResolver } from '@helia/ipns'
 import type { StubbedInstance } from 'sinon-ts'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { base58btc } from 'multiformats/bases/base58'
 
 describe('ipns records', () => {
   let helia: Helia
@@ -36,18 +37,20 @@ describe('ipns records', () => {
     const c = dagCbor(helia)
     const cid = await c.add(obj)
 
-    const privateKey = await generateKeyPair('Ed25519')
-    const record = await createIPNSRecord(privateKey, cid, 1, 10_000)
-    const peerId = peerIdFromPrivateKey(privateKey)
+    const privateKey = await ed25519Crypto().generatePrivateKey()
+    const record = await createIPNSRecord(privateKey, `/ipfs/${cid}`, 1, 10_000)
+    const name = base58btc.baseEncode(privateKey.publicKey.toMultihash().bytes)
 
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid,
-      record
-    })
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value: `/ipfs/${cid}`
+      }
+    })())
 
-    const marshaledRecord = marshalIPNSRecord(record)
+    const marshaledRecord = IPNSEntry.encode(record)
 
-    const resp = await verifiedFetch.fetch(`ipns://${peerId}`, {
+    const resp = await verifiedFetch.fetch(`ipns://${name}`, {
       headers: {
         accept: MEDIA_TYPE_IPNS_RECORD
       }
@@ -56,16 +59,16 @@ describe('ipns records', () => {
     expect(resp.headers.get('content-type')).to.equal(MEDIA_TYPE_IPNS_RECORD)
     expect(resp.headers.get('content-length')).to.equal(marshaledRecord.byteLength.toString())
     expect(resp.headers.get('x-ipfs-roots')).to.equal(cid.toV1().toString())
-    expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${peerId}.bin"`)
+    expect(resp.headers.get('content-disposition')).to.equal(`attachment; filename="${name}.bin"`)
     const maxAge = Math.round(Number((record.ttl ?? 0n) / BigInt(1e9)))
     expect(resp.headers.get('cache-control')).to.match(new RegExp(`^public, max-age=${maxAge}, stale-while-revalidate=\\d+, stale-if-error=\\d+$`))
-    expect(resp.headers.get('expires')).to.equal(new Date(record.validity).toUTCString())
+    expect(resp.headers.get('expires')).to.equal(new Date(uint8ArrayToString(record.validity ?? new Uint8Array(0))).toUTCString())
 
     const buf = new Uint8Array(await resp.arrayBuffer())
-    expect(marshalIPNSRecord(record)).to.equalBytes(buf)
+    expect(IPNSEntry.encode(record)).to.equalBytes(buf)
 
-    const output = unmarshalIPNSRecord(buf)
-    expect(output.value).to.deep.equal(`/ipfs/${cid}`)
+    const output = IPNSEntry.decode(buf)
+    expect(output.value).to.equalBytes(uint8ArrayFromString(`/ipfs/${cid}`))
   })
 
   it('should override filename when fetching a raw IPNS record', async () => {
@@ -75,18 +78,20 @@ describe('ipns records', () => {
     const c = dagCbor(helia)
     const cid = await c.add(obj)
 
-    const privateKey = await generateKeyPair('Ed25519')
-    const record = await createIPNSRecord(privateKey, cid, 1, 10_000)
-    const peerId = peerIdFromPrivateKey(privateKey)
+    const privateKey = await ed25519Crypto().generatePrivateKey()
+    const record = await createIPNSRecord(privateKey, `/ipfs/${cid}`, 1, 10_000)
+    const name = base58btc.baseEncode(privateKey.publicKey.toMultihash().bytes)
 
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid,
-      record
-    })
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value: `/ipfs/${cid}`
+      }
+    })())
 
     const filename = 'foo.bin'
 
-    const resp = await verifiedFetch.fetch(`ipns://${peerId}?filename=${filename}`, {
+    const resp = await verifiedFetch.fetch(`ipns://${name}?filename=${filename}`, {
       headers: {
         accept: MEDIA_TYPE_IPNS_RECORD
       }

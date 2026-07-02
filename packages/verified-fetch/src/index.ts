@@ -856,11 +856,9 @@
  * fetch if not.
  */
 
-import { bitswap, trustlessGateway } from '@helia/block-brokers'
-import { delegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
-import { httpGatewayRouting, libp2pRouting } from '@helia/routers'
+import { delegatedRoutingV1HttpApiClient, delegatedRoutingV1HttpApiClientContentRouting, delegatedRoutingV1HttpApiClientPeerRouting } from '@helia/delegated-routing-v1-http-api-client'
 import { dns } from '@multiformats/dns'
-import { createHelia } from 'helia'
+import { createHeliaLight } from 'helia'
 import { createLibp2p } from 'libp2p'
 import { getLibp2pConfig } from './utils/libp2p-defaults.ts'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.ts'
@@ -868,7 +866,7 @@ import type { RangeHeader } from './utils/get-range-header.ts'
 import type { ServerTiming } from './utils/server-timing.ts'
 import type { RequestedMimeType } from './verified-fetch.ts'
 import type { DNSLink, ResolveProgressEvents as ResolveDNSLinkProgressEvents } from '@helia/dnslink'
-import type { GetBlockProgressEvents, Helia, ProviderOptions, Routing } from '@helia/interface'
+import type { GetBlockProgressEvents, Helia, ProviderOptions } from '@helia/interface'
 import type { ResolveProgressEvents as ResolveIPNSNameProgressEvents, IPNSRoutingProgressEvents, IPNSResolver } from '@helia/ipns'
 import type { AbortOptions, Libp2p, ServiceMap, Logger, PeerId, PublicKey } from '@libp2p/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
@@ -879,6 +877,12 @@ import type { ExporterProgressEvents, PathEntry } from 'ipfs-unixfs-exporter'
 import type { Libp2pOptions } from 'libp2p'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
+import { withLibp2p } from '@helia/libp2p'
+import { withBitswap } from '@helia/bitswap'
+import * as dagCbor from '@ipld/dag-cbor'
+import * as dagJson from '@ipld/dag-json'
+import * as json from 'multiformats/codecs/json'
+import { withHTTP } from '@helia/http'
 
 export {
   MEDIA_TYPE_DAG_CBOR,
@@ -1109,11 +1113,18 @@ export interface CreateVerifiedFetchInit {
   dnsResolvers?: DNSResolver[] | DNSResolvers
 
   /**
-   * By default sha256, sha512 and identity hashes are supported for
-   * retrieval operations. To retrieve blocks by CIDs using other hashes
-   * pass appropriate MultihashHashers here.
+   * By default sha256 and identity hashes are supported for retrieval
+   * operations. To retrieve blocks by CIDs using other hashes pass
+   * appropriate MultihashHashers here.
    */
   hashers?: HeliaInit['hashers']
+
+  /**
+   * By default raw, dag-pb, dag-json, dag-cbor, json and cbor codecs are
+   * supported for retrieval operations. To retrieve blocks with CIDs that use
+   * other codecs pass appropriate BlockCodecs here.
+   */
+  codecs?: HeliaInit['codecs']
 
   /**
    * By default we will not connect to any HTTP Gateways providers over local or
@@ -1385,6 +1396,7 @@ export interface URLResolver {
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
   let libp2p: Libp2p<any> | undefined
+
   if (!isHelia(init)) {
     const dns = createDns(init?.dnsResolvers)
 
@@ -1393,35 +1405,40 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
 
     const delegatedRouters = init?.routers ?? ['https://delegated-ipfs.dev']
     for (let index = 0; index < delegatedRouters.length; index++) {
-      libp2pConfig.services[`delegatedRouting${index}`] = delegatedRoutingV1HttpApiClient({
+      libp2pConfig.services[`delegatedContentRouting${index}`] = delegatedRoutingV1HttpApiClientContentRouting({
+        url: delegatedRouters[index]
+      })
+      libp2pConfig.services[`delegatedPeerRouting${index}`] = delegatedRoutingV1HttpApiClientPeerRouting({
         url: delegatedRouters[index]
       })
     }
+
     // merge any passed options from init.libp2pConfig into libp2pConfig if it exists
     if (init?.libp2pConfig != null) {
       Object.assign(libp2pConfig, init.libp2pConfig)
     }
+
     libp2p = await createLibp2p(libp2pConfig)
 
-    const blockBrokers = [
-      bitswap()
-    ]
-    const routers: Array<Partial<Routing>> = [
-      libp2pRouting(libp2p)
-    ]
-    if (init?.gateways == null || init.gateways.length > 0) {
-      // if gateways is null, or set to a non-empty array, use trustless gateways.
-      blockBrokers.push(trustlessGateway({ allowInsecure: init?.allowInsecure, allowLocal: init?.allowLocal }))
-      routers.push(httpGatewayRouting({ gateways: init?.gateways ?? ['https://trustless-gateway.link'] }))
-    }
-
-    init = await createHelia({
-      libp2p,
-      blockBrokers,
+    init = await withBitswap(withLibp2p(withHTTP(createHeliaLight({
       dns,
-      routers,
-      hashers: init?.hashers
-    })
+      hashers: init?.hashers,
+      codecs: [
+        dagCbor,
+        dagJson,
+        json,
+        ...(init?.codecs ?? [])
+      ]
+    }), {
+      delegatedRouters,
+      recursiveGateways: init?.gateways ?? [
+        'https://trustless-gateway.link'
+      ],
+      trustlessGatewayBlockBrokerInit: {
+        allowInsecure: init?.allowInsecure,
+        allowLocal: init?.allowLocal
+      }
+    }), libp2p)).start()
     init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config: %j', libp2pConfig)
   }
 

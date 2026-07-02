@@ -827,7 +827,7 @@ describe('@helia/verified-fetch', () => {
       })
 
       const providers = [
-        peerIdFromString('12D3KooWRBy97UB99e3J6hiPesre1MZeuNQvfan4gBziswrRJsNK')
+        peerIdFromString('12D3KooWRBy97UB99e3J6hiPesre1MZeuNQvfan4gBziswrRJsNK').toCID()
       ]
 
       const p = verifiedFetch.fetch('/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA', {
