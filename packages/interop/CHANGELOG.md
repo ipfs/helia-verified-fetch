@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-interop-v5.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.2.2...@helia/verified-fetch-interop-5.0.0) (2026-07-02)
+
+### ⚠ BREAKING CHANGES
+
+* update helia to v7.x.x (#367)
+
+### Dependencies
+
+* update helia to v7.x.x ([#367](https://github.com/ipfs/helia-verified-fetch/issues/367)) ([55d0b3d](https://github.com/ipfs/helia-verified-fetch/commit/55d0b3dd937a2f0fcb9a1313460adbc9eb7d0f39))
+
 ## [@helia/verified-fetch-interop-v4.2.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-4.2.1...@helia/verified-fetch-interop-4.2.2) (2026-05-22)
 
 ### Bug Fixes
