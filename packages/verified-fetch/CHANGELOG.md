@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-v8.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.16...@helia/verified-fetch-8.0.0) (2026-07-02)
+
+### ⚠ BREAKING CHANGES
+
+* update helia to v7.x.x (#367)
+
+### Dependencies
+
+* update helia to v7.x.x ([#367](https://github.com/ipfs/helia-verified-fetch/issues/367)) ([55d0b3d](https://github.com/ipfs/helia-verified-fetch/commit/55d0b3dd937a2f0fcb9a1313460adbc9eb7d0f39))
+
 ## [@helia/verified-fetch-v7.2.16](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.15...@helia/verified-fetch-7.2.16) (2026-06-08)
 
 ### Bug Fixes
