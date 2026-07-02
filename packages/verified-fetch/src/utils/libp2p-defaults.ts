@@ -1,9 +1,7 @@
+import { libp2pDefaults } from '@helia/libp2p'
 import { kadDHT } from '@libp2p/kad-dht'
-import { libp2pDefaults } from 'helia'
-import { ipnsSelector } from 'ipns/selector'
-import { ipnsValidator } from 'ipns/validator'
 import type { ServiceFactoryMap } from './libp2p-types.ts'
-import type { DefaultLibp2pServices } from 'helia'
+import type { DefaultLibp2pServices } from '@helia/libp2p'
 import type { Libp2pOptions } from 'libp2p'
 
 type ServiceMap = Pick<DefaultLibp2pServices, 'autoNAT' | 'dcutr' | 'dht' | 'identify' | 'keychain' | 'ping' | 'upnp'>
@@ -17,13 +15,7 @@ export function getLibp2pConfig (): Libp2pOptions & Required<Pick<Libp2pOptions,
     autoNAT: libp2pDefaultOptions.services.autoNAT,
     dcutr: libp2pDefaultOptions.services.dcutr,
     dht: kadDHT({
-      clientMode: true,
-      validators: {
-        ipns: ipnsValidator
-      },
-      selectors: {
-        ipns: ipnsSelector
-      }
+      clientMode: true
     }),
     identify: libp2pDefaultOptions.services.identify,
     keychain: libp2pDefaultOptions.services.keychain,

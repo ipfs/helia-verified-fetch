@@ -1,11 +1,10 @@
 import { dagCbor } from '@helia/dag-cbor'
 import { dagJson } from '@helia/dag-json'
-import { ipns } from '@helia/ipns'
+import { ipns, IPNSEntry } from '@helia/ipns'
 import * as ipldDagCbor from '@ipld/dag-cbor'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import * as cborg from 'cborg'
-import { marshalIPNSRecord } from 'ipns'
 import { base36 } from 'multiformats/bases/base36'
 import { CID } from 'multiformats/cid'
 import * as raw from 'multiformats/codecs/raw'
@@ -292,7 +291,7 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
 
     const buf = await resp.arrayBuffer()
-    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+    expect(new Uint8Array(buf)).to.equalBytes(IPNSEntry.encode(record.record))
   })
 
   it('should support fetching IPNS records by IPNS URL and base36 CID', async () => {
@@ -305,7 +304,7 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
 
     const buf = await resp.arrayBuffer()
-    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+    expect(new Uint8Array(buf)).to.equalBytes(IPNSEntry.encode(record.record))
   })
 
   it('should support fetching IPNS records by IPNS URL and default CID', async () => {
@@ -318,7 +317,7 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
 
     const buf = await resp.arrayBuffer()
-    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+    expect(new Uint8Array(buf)).to.equalBytes(IPNSEntry.encode(record.record))
   })
 
   it('should support fetching IPNS records by IPNS path and public key (base58btc multihash)', async () => {
@@ -331,7 +330,7 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
 
     const buf = await resp.arrayBuffer()
-    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+    expect(new Uint8Array(buf)).to.equalBytes(IPNSEntry.encode(record.record))
   })
 
   it('should support fetching IPNS records by IPNS path and base36 CID', async () => {
@@ -344,7 +343,7 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
 
     const buf = await resp.arrayBuffer()
-    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+    expect(new Uint8Array(buf)).to.equalBytes(IPNSEntry.encode(record.record))
   })
 
   it('should support fetching IPNS records by IPNS path and default CID', async () => {
@@ -357,7 +356,7 @@ describe('accept header', () => {
     expect(resp.headers.get('content-type')).to.equal('application/vnd.ipfs.ipns-record')
 
     const buf = await resp.arrayBuffer()
-    expect(new Uint8Array(buf)).to.equalBytes(marshalIPNSRecord(record.record))
+    expect(new Uint8Array(buf)).to.equalBytes(IPNSEntry.encode(record.record))
   })
 
   shouldNotAcceptCborWith({

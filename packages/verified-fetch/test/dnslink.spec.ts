@@ -1,18 +1,16 @@
+import { withHTTP } from '@helia/http'
+import { createIPNSRecord } from '@helia/ipns'
 import { unixfs } from '@helia/unixfs'
-import { generateKeyPair } from '@libp2p/crypto/keys'
+import { ed25519Crypto } from '@ipshipyard/crypto'
 import { stop } from '@libp2p/interface'
-import { peerIdFromPrivateKey } from '@libp2p/peer-id'
 import { expect } from 'aegir/chai'
 import { createHelia } from 'helia'
-import { createIPNSRecord } from 'ipns'
 import { stubInterface } from 'sinon-ts'
 import { createVerifiedFetch } from '../src/index.ts'
 import type { VerifiedFetch } from '../src/index.ts'
 import type { DNSLink } from '@helia/dnslink'
 import type { IPNSResolver } from '@helia/ipns'
-import type { PeerId } from '@libp2p/interface'
-import type { Helia } from 'helia'
-import type { IPNSRecordV1V2 } from 'ipns'
+import type { Helia, PrivateKey } from 'helia'
 import type { CID } from 'multiformats'
 import type { StubbedInstance } from 'sinon-ts'
 
@@ -21,8 +19,7 @@ describe('DNSLink', () => {
   let fetch: VerifiedFetch
   let dnsLink: StubbedInstance<DNSLink>
   let ipnsResolver: StubbedInstance<IPNSResolver>
-  let record: IPNSRecordV1V2
-  let peerId: PeerId
+  let privateKey: PrivateKey
   let rootCid: CID
   let level2DirCid: CID
   let level1DirCid: CID
@@ -30,7 +27,7 @@ describe('DNSLink', () => {
   let domain: string
 
   beforeEach(async () => {
-    helia = await createHelia()
+    helia = await withHTTP(createHelia()).start()
     dnsLink = stubInterface()
     ipnsResolver = stubInterface()
     fetch = await createVerifiedFetch(helia, {
@@ -45,9 +42,7 @@ describe('DNSLink', () => {
     level1DirCid = await fs.cp(level2DirCid, emptyDirCid, 'bar')
     rootCid = await fs.cp(level1DirCid, emptyDirCid, 'foo')
 
-    const privateKey = await generateKeyPair('Ed25519')
-    record = await createIPNSRecord(privateKey, rootCid, 1, 10_000)
-    peerId = peerIdFromPrivateKey(privateKey)
+    privateKey = await ed25519Crypto().generatePrivateKey()
     domain = 'dnslink-test.example.org'
   })
 
@@ -111,14 +106,19 @@ describe('DNSLink', () => {
   })
 
   it('should resolve a URL to a DNSLink record that resolves to an IPNS record', async () => {
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid: fileCid,
-      record
-    })
+    const value = `/ipfs/${fileCid}`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
     dnsLink.resolve.withArgs(domain).resolves([{
       namespace: 'ipns',
-      peerId,
+      value: privateKey.publicKey.toMultihash(),
       path: '',
       answer: stubInterface()
     }])
@@ -133,14 +133,19 @@ describe('DNSLink', () => {
   })
 
   it('should resolve a URL to a DNSLink record with a path that resolves to an IPNS record', async () => {
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid: rootCid,
-      record
-    })
+    const value = `/ipfs/${rootCid}`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
     dnsLink.resolve.withArgs(domain).resolves([{
       namespace: 'ipns',
-      peerId,
+      value: privateKey.publicKey.toMultihash(),
       path: '/foo/bar/baz.bin',
       answer: stubInterface()
     }])
@@ -155,15 +160,19 @@ describe('DNSLink', () => {
   })
 
   it('should resolve a URL to a DNSLink record that resolves to an IPNS record with a path', async () => {
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid: rootCid,
-      path: '/foo/bar/baz.bin',
-      record
-    })
+    const value = `/ipfs/${rootCid}/foo/bar/baz.bin`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
     dnsLink.resolve.withArgs(domain).resolves([{
       namespace: 'ipns',
-      peerId,
+      value: privateKey.publicKey.toMultihash(),
       path: '',
       answer: stubInterface()
     }])
@@ -178,15 +187,19 @@ describe('DNSLink', () => {
   })
 
   it('should resolve a URL to a DNSLink record with a path that resolves to an IPNS record with a path', async () => {
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid: rootCid,
-      path: '/foo',
-      record
-    })
+    const value = `/ipfs/${rootCid}/foo`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
     dnsLink.resolve.withArgs(domain).resolves([{
       namespace: 'ipns',
-      peerId,
+      value: privateKey.publicKey.toMultihash(),
       path: '/bar/baz.bin',
       answer: stubInterface()
     }])
@@ -235,14 +248,19 @@ describe('DNSLink', () => {
   })
 
   it('should resolve a URL with a path to a DNSLink record that resolves to an IPNS record', async () => {
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid: rootCid,
-      record
-    })
+    const value = `/ipfs/${rootCid}`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
     dnsLink.resolve.withArgs(domain).resolves([{
       namespace: 'ipns',
-      peerId,
+      value: privateKey.publicKey.toMultihash(),
       path: '',
       answer: stubInterface()
     }])
@@ -257,15 +275,19 @@ describe('DNSLink', () => {
   })
 
   it('should resolve a URL with a path to a DNSLink record that resolves to an IPNS record with a path', async () => {
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid: rootCid,
-      path: '/foo/bar',
-      record
-    })
+    const value = `/ipfs/${rootCid}/foo/bar`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
     dnsLink.resolve.withArgs(domain).resolves([{
       namespace: 'ipns',
-      peerId,
+      value: privateKey.publicKey.toMultihash(),
       path: '',
       answer: stubInterface()
     }])
@@ -280,14 +302,19 @@ describe('DNSLink', () => {
   })
 
   it('should resolve a URL with a path to a DNSLink record with a path that resolves to an IPNS record', async () => {
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid: rootCid,
-      record
-    })
+    const value = `/ipfs/${rootCid}`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
     dnsLink.resolve.withArgs(domain).resolves([{
       namespace: 'ipns',
-      peerId,
+      value: privateKey.publicKey.toMultihash(),
       path: '/foo/bar',
       answer: stubInterface()
     }])
@@ -302,16 +329,20 @@ describe('DNSLink', () => {
   })
 
   it('should resolve a URL with a path to a DNSLink record with a path that resolves to an IPNS record with a path', async () => {
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid: rootCid,
-      path: '/foo',
-      record
-    })
+    const value = `/ipfs/${rootCid}/foo`
+    const record = await createIPNSRecord(privateKey, value, 1, 10_000)
+
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value
+      }
+    })())
 
     const domain = 'dnslink-test.example.org'
     dnsLink.resolve.withArgs(domain).resolves([{
       namespace: 'ipns',
-      peerId,
+      value: privateKey.publicKey.toMultihash(),
       path: '/bar',
       answer: stubInterface()
     }])

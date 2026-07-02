@@ -1,10 +1,14 @@
+import { IPNSEntry } from '@helia/ipns'
+import * as dagCbor from '@ipld/dag-cbor'
 import { peerIdFromString } from '@libp2p/peer-id'
-import { marshalIPNSRecord } from 'ipns'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CONTENT_TYPE_IPNS, MEDIA_TYPE_IPNS_RECORD } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
+import { splitIPNSName } from '../utils/ipfs-path-to-cid.ts'
 import { badRequestResponse, okResponse } from '../utils/responses.ts'
 import { BasePlugin } from './plugin-base.ts'
 import type { PluginContext } from '../index.ts'
+import type { IPNSRecordData, IPNSResolveResult } from '@helia/ipns'
 import type { PeerId } from '@libp2p/interface'
 
 /**
@@ -43,11 +47,26 @@ export class IpnsRecordPlugin extends BasePlugin {
       return badRequestResponse(resource, err)
     }
 
-    const result = await ipnsResolver.resolve(peerId, context)
-    const block = marshalIPNSRecord(result.record)
+    let result: IPNSResolveResult | undefined
 
-    if (result.record.validityType === 'EOL') {
-      const eol = new Date(result.record.validity)
+    for await (const res of ipnsResolver.resolve(peerId.toCID().multihash, context)) {
+      result = res
+    }
+
+    if (result == null) {
+      const err = new Error(`Could not resolve IPNS record for ${peerId}`)
+      this.log.error('could not parse peer id from IPNS url %s', resource, err)
+
+      return badRequestResponse(resource, err)
+    }
+
+    const block = IPNSEntry.encode(result.record)
+    const data = dagCbor.decode<IPNSRecordData>(result.record.data ?? new Uint8Array(0))
+
+    // 0 is EOL
+    // @ts-expect-error TODO: remove TypeScript enums
+    if (data.ValidityType === 0 && data.Validity instanceof Uint8Array) {
+      const eol = new Date(uint8ArrayToString(data.Validity))
 
       context.expires = eol
       context.ttl = Math.round(Number((result.record.ttl ?? 0n) / BigInt(1e9)))
@@ -61,7 +80,7 @@ export class IpnsRecordPlugin extends BasePlugin {
         'content-disposition': `attachment; ${
           getContentDispositionFilename(url.searchParams.get('filename') ?? `${peerId}${CONTENT_TYPE_IPNS.extension}`)
         }`,
-        'x-ipfs-roots': result.cid.toV1().toString(),
+        'x-ipfs-roots': splitIPNSName(result.value).name,
         'accept-ranges': 'none'
       }
     })

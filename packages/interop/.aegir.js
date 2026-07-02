@@ -1,7 +1,10 @@
-import { resolve } from 'node:path'
+import { resolve, join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { rmSync } from 'node:fs'
 import { createDelegatedRoutingV1HttpApiServer } from '@helia/delegated-routing-v1-http-api-server'
 import { stubInterface } from 'sinon-ts'
+import { createKuboNode } from './src/fixtures/create-kubo.ts'
+import { loadFixtures } from './src/fixtures/load-fixtures.ts'
 
 const IPFS_PATH = resolve(tmpdir(), 'verified-fetch-interop-ipfs-repo')
 
@@ -18,15 +21,18 @@ export default {
 
   },
   test: {
-    files: './dist/src/*.spec.js',
+    files: './src/*.spec.ts',
     before: async () => {
-      const { createKuboNode } = await import('./dist/src/fixtures/create-kubo.js')
+      // kubo can be left in an inconsistent state if a previous test run was
+      // killed so remove any runtime files
+      [join(IPFS_PATH, 'api'), join(IPFS_PATH, 'repo.lock')].forEach((file) => {
+        rmSync(file, {
+          force: true
+        })
+      })
+
       const kuboNode = await createKuboNode(IPFS_PATH)
-
       await kuboNode.start()
-
-      // requires aegir build to be run first, which it will by default.
-      const { loadFixtures } = await import('./dist/src/fixtures/load-fixtures.js')
 
       await loadFixtures(IPFS_PATH)
 

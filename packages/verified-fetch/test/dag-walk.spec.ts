@@ -1,3 +1,4 @@
+import { withHTTP } from '@helia/http'
 import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
@@ -22,7 +23,7 @@ describe('dag-walk', () => {
   let root: CID
 
   beforeEach(async () => {
-    helia = await createHelia()
+    helia = await withHTTP(createHelia()).start()
     dnsLink = stubInterface()
     ipnsResolver = stubInterface()
     fetch = await createVerifiedFetch(helia, {

@@ -145,16 +145,16 @@
     "release": "aegir release"
   },
   "dependencies": {
-    "@helia/delegated-routing-v1-http-api-server": "^5.2.1",
+    "@helia/delegated-routing-v1-http-api-server": "^7.0.0",
     "@helia/verified-fetch": "^7.0.0",
     "aegir": "^48.0.4",
     "execa": "^9.6.1",
     "glob": "^13.0.6",
-    "ipfsd-ctl": "^16.0.3",
-    "kubo": "^0.41.0",
-    "kubo-rpc-client": "^6.1.0",
+    "ipfsd-ctl": "^17.0.0",
+    "kubo": "^0.42.0",
+    "kubo-rpc-client": "^7.1.0",
     "magic-bytes.js": "^1.13.0",
-    "multiformats": "^13.4.2",
+    "multiformats": "^14.0.2",
     "sinon-ts": "^2.0.0",
     "wherearewe": "^2.0.1"
   },
@@ -163,6 +163,6 @@
     "kubo": false
   },
   "overrides": {
-    "multiformats": "^13.4.2"
+    "multiformats": "^14.0.2"
   }
 }

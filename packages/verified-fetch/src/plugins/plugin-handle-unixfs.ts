@@ -6,6 +6,7 @@ import last from 'it-last'
 import itToBrowserReadableStream from 'it-to-browser-readablestream'
 import toBuffer from 'it-to-buffer'
 import * as raw from 'multiformats/codecs/raw'
+import { withArrayBuffer } from 'uint8arrays/with-array-buffer'
 import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_DAG_PB } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
 import { badGatewayResponse, movedPermanentlyResponse, partialContentResponse, okResponse } from '../utils/responses.ts'
@@ -147,15 +148,17 @@ export class UnixFSPlugin extends BasePlugin {
             Name: dirEntry.name,
             Hash: dirEntry.cid,
 
-            // @ts-expect-error needs https://github.com/ipfs/js-ipfs-unixfs/pull/484
-            Tsize: dirEntry.size
+            // TODO: downcast bigint to number until @ipld/dag-pb supports the
+            // correct field type
+            Tsize: Number(dirEntry.size)
           })
         }
 
-        block = dagPb.encode({
+        // TODO: remove withArrayBuffer when dag-pb is explicit about it's return type
+        block = withArrayBuffer(dagPb.encode({
           Data: data.Data,
           Links: links.sort((a, b) => a.Name?.localeCompare(b.Name ?? '') ?? 0)
-        })
+        }))
       }
 
       return okResponse(resource, block, {

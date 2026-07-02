@@ -1,15 +1,17 @@
 import { dagCbor } from '@helia/dag-cbor'
+import { createIPNSRecord } from '@helia/ipns'
+import { ed25519Crypto } from '@ipshipyard/crypto'
 import { stop } from '@libp2p/interface'
-import { peerIdFromString } from '@libp2p/peer-id'
 import { dns } from '@multiformats/dns'
 import { expect } from 'aegir/chai'
+import { base58btc } from 'multiformats/bases/base58'
 import Sinon from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.ts'
 import { answerFake } from './fixtures/dns-answer-fake.ts'
 import type { Helia } from '@helia/interface'
-import type { IPNSRecord, IPNSResolver } from '@helia/ipns'
+import type { IPNSResolver } from '@helia/ipns'
 import type { DNSResponse } from '@multiformats/dns'
 import type { StubbedInstance } from 'sinon-ts'
 
@@ -58,18 +60,19 @@ describe('cache-control header', () => {
     }
     const c = dagCbor(helia)
     const cid = await c.add(obj)
-    const peerId = peerIdFromString('12D3KooWAsKeVQRVqBi2uzfVub7L6b7oByD1dGmorN644bEx6TyT')
 
-    const record = stubInterface<IPNSRecord>({
-      ttl: 1_000_000_000n
-    })
+    const privateKey = await ed25519Crypto().generatePrivateKey()
+    const record = await createIPNSRecord(privateKey, `/ipfs/${cid}`, 1, 10_000)
+    const name = base58btc.baseEncode(privateKey.publicKey.toMultihash().bytes)
 
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid,
-      record
-    })
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value: `/ipfs/${cid}`
+      }
+    })())
 
-    const resp = await verifiedFetch.fetch(`ipns://${peerId}`)
+    const resp = await verifiedFetch.fetch(`ipns://${name}`)
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
 
@@ -83,22 +86,24 @@ describe('cache-control header', () => {
     }
     const c = dagCbor(helia)
     const cid = await c.add(obj)
-    const peerId = peerIdFromString('12D3KooWAsKeVQRVqBi2uzfVub7L6b7oByD1dGmorN644bEx6TyT')
-
-    const record = stubInterface<IPNSRecord>({
-      ttl: BigInt(oneHourInSeconds) * BigInt(1e9)
+    const privateKey = await ed25519Crypto().generatePrivateKey()
+    const record = await createIPNSRecord(privateKey, `/ipfs/${cid}`, 0, 60_000, {
+      ttlNs: BigInt(oneHourInSeconds) * BigInt(1e9)
     })
+    const name = base58btc.baseEncode(privateKey.publicKey.toMultihash().bytes)
 
-    ipnsResolver.resolve.withArgs(peerId).resolves({
-      cid,
-      record
-    })
+    ipnsResolver.resolve.withArgs(privateKey.publicKey.toMultihash()).returns((async function * () {
+      yield {
+        record,
+        value: `/ipfs/${cid}`
+      }
+    })())
 
-    const resp = await verifiedFetch.fetch(`ipns://${peerId}`)
+    const resp = await verifiedFetch.fetch(`ipns://${name}`)
     expect(resp).to.be.ok()
     expect(resp.status).to.equal(200)
 
-    expect(resp.headers.get('Cache-Control')).to.equal(`public, max-age=${oneHourInSeconds}`)
+    expect(resp.headers.get('Cache-Control')).to.equal(`public, max-age=${oneHourInSeconds}, stale-while-revalidate=60, stale-if-error=60`)
   })
 
   it('should not contain immutable in the cache-control header for a DNSLink name', async () => {
