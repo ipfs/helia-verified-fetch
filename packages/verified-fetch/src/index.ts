@@ -1430,10 +1430,8 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
       recursiveGateways: init?.gateways ?? [
         'https://trustless-gateway.link'
       ],
-      trustlessGatewayBlockBrokerInit: {
-        allowInsecure: init?.allowInsecure,
-        allowLocal: init?.allowLocal
-      }
+      allowInsecure: init?.allowInsecure,
+      allowLocal: init?.allowLocal
     }), libp2p)).start()
     init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config: %j', libp2pConfig)
   }
