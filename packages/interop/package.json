@@ -164,5 +164,8 @@
   },
   "overrides": {
     "multiformats": "^14.0.2"
+  },
+  "devDependencies": {
+    "@libp2p/interface": "^3.2.4"
   }
 }
