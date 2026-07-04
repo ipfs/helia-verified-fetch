@@ -13,6 +13,7 @@ const ABBREVIATIONS: Record<string, string> = {
 
   // routers
   'http-gateway-router': 'h',
+  'fallback-router': 'h',
   'libp2p-router': 'l',
 
   // block brokers

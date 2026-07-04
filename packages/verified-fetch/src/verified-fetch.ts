@@ -252,26 +252,26 @@ export class VerifiedFetch {
           options?.onProgress?.(evt)
 
           if (evt.type === 'helia:routing:find-providers:start') {
-            routingTimers[evt.detail.routing] = {
+            routingTimers[evt.detail.router] = {
               start: performance.now(),
               found: 0
             }
           } else if (evt.type === 'helia:routing:find-providers:provider') {
-            if (routingTimers[evt.detail.routing] == null) {
+            if (routingTimers[evt.detail.router] == null) {
               return
             }
 
-            routingTimers[evt.detail.routing].found++
+            routingTimers[evt.detail.router].found++
 
-            serverTiming.add(abbreviate('found-provider'), `${abbreviate(evt.detail.routing)},${truncate(evt.detail.provider.id)}`, performance.now() - routingTimers[evt.detail.routing].start)
+            serverTiming.add(abbreviate('found-provider'), `${abbreviate(evt.detail.router)},${truncate(evt.detail.provider.id)}`, performance.now() - routingTimers[evt.detail.router].start)
           } else if (evt.type === 'helia:routing:find-providers:end') {
-            const routing = routingTimers[evt.detail.routing]
+            const routing = routingTimers[evt.detail.router]
 
             if (routing == null) {
               return
             }
 
-            serverTiming.add(abbreviate('find-providers'), `${abbreviate(evt.detail.routing)},${routing.found}`, performance.now() - routing.start)
+            serverTiming.add(abbreviate('find-providers'), `${abbreviate(evt.detail.router)},${routing.found}`, performance.now() - routing.start)
           } else if (evt.type === 'helia:block-broker:connect') {
             connectTimers[`connect-${evt.detail.broker}-${evt.detail.provider}`] = {
               start: performance.now(),

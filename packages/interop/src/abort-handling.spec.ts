@@ -6,13 +6,9 @@ describe('verified-fetch abort handling', () => {
   let verifiedFetch: VerifiedFetch
 
   beforeEach(async () => {
-    if (process.env.KUBO_DIRECT_RETRIEVAL_ROUTER == null || process.env.KUBO_DIRECT_RETRIEVAL_ROUTER === '') {
-      throw new Error('KUBO_DIRECT_RETRIEVAL_ROUTER environment variable is required')
-    }
-
     verifiedFetch = await createVerifiedFetch({
-      gateways: [process.env.KUBO_DIRECT_RETRIEVAL_ROUTER],
-      routers: [process.env.KUBO_DIRECT_RETRIEVAL_ROUTER],
+      gateways: ['http://127.0.0.1:8180'],
+      routers: ['http://127.0.0.1:8180'],
       allowInsecure: true,
       allowLocal: true
     })

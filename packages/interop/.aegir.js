@@ -5,6 +5,7 @@ import { createDelegatedRoutingV1HttpApiServer } from '@helia/delegated-routing-
 import { stubInterface } from 'sinon-ts'
 import { createKuboNode } from './src/fixtures/create-kubo.ts'
 import { loadFixtures } from './src/fixtures/load-fixtures.ts'
+import { NotFoundError } from '@libp2p/interface'
 
 const IPFS_PATH = resolve(tmpdir(), 'verified-fetch-interop-ipfs-repo')
 
@@ -44,8 +45,10 @@ export default {
           findProviders: async function * findProviders () {
             yield {
               multiaddrs,
-              id,
-              protocols: ['transport-bitswap']
+              id: id.toCID(),
+              protocols: [
+                'transport-bitswap'
+              ]
             }
           }
         })
