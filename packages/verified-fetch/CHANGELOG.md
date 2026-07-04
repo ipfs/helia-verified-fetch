@@ -1,3 +1,10 @@
+## [@helia/verified-fetch-v8.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.0.0...@helia/verified-fetch-8.0.1) (2026-07-04)
+
+### Bug Fixes
+
+* update args passed to http wrapper ([27e58c2](https://github.com/ipfs/helia-verified-fetch/commit/27e58c293c81b008484b9d798fcc33bb2bef28f9))
+* update deps ([0522283](https://github.com/ipfs/helia-verified-fetch/commit/0522283e0def9f31f0a6a701bae9257eec236459))
+
 ## [@helia/verified-fetch-v8.0.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-7.2.16...@helia/verified-fetch-8.0.0) (2026-07-02)
 
 ### ⚠ BREAKING CHANGES
