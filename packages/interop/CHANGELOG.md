@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-interop-v5.0.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-5.0.3...@helia/verified-fetch-interop-5.0.4) (2026-08-16)
+
+### Dependencies
+
+* bump execa from 9.6.1 to 10.0.1 ([#372](https://github.com/ipfs/helia-verified-fetch/issues/372)) ([924c0cd](https://github.com/ipfs/helia-verified-fetch/commit/924c0cd05b6783024340fd96c996ad61b03809f7))
+
 ## [@helia/verified-fetch-interop-v5.0.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-5.0.2...@helia/verified-fetch-interop-5.0.3) (2026-08-16)
 
 ### Dependencies
