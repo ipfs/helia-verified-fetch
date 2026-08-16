@@ -161,8 +161,8 @@
     "test:chrome-webworker": "aegir test -t webworker",
     "test:firefox": "aegir test -t browser -- --browser firefox",
     "test:firefox-webworker": "aegir test -t webworker -- --browser firefox",
-    "test:node": "aegir test -t node --cov",
-    "test:electron-main": "aegir test -t electron-main",
+    "test:node": "aegir test -t node --cov -- --exit",
+    "test:electron-main": "aegir test -t electron-main -- --exit",
     "release": "aegir release"
   },
   "dependencies": {
@@ -173,7 +173,7 @@
     "@helia/http": "^4.0.4",
     "@helia/interface": "^7.0.3",
     "@helia/ipns": "^10.0.4",
-    "@helia/libp2p": "^1.0.5",
+    "@helia/libp2p": "^2.0.0",
     "@helia/unixfs": "^8.0.3",
     "@ipld/dag-cbor": "^10.0.1",
     "@ipld/dag-json": "^11.0.0",

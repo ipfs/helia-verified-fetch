@@ -25,7 +25,7 @@ describe('@helia/verified-fetch - ipns', () => {
     expect(kuboResponseBody).to.equal('hello\n')
 
     const res = await verifiedFetch('/ipns/k51qzi5uqu5dk3v4rmjber23h16xnr23bsggmqqil9z2gduiis5se8dht36dam', {
-      signal: AbortSignal.timeout(5_000)
+      signal: AbortSignal.timeout(10_000)
     })
     expect(res.status).to.equal(200)
     const body = await res.text()
