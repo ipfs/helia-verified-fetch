@@ -147,7 +147,7 @@
     "@helia/delegated-routing-v1-http-api-server": "^7.0.0",
     "@helia/verified-fetch": "^8.0.0",
     "aegir": "^48.0.4",
-    "execa": "^9.6.1",
+    "execa": "^10.0.1",
     "glob": "^13.0.6",
     "ipfsd-ctl": "^17.0.0",
     "kubo": "^0.43.0",
