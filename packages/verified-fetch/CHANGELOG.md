@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v8.0.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.0.2...@helia/verified-fetch-8.0.3) (2026-08-16)
+
+### Dependencies
+
+* bump cborg from 5.1.11 to 6.1.1 ([#371](https://github.com/ipfs/helia-verified-fetch/issues/371)) ([0161b51](https://github.com/ipfs/helia-verified-fetch/commit/0161b511f0bb0a9608bb9f5186b1fb9f3bcbf50c))
+
 ## [@helia/verified-fetch-v8.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.0.1...@helia/verified-fetch-8.0.2) (2026-08-16)
 
 ### Dependencies
