@@ -860,7 +860,6 @@ import * as dagCbor from '@ipld/dag-cbor'
 import * as dagJson from '@ipld/dag-json'
 import { dns } from '@multiformats/dns'
 import { createHeliaLight } from 'helia'
-import { createLibp2p } from 'libp2p'
 import * as json from 'multiformats/codecs/json'
 import { getLibp2pConfig } from './utils/libp2p-defaults.ts'
 import { VerifiedFetch as VerifiedFetchClass } from './verified-fetch.ts'
@@ -870,7 +869,7 @@ import type { RequestedMimeType } from './verified-fetch.ts'
 import type { DNSLink, ResolveProgressEvents as ResolveDNSLinkProgressEvents } from '@helia/dnslink'
 import type { GetBlockProgressEvents, Helia, ProviderOptions } from '@helia/interface'
 import type { ResolveProgressEvents as ResolveIPNSNameProgressEvents, IPNSRoutingProgressEvents, IPNSResolver } from '@helia/ipns'
-import type { AbortOptions, Libp2p, ServiceMap, Logger, PeerId, PublicKey } from '@libp2p/interface'
+import type { AbortOptions, ServiceMap, Logger, PeerId, PublicKey } from '@libp2p/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { HeliaInit } from 'helia'
@@ -1391,8 +1390,6 @@ export interface URLResolver {
  * Create and return a VerifiedFetch instance with the specified configuration
  */
 export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchInit, options?: CreateVerifiedFetchOptions): Promise<VerifiedFetch> {
-  let libp2p: Libp2p<any> | undefined
-
   if (!isHelia(init)) {
     const dns = createDns(init?.dnsResolvers)
 
@@ -1414,8 +1411,6 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
       Object.assign(libp2pConfig, init.libp2pConfig)
     }
 
-    libp2p = await createLibp2p(libp2pConfig)
-
     init = await withBitswap(withLibp2p(withHTTP(createHeliaLight({
       dns,
       hashers: init?.hashers,
@@ -1432,7 +1427,7 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
       ],
       allowInsecure: init?.allowInsecure,
       allowLocal: init?.allowLocal
-    }), libp2p)).start()
+    }), libp2pConfig)).start()
     init.logger.forComponent('helia:verified-fetch').trace('created verified-fetch with libp2p config: %j', libp2pConfig)
   }
 
