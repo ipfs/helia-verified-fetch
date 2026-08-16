@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-interop-v5.0.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-5.0.1...@helia/verified-fetch-interop-5.0.2) (2026-08-16)
+
+### Dependencies
+
+* update @helia/libp2p to 2.x.x ([#374](https://github.com/ipfs/helia-verified-fetch/issues/374)) ([323fdf9](https://github.com/ipfs/helia-verified-fetch/commit/323fdf960bff41553fbfdd38739a120c9558cd0e))
+
 ## [@helia/verified-fetch-interop-v5.0.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-interop-5.0.0...@helia/verified-fetch-interop-5.0.1) (2026-07-04)
 
 ### Bug Fixes
