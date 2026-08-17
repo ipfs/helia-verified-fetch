@@ -331,4 +331,20 @@ describe('dag-pb', () => {
     expect(res.status).to.equal(200)
     expect(res.headers.get('x-ipfs-path')).to.equal(`/ipfs/${directory.cid}/${fileName}`)
   })
+
+  it('should fetch files with non-ascii characters and escape the x-ipfs-path header value', async () => {
+    const fs = unixfs(helia)
+
+    const [, directory] = await all(fs.addAll([{
+      path: '/「1」.txt',
+      content: uint8ArrayFromString('hello world\n')
+    }], {
+      wrapWithDirectory: true,
+      rawLeaves: true
+    }))
+
+    const res = await verifiedFetch.fetch(`ipfs://${directory.cid}/「1」.txt`)
+    expect(res.status).to.equal(200)
+    expect(res.headers.get('x-ipfs-path')).to.equal(`/ipfs/${directory.cid}/%E3%80%8C1%E3%80%8D.txt`)
+  })
 })

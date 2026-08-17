@@ -3,8 +3,6 @@ import { ipnsResolver } from '@helia/ipns'
 import { isPeerId, isPublicKey } from '@libp2p/interface'
 import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { CarPlugin } from './plugins/plugin-handle-car.ts'
 import { IpldPlugin } from './plugins/plugin-handle-ipld.ts'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.ts'
@@ -19,6 +17,7 @@ import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag, ifNoneMatches } from './utils/get-e-tag.ts'
 import { getRangeHeader } from './utils/get-range-header.ts'
+import { ipfsPathToHeaderValue } from './utils/ipfs-path-to-header.ts'
 import { stringToIpfsUrl } from './utils/parse-resource.ts'
 import { setCacheControlHeader } from './utils/response-headers.ts'
 import { notAcceptableResponse, notImplementedResponse, notModifiedResponse } from './utils/responses.ts'
@@ -429,15 +428,13 @@ export class VerifiedFetch {
     }
 
     if (context?.terminalElement?.cid != null && context?.url != null) {
-      // headers can ony contain extended ASCII but IPFS paths can be unicode
-      const decodedPath = context.url.pathname.split('/')
-        .map(component => decodeURIComponent(component))
-        .join('/')
-        .trim()
+      const ipfsPath = ipfsPathToHeaderValue(context.url.protocol, context.url.hostname, context.url.pathname)
 
-      const path = uint8ArrayToString(uint8ArrayFromString(decodedPath, 'ascii'), 'ascii')
-
-      response.headers.set('x-ipfs-path', `/${context.url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${context?.url.hostname}${path === '/' ? '' : path}`)
+      try {
+        response.headers.set('x-ipfs-path', ipfsPath)
+      } catch (err) {
+        this.log.error('could not set x-ipfs-path to "%s"', ipfsPath)
+      }
     }
 
     // set CORS headers. If hosting your own gateway with verified-fetch behind
