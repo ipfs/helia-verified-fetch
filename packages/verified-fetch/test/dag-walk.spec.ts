@@ -50,7 +50,7 @@ describe('dag-walk', () => {
     expect(new Uint8Array(await resp.arrayBuffer())).to.equalBytes(data)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(url.replace(FRAGMENT, ''), 'included fragment in response url')
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${root}/hello/world.txt`, 'included fragment in x-ipfs-path header')
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipfs://${root}/hello/world.txt`, 'included fragment in ipfs-uri header')
   }
 
   it('should omit fragments from an IPFS URL', async () => {

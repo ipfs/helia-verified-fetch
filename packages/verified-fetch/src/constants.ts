@@ -4,3 +4,4 @@ export const CODEC_LIBP2P_KEY = 0x72
 
 export const SESSION_CACHE_MAX_SIZE = 100
 export const SESSION_CACHE_TTL_MS = 60 * 1000
+export const MAX_HEADER_VALUE_LENGTH = 8192

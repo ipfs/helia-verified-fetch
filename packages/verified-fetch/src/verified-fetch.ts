@@ -17,7 +17,6 @@ import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag, ifNoneMatches } from './utils/get-e-tag.ts'
 import { getRangeHeader } from './utils/get-range-header.ts'
-import { ipfsPathToHeaderValue } from './utils/ipfs-path-to-header.ts'
 import { stringToIpfsUrl } from './utils/parse-resource.ts'
 import { setCacheControlHeader } from './utils/response-headers.ts'
 import { notAcceptableResponse, notImplementedResponse, notModifiedResponse } from './utils/responses.ts'
@@ -27,6 +26,7 @@ import type { DNSLink } from '@helia/dnslink'
 import type { Helia } from '@helia/interface'
 import type { IPNSResolver } from '@helia/ipns'
 import type { AbortOptions, Logger } from '@libp2p/interface'
+import { MAX_HEADER_VALUE_LENGTH } from './constants.ts'
 
 /**
  * Retypes the `.signal` property of the options from
@@ -428,12 +428,16 @@ export class VerifiedFetch {
     }
 
     if (context?.terminalElement?.cid != null && context?.url != null) {
-      const ipfsPath = ipfsPathToHeaderValue(context.url.protocol, context.url.hostname, context.url.pathname)
-
       try {
-        response.headers.set('x-ipfs-path', ipfsPath)
+        const protocol = context.url.protocol === 'dnslink:' ? 'ipns:' : context.url.protocol
+        const path = context.url.pathname
+        const value = `${protocol}//${context.url.hostname}${path === '/' ? '' : path}`
+
+        if (value.length < MAX_HEADER_VALUE_LENGTH) {
+          response.headers.set('ipfs-uri', value)
+        }
       } catch (err) {
-        this.log.error('could not set x-ipfs-path to "%s"', ipfsPath)
+        this.log.error('could not set ipfs-uri to "%s"', context.url)
       }
     }
 

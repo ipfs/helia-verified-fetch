@@ -13,7 +13,7 @@ import type { Helia } from '@helia/interface'
 import type { IPNSResolver } from '@helia/ipns'
 import type { StubbedInstance } from 'sinon-ts'
 
-describe('x-ipfs-path', () => {
+describe('ipfs-uri', () => {
   let helia: Helia
   let fetch: VerifiedFetch
   let dnsLink: StubbedInstance<DNSLink>
@@ -45,7 +45,7 @@ describe('x-ipfs-path', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipfs://${cid}/hello/`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${cid}/hello/`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipfs://${cid}/hello/`)
   })
 
   it('should omit trailing slash when an IPFS directory was requested without a trailing slash', async () => {
@@ -60,7 +60,7 @@ describe('x-ipfs-path', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipfs://${cid}/hello`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${cid}/hello`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipfs://${cid}/hello`)
   })
 
   it('should include trailing slash when an IPNS directory was requested with a trailing slash', async () => {
@@ -86,7 +86,7 @@ describe('x-ipfs-path', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipns://${name}/hello/`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${name}/hello/`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${name}/hello/`)
   })
 
   it('should omit trailing slash when an IPNS directory was requested without a trailing slash', async () => {
@@ -112,7 +112,7 @@ describe('x-ipfs-path', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipns://${name}/hello`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${name}/hello`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${name}/hello`)
   })
 
   it('should include trailing slash when a DNSLink directory was requested with a trailing slash', async () => {
@@ -134,7 +134,7 @@ describe('x-ipfs-path', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipns://${domain}/hello/`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}/hello/`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}/hello/`)
   })
 
   it('should omit trailing slash when a DNSLink directory was requested without a trailing slash', async () => {
@@ -156,6 +156,6 @@ describe('x-ipfs-path', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipns://${domain}/hello`)
-    expect(resp.headers.get('X-Ipfs-Path')).to.equal(`/ipns/${domain}/hello`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}/hello`)
   })
 })

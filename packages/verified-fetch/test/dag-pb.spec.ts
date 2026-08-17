@@ -329,7 +329,7 @@ describe('dag-pb', () => {
 
     const res = await verifiedFetch.fetch(`ipfs://${directory.cid}/${encodeURIComponent(fileName)}`)
     expect(res.status).to.equal(200)
-    expect(res.headers.get('x-ipfs-path')).to.equal(`/ipfs/${directory.cid}/${fileName}`)
+    expect(res.headers.get('ipfs-uri')).to.equal(`ipfs://${directory.cid}/${encodeURIComponent(fileName)}`)
   })
 
   it('should fetch files with non-ascii characters and escape the x-ipfs-path header value', async () => {
@@ -345,6 +345,6 @@ describe('dag-pb', () => {
 
     const res = await verifiedFetch.fetch(`ipfs://${directory.cid}/「1」.txt`)
     expect(res.status).to.equal(200)
-    expect(res.headers.get('x-ipfs-path')).to.equal(`/ipfs/${directory.cid}/%E3%80%8C1%E3%80%8D.txt`)
+    expect(res.headers.get('ipfs-uri')).to.equal(`ipfs://${directory.cid}/%E3%80%8C1%E3%80%8D.txt`)
   })
 })
