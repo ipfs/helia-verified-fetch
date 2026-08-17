@@ -3,6 +3,7 @@ import { ipnsResolver } from '@helia/ipns'
 import { isPeerId, isPublicKey } from '@libp2p/interface'
 import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
+import { MAX_HEADER_VALUE_LENGTH } from './constants.ts'
 import { CarPlugin } from './plugins/plugin-handle-car.ts'
 import { IpldPlugin } from './plugins/plugin-handle-ipld.ts'
 import { IpnsRecordPlugin } from './plugins/plugin-handle-ipns-record.ts'
@@ -26,7 +27,6 @@ import type { DNSLink } from '@helia/dnslink'
 import type { Helia } from '@helia/interface'
 import type { IPNSResolver } from '@helia/ipns'
 import type { AbortOptions, Logger } from '@libp2p/interface'
-import { MAX_HEADER_VALUE_LENGTH } from './constants.ts'
 
 /**
  * Retypes the `.signal` property of the options from
