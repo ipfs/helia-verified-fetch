@@ -677,6 +677,7 @@ describe('@helia/verified-fetch', () => {
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
+      // spell-checker: disable-next-line
       expect(resp.headers.get('x-ipfs-path')).to.equal("/ipfs/bafybeidlr7wrkdqagc6edxwzinrsrsvqk2adzqizxshqsili4bgzj4tmae/Plan_d'exécution_du_second_étage_de_l'hôtel_de_Brionne_(dessin)_De_Cotte_2503c_%E2%80%93_Gallica_2011_(adjusted).jpg.webp")
 
       const data = await resp.arrayBuffer()
