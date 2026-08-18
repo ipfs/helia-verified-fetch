@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v8.0.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.0.3...@helia/verified-fetch-8.0.4) (2026-08-18)
+
+### Bug Fixes
+
+* escape invalid characters in x-ipfs-path ([#375](https://github.com/ipfs/helia-verified-fetch/issues/375)) ([5c7ac50](https://github.com/ipfs/helia-verified-fetch/commit/5c7ac5097e71ecc661e216c9db51d76c2f02e5ed)), closes [ipfs/service-worker-gateway#1185](https://github.com/ipfs/service-worker-gateway/issues/1185)
+
 ## [@helia/verified-fetch-v8.0.3](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.0.2...@helia/verified-fetch-8.0.3) (2026-08-16)
 
 ### Dependencies
