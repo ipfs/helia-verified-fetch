@@ -446,7 +446,7 @@ export class VerifiedFetch {
       // TODO: remove this after https://github.com/ipfs/specs/issues/547
       const ipfsPath = uint8ArrayToString(uint8ArrayFromString(toIPFSPath(context.url), 'ascii'), 'ascii')
 
-      if (ipfsUri.length < MAX_HEADER_VALUE_LENGTH) {
+      if (ipfsPath.length < MAX_HEADER_VALUE_LENGTH) {
         try {
           response.headers.set('x-ipfs-path', ipfsPath)
         } catch (err) {
