@@ -12,6 +12,7 @@ import { CODEC_LIBP2P_KEY, SESSION_CACHE_MAX_SIZE, SESSION_CACHE_TTL_MS } from '
 import { abbreviate } from './utils/abbreviate.ts'
 import { applyRedirects } from './utils/apply-redirect.ts'
 import { splitIPNSName } from './utils/ipfs-path-to-cid.ts'
+import { toIPFSPath } from './utils/ipfs-url-to-ipfs-path.ts'
 import { ServerTiming } from './utils/server-timing.ts'
 import type { ResolveURLOptions, ResolveURLResult, URLResolver as URLResolverInterface } from './index.ts'
 import type { DNSLink } from '@helia/dnslink'
@@ -316,23 +317,6 @@ export class URLResolver implements URLResolverInterface {
       throw err
     }
   }
-}
-
-function toIPFSPath (url: URL): string {
-  let pathname = url.pathname.split('/')
-    .map(component => decodeURIComponent(component))
-    .join('/')
-    .trim()
-
-  if (pathname.length > 0 && !pathname.startsWith('/')) {
-    pathname = `/${pathname}`
-  }
-
-  if (url.protocol === 'ipns:' && pathname === '/') {
-    pathname = ''
-  }
-
-  return `/${url.protocol === 'ipfs:' ? 'ipfs' : 'ipns'}/${url.hostname}${pathname}`
 }
 
 /**

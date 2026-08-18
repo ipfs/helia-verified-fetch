@@ -3,6 +3,8 @@ import { ipnsResolver } from '@helia/ipns'
 import { isPeerId, isPublicKey } from '@libp2p/interface'
 import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { MAX_HEADER_VALUE_LENGTH } from './constants.ts'
 import { CarPlugin } from './plugins/plugin-handle-car.ts'
 import { IpldPlugin } from './plugins/plugin-handle-ipld.ts'
@@ -18,6 +20,7 @@ import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag, ifNoneMatches } from './utils/get-e-tag.ts'
 import { getRangeHeader } from './utils/get-range-header.ts'
+import { toIPFSPath } from './utils/ipfs-url-to-ipfs-path.ts'
 import { stringToIpfsUrl } from './utils/parse-resource.ts'
 import { setCacheControlHeader } from './utils/response-headers.ts'
 import { notAcceptableResponse, notImplementedResponse, notModifiedResponse } from './utils/responses.ts'
@@ -428,16 +431,27 @@ export class VerifiedFetch {
     }
 
     if (context?.terminalElement?.cid != null && context?.url != null) {
-      try {
-        const protocol = context.url.protocol === 'dnslink:' ? 'ipns:' : context.url.protocol
-        const path = context.url.pathname
-        const value = `${protocol}//${context.url.hostname}${path === '/' ? '' : path}`
+      const protocol = context.url.protocol === 'dnslink:' ? 'ipns:' : context.url.protocol
+      const path = context.url.pathname
+      const ipfsUri = `${protocol}//${context.url.hostname}${path === '/' ? '' : path}`
 
-        if (value.length < MAX_HEADER_VALUE_LENGTH) {
-          response.headers.set('ipfs-uri', value)
+      if (ipfsUri.length < MAX_HEADER_VALUE_LENGTH) {
+        try {
+          response.headers.set('ipfs-uri', ipfsUri)
+        } catch (err) {
+          this.log.error('could not set ipfs-uri to "%s"', ipfsUri)
         }
-      } catch (err) {
-        this.log.error('could not set ipfs-uri to "%s"', context.url)
+      }
+
+      // TODO: remove this after https://github.com/ipfs/specs/issues/547
+      const ipfsPath = uint8ArrayToString(uint8ArrayFromString(toIPFSPath(context.url), 'ascii'), 'ascii')
+
+      if (ipfsUri.length < MAX_HEADER_VALUE_LENGTH) {
+        try {
+          response.headers.set('x-ipfs-path', ipfsPath)
+        } catch (err) {
+          this.log.error('could not set x-ipfs-path to "%s"', ipfsPath)
+        }
       }
     }
 
