@@ -18,7 +18,6 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import Sinon from 'sinon'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { MEDIA_TYPE_DAG_PB } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.ts'
@@ -168,7 +167,7 @@ describe('@helia/verified-fetch', () => {
       expect(ipfsResponse).to.be.ok()
       expect(ipfsResponse.status).to.equal(301)
       expect(ipfsResponse.headers.get('location')).to.equal(`ipfs://${res.cid}/foo/`)
-      expect(ipfsResponse.headers.get('X-Ipfs-Path')).to.equal(`/ipfs/${res.cid}/foo`)
+      expect(ipfsResponse.headers.get('ipfs-uri')).to.equal(`ipfs://${res.cid}/foo`)
       expect(ipfsResponse.url).to.equal(`ipfs://${res.cid}/foo`)
     })
 
@@ -670,17 +669,16 @@ describe('@helia/verified-fetch', () => {
       if (res == null) {
         throw new Error('Import failed')
       }
+
       const { cid } = res
       const url = `ipfs://${cid}/${encodeURIComponent(path)}`
+
       const resp = await verifiedFetch.fetch(url)
       expect(resp).to.be.ok()
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
-
-      const decodedPath = decodeURI(new URL(url).pathname)
-      const asAscii = uint8ArrayToString(uint8ArrayFromString(decodedPath, 'ascii'), 'ascii')
-
-      expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipfs/${cid}${asAscii}`)
+      // spell-checker: disable-next-line
+      expect(resp.headers.get('ipfs-uri')).to.equal("ipfs://bafybeidlr7wrkdqagc6edxwzinrsrsvqk2adzqizxshqsili4bgzj4tmae/Plan_d'ex%C3%A9cution_du_second_%C3%A9tage_de_l'h%C3%B4tel_de_Brionne_(dessin)_De_Cotte_2503c_%E2%80%93_Gallica_2011_(adjusted).jpg.webp")
 
       const data = await resp.arrayBuffer()
       expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)

@@ -67,7 +67,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.true()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org/')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${cid}`)
   })
 
@@ -84,7 +84,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${fileCid}`)
   })
 
@@ -101,7 +101,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 
@@ -128,7 +128,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${fileCid}`)
   })
 
@@ -155,7 +155,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 
@@ -182,7 +182,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 
@@ -209,7 +209,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 
@@ -226,7 +226,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org/foo/bar/baz.bin')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}/foo/bar/baz.bin`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}/foo/bar/baz.bin`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 
@@ -243,7 +243,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org/bar/baz.bin')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}/bar/baz.bin`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}/bar/baz.bin`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 
@@ -270,7 +270,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org/foo/bar/baz.bin')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}/foo/bar/baz.bin`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}/foo/bar/baz.bin`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 
@@ -297,7 +297,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org/baz.bin')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}/baz.bin`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}/baz.bin`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 
@@ -324,7 +324,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org/baz.bin')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}/baz.bin`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}/baz.bin`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 
@@ -352,7 +352,7 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org/baz.bin')
-    expect(resp.headers.get('x-ipfs-path')).to.equal(`/ipns/${domain}/baz.bin`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}/baz.bin`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${rootCid},${level1DirCid},${level2DirCid},${fileCid}`)
   })
 })
