@@ -9,7 +9,7 @@ describe('@helia/verified-fetch - unixfs directory', () => {
   before(async () => {
     verifiedFetch = await createVerifiedFetch({
       gateways: ['http://127.0.0.1:8180'],
-      routers: [],
+      routers: ['http://127.0.0.1:8180'],
       allowInsecure: true,
       allowLocal: true
     })
