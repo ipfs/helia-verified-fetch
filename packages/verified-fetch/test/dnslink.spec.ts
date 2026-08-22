@@ -67,6 +67,8 @@ describe('DNSLink', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.true()
     expect(resp.url).to.equal('ipns://dnslink-test.example.org/')
+    // the internally followed redirect does not rewrite context.url, so both
+    // ipfs-uri and x-ipfs-path reflect the content path that was requested
     expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${domain}`)
     expect(resp.headers.get('x-ipfs-roots')).to.equal(`${cid}`)
   })

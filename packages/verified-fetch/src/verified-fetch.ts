@@ -3,8 +3,6 @@ import { ipnsResolver } from '@helia/ipns'
 import { isPeerId, isPublicKey } from '@libp2p/interface'
 import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { MAX_HEADER_VALUE_LENGTH } from './constants.ts'
 import { CarPlugin } from './plugins/plugin-handle-car.ts'
 import { IpldPlugin } from './plugins/plugin-handle-ipld.ts'
@@ -20,11 +18,12 @@ import { errorToObject } from './utils/error-to-object.ts'
 import { errorToResponse } from './utils/error-to-response.ts'
 import { getETag, ifNoneMatches } from './utils/get-e-tag.ts'
 import { getRangeHeader } from './utils/get-range-header.ts'
-import { toIPFSPath } from './utils/ipfs-url-to-ipfs-path.ts'
+import { toIpfsUri } from './utils/ipfs-uri.ts'
 import { stringToIpfsUrl } from './utils/parse-resource.ts'
 import { setCacheControlHeader } from './utils/response-headers.ts'
 import { notAcceptableResponse, notImplementedResponse, notModifiedResponse } from './utils/responses.ts'
 import { ServerTiming } from './utils/server-timing.ts'
+import { toXIpfsPath } from './utils/x-ipfs-path.ts'
 import type { AcceptHeader, CIDDetail, ContentTypeParser, CreateVerifiedFetchOptions, Resource, ResourceDetail, VerifiedFetchInit as VerifiedFetchOptions, VerifiedFetchPlugin, PluginContext, PluginOptions } from './index.ts'
 import type { DNSLink } from '@helia/dnslink'
 import type { Helia } from '@helia/interface'
@@ -431,11 +430,11 @@ export class VerifiedFetch {
     }
 
     if (context?.terminalElement?.cid != null && context?.url != null) {
-      const protocol = context.url.protocol === 'dnslink:' ? 'ipns:' : context.url.protocol
-      const path = context.url.pathname
-      const ipfsUri = `${protocol}//${context.url.hostname}${path === '/' ? '' : path}`
+      const ipfsUri = toIpfsUri(context.url)
 
-      if (ipfsUri.length < MAX_HEADER_VALUE_LENGTH) {
+      // the value is ASCII-only so string length equals byte length; a value
+      // of exactly MAX_HEADER_VALUE_LENGTH bytes is still sent
+      if (ipfsUri != null && ipfsUri.length <= MAX_HEADER_VALUE_LENGTH) {
         try {
           response.headers.set('ipfs-uri', ipfsUri)
         } catch (err) {
@@ -443,10 +442,13 @@ export class VerifiedFetch {
         }
       }
 
-      // TODO: remove this after https://github.com/ipfs/specs/issues/547
-      const ipfsPath = uint8ArrayToString(uint8ArrayFromString(toIPFSPath(context.url), 'ascii'), 'ascii')
+      // x-ipfs-path is deprecated by IPIP-0548 in favour of ipfs-uri, and is
+      // kept for clients that still read it. It is omitted for content paths
+      // that an HTTP field value cannot carry, e.g. a file name with
+      // non-ASCII bytes
+      const ipfsPath = toXIpfsPath(context.url)
 
-      if (ipfsPath.length < MAX_HEADER_VALUE_LENGTH) {
+      if (ipfsPath != null && ipfsPath.length <= MAX_HEADER_VALUE_LENGTH) {
         try {
           response.headers.set('x-ipfs-path', ipfsPath)
         } catch (err) {
@@ -464,7 +466,7 @@ export class VerifiedFetch {
     response.headers.set('access-control-allow-origin', '*')
     response.headers.set('access-control-allow-methods', 'GET, HEAD, OPTIONS')
     response.headers.set('access-control-allow-headers', 'Content-Type, Range, User-Agent, X-Requested-With')
-    response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, X-Ipfs-Path, X-Ipfs-Roots, X-Chunked-Output, X-Stream-Output')
+    response.headers.set('access-control-expose-headers', 'Content-Range, Content-Length, Ipfs-Uri, X-Ipfs-Path, X-Ipfs-Roots, X-Chunked-Output, X-Stream-Output')
 
     if (context?.terminalElement?.cid != null && response.headers.get('etag') == null) {
       const etag = getETag({
