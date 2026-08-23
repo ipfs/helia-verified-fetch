@@ -30,6 +30,7 @@ const SEGMENT_VECTORS: Array<{ name: string, segment: string }> = [
   { name: 'with space.txt', segment: 'with%20space.txt' },
   { name: '100% sure.txt', segment: '100%25%20sure.txt' },
   { name: 'a#b?c.txt', segment: 'a%23b%3Fc.txt' },
+  // spell-checker: disable-next-line
   { name: 'łódź.txt', segment: '%C5%82%C3%B3d%C5%BA.txt' },
   { name: 'emoji\u{1F680}.txt', segment: 'emoji%F0%9F%9A%80.txt' }
 ]
@@ -203,6 +204,7 @@ describe('ipfs-uri header', () => {
     })
 
     it('should convert an internationalized DNSLink name to A-labels', () => {
+      // spell-checker: disable-next-line
       expect(toIpfsUri(new URL('dnslink://dnslink.exämple.net/hello'))).to.equal('ipns://dnslink.xn--exmple-cua.net/hello')
     })
 

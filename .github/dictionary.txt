@@ -28,3 +28,4 @@ ftyp
 isom
 EBML
 matroska
+HTAB

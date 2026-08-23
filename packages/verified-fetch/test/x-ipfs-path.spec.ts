@@ -211,6 +211,7 @@ describe('x-ipfs-path', () => {
   // content paths have no x-ipfs-path representation
   // @see https://github.com/ipfs/specs/pull/548
   const nonAscii: Array<{ name: string, segment: string }> = [
+    // spell-checker: disable-next-line
     { name: 'łódź.txt', segment: '%C5%82%C3%B3d%C5%BA.txt' },
     { name: '你好.txt', segment: '%E4%BD%A0%E5%A5%BD.txt' }
   ]
