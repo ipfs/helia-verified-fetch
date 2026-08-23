@@ -196,7 +196,13 @@ describe('ipfs-uri header', () => {
     })
 
     it('should omit the header when a DNSLink name has no dot', () => {
-      expect(toIpfsUri(new URL('dnslink://localhost/hello'))).to.equal(undefined)
+      // a DNSLink name with no dot can point at different content on
+      // each network, so it cannot be an ipns:// authority
+      expect(toIpfsUri(new URL('dnslink://examplemissingtld/hello'))).to.equal(undefined)
+    })
+
+    it('should keep a dotted DNSLink name from a private network', () => {
+      expect(toIpfsUri(new URL('dnslink://example.local/hello'))).to.equal('ipns://example.local/hello')
     })
 
     it('should omit the header when a DNSLink name keeps a trailing dot after stripping one', () => {
