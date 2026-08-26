@@ -9,12 +9,6 @@ type ServiceMap = Pick<DefaultLibp2pServices, 'dcutr' | 'identify' | 'identifyPu
 
 export function getLibp2pConfig (): Libp2pOptions & Required<Pick<Libp2pOptions, 'services'>> {
   const libp2pDefaultOptions = libp2pDefaults()
-
-  libp2pDefaultOptions.start = false
-  libp2pDefaultOptions.addresses = { listen: [] }
-  libp2pDefaultOptions.transports = [webRTCDirect(), webSockets()]
-  libp2pDefaultOptions.peerDiscovery = [] // Avoid connecting to bootstrap nodes
-
   const services: ServiceFactoryMap<ServiceMap> = {
     dcutr: libp2pDefaultOptions.services.dcutr,
     identify: libp2pDefaultOptions.services.identify,
@@ -24,8 +18,16 @@ export function getLibp2pConfig (): Libp2pOptions & Required<Pick<Libp2pOptions,
   }
 
   return {
-    ...libp2pDefaultOptions,
-    start: false,
+    addresses: {
+      listen: []
+    },
+    transports: [
+      webRTCDirect(),
+      webSockets()
+    ],
+    peerDiscovery: [
+      // Avoid connecting to bootstrap nodes
+    ],
     services
   }
 }
