@@ -1,3 +1,13 @@
+## [@helia/verified-fetch-v8.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.0.4...@helia/verified-fetch-8.1.0) (2026-08-27)
+
+### Features
+
+* canonical Ipfs-Uri header (IPIP-548) ([#376](https://github.com/ipfs/helia-verified-fetch/issues/376)) ([0b26cc1](https://github.com/ipfs/helia-verified-fetch/commit/0b26cc14252290419387a3cdb8c9ab0d236e8832)), closes [#375](https://github.com/ipfs/helia-verified-fetch/issues/375) [ipfs/specs#548](https://github.com/ipfs/specs/issues/548)
+
+### Trivial Changes
+
+* just return overridden fields ([#378](https://github.com/ipfs/helia-verified-fetch/issues/378)) ([ff7c6fd](https://github.com/ipfs/helia-verified-fetch/commit/ff7c6fd84f45a39a77db0523f234226f99c591c2))
+
 ## [@helia/verified-fetch-v8.0.4](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.0.3...@helia/verified-fetch-8.0.4) (2026-08-18)
 
 ### Bug Fixes
