@@ -20,7 +20,6 @@ export function getLibp2pConfig (options?: CreateLibp2pOptions): Libp2pOptions &
   }
 
   return {
-    ...libp2pDefaultOptions,
     services
   }
 }
