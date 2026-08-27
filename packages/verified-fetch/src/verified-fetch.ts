@@ -164,7 +164,15 @@ export class VerifiedFetch {
         })
       }
 
-      const url = this.parseResource(resource)
+      let url: URL
+
+      try {
+        url = this.parseResource(resource)
+      } catch (err: any) {
+        return this.handleFinalResponse(errorToResponse(resource, err, opts), withServerTiming, {
+          serverTiming
+        })
+      }
 
       if (url.protocol === 'ipfs:' && url.pathname === '') {
         // if we don't need to resolve an IPNS names or traverse a DAG, we can

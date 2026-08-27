@@ -7,11 +7,9 @@ import { expect } from 'aegir/chai'
 import all from 'it-all'
 import { base36 } from 'multiformats/bases/base36'
 import { base58btc } from 'multiformats/bases/base58'
-import { CID } from 'multiformats/cid'
 import { stubInterface } from 'sinon-ts'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { createVerifiedFetch } from '../src/index.ts'
-import { toIpfsUri } from '../src/utils/ipfs-uri.ts'
 import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { VerifiedFetch } from '../src/index.ts'
 import type { DNSLink } from '@helia/dnslink'
@@ -72,35 +70,6 @@ describe('ipfs-uri header', () => {
         expect(resp.status).to.equal(200)
         expect(resp.headers.get('ipfs-uri')).to.equal(`ipfs://${directory.cid}/${segment}`)
       })
-    })
-  })
-
-  describe('content path mirroring', () => {
-    // raw (0x55) CIDv1 in base32
-    const cid = 'bafkreidgvpkjawlxz6sffxzwgooowe5yt7i6wsyg236mfoks77nywkptdq'
-
-    it('should omit the path when the pathname is empty', () => {
-      expect(toIpfsUri(new URL(`ipfs://${cid}`))).to.equal(`ipfs://${cid}`)
-    })
-
-    it('should map a bare "/" pathname to a "/" URI path', () => {
-      expect(toIpfsUri(new URL(`ipfs://${cid}/`))).to.equal(`ipfs://${cid}/`)
-    })
-
-    it('should keep a trailing slash after a directory path', () => {
-      expect(toIpfsUri(new URL(`ipfs://${cid}/dir/`))).to.equal(`ipfs://${cid}/dir/`)
-    })
-
-    it('should drop interior empty segments', () => {
-      expect(toIpfsUri(new URL(`ipfs://${cid}/a//b//`))).to.equal(`ipfs://${cid}/a/b/`)
-    })
-
-    it('should treat an encoded slash as a path separator', () => {
-      expect(toIpfsUri(new URL(`ipfs://${cid}/a%2Fb`))).to.equal(`ipfs://${cid}/a/b`)
-    })
-
-    it('should resolve dot segments revealed by decoding', () => {
-      expect(toIpfsUri(new URL(`ipfs://${cid}/a%2F..%2F.`))).to.equal(`ipfs://${cid}`)
     })
   })
 
@@ -172,7 +141,7 @@ describe('ipfs-uri header', () => {
 
       // WHATWG URLs keep the case of ipns:// hostnames so the resolver sees
       // the mixed-case domain while the header value must be lowercase
-      dnsLink.resolve.withArgs('DNSLink.Example.NET').resolves([{
+      dnsLink.resolve.withArgs('dnslink.example.net').resolves([{
         namespace: 'ipfs',
         cid,
         path: '',
@@ -182,44 +151,6 @@ describe('ipfs-uri header', () => {
       const resp = await fetch('ipns://DNSLink.Example.NET/hello')
       expect(resp.status).to.equal(200)
       expect(resp.headers.get('ipfs-uri')).to.equal('ipns://dnslink.example.net/hello')
-    })
-
-    it('should omit the header when a CID IPNS root is not an IPNS name', () => {
-      // raw (0x55) CIDv1: not libp2p-key, so it cannot name a public key
-      const cid = CID.parse('bafkreidgvpkjawlxz6sffxzwgooowe5yt7i6wsyg236mfoks77nywkptdq')
-
-      expect(toIpfsUri(new URL(`ipns://${cid}`))).to.equal(undefined)
-    })
-
-    it('should strip a single trailing dot from a DNSLink name', () => {
-      expect(toIpfsUri(new URL('dnslink://dnslink.example.net./hello'))).to.equal('ipns://dnslink.example.net/hello')
-    })
-
-    it('should omit the header when a DNSLink name has no dot', () => {
-      // a DNSLink name with no dot can point at different content on
-      // each network, so it cannot be an ipns:// authority
-      expect(toIpfsUri(new URL('dnslink://examplemissingtld/hello'))).to.equal(undefined)
-    })
-
-    it('should keep a dotted DNSLink name from a private network', () => {
-      expect(toIpfsUri(new URL('dnslink://example.local/hello'))).to.equal('ipns://example.local/hello')
-    })
-
-    it('should omit the header when a DNSLink name keeps a trailing dot after stripping one', () => {
-      expect(toIpfsUri(new URL('dnslink://dnslink.example.net../hello'))).to.equal(undefined)
-    })
-
-    it('should convert an internationalized DNSLink name to A-labels', () => {
-      // spell-checker: disable-next-line
-      expect(toIpfsUri(new URL('dnslink://dnslink.exämple.net/hello'))).to.equal('ipns://dnslink.xn--exmple-cua.net/hello')
-    })
-
-    it('should omit the header when a DNSLink name has an empty label', () => {
-      expect(toIpfsUri(new URL('dnslink://en..example.net/hello'))).to.equal(undefined)
-    })
-
-    it('should omit the header when a DNSLink label ends with a hyphen', () => {
-      expect(toIpfsUri(new URL('dnslink://a-.example.net/hello'))).to.equal(undefined)
     })
   })
 

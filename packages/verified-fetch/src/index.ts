@@ -869,13 +869,13 @@ import type { RequestedMimeType } from './verified-fetch.ts'
 import type { DNSLink, ResolveProgressEvents as ResolveDNSLinkProgressEvents } from '@helia/dnslink'
 import type { GetBlockProgressEvents, Helia, ProviderOptions } from '@helia/interface'
 import type { ResolveProgressEvents as ResolveIPNSNameProgressEvents, IPNSRoutingProgressEvents, IPNSResolver } from '@helia/ipns'
-import type { AbortOptions, ServiceMap, Logger, PeerId, PublicKey } from '@libp2p/interface'
+import type { CreateLibp2pOptions } from '@helia/libp2p'
+import type { AbortOptions, Logger, PeerId, PublicKey } from '@libp2p/interface'
 import type { DNSResolvers, DNS } from '@multiformats/dns'
 import type { DNSResolver } from '@multiformats/dns/resolvers'
 import type { HeliaInit } from 'helia'
 import type { Blockstore } from 'interface-blockstore'
 import type { ExporterProgressEvents, PathEntry } from 'ipfs-unixfs-exporter'
-import type { Libp2pOptions } from 'libp2p'
 import type { CID } from 'multiformats/cid'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
 
@@ -1157,7 +1157,7 @@ export interface CreateVerifiedFetchInit {
    * If you need a deep merge, you should do it yourself before passing the
    * configuration here.
    */
-  libp2pConfig?: Partial<Libp2pOptions<ServiceMap>>
+  libp2pConfig?: CreateLibp2pOptions
 }
 
 export interface CreateVerifiedFetchOptions {
@@ -1393,7 +1393,7 @@ export async function createVerifiedFetch (init?: Helia | CreateVerifiedFetchIni
   if (!isHelia(init)) {
     const dns = createDns(init?.dnsResolvers)
 
-    const libp2pConfig = getLibp2pConfig()
+    const libp2pConfig = getLibp2pConfig(init?.libp2pConfig)
     libp2pConfig.dns = dns
 
     const delegatedRouters = init?.routers ?? ['https://delegated-ipfs.dev']

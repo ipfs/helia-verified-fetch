@@ -1,6 +1,7 @@
 import { InvalidParametersError } from '@libp2p/interface'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { CID } from 'multiformats/cid'
+import { toCanonicalUri } from './canonical-uri.ts'
 
 /**
  * Turns an IPFS or IPNS path into a URL
@@ -55,7 +56,7 @@ export function stringToIpfsUrl (urlString: string): URL {
       }
     }
 
-    return url
+    return toCanonicalUri(url)
   }
 
   throw new InvalidParametersError(`URL did not start with ipfs:// or ipns:// - ${urlString}`)

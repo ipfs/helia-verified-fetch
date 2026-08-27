@@ -828,14 +828,14 @@ describe('@helia/verified-fetch', () => {
         peerIdFromString('12D3KooWRBy97UB99e3J6hiPesre1MZeuNQvfan4gBziswrRJsNK').toCID()
       ]
 
-      const p = verifiedFetch.fetch('/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA', {
+      const p = verifiedFetch.fetch('/ipfs/bafybeiagwnqiviaae5aet2zivwhhsorg75x2wka2pu55o7grr23ulx5kv4', {
         signal: controller.signal,
         providers
       })
 
       await deferred.promise
 
-      expect(createSessionSpy.calledWith(CID.parse('QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA'), {
+      expect(createSessionSpy.calledWith(CID.parse('bafybeiagwnqiviaae5aet2zivwhhsorg75x2wka2pu55o7grr23ulx5kv4'), {
         signal: controller.signal,
         providers,
         offline: false

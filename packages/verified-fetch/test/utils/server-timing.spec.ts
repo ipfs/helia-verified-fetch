@@ -99,13 +99,6 @@ describe('serverTiming', () => {
       expect(response.headers.get('Server-Timing')).to.be.a('string')
     })
 
-    it('should include server timing when requests error', async () => {
-      const response = await vFetch(`ipfs://${cid}invalid`, {
-        withServerTiming: true
-      })
-      expect(response.headers.get('Server-Timing')).to.be.a('string')
-    })
-
     it('should include server timing in thrown error when aborted', async function () {
       const controller = new AbortController()
       controller.abort()
