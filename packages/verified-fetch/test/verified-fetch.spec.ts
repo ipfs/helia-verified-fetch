@@ -678,7 +678,7 @@ describe('@helia/verified-fetch', () => {
       expect(resp.status).to.equal(200)
       expect(resp.statusText).to.equal('OK')
       // spell-checker: disable-next-line
-      expect(resp.headers.get('ipfs-uri')).to.equal("ipfs://bafybeidlr7wrkdqagc6edxwzinrsrsvqk2adzqizxshqsili4bgzj4tmae/Plan_d'ex%C3%A9cution_du_second_%C3%A9tage_de_l'h%C3%B4tel_de_Brionne_(dessin)_De_Cotte_2503c_%E2%80%93_Gallica_2011_(adjusted).jpg.webp")
+      expect(resp.headers.get('ipfs-uri')).to.equal('ipfs://bafybeidlr7wrkdqagc6edxwzinrsrsvqk2adzqizxshqsili4bgzj4tmae/Plan_d%27ex%C3%A9cution_du_second_%C3%A9tage_de_l%27h%C3%B4tel_de_Brionne_%28dessin%29_De_Cotte_2503c_%E2%80%93_Gallica_2011_%28adjusted%29.jpg.webp')
 
       const data = await resp.arrayBuffer()
       expect(new Uint8Array(data)).to.equalBytes(finalRootFileContent)
@@ -828,14 +828,14 @@ describe('@helia/verified-fetch', () => {
         peerIdFromString('12D3KooWRBy97UB99e3J6hiPesre1MZeuNQvfan4gBziswrRJsNK').toCID()
       ]
 
-      const p = verifiedFetch.fetch('/ipfs/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA', {
+      const p = verifiedFetch.fetch('/ipfs/bafybeiagwnqiviaae5aet2zivwhhsorg75x2wka2pu55o7grr23ulx5kv4', {
         signal: controller.signal,
         providers
       })
 
       await deferred.promise
 
-      expect(createSessionSpy.calledWith(CID.parse('QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJA'), {
+      expect(createSessionSpy.calledWith(CID.parse('bafybeiagwnqiviaae5aet2zivwhhsorg75x2wka2pu55o7grr23ulx5kv4'), {
         signal: controller.signal,
         providers,
         offline: false

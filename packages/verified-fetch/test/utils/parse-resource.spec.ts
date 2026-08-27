@@ -12,17 +12,32 @@ const types = [
   ['dnslink', 'ipns']
 ]
 
-const keys: Record<string, Record<string, string>> = {
+const keys: Record<string, Record<string, { input: string, normalized: string }>> = {
   ipfs: {
-    CID: 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am',
-    'case sensitive CID': 'QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn'
+    CID: {
+      input: 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am',
+      normalized: 'bafkreicysg23kiwv34eg2d7qweipxwosdo2py4ldv42nbauguluen5v6am'
+    },
+    'case sensitive CID': {
+      input: 'QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn',
+      normalized: 'bafybeiczsscdsbs7ffqz55asqdf3smv6klcw3gofszvwlyarci47bgf354'
+    }
   },
   ipns: {
-    PeerID: '12D3KooWAsKeVQRVqBi2uzfVub7L6b7oByD1dGmorN644bEx6TyT',
-    'PeerID CID': 'bafzaajaiaejcad45sqaz4vc7ftbzbyw5clcjhifslsklqzkqn4hcghvuqmim7qok'
+    PeerID: {
+      input: '12D3KooWAsKeVQRVqBi2uzfVub7L6b7oByD1dGmorN644bEx6TyT',
+      normalized: 'k51qzi5uqu5dgklmbtqcksqzdz8xl138l9lfb50dszwclp9tr85u2ae2x2uj0q'
+    },
+    'PeerID CID': {
+      input: 'bafzaajaiaejcad45sqaz4vc7ftbzbyw5clcjhifslsklqzkqn4hcghvuqmim7qok',
+      normalized: 'k51qzi5uqu5dgklmbtqcksqzdz8xl138l9lfb50dszwclp9tr85u2ae2x2uj0q'
+    }
   },
   dnslink: {
-    domain: 'example.org'
+    domain: {
+      input: 'example.org',
+      normalized: 'example.org'
+    }
   }
 }
 
@@ -142,11 +157,11 @@ const testCases: Record<string, { ref: string, verify: any }> = {
 describe('parse-url-string', () => {
   for (const [type, protocol] of types) {
     for (const [scheme, uri] of Object.entries(schemes)) {
-      for (const [key, value] of Object.entries(keys[type])) {
+      for (const [key, { input, normalized }] of Object.entries(keys[type])) {
         for (const [name, test] of Object.entries(testCases)) {
           it(`should parse ${type.toUpperCase()} ${scheme} with ${key} ${name}`, () => {
-            expect(stringToIpfsUrl(`${uri.replace('{scheme}', protocol).replace('{key}', value)}${test.ref}`))
-              .to.deep.equal(new URL(`${type}://${value}${test.ref}`))
+            expect(stringToIpfsUrl(`${uri.replace('{scheme}', protocol).replace('{key}', input)}${test.ref}`))
+              .to.deep.equal(new URL(`${type}://${normalized}${test.ref}`))
           })
         }
       }

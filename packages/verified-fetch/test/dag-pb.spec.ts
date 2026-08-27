@@ -329,10 +329,12 @@ describe('dag-pb', () => {
 
     const res = await verifiedFetch.fetch(`ipfs://${directory.cid}/${encodeURIComponent(fileName)}`)
     expect(res.status).to.equal(200)
-    expect(res.headers.get('ipfs-uri')).to.equal(`ipfs://${directory.cid}/${encodeURIComponent(fileName)}`)
+    // strict RFC 3986 encoding also escapes "@" and ":" which
+    // encodeURIComponent leaves as-is
+    expect(res.headers.get('ipfs-uri')).to.equal(`ipfs://${directory.cid}/h%23e%C2%A3l%25l%3Fo%40-%3Aw~o%60rld.txt`)
   })
 
-  it('should fetch files with non-ascii characters and escape the x-ipfs-path header value', async () => {
+  it('should fetch files with non-ascii characters and omit the x-ipfs-path header', async () => {
     const fs = unixfs(helia)
 
     const [, directory] = await all(fs.addAll([{
@@ -346,5 +348,6 @@ describe('dag-pb', () => {
     const res = await verifiedFetch.fetch(`ipfs://${directory.cid}/「1」.txt`)
     expect(res.status).to.equal(200)
     expect(res.headers.get('ipfs-uri')).to.equal(`ipfs://${directory.cid}/%E3%80%8C1%E3%80%8D.txt`)
+    expect(res.headers.get('x-ipfs-path')).to.be.null()
   })
 })

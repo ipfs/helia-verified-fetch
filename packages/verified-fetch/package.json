@@ -179,7 +179,6 @@
     "@ipld/dag-json": "^11.0.0",
     "@ipld/dag-pb": "^4.1.5",
     "@libp2p/interface": "^3.2.0",
-    "@libp2p/kad-dht": "^16.2.0",
     "@libp2p/peer-id": "^6.0.6",
     "@libp2p/utils": "^7.0.15",
     "@libp2p/webrtc": "^6.0.16",

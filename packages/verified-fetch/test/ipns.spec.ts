@@ -4,6 +4,7 @@ import { unixfs } from '@helia/unixfs'
 import { ed25519Crypto } from '@ipshipyard/crypto'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
+import { base36 } from 'multiformats/bases/base36'
 import { base58btc } from 'multiformats/bases/base58'
 import { stubInterface } from 'sinon-ts'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
@@ -56,7 +57,7 @@ describe('IPNS', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipns://${name}`)
-    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${name}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${privateKey.publicKey.toCID().toString(base36)}`)
     expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid}`)
     const maxAge = Math.round(Number((record.ttl ?? 0n) / BigInt(1e9)))
     expect(resp.headers.get('cache-control')).to.match(new RegExp(`^public, max-age=${maxAge}, stale-while-revalidate=\\d+, stale-if-error=\\d+$`))
@@ -86,7 +87,7 @@ describe('IPNS', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipns://${name}/`)
-    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${name}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipns://${privateKey.publicKey.toCID().toString(base36)}/`)
     expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid},${fileCid}`)
   })
 
@@ -110,7 +111,7 @@ describe('IPNS', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipfs://${name}/`)
-    expect(resp.headers.get('ipfs-uri')).to.equal(`ipfs://${name}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipfs://${name}/`)
     expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid}`)
   })
 
@@ -137,7 +138,7 @@ describe('IPNS', () => {
     expect(resp.status).to.equal(200)
     expect(resp.redirected).to.be.false()
     expect(resp.url).to.equal(`ipfs://${name}/`)
-    expect(resp.headers.get('ipfs-uri')).to.equal(`ipfs://${name}`)
+    expect(resp.headers.get('ipfs-uri')).to.equal(`ipfs://${name}/`)
     expect(resp.headers.get('X-Ipfs-Roots')).to.equal(`${cid},${fileCid}`)
   })
 })
