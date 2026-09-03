@@ -60,8 +60,15 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
     return defaultMimeType
   }
 
-  // no need to include file-types listed at https://github.com/sindresorhus/file-type#supported-file-types
-  switch (fileName.split('.').pop()) {
+  // formats file-type cannot sniff at all, plus the media containers it only
+  // recognises when their magic bytes start at offset 0 - a file with leading
+  // padding (an MP3 whose first frame sync sits behind a run of silence, a PDF
+  // that does not begin with its header) reaches this switch as well, and
+  // `application/octet-stream` makes the browser download it instead of
+  // playing or displaying it inline
+  // @see https://github.com/sindresorhus/file-type#supported-file-types
+  // @see https://github.com/ipfs/service-worker-gateway/issues/1197
+  switch (fileName.split('.').pop()?.toLowerCase()) {
     case 'css':
       return 'text/css'
     case 'html':
@@ -74,13 +81,56 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
       return 'application/json'
     case 'txt':
       return 'text/plain'
+    case 'md':
+    case 'markdown':
+      return 'text/markdown'
+    case 'xml':
+      return 'text/xml; charset=utf-8'
+    case 'csv':
+      return 'text/csv'
+    case 'vtt':
+      return 'text/vtt'
     case 'woff2':
       return 'font/woff2'
     // see bottom of https://github.com/sindresorhus/file-type#supported-file-types
     case 'svg':
       return 'image/svg+xml'
-    case 'csv':
-      return 'text/csv'
+    case 'ico':
+      return 'image/x-icon'
+    case 'pdf':
+      return 'application/pdf'
+    case 'aac':
+      return 'audio/aac'
+    case 'flac':
+      return 'audio/flac'
+    case 'm4a':
+      return 'audio/mp4'
+    case 'mid':
+    case 'midi':
+      return 'audio/midi'
+    case 'mp3':
+      return 'audio/mpeg'
+    case 'oga':
+    case 'ogg':
+    case 'opus':
+      return 'audio/ogg'
+    case 'wav':
+      return 'audio/wav'
+    case 'weba':
+      return 'audio/webm'
+    case 'avi':
+      return 'video/x-msvideo'
+    case 'm4v':
+    case 'mp4':
+      return 'video/mp4'
+    case 'mkv':
+      return 'video/x-matroska'
+    case 'mov':
+      return 'video/quicktime'
+    case 'ogv':
+      return 'video/ogg'
+    case 'webm':
+      return 'video/webm'
     case 'doc':
       return 'application/msword'
     case 'xls':
