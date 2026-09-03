@@ -185,4 +185,92 @@ describe('content-type-parser', () => {
     const resp = await verifiedFetch.fetch(CID.parse('bafkqablimvwgy3y'))
     expect(resp.headers.get('content-type')).to.equal('text/plain')
   })
+
+  /**
+   * A single silent MPEG-1 Layer III frame - the `FF FB 90 00` sync word plus
+   * a zero-filled body, 417 bytes in total (the frame size for 128kbps @
+   * 44.1kHz).
+   */
+  function mp3Frame (): Uint8Array {
+    const frame = new Uint8Array(417)
+    frame.set([0xFF, 0xFB, 0x90, 0x00])
+
+    return frame
+  }
+
+  it('should detect mp3 as audio/mpeg when the frame sync is behind padding', async () => {
+    // file-type only recognises an MPEG frame sync at offset 0, so a file that
+    // opens with silence falls through to the filename extension
+    // @see https://github.com/ipfs/service-worker-gateway/issues/1197
+    const frame = mp3Frame()
+    const padded = new Uint8Array(frame.length * 2)
+    padded.set(frame, frame.length)
+
+    expect(await fileTypeFromBuffer(padded)).to.equal(undefined)
+
+    const result = await last(fs.addAll([{
+      path: '/audio.mp3',
+      content: padded
+    }], {
+      wrapWithDirectory: true
+    }))
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/audio.mp3`)
+    expect(resp.headers.get('content-type')).to.equal('audio/mpeg')
+    expect(resp.headers.get('content-disposition')).to.include('filename="audio.mp3"')
+  })
+
+  it('should match the extension case-insensitively', async () => {
+    const frame = mp3Frame()
+    const padded = new Uint8Array(frame.length * 2)
+    padded.set(frame, frame.length)
+
+    const result = await last(fs.addAll([{
+      path: '/AUDIO.MP3',
+      content: padded
+    }], {
+      wrapWithDirectory: true
+    }))
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/AUDIO.MP3`)
+    expect(resp.headers.get('content-type')).to.equal('audio/mpeg')
+  })
+
+  it('should prefer sniffed bytes over the filename extension', async () => {
+    // a PNG that happens to be named .mp3 is still a PNG
+    const png = new Uint8Array([
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+      0x0D, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x62, 0x60, 0x01, 0x00, 0x00,
+      0x00, 0x05, 0x00, 0x01, 0xAA, 0xEE, 0xC4, 0x22, 0x00, 0x00, 0x00, 0x00,
+      0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+    ])
+
+    const result = await last(fs.addAll([{
+      path: '/not-audio.mp3',
+      content: png
+    }], {
+      wrapWithDirectory: true
+    }))
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/not-audio.mp3`)
+    expect(resp.headers.get('content-type')).to.equal('image/png')
+  })
+
+  it('should detect md as text/markdown', async () => {
+    const result = await last(fs.addAll([{
+      path: '/readme.md',
+      content: uint8ArrayFromString('# hello\n')
+    }], {
+      wrapWithDirectory: true
+    }))
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/readme.md`)
+    expect(resp.headers.get('content-type')).to.equal('text/markdown')
+  })
 })
