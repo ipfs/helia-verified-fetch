@@ -199,7 +199,7 @@ describe('content-type-parser', () => {
   }
 
   it('should detect mp3 as audio/mpeg when the frame sync is behind padding', async () => {
-    // file-type only recognises an MPEG frame sync at offset 0, so a file that
+    // file-type only recognizes an MPEG frame sync at offset 0, so a file that
     // opens with silence falls through to the filename extension
     // @see https://github.com/ipfs/service-worker-gateway/issues/1197
     const frame = mp3Frame()

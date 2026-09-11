@@ -61,7 +61,7 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
   }
 
   // formats file-type cannot sniff at all, plus the media containers it only
-  // recognises when their magic bytes start at offset 0 - a file with leading
+  // recognizes when their magic bytes start at offset 0 - a file with leading
   // padding (an MP3 whose first frame sync sits behind a run of silence, a PDF
   // that does not begin with its header) reaches this switch as well, and
   // `application/octet-stream` makes the browser download it instead of
