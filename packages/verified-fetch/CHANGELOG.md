@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v8.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.1.0...@helia/verified-fetch-8.1.1) (2026-09-11)
+
+### Bug Fixes
+
+* fall back to the filename extension for common media types ([#379](https://github.com/ipfs/helia-verified-fetch/issues/379)) ([844fe40](https://github.com/ipfs/helia-verified-fetch/commit/844fe4044d5c24eed6c87d3d824d2a9931689495))
+
 ## [@helia/verified-fetch-v8.1.0](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.0.4...@helia/verified-fetch-8.1.0) (2026-08-27)
 
 ### Features
