@@ -187,8 +187,10 @@ export class UnixFSPlugin extends BasePlugin {
     let contentType = MEDIA_TYPE_OCTET_STREAM
 
     // only detect content type for non-range requests to avoid loading blocks
-    // we aren't going to stream to the user
-    if (rangeHeader == null) {
+    // we aren't going to stream to the user - unless they are requesting a
+    // range that starts at the beginning of the file, in which case we would
+    // load the block anyway so try to detect the content type
+    if (rangeHeader == null || rangeHeader.ranges.some(r => r.start === 0)) {
       contentType = await this.detectContentType(entry, filename, options)
     }
 

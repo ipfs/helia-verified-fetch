@@ -31,3 +31,5 @@ EBML
 matroska
 HTAB
 examplemissingtld
+quicktime
+kbps

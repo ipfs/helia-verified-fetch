@@ -203,8 +203,8 @@ describe('content-type-parser', () => {
     // opens with silence falls through to the filename extension
     // @see https://github.com/ipfs/service-worker-gateway/issues/1197
     const frame = mp3Frame()
-    const padded = new Uint8Array(frame.length * 2)
-    padded.set(frame, frame.length)
+    const padded = new Uint8Array(1024)
+    padded.set(frame, 1024 - frame.length)
 
     expect(await fileTypeFromBuffer(padded)).to.equal(undefined)
 
@@ -217,6 +217,26 @@ describe('content-type-parser', () => {
 
     verifiedFetch = new VerifiedFetch(helia)
     const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/audio.mp3`)
+    expect(resp.headers.get('content-type')).to.equal('audio/mpeg')
+    expect(resp.headers.get('content-disposition')).to.include('filename="audio.mp3"')
+  })
+
+  it('should detect mp3 as audio/mpeg during a range request', async () => {
+    const frame = mp3Frame()
+
+    const result = await last(fs.addAll([{
+      path: '/audio.mp3',
+      content: frame
+    }], {
+      wrapWithDirectory: true
+    }))
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/audio.mp3`, {
+      headers: {
+        range: 'bytes=0-'
+      }
+    })
     expect(resp.headers.get('content-type')).to.equal('audio/mpeg')
     expect(resp.headers.get('content-disposition')).to.include('filename="audio.mp3"')
   })
