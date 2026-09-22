@@ -1,3 +1,9 @@
+## [@helia/verified-fetch-v8.1.2](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.1.1...@helia/verified-fetch-8.1.2) (2026-09-22)
+
+### Bug Fixes
+
+* detect content type for ranges at start of file ([#380](https://github.com/ipfs/helia-verified-fetch/issues/380)) ([77f873f](https://github.com/ipfs/helia-verified-fetch/commit/77f873ffc7d0df182fb2c915c2c4f9597e9ab956)), closes [#379](https://github.com/ipfs/helia-verified-fetch/issues/379)
+
 ## [@helia/verified-fetch-v8.1.1](https://github.com/ipfs/helia-verified-fetch/compare/@helia/verified-fetch-8.1.0...@helia/verified-fetch-8.1.1) (2026-09-11)
 
 ### Bug Fixes
