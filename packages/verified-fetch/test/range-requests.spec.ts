@@ -165,7 +165,7 @@ describe('range requests', () => {
 
         const lines = body.split('\r\n')
         expect(lines[0]).to.include(`--${boundary}`)
-        expect(lines[1]).to.include('Content-Type: application/octet-stream')
+        expect(lines[1]).to.include('Content-Type: text/plain; charset=utf-8')
         expect(lines[2]).to.include('Content-Range: bytes 0-2/11')
         // blank line and then the content:
         expect(lines[3]).to.equal('')
@@ -173,7 +173,7 @@ describe('range requests', () => {
         expect(new TextEncoder().encode(lines[4])).to.equalBytes(content.subarray(0, 3))
 
         expect(lines[5]).to.include(`--${boundary}`)
-        expect(lines[6]).to.include('Content-Type: application/octet-stream')
+        expect(lines[6]).to.include('Content-Type: text/plain; charset=utf-8')
         expect(lines[7]).to.include('Content-Range: bytes 3-5/11')
         expect(lines[8]).to.equal('')
         expect(new TextEncoder().encode(lines[9])).to.equalBytes(content.subarray(3, 6))
