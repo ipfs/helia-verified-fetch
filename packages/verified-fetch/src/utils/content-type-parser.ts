@@ -18,7 +18,9 @@ function getText (bytes: Uint8Array): string | null {
   const decoder = new TextDecoder('utf-8', { fatal: true })
 
   try {
-    return decoder.decode(bytes)
+    // the bytes may be a truncated sample of the file so allow an incomplete
+    // trailing character - invalid sequences before it still throw
+    return decoder.decode(bytes, { stream: true })
   } catch (err) {
     return null
   }

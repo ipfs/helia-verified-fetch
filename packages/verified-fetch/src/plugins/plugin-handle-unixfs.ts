@@ -1,12 +1,12 @@
 import * as dagPb from '@ipld/dag-pb'
 import { isPromise } from '@libp2p/utils'
 import { exporter, walkPath } from 'ipfs-unixfs-exporter'
-import first from 'it-first'
 import last from 'it-last'
 import itToBrowserReadableStream from 'it-to-browser-readablestream'
 import toBuffer from 'it-to-buffer'
 import * as raw from 'multiformats/codecs/raw'
 import { withArrayBuffer } from 'uint8arrays/with-array-buffer'
+import { CONTENT_TYPE_SNIFF_SIZE } from '../constants.ts'
 import { MEDIA_TYPE_OCTET_STREAM, MEDIA_TYPE_DAG_PB } from '../utils/content-types.ts'
 import { getContentDispositionFilename } from '../utils/get-content-disposition-filename.ts'
 import { badGatewayResponse, movedPermanentlyResponse, partialContentResponse, okResponse } from '../utils/responses.ts'
@@ -238,8 +238,14 @@ export class UnixFSPlugin extends BasePlugin {
     if (entry.type === 'raw' || entry.type === 'identity') {
       buf = entry.node
     } else {
-      // read the first block of the file
-      buf = await first(entry.content(options))
+      // bound the read - the exporter keeps walking the DAG after the consumer
+      // stops pulling, so an unbounded read here fetches the whole file
+      // @see https://github.com/ipfs/js-ipfs-unixfs/issues/501
+      buf = await toBuffer(entry.content({
+        ...(options ?? {}),
+        offset: 0,
+        length: CONTENT_TYPE_SNIFF_SIZE
+      }))
     }
 
     if (buf == null) {
