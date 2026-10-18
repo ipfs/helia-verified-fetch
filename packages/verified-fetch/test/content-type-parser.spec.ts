@@ -8,6 +8,7 @@ import { CID } from 'multiformats/cid'
 import Sinon from 'sinon'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { createVerifiedFetch } from '../src/index.ts'
+import { contentTypeParser } from '../src/utils/content-type-parser.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.ts'
 import type { Helia } from '@helia/interface'
@@ -292,5 +293,79 @@ describe('content-type-parser', () => {
     verifiedFetch = new VerifiedFetch(helia)
     const resp = await verifiedFetch.fetch(`ipfs://${result?.cid}/readme.md`)
     expect(resp.headers.get('content-type')).to.equal('text/markdown')
+  })
+})
+
+describe('contentTypeParser', () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"></svg>'
+  const html = 'text/html; charset=utf-8'
+  const text = 'text/plain; charset=utf-8'
+  const json = 'application/json'
+
+  const cases: Array<[string, string, string?]> = [
+    // svg
+    [svg, 'image/svg+xml'],
+    [`<?xml version="1.0"?>\n${svg}`, 'image/svg+xml'],
+    [`<!-- made with x -->\n${svg}`, 'image/svg+xml'],
+    [`<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "x.dtd">\n${svg}`, 'image/svg+xml'],
+    [`  \n${svg}`, 'image/svg+xml'],
+    ['<svg-icon></svg-icon>', text],
+    ['<!-- hi --><p>hello</p>', html],
+
+    // html
+    ['<!-- hi --><!DOCTYPE html><html></html>', html],
+    ['<!DOCTYPE html><html></html>', html],
+    ['<div>hello</div>', html],
+    ['\n\t <a href="x">x</a>', html],
+    ['<a>x</a>', html],
+    ['<abbr>x</abbr>', text],
+    ['<bx>x</bx>', text],
+    ['<br/>', text],
+    ['< not a tag', text],
+
+    // json
+    ['{"a":[1,2,{"b":null}],"c":"d"}', json],
+    ['  [true, false, -1.5e+3, "\\u00e9\\n"]  \n', json],
+    ['{}', json],
+    ['[]', json],
+    ['[{"id":1,"name":"a"},{"id":2,"na', json],
+    ['{"a":"b\\', json],
+    ['{"a":"\\u00', json],
+    ['[1, 2.', json],
+    ['[-', json],
+    ['[1e', json],
+    ['[tru', json],
+    ['{"a"', json],
+    ['{"a":', json],
+    ['[1,', json],
+    ['42', text],
+    ['true', text],
+    ['"hello"', text],
+    ['[section]\nkey=value', text],
+    ['[link](https://example.com)', text],
+    ['{"a" 1}', text],
+    ['{"a":1}}', text],
+    ['{"a":1} x', text],
+    ['[1,]', text],
+    ['[01]', text],
+    ['[nullable]', text],
+    ['{"a":"\\x"}', text],
+    ['[1 2]', text],
+    ['{1:2}', text],
+    ['', text],
+
+    // extensions
+    ['<p>hi</p>', html, 'page.htm'],
+    ['<p>hi</p>', html, 'page.html']
+  ]
+
+  for (const [input, expected, fileName] of cases) {
+    it(`detects ${JSON.stringify(input)}${fileName == null ? '' : ` named ${fileName}`} as ${expected}`, async () => {
+      await expect(contentTypeParser(uint8ArrayFromString(input), fileName)).to.eventually.equal(expected)
+    })
+  }
+
+  it('does not overflow the stack on deeply nested json', async () => {
+    await expect(contentTypeParser(uint8ArrayFromString('['.repeat(100_000)))).to.eventually.equal(json)
   })
 })

@@ -1,17 +1,123 @@
 import { fileTypeFromBuffer } from 'file-type'
 
 export const defaultMimeType = 'application/octet-stream'
+// skip a prolog of whitespace, `<?…?>`, `<!-- … -->` and `<!DOCTYPE …>`, then
+// require `<svg` as the first tag. Each alternative starts differently and
+// can't run past its terminator, so the match stays linear
 function checkForSvg (text: string): boolean {
-  return /^(<\?xml[^>]+>)?[^<^\w]+<svg/ig.test(text)
+  return /^(?:\s|<\?(?:[^?]|\?(?!>))*\?>|<!--(?:[^-]|-(?!->))*-->|<!doctype[^>]*>)*<svg[\s/>]/i.test(text)
 }
 
-async function checkForJson (text: string): Promise<boolean> {
-  try {
-    JSON.parse(text)
-    return true
-  } catch (err) {
+// a JSON object or array that is valid up to the end of the text, so a sample
+// cut off mid-document still matches. Scalars are rejected on purpose
+// @see https://github.com/gabriel-vasile/mimetype/issues/175
+function checkForJson (text: string): boolean {
+  let i = text.search(/[^ \t\n\r]/)
+
+  if (text[i] !== '{' && text[i] !== '[') {
     return false
   }
+
+  const closers: string[] = []
+  let state: 'value' | 'key' | 'colon' | 'after' = 'value'
+  let canClose = false
+
+  while (i < text.length) {
+    const c = text[i]
+
+    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+      i++
+    } else if (c === closers[closers.length - 1] && (state === 'after' || canClose)) {
+      closers.pop()
+      state = 'after'
+      canClose = false
+      i++
+    } else if (state === 'after') {
+      if (c !== ',' || closers.length === 0) {
+        return false
+      }
+
+      state = closers[closers.length - 1] === '}' ? 'key' : 'value'
+      i++
+    } else if (state === 'colon') {
+      if (c !== ':') {
+        return false
+      }
+
+      state = 'value'
+      i++
+    } else if (c === '"') {
+      i = skipString(text, i)
+
+      if (i < 0) {
+        return false
+      }
+
+      state = state === 'key' ? 'colon' : 'after'
+      canClose = false
+    } else if (state === 'key') {
+      return false
+    } else if (c === '{' || c === '[') {
+      closers.push(c === '{' ? '}' : ']')
+      state = c === '{' ? 'key' : 'value'
+      canClose = true
+      i++
+    } else {
+      // a number or literal, which may be cut off by the end of the text
+      JSON_TOKEN.lastIndex = i
+      JSON_TOKEN.test(text)
+      const end = JSON_TOKEN.lastIndex
+      const token = text.slice(i, end)
+      const valid = end === text.length
+        ? JSON_LITERALS.some(literal => literal.startsWith(token)) || JSON_NUMBER.test(token) || JSON_NUMBER.test(`${token}0`)
+        : JSON_LITERALS.includes(token) || JSON_NUMBER.test(token)
+
+      if (!valid) {
+        return false
+      }
+
+      state = 'after'
+      canClose = false
+      i = end
+    }
+  }
+
+  return true
+}
+
+// sticky, so it matches the token starting at `lastIndex` and nothing later
+const JSON_TOKEN = /[\w+\-.]*/y
+const JSON_LITERALS = ['true', 'false', 'null']
+const JSON_NUMBER = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/
+
+// returns the index after the closing quote, `text.length` if the string is
+// cut off, or -1 if it is invalid
+function skipString (text: string, i: number): number {
+  for (i++; i < text.length; i++) {
+    const c = text[i]
+
+    if (c === '"') {
+      return i + 1
+    }
+
+    if (c === '\\') {
+      i++
+
+      if (text[i] === 'u') {
+        if (!/^[0-9a-fA-F]*$/.test(text.slice(i + 1, i + 5))) {
+          return -1
+        }
+
+        i += 4
+      } else if (i < text.length && !'"\\/bfnrt'.includes(text[i])) {
+        return -1
+      }
+    } else if (c < ' ') {
+      return -1
+    }
+  }
+
+  return text.length
 }
 
 function getText (bytes: Uint8Array): string | null {
@@ -24,15 +130,18 @@ function getText (bytes: Uint8Array): string | null {
   }
 }
 
+// the scriptable signatures of the WHATWG "rules for identifying an unknown
+// MIME type", each followed by a space or `>`
+// @see https://mimesniff.spec.whatwg.org/#identifying-a-resource-with-an-unknown-mime-type
 async function checkForHtml (text: string): Promise<boolean> {
-  return /^\s*<(?:!doctype\s+html|html|head|body)\b/i.test(text)
+  return /^[\t\n\f\r ]*<(?:!doctype html|html|head|script|iframe|h1|div|font|table|a|style|title|b|body|br|p|!--)[ >]/i.test(text)
 }
 
 export async function contentTypeParser (bytes: Uint8Array, fileName?: string): Promise<string> {
   const detectedType = (await fileTypeFromBuffer(bytes))?.mime
 
   if (detectedType != null) {
-    if (detectedType === 'application/xml' && fileName?.toLowerCase().endsWith('.svg')) {
+    if (detectedType === 'application/xml' && (fileName?.toLowerCase().endsWith('.svg') === true || checkForSvg(getText(bytes) ?? ''))) {
       return 'image/svg+xml'
     }
 
@@ -48,7 +157,7 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
       // check for svg, json, html, or it's plain text.
       if (checkForSvg(text)) {
         return 'image/svg+xml'
-      } else if (await checkForJson(text)) {
+      } else if (checkForJson(text)) {
         return 'application/json'
       } else if (await checkForHtml(text)) {
         return 'text/html; charset=utf-8'
@@ -71,6 +180,7 @@ export async function contentTypeParser (bytes: Uint8Array, fileName?: string): 
   switch (fileName.split('.').pop()?.toLowerCase()) {
     case 'css':
       return 'text/css'
+    case 'htm':
     case 'html':
       return 'text/html; charset=utf-8'
     case 'js':

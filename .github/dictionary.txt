@@ -33,3 +33,5 @@ HTAB
 examplemissingtld
 quicktime
 kbps
+bfnrt
+scriptable
