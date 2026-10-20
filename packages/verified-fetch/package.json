@@ -181,7 +181,7 @@
     "@libp2p/interface": "^3.2.0",
     "@libp2p/peer-id": "^6.0.6",
     "@libp2p/utils": "^7.0.15",
-    "@libp2p/webrtc": "^6.0.16",
+    "@libp2p/webrtc": "^7.0.0",
     "@libp2p/websockets": "^10.1.8",
     "@multiformats/dns": "^1.0.13",
     "@multiformats/multiaddr": "^13.0.1",
