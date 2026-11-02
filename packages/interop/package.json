@@ -148,7 +148,7 @@
     "@helia/verified-fetch": "^8.0.0",
     "aegir": "^48.0.4",
     "execa": "^10.0.1",
-    "glob": "^13.0.6",
+    "glob": "^14.0.3",
     "ipfsd-ctl": "^17.0.0",
     "kubo": "^0.43.0",
     "kubo-rpc-client": "^7.1.0",
