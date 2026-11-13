@@ -2,11 +2,13 @@ import { unixfs } from '@helia/unixfs'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import { fileTypeFromBuffer } from 'file-type'
+import { fixedSize } from 'ipfs-unixfs-importer/chunker'
 import last from 'it-last'
 import { filetypemime } from 'magic-bytes.js'
 import { CID } from 'multiformats/cid'
 import Sinon from 'sinon'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { CONTENT_TYPE_SNIFF_SIZE } from '../src/constants.ts'
 import { createVerifiedFetch } from '../src/index.ts'
 import { VerifiedFetch } from '../src/verified-fetch.ts'
 import { createHelia } from './fixtures/create-offline-helia.ts'
@@ -114,6 +116,63 @@ describe('content-type-parser', () => {
     expect(resp.headers.get('content-length')).to.equal('0')
     expect(resp.headers.get('content-type')).to.equal('text/plain; charset=utf-8')
     expect(resp.headers.get('content-disposition')).to.include(`filename="${cid}"`)
+  })
+
+  it('should keep detecting JSON with no extension in a single 256KiB block', async () => {
+    const json = JSON.stringify(Array.from({ length: 2000 }, (_, i) => `item-${i}`))
+    expect(json.length).to.be.greaterThan(20_000)
+    // a single dag-pb node, as `ipfs add` with default options creates
+    const cid = await fs.addBytes(uint8ArrayFromString(json), {
+      cidVersion: 0,
+      rawLeaves: false,
+      chunker: fixedSize({ chunkSize: 262_144 })
+    })
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}`)
+    expect(resp.headers.get('content-type')).to.equal('application/json')
+  })
+
+  it('should detect utf-8 text when the sniffed bytes end part way through a character', async () => {
+    // the last sniffed byte starts a multi-byte character, and the first
+    // block ends part way through it
+    const text = `${'a'.repeat(CONTENT_TYPE_SNIFF_SIZE - 1)}${'€'.repeat(10)}`
+    const cid = await fs.addBytes(uint8ArrayFromString(text), {
+      cidVersion: 0,
+      rawLeaves: false,
+      chunker: fixedSize({ chunkSize: 262_144 })
+    })
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}`)
+    expect(resp.headers.get('content-type')).to.equal('text/plain; charset=utf-8')
+  })
+
+  it('should not detect a complete file that ends part way through a character as text', async () => {
+    // only a sample cut at the sniff size may end on an incomplete character
+    const cid = await fs.addBytes(Uint8Array.from([0x61, 0xe2, 0x82]), {
+      rawLeaves: false
+    })
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}`)
+    expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
+  })
+
+  it('should not detect a sniffed sample with an invalid byte part way through as text', async () => {
+    // the sample is cut part way through a character, which is allowed, but an
+    // invalid byte before the cut still fails the utf-8 check
+    const bytes = uint8ArrayFromString(`${'a'.repeat(CONTENT_TYPE_SNIFF_SIZE - 1)}${'€'.repeat(10)}`)
+    bytes[1000] = 0xff
+    const cid = await fs.addBytes(bytes, {
+      cidVersion: 0,
+      rawLeaves: false,
+      chunker: fixedSize({ chunkSize: 262_144 })
+    })
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}`)
+    expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
   })
 
   it('is passed a filename if it is available', async () => {

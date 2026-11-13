@@ -1,4 +1,5 @@
 import { fileTypeFromBuffer } from 'file-type'
+import { CONTENT_TYPE_SNIFF_SIZE } from '../constants.ts'
 
 export const defaultMimeType = 'application/octet-stream'
 function checkForSvg (text: string): boolean {
@@ -18,7 +19,11 @@ function getText (bytes: Uint8Array): string | null {
   const decoder = new TextDecoder('utf-8', { fatal: true })
 
   try {
-    return decoder.decode(bytes)
+    // a sample cut at the sniff size may end part way through a character, so
+    // allow an incomplete trailing character there - invalid sequences before
+    // it still throw. A complete file of exactly the sniff size that ends on an
+    // incomplete character is accepted too, which is rare enough to ignore
+    return decoder.decode(bytes, { stream: bytes.byteLength === CONTENT_TYPE_SNIFF_SIZE })
   } catch (err) {
     return null
   }
