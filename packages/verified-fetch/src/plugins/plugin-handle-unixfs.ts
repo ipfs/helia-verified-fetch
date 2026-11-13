@@ -1,6 +1,7 @@
 import * as dagPb from '@ipld/dag-pb'
 import { isPromise } from '@libp2p/utils'
 import { exporter, walkPath } from 'ipfs-unixfs-exporter'
+import first from 'it-first'
 import last from 'it-last'
 import itToBrowserReadableStream from 'it-to-browser-readablestream'
 import toBuffer from 'it-to-buffer'
@@ -239,9 +240,11 @@ export class UnixFSPlugin extends BasePlugin {
       buf = entry.node
     } else {
       // bound the read - the exporter keeps walking the DAG after the consumer
-      // stops pulling, so an unbounded read here fetches the whole file
+      // stops pulling, so an unbounded read here fetches the whole file. Only
+      // the first chunk is sniffed, so a missing block later in the sniff
+      // window can't fail a response that doesn't need it
       // @see https://github.com/ipfs/js-ipfs-unixfs/issues/501
-      buf = await toBuffer(entry.content({
+      buf = await first(entry.content({
         ...(options ?? {}),
         offset: 0,
         length: CONTENT_TYPE_SNIFF_SIZE

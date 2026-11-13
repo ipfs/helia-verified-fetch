@@ -118,7 +118,7 @@ describe('content-type-parser', () => {
     expect(resp.headers.get('content-disposition')).to.include(`filename="${cid}"`)
   })
 
-  it('should detect a 20KiB file with no extension as application/json', async () => {
+  it('should keep detecting JSON with no extension in a single 256KiB block', async () => {
     const json = JSON.stringify(Array.from({ length: 2000 }, (_, i) => `item-${i}`))
     expect(json.length).to.be.greaterThan(20_000)
     // a single dag-pb node, as `ipfs add` with default options creates
@@ -146,6 +146,33 @@ describe('content-type-parser', () => {
     verifiedFetch = new VerifiedFetch(helia)
     const resp = await verifiedFetch.fetch(`ipfs://${cid}`)
     expect(resp.headers.get('content-type')).to.equal('text/plain; charset=utf-8')
+  })
+
+  it('should not detect a complete file that ends part way through a character as text', async () => {
+    // only a sample cut at the sniff size may end on an incomplete character
+    const cid = await fs.addBytes(Uint8Array.from([0x61, 0xe2, 0x82]), {
+      rawLeaves: false
+    })
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}`)
+    expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
+  })
+
+  it('should not detect a sniffed sample with an invalid byte part way through as text', async () => {
+    // the sample is cut part way through a character, which is allowed, but an
+    // invalid byte before the cut still fails the utf-8 check
+    const bytes = uint8ArrayFromString(`${'a'.repeat(CONTENT_TYPE_SNIFF_SIZE - 1)}${'€'.repeat(10)}`)
+    bytes[1000] = 0xff
+    const cid = await fs.addBytes(bytes, {
+      cidVersion: 0,
+      rawLeaves: false,
+      chunker: fixedSize({ chunkSize: 262_144 })
+    })
+
+    verifiedFetch = new VerifiedFetch(helia)
+    const resp = await verifiedFetch.fetch(`ipfs://${cid}`)
+    expect(resp.headers.get('content-type')).to.equal('application/octet-stream')
   })
 
   it('is passed a filename if it is available', async () => {

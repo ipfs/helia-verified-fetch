@@ -1,4 +1,5 @@
 import { unixfs } from '@helia/unixfs'
+import * as dagPb from '@ipld/dag-pb'
 import { stop } from '@libp2p/interface'
 import { expect } from 'aegir/chai'
 import browserReadableStreamToIt from 'browser-readablestream-to-it'
@@ -214,6 +215,57 @@ describe('range requests', () => {
     const loaded = new Set(blockstoreGetSpy.getCalls().map(call => call.args[0].toString()))
     // the file root and the first leaf only
     expect(loaded).to.have.property('size', 2)
+  })
+
+  it('should detect the content type of a range at the start of a file when a later block in the sniff window is missing', async () => {
+    // an mp3 whose ID3 tag runs past the first 1KiB block, so that block is
+    // enough to detect it
+    const content = Uint8Array.from({ length: 4096 }, (_, i) => i % 251)
+    content.set([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00])
+    const cid = await unixfs(helia).addBytes(content, {
+      chunker: fixedSize({ chunkSize: 1024 }),
+      rawLeaves: true
+    })
+    const root = dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
+    await helia.blockstore.delete(root.Links[1].Hash)
+
+    const response = await verifiedFetch.fetch(cid, {
+      session: false,
+      headers: {
+        Range: 'bytes=0-99'
+      }
+    })
+    expect(response.status).to.equal(206)
+    expect(response.headers.get('content-type')).to.equal('audio/mpeg')
+    expect(new Uint8Array(await response.arrayBuffer())).to.equalBytes(content.subarray(0, 100))
+  })
+
+  it('should fail a range at the start of a file when its first block is missing', async () => {
+    const content = Uint8Array.from({ length: 4096 }, (_, i) => i % 251)
+    const cid = await unixfs(helia).addBytes(content, {
+      chunker: fixedSize({ chunkSize: 1024 }),
+      rawLeaves: true
+    })
+    const root = dagPb.decode(await toBuffer(helia.blockstore.get(cid)))
+    const firstLeaf = root.Links[0].Hash
+    const get = Sinon.stub(helia.blockstore, 'get')
+    get.callsFake((key, options) => {
+      if (key.equals(firstLeaf)) {
+        throw new Error('block unavailable')
+      }
+
+      return get.wrappedMethod.call(helia.blockstore, key, options)
+    })
+
+    // the response needs this block too, so the request fails rather than
+    // sending a success status with a body that can't be read
+    const response = await verifiedFetch.fetch(cid, {
+      session: false,
+      headers: {
+        Range: 'bytes=0-99'
+      }
+    })
+    expect(response.status).to.be.at.least(500)
   })
 
   const testTuples = [
