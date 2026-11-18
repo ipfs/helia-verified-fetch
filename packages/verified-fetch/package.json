@@ -201,7 +201,7 @@
     "libp2p": "^3.2.0",
     "multiformats": "^14.0.2",
     "progress-events": "^1.1.0",
-    "quick-lru": "^7.3.0",
+    "quick-lru": "^8.0.0",
     "regexp.escape": "^2.0.1",
     "uint8arrays": "^6.1.1"
   },
