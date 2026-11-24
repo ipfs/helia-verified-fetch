@@ -209,7 +209,7 @@
     "@helia/dag-cbor": "^6.0.0",
     "@helia/dag-json": "^6.0.0",
     "@helia/json": "^6.0.0",
-    "@ipld/car": "^5.4.3",
+    "@ipld/car": "^6.2.0",
     "@ipshipyard/crypto": "^1.1.0",
     "@libp2p/crypto": "^5.1.15",
     "@libp2p/logger": "^6.2.4",
